@@ -9,12 +9,40 @@ export const supabase =
         auth: {
           detectSessionInUrl: true,
           persistSession: true,
+          flowType: 'pkce',
         },
       })
     : null;
 
+export function isWaitlistRoute() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('waitlist') === '1';
+}
+
+/** OAuth callback must use query params — hash breaks PKCE code exchange */
 export function getWaitlistRedirectUrl() {
-  return `${window.location.origin}${window.location.pathname}#waitlist`;
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('waitlist', '1');
+  return url.toString();
+}
+
+export function cleanOAuthCallbackUrl() {
+  const url = new URL(window.location.href);
+  const hadOAuthParams =
+    url.searchParams.has('code') ||
+    url.searchParams.has('error') ||
+    url.searchParams.has('error_description');
+
+  if (!hadOAuthParams) return;
+
+  url.searchParams.delete('code');
+  url.searchParams.delete('error');
+  url.searchParams.delete('error_description');
+  url.searchParams.set('waitlist', '1');
+  url.hash = '';
+  window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
 }
 
 export async function signInWithGoogle() {

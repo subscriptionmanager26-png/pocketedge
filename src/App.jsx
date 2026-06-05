@@ -1,47 +1,53 @@
 import React, { useEffect, useState } from 'react';
 import LandingPage from './LandingPage';
 import WaitlistPage from './WaitlistPage';
-import { supabase } from './supabase';
-
-function getRouteFromHash() {
-  return window.location.hash === '#waitlist' ? 'waitlist' : 'landing';
-}
+import { supabase, isWaitlistRoute, cleanOAuthCallbackUrl } from './supabase';
 
 export default function App() {
-  const [route, setRoute] = useState(getRouteFromHash);
+  const [route, setRoute] = useState(() => (isWaitlistRoute() ? 'waitlist' : 'landing'));
   const [bootstrapping, setBootstrapping] = useState(true);
 
   useEffect(() => {
-    const syncRoute = () => setRoute(getRouteFromHash());
+    if (!supabase) {
+      setBootstrapping(false);
+      return;
+    }
 
-    const init = async () => {
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && window.location.hash.startsWith('#waitlist')) {
-          setRoute('waitlist');
-        }
+    let mounted = true;
+
+    const finishBootstrap = (session) => {
+      if (!mounted) return;
+      if (session || isWaitlistRoute()) {
+        if (session) cleanOAuthCallbackUrl();
+        setRoute('waitlist');
       }
       setBootstrapping(false);
     };
 
-    init();
-    window.addEventListener('hashchange', syncRoute);
-
-    const { data: { subscription } } = supabase?.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        window.location.hash = 'waitlist';
-        setRoute('waitlist');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        finishBootstrap(session);
       }
-    }) ?? { data: { subscription: { unsubscribe: () => {} } } };
+      if (event === 'SIGNED_OUT') {
+        if (!isWaitlistRoute()) setRoute('landing');
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      finishBootstrap(session);
+    });
 
     return () => {
-      window.removeEventListener('hashchange', syncRoute);
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const goLanding = () => {
-    window.location.hash = '';
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    window.history.replaceState({}, '', url.pathname);
     setRoute('landing');
   };
 

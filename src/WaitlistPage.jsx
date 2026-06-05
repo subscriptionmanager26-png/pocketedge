@@ -11,22 +11,12 @@ export default function WaitlistPage({ onBack }) {
   useEffect(() => {
     let mounted = true;
 
-    const load = async () => {
-      if (!supabase) {
-        setError('Supabase is not configured.');
-        setLoading(false);
-        return;
-      }
+    const enroll = async (session) => {
+      if (!mounted || !session) return;
 
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        setLoading(false);
-        return;
-      }
-
-      if (!mounted) return;
       setUser(session.user);
+      setLoading(true);
+      setError('');
 
       try {
         const result = await enrollWaitlistMember();
@@ -38,17 +28,35 @@ export default function WaitlistPage({ onBack }) {
       }
     };
 
-    load();
+    const bootstrap = async () => {
+      if (!supabase) {
+        setError('Supabase is not configured.');
+        setLoading(false);
+        return;
+      }
 
-    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+
       if (session) {
-        setUser(session.user);
-        load();
+        await enroll(session);
       } else {
+        setLoading(false);
+      }
+    };
+
+    bootstrap();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        enroll(session);
+      }
+      if (event === 'SIGNED_OUT' && mounted) {
         setUser(null);
         setWaitlistNumber(null);
+        setLoading(false);
       }
-    }) ?? { data: { subscription: { unsubscribe: () => {} } } };
+    });
 
     return () => {
       mounted = false;
