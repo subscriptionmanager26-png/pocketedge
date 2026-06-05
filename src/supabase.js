@@ -62,6 +62,17 @@ export async function signInWithGoogle() {
   if (error) throw error;
 }
 
+export function captureReferralFromUrl() {
+  const ref = new URLSearchParams(window.location.search).get('ref');
+  if (ref) sessionStorage.setItem('waitlist_ref', ref);
+}
+
+export function getReferralLink(userId) {
+  const url = new URL(window.location.origin);
+  url.searchParams.set('ref', userId);
+  return url.toString();
+}
+
 export async function enrollWaitlistMember() {
   if (!supabase) throw new Error('Supabase is not configured');
 
@@ -70,6 +81,17 @@ export async function enrollWaitlistMember() {
     p_referral_code: referralCode,
   });
 
+  if (error) throw error;
+  if (data?.status === 'joined') {
+    sessionStorage.removeItem('waitlist_ref');
+  }
+  return data;
+}
+
+export async function getWaitlistStatus() {
+  if (!supabase) throw new Error('Supabase is not configured');
+
+  const { data, error } = await supabase.rpc('get_my_waitlist_status');
   if (error) throw error;
   return data;
 }
