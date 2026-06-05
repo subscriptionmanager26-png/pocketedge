@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Briefcase, ArrowRight, ChevronRight, Check } from 'lucide-react';
+import React from 'react';
+import { Briefcase, ChevronRight } from 'lucide-react';
 import {
   trendingBaskets,
   heroStats,
@@ -8,74 +8,16 @@ import {
   featuredBaskets,
   howItWorks,
 } from './mockData';
-import { joinWaitlist } from './supabase';
-
-function InviteForm({ className = '', id }) {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState('idle');
-  const [message, setMessage] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-
-    setStatus('loading');
-    setMessage('');
-
-    try {
-      const ref = new URLSearchParams(window.location.search).get('ref');
-      const result = await joinWaitlist(email, ref);
-      setStatus(result?.status === 'already_joined' ? 'already' : 'success');
-      setMessage(
-        result?.status === 'already_joined'
-          ? "You're already on the waitlist!"
-          : "You're on the list! We'll be in touch."
-      );
-      setEmail('');
-    } catch (err) {
-      setStatus('error');
-      setMessage(err.message || 'Something went wrong. Please try again.');
-    }
-  };
-
-  return (
-    <div className={className}>
-      <form id={id} onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-xl">
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          disabled={status === 'loading'}
-          onChange={(e) => setEmail(e.target.value)}
-          className="flex w-full border px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm flex-1 h-14 text-base bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-emerald-500/50 rounded-xl"
-        />
-        <button
-          type="submit"
-          disabled={status === 'loading'}
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 disabled:pointer-events-none disabled:opacity-50 py-2 h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
-        >
-          {status === 'loading' ? 'Joining...' : 'Request Invite'}
-          {status !== 'loading' && <ArrowRight className="ml-2 w-5 h-5" />}
-        </button>
-      </form>
-      {message && (
-        <p
-          className={`mt-3 text-sm flex items-center gap-2 ${
-            status === 'error' ? 'text-rose-400' : 'text-emerald-400'
-          }`}
-        >
-          {status !== 'error' && <Check className="w-4 h-4" />}
-          {message}
-        </p>
-      )}
-    </div>
-  );
-}
+import RequestInviteButton from './RequestInviteButton';
+import { signInWithGoogle } from './supabase';
 
 export default function LandingPage() {
-  const scrollToInvite = () => {
-    document.getElementById('hero-invite')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => document.querySelector('#hero-invite input')?.focus(), 400);
+  const handleNavInvite = async () => {
+    try {
+      await signInWithGoogle();
+    } catch {
+      document.getElementById('hero-invite')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -99,7 +41,7 @@ export default function LandingPage() {
                 How it Works
               </a>
               <button
-                onClick={scrollToInvite}
+                onClick={handleNavInvite}
                 className="bg-emerald-500 text-black px-6 py-2.5 rounded-xl font-semibold hover:bg-emerald-400 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]"
               >
                 Request Invite
@@ -129,7 +71,7 @@ export default function LandingPage() {
               <p className="text-xl text-zinc-400 leading-relaxed font-light">
                 Access investment portfolio made by practitioners and follow them as easily
               </p>
-              <InviteForm id="hero-invite" />
+              <RequestInviteButton id="hero-invite" size="large" />
               <div className="flex items-center gap-8 pt-4">
                 {heroStats.map((stat) => (
                   <div key={stat.label}>
@@ -302,7 +244,7 @@ export default function LandingPage() {
           <p className="text-xl text-zinc-300 mb-10 font-light">
             Join thousands of Indians already investing in international markets. Request your invite today.
           </p>
-          <InviteForm id="bottom-invite" className="mx-auto [&_form]:mx-auto [&_button]:px-10" />
+          <RequestInviteButton id="bottom-invite" size="large" className="flex justify-center [&_button]:px-10" />
         </div>
       </section>
 
