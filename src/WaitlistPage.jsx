@@ -142,9 +142,7 @@ export default function WaitlistPage() {
   };
 
   const referralLink = user ? getReferralLink(user.id) : '';
-  const spotsMoved = status
-    ? Math.min(status.referral_count * 10, status.waitlist_number - 5001)
-    : 0;
+  const spotsMoved = status ? status.referral_count * 10 : 0;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans">

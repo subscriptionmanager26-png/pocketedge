@@ -46,7 +46,7 @@ begin
   insert into _rank_plan (user_id, target_rank, joined_at)
   select
     user_id,
-    greatest(5001, waitlist_number - (referral_count * 10)),
+    greatest(1, waitlist_number - (referral_count * 10)),
     joined_at
   from public.waitlist_members;
 

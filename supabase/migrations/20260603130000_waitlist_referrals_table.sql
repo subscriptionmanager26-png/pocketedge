@@ -65,7 +65,7 @@ begin
   select
     wm.user_id,
     greatest(
-      5001,
+      1,
       wm.waitlist_number - (
         coalesce((
           select count(*)::integer
@@ -127,7 +127,7 @@ declare
   user_email text;
   user_name text;
   existing record;
-  referrer_id uuid;
+  v_referrer_id uuid;
   ref_count integer;
 begin
   if uid is null then
@@ -140,8 +140,8 @@ begin
 
   if found then
     select count(*)::integer into ref_count
-    from public.waitlist_referrals
-    where referrer_id = uid;
+    from public.waitlist_referrals wr
+    where wr.referrer_id = uid;
 
     return json_build_object(
       'status', 'already_joined',
@@ -158,19 +158,19 @@ begin
   from auth.users u
   where u.id = uid;
 
-  referrer_id := null;
+  v_referrer_id := null;
   if p_referral_code is not null and trim(p_referral_code) <> '' and trim(p_referral_code) <> uid::text then
     begin
-      referrer_id := trim(p_referral_code)::uuid;
+      v_referrer_id := trim(p_referral_code)::uuid;
     exception when others then
-      referrer_id := null;
+      v_referrer_id := null;
     end;
   end if;
 
-  if referrer_id is not null and not exists (
-    select 1 from public.waitlist_members where user_id = referrer_id
+  if v_referrer_id is not null and not exists (
+    select 1 from public.waitlist_members where user_id = v_referrer_id
   ) then
-    referrer_id := null;
+    v_referrer_id := null;
   end if;
 
   order_num := nextval('public.waitlist_signup_order_seq');
@@ -182,21 +182,21 @@ begin
   )
   values (
     uid, user_email, user_name, order_num, base_num,
-    base_num, referrer_id, p_referral_code
+    base_num, v_referrer_id, p_referral_code
   );
 
-  if referrer_id is not null then
+  if v_referrer_id is not null then
     insert into public.waitlist_referrals (referrer_id, referee_id, referral_code)
-    values (referrer_id, uid, p_referral_code)
+    values (v_referrer_id, uid, p_referral_code)
     on conflict (referee_id) do nothing;
 
-    update public.waitlist_members
+    update public.waitlist_members wm
     set referral_count = (
       select count(*)::integer
-      from public.waitlist_referrals
-      where referrer_id = referrer_id
+      from public.waitlist_referrals wr
+      where wr.referrer_id = v_referrer_id
     )
-    where user_id = referrer_id;
+    where wm.user_id = v_referrer_id;
   end if;
 
   return json_build_object(
@@ -204,7 +204,7 @@ begin
     'waitlist_number', base_num,
     'effective_rank', base_num,
     'referral_count', 0,
-    'referred_by', referrer_id
+    'referred_by', v_referrer_id
   );
 end;
 $$;
@@ -239,8 +239,8 @@ begin
   end if;
 
   select count(*)::integer into ref_count
-  from public.waitlist_referrals
-  where referrer_id = uid;
+  from public.waitlist_referrals wr
+  where wr.referrer_id = uid;
 
   return json_build_object(
     'waitlist_number', member.waitlist_number,
