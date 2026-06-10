@@ -2,7 +2,205 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --pe-canvas: #f7f7f5;
+    --pe-surface: #ffffff;
+    --pe-text: #171717;
+    --pe-text-secondary: #525252;
+    --pe-text-muted: #737373;
+    --pe-border: #e5e5e5;
+    --pe-accent: #00c853;
+    --pe-accent-bright: #00ff6a;
+    --pe-positive: #059669;
+    --pe-negative: #e11d48;
+    --pe-warning: #e97a50;
+  }
+}
+
+html,
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  @apply font-sans antialiased;
+  background-color: var(--pe-canvas);
+  color: var(--pe-text);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@layer components {
+  .pe-page {
+    @apply min-h-screen;
+    background-color: var(--pe-canvas);
+    color: var(--pe-text);
+  }
+
+  /* —— Surfaces —— */
+  .pe-card {
+    @apply rounded-2xl;
+    background-color: var(--pe-surface);
+    border: 1px solid rgb(229 229 229 / 0.8);
+  }
+
+  .pe-card-hover {
+    @apply hover:border-neutral-300 hover:shadow-lg transition-all duration-300;
+  }
+
+  /* —— Typography (Cesto role mapping) —— */
+  .pe-display {
+    @apply font-display font-medium tracking-tight;
+    color: var(--pe-text);
+  }
+
+  .pe-title {
+    @apply font-display text-2xl sm:text-3xl font-semibold tracking-tight;
+    color: var(--pe-text);
+  }
+
+  .pe-section-title {
+    @apply font-display text-xl sm:text-2xl font-semibold tracking-tight;
+    color: var(--pe-text);
+  }
+
+  .pe-card-title {
+    @apply font-sans text-sm sm:text-base font-semibold leading-snug;
+    color: var(--pe-text);
+  }
+
+  .pe-eyebrow {
+    @apply font-label text-xs sm:text-sm font-medium uppercase tracking-widest;
+    color: var(--pe-text-muted);
+  }
+
+  .pe-body {
+    @apply font-sans text-base leading-relaxed;
+    color: var(--pe-text-secondary);
+  }
+
+  .pe-body-s {
+    @apply font-sans text-sm leading-snug;
+    color: var(--pe-text-secondary);
+  }
+
+  .pe-label {
+    @apply font-sans text-sm;
+    color: var(--pe-text-muted);
+  }
+
+  .pe-stat {
+    @apply font-display text-2xl sm:text-3xl font-bold tabular-nums;
+    color: var(--pe-text);
+  }
+
+  .pe-btn-label {
+    @apply font-label font-medium tracking-wide;
+  }
+
+  /* —— Forms —— */
+  .pe-input {
+    @apply w-full rounded-xl px-4 py-3 pe-body-s placeholder:text-neutral-400 focus:outline-none focus:ring-2;
+    background-color: var(--pe-surface);
+    border: 1px solid rgb(229 229 229 / 0.8);
+    color: var(--pe-text);
+  }
+
+  .pe-input:focus {
+    border-color: var(--pe-text);
+    --tw-ring-color: rgb(23 23 23 / 0.1);
+  }
+
+  .pe-nav {
+    @apply backdrop-blur-xl;
+    background-color: rgb(247 247 245 / 0.95);
+    border-color: rgb(229 229 229 / 0.6);
+  }
+
+  /* —— Buttons —— */
+  .pe-btn-primary {
+    @apply pe-btn-label inline-flex items-center justify-center text-white rounded-full transition-colors;
+    background-color: var(--pe-text);
+  }
+
+  .pe-btn-primary:hover {
+    @apply bg-neutral-800;
+  }
+
+  .pe-btn-secondary {
+    @apply pe-btn-label inline-flex items-center justify-center font-medium rounded-full transition-colors;
+    @apply bg-neutral-100 hover:bg-neutral-200;
+    color: var(--pe-text);
+  }
+
+  /* —— Chips & nav —— */
+  .pe-pill-active {
+    @apply text-white;
+    background-color: var(--pe-text);
+  }
+
+  .pe-pill-inactive {
+    @apply bg-neutral-100 border hover:text-neutral-900;
+    color: var(--pe-text-secondary);
+    border-color: rgb(229 229 229 / 0.8);
+  }
+
+  .pe-nav-item-active {
+    @apply text-white border;
+    background-color: var(--pe-text);
+    border-color: var(--pe-text);
+  }
+
+  .pe-nav-item-inactive {
+    @apply hover:bg-neutral-100 border border-transparent;
+    color: var(--pe-text-secondary);
+  }
+
+  .pe-nav-item-inactive:hover {
+    color: var(--pe-text);
+  }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@keyframes basket-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-basket-marquee {
+  animation: basket-marquee 50s linear infinite;
 }

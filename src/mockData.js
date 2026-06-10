@@ -60,20 +60,99 @@ export const featuredBaskets = [
   },
 ];
 
-export const howItWorks = [
+export const homepageBenefits = [
   {
-    step: 1,
-    title: 'Sign Up',
-    description: 'Create your account and complete a quick verification process',
+    title: 'Search & discover',
+    description:
+      'Browse curated portfolios built around themes, trends, and beliefs — find ideas worth digging into.',
   },
   {
-    step: 2,
-    title: 'Choose Your Basket',
-    description: 'Browse and select from expert-curated investment strategies',
+    title: 'Curated portfolios',
+    description:
+      'Every basket comes with a clear thesis, holdings, and performance history you can evaluate.',
   },
   {
-    step: 3,
-    title: 'Start Investing',
-    description: 'Begin your global investment journey with as little as ₹100',
+    title: 'Global by default',
+    description:
+      'Access US, Europe, and Asia markets. One platform, 10 countries, 15,000+ tickers.',
   },
+  {
+    title: 'Create & compete',
+    description:
+      'Build your own basket, publish it, and see how it ranks on the leaderboard.',
+  },
+];
+
+export const homepageFaq = [
+  {
+    q: 'What is a basket?',
+    a: 'A basket is a curated portfolio of stocks and ETFs built around a single theme or thesis. Use it to research ideas and build conviction — you execute trades through your own broker.',
+  },
+  {
+    q: 'Who creates the baskets?',
+    a: 'Curated portfolios on PocketEdge come from our research team and community creators. Each basket includes a thesis, holdings, and performance history.',
+  },
+  {
+    q: 'Can I invest through PocketEdge?',
+    a: 'Not yet. Today you can search, discover, and create baskets. Broker-integrated execution is coming soon — for now, place trades yourself after reviewing each portfolio.',
+  },
+  {
+    q: 'Is there a minimum investment?',
+    a: 'Most baskets use a ₹5,000 reference amount for modeling returns. When execution launches, minimums will be shown on each basket.',
+  },
+  {
+    q: 'How does the leaderboard work?',
+    a: 'Baskets are ranked by returns. If two baskets have the same return, the one with lower volatility ranks higher.',
+  },
+  {
+    q: 'Can I create my own basket?',
+    a: 'Yes. Each user can publish up to 5 baskets and compete for the top spot on the leaderboard.',
+  },
+];
+
+export const footerColumns = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Investment Baskets', href: '#baskets' },
+      { label: 'Global Stocks & ETFs', href: '#countries' },
+      { label: 'Community Baskets', href: '#baskets' },
+      { label: 'Portfolio Tracking', href: '#how-it-works' },
+      { label: 'Challenge', href: '#challenge' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', href: '#about' },
+      { label: 'Press', href: '#press' },
+      { label: 'Careers', href: '#careers' },
+      { label: 'Contact', href: '#contact' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Terms & Conditions', href: '#terms' },
+      { label: 'Privacy Policy', href: '#privacy' },
+      { label: 'Disclosures', href: '#disclosures' },
+      { label: 'Risk Disclosure', href: '#risk-disclosure' },
+    ],
+  },
+];
+
+export const footerBottomLinks = [
+  { label: 'About', href: '#about' },
+  { label: 'Disclosures', href: '#disclosures' },
+  { label: 'Terms & Conditions', href: '#terms' },
+  { label: 'Privacy Policy', href: '#privacy' },
+  { label: 'User Created Baskets', href: '#user-created-baskets' },
+  { label: 'Investment Tools', href: '#investment-tools' },
+  { label: 'Press', href: '#press' },
+  { label: 'For Businesses', href: '#for-businesses' },
+];
+
+export const footerDisclaimer = [
+  'This platform is intended for informational purposes only and is not intended to provide investment advice. The stock prices displayed are delayed and may not reflect the most current market conditions. Investment in securities market are subject to market risks. Read all the related documents carefully before investing. You can also consider consulting a financial advisor before making any investment decisions.',
+  'The user agrees to assume complete and full responsibility for the outcomes of all of his/her investment decisions that he/she makes, including any direct, indirect, incidental, consequential, special, punitive or any other losses/damages if any that may be incurred by him/her. SRK One9 Finance Services LLP shall not be responsible or liable for any direct, indirect, incidental, consequential, special, punitive or any other losses/damages arising out of the recipient\'s investments.',
 ];
