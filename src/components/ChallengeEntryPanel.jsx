@@ -12,11 +12,29 @@ export default function ChallengeEntryPanel({
   progress,
   onSignIn,
   onGoCreate,
-  onGoReferrals,
+  onEntered,
+  referralLink = null,
+  hideHeader = false,
+  initialEntered = null,
+  persistEntered = true,
   className = '',
 }) {
-  const [entered, setEntered] = React.useState(() => hasEnteredChallenge());
+  const [entered, setEntered] = React.useState(() =>
+    initialEntered ?? hasEnteredChallenge()
+  );
+  const [referralCopied, setReferralCopied] = React.useState(false);
   const eligible = isChallengeEligible(progress);
+
+  const handleCopyReferral = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setReferralCopied(true);
+      setTimeout(() => setReferralCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — keep user on the page
+    }
+  };
 
   const tasks = [
     {
@@ -39,40 +57,36 @@ export default function ChallengeEntryPanel({
       label: `Refer ${REQUIRED_REFERRALS} people on the platform`,
       detail: `${progress.referralCount}/${REQUIRED_REFERRALS} referrals`,
       done: progress.referralsMet,
-      action: progress.referralsMet ? null : onGoReferrals,
-      actionLabel: 'Get referral link',
+      action: progress.referralsMet ? null : handleCopyReferral,
+      actionLabel: 'Copy referral link',
+      copiedLabel: 'Copied',
     },
-  ];
+  ].filter((task) => !(hideHeader && task.id === 'register' && progress.registered));
 
   const handleEnter = () => {
     if (!eligible) return;
-    markChallengeEntered();
+    if (persistEntered) markChallengeEntered();
     setEntered(true);
+    onEntered?.();
   };
 
   if (entered && eligible) {
-    return (
-      <div className={`pe-card p-6 sm:p-8 text-center ${className}`}>
-        <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">You&apos;re in</p>
-        <h3 className="text-xl sm:text-2xl font-semibold text-neutral-900 mt-2">
-          Welcome to the Market Whisperer Challenge
-        </h3>
-        <p className="text-neutral-500 mt-2 text-sm sm:text-base">{CHALLENGE_WINDOW}</p>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className={`pe-card p-6 sm:p-8 ${className}`}>
-      <div className="text-center mb-6">
-        <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">Enter the challenge</p>
-        <h3 className="text-xl sm:text-2xl font-semibold text-neutral-900 mt-2">
-          Complete these steps to compete
-        </h3>
-        <p className="text-neutral-500 mt-2 text-sm sm:text-base">{CHALLENGE_WINDOW}</p>
-      </div>
+      {!hideHeader && (
+        <div className="text-center mb-6">
+          <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">Enter the challenge</p>
+          <h3 className="text-xl sm:text-2xl font-semibold text-neutral-900 mt-2">
+            Complete these steps to compete
+          </h3>
+          <p className="text-neutral-500 mt-2 text-sm sm:text-base">{CHALLENGE_WINDOW}</p>
+        </div>
+      )}
 
-      <ul className="space-y-3 sm:space-y-4 max-w-lg mx-auto">
+      <ul className={`space-y-3 sm:space-y-4 ${hideHeader ? '' : 'max-w-lg mx-auto'}`}>
         {tasks.map((task) => (
           <li
             key={task.id}
@@ -101,7 +115,7 @@ export default function ChallengeEntryPanel({
                 onClick={task.action}
                 className="shrink-0 text-sm font-medium text-neutral-900 hover:text-neutral-600 whitespace-nowrap"
               >
-                {task.actionLabel} →
+                {task.id === 'referrals' && referralCopied ? task.copiedLabel : task.actionLabel} →
               </button>
             )}
           </li>

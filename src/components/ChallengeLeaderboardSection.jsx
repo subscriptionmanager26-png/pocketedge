@@ -5,7 +5,7 @@ import ChallengeEntryPanel from './ChallengeEntryPanel';
 import { buildLeaderboard, catalogBaskets } from '../app/basketCatalog';
 import { loadUserBaskets } from '../app/basketStore';
 import { getChallengeProgress } from '../challengeEligibility';
-import { getWaitlistStatus, signInWithGoogle, supabase } from '../supabase';
+import { getReferralLink, getWaitlistStatus, signInWithGoogle, supabase } from '../supabase';
 export default function ChallengeLeaderboardSection({
   entries: entriesProp,
   onSignIn,
@@ -81,9 +81,7 @@ export default function ChallengeLeaderboardSection({
             onGoCreate={() => {
               window.location.href = '/?tab=create';
             }}
-            onGoReferrals={() => {
-              window.location.href = '/?waitlist=1';
-            }}
+            referralLink={user ? getReferralLink(user.id) : null}
           />
           {table}
         </>

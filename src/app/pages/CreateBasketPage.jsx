@@ -40,8 +40,106 @@ function applyEqualWeights(list) {
   }));
 }
 
+function CreateBasketsHub({ userBaskets }) {
+  const canCreate = canCreateBasket(userBaskets);
+
+  return (
+    <AppPageLayout center className="pb-4 max-w-2xl">
+      <PageHeader
+        title="Create"
+        align="center"
+        className="!mb-0"
+        description={
+          canCreate
+            ? `${userBaskets.length} of ${MAX_USER_BASKETS} baskets · publish ideas and compete on the leaderboard`
+            : `All ${MAX_USER_BASKETS} basket slots used — edit an existing basket to improve your rank`
+        }
+      />
+
+      {canCreate && (
+        <button
+          type="button"
+          onClick={() => navigateApp({ tab: 'create', createNew: true })}
+          className="w-full pe-btn-primary py-3.5 text-base justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" aria-hidden />
+          Create new basket
+        </button>
+      )}
+
+      {userBaskets.length > 0 ? (
+        <section className="space-y-2">
+          <h2 className="pe-section-title text-base px-0.5">Your baskets</h2>
+          <ul className="space-y-2">
+            {userBaskets.map((basket) => (
+              <li key={basket.id}>
+                <div className="pe-card p-4 flex items-center gap-3 sm:gap-4">
+                  <div
+                    className={`shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${
+                      basket.imageGradient || 'from-emerald-600 to-cyan-500'
+                    } flex items-center justify-center overflow-hidden`}
+                  >
+                    {basket.imageUrl ? (
+                      <img src={basket.imageUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-lg font-bold text-white/90">{basket.name.charAt(0)}</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="pe-card-title truncate">{basket.name}</p>
+                    <p className="pe-body-s mt-0.5">
+                      {basket.constituents?.length ?? 0} stocks ·{' '}
+                      {basket.weightingType === 'equal' ? 'Equal' : 'Custom'} weight
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigateApp({ tab: 'basket', basketId: basket.id })}
+                      className="px-3 py-2 rounded-lg border border-pe-border/80 text-xs font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-300 transition-colors"
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigateApp({ tab: 'create', editBasketId: basket.id })}
+                      className="px-3 py-2 rounded-lg bg-neutral-900 text-xs font-semibold text-white hover:bg-neutral-800 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <div className="pe-card border-dashed p-8 text-center">
+          <Layers className="w-8 h-8 text-neutral-400 mx-auto mb-3" aria-hidden />
+          <p className="text-base font-medium text-neutral-900">No baskets yet</p>
+          <p className="text-sm text-neutral-500 mt-1 mb-5">
+            Build your first basket and enter the Market Whisperer Challenge.
+          </p>
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => navigateApp({ tab: 'create', createNew: true })}
+              className="pe-btn-primary px-6 py-3 text-sm"
+            >
+              Create your first basket
+            </button>
+          )}
+        </div>
+      )}
+    </AppPageLayout>
+  );
+}
+
 export default function CreateBasketPage({
   editBasketId = null,
+  creatingNew = false,
   editBasket = null,
   onCreated,
   userProfile,
@@ -49,6 +147,12 @@ export default function CreateBasketPage({
   userBaskets = [],
 }) {
   const isEditing = Boolean(editBasketId);
+  const inWizard = isEditing || creatingNew;
+
+  if (!inWizard) {
+    return <CreateBasketsHub userBaskets={userBaskets} />;
+  }
+
   const atBasketLimit = !isEditing && !canCreateBasket(userBaskets);
   const [stepIndex, setStepIndex] = useState(0);
   const [name, setName] = useState(editBasket?.name ?? '');
@@ -255,23 +359,16 @@ export default function CreateBasketPage({
 
   if (atBasketLimit) {
     return (
-      <div className="max-w-lg mx-auto text-center py-16 px-6">
-        <div className="w-14 h-14 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto mb-4">
-          <Layers className="w-7 h-7 text-amber-600" />
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">Basket limit reached</h2>
-        <p className="text-sm text-neutral-500 mt-2 leading-relaxed">
-          You can create a maximum of {MAX_USER_BASKETS} baskets ({userBaskets.length}/{MAX_USER_BASKETS} used).
-          Compete on the leaderboard with your best ideas.
-        </p>
+      <AppPageLayout center className="pb-4 max-w-lg text-center">
+        <p className="text-sm text-neutral-500">Basket limit reached.</p>
         <button
           type="button"
-          onClick={() => navigateApp({ tab: 'leaderboard' })}
-          className="mt-6 text-sm font-medium text-emerald-600 hover:text-emerald-700"
+          onClick={() => navigateApp({ tab: 'create', createNew: false })}
+          className="mt-4 text-sm font-semibold text-neutral-900 hover:text-neutral-600"
         >
-          View leaderboard →
+          ← Back to your baskets
         </button>
-      </div>
+      </AppPageLayout>
     );
   }
 
@@ -284,10 +381,10 @@ export default function CreateBasketPage({
         </p>
         <button
           type="button"
-          onClick={() => navigateApp({ tab: 'create' })}
+          onClick={() => navigateApp({ tab: 'create', createNew: false })}
           className="mt-6 text-sm font-medium text-emerald-600 hover:text-emerald-700"
         >
-          Create a new basket →
+          ← Back to your baskets
         </button>
       </div>
     );
@@ -310,16 +407,21 @@ export default function CreateBasketPage({
   return (
     <AppPageLayout center className="pb-4">
       <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => navigateApp({ tab: 'create', createNew: false })}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" aria-hidden />
+          Your baskets
+        </button>
+
         <PageHeader
-          eyebrow={isEditing ? 'Edit' : 'Build'}
-          title={isEditing ? 'Edit basket' : 'Create basket'}
+          eyebrow={isEditing ? 'Edit' : undefined}
+          title={isEditing ? 'Edit basket' : 'New basket'}
           align="center"
           className="!mb-0"
-          description={
-            isEditing
-              ? `Step ${stepIndex + 1} of ${STEPS.length} — ${step.label}`
-              : `Step ${stepIndex + 1} of ${STEPS.length} — ${step.label} · ${userBaskets.length}/${MAX_USER_BASKETS} baskets`
-          }
+          description={`Step ${stepIndex + 1} of ${STEPS.length} — ${step.label}`}
         />
         {step.id !== 'preview' && (
           <div className="flex justify-center">

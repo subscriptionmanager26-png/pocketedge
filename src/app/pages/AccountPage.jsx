@@ -5,7 +5,7 @@ import { signOut } from '../../supabase';
 import AboutYouSection from '../components/AboutYouSection';
 import AppPageLayout from '../components/AppPageLayout';
 
-export default function AccountPage({ user, userId = 'local', onProfileSaved }) {
+export default function AccountPage({ user, userId = 'local', referralCount = 0, onProfileSaved }) {
   const handleSignOut = async () => {
     await signOut();
     const url = new URL(window.location.href);
@@ -15,9 +15,14 @@ export default function AccountPage({ user, userId = 'local', onProfileSaved }) 
 
   return (
     <AppPageLayout narrow>
-      <PageHeader eyebrow="Profile" title="Account" align="left" className="!mb-0" />
+      <PageHeader title="Account" align="left" className="!mb-0" />
 
-      <AboutYouSection user={user} userId={userId} onSaved={onProfileSaved} />
+      <AboutYouSection
+        user={user}
+        userId={userId}
+        referralCount={referralCount}
+        onSaved={onProfileSaved}
+      />
 
       <button
         type="button"

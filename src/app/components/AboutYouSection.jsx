@@ -21,7 +21,7 @@ function hydrateFromProfile(userId, authName) {
   };
 }
 
-export default function AboutYouSection({ user, userId = 'local', onSaved }) {
+export default function AboutYouSection({ user, userId = 'local', referralCount = 0, onSaved }) {
   const authName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
   const authEmail = user?.email || 'demo@pocketedge.app';
 
@@ -151,6 +151,7 @@ export default function AboutYouSection({ user, userId = 'local', onSaved }) {
             updateLink={updateLink}
             removeLink={removeLink}
             referralLink={referralLink}
+            referralCount={referralCount}
             copied={copied}
             onCopyReferral={handleCopyReferral}
           />
@@ -162,6 +163,7 @@ export default function AboutYouSection({ user, userId = 'local', onSaved }) {
             avatarUrl={avatarUrl}
             links={savedLinks}
             referralLink={referralLink}
+            referralCount={referralCount}
             copied={copied}
             onCopyReferral={handleCopyReferral}
           />
@@ -200,6 +202,7 @@ function CompactView({
   avatarUrl,
   links,
   referralLink,
+  referralCount,
   copied,
   onCopyReferral,
 }) {
@@ -248,7 +251,12 @@ function CompactView({
         )}
       </div>
 
-      <ReferralRow referralLink={referralLink} copied={copied} onCopy={onCopyReferral} />
+      <ReferralRow
+        referralLink={referralLink}
+        referralCount={referralCount}
+        copied={copied}
+        onCopy={onCopyReferral}
+      />
     </>
   );
 }
@@ -266,6 +274,7 @@ function EditForm({
   updateLink,
   removeLink,
   referralLink,
+  referralCount,
   copied,
   onCopyReferral,
 }) {
@@ -372,15 +381,27 @@ function EditForm({
         )}
       </div>
 
-      <ReferralRow referralLink={referralLink} copied={copied} onCopy={onCopyReferral} />
+      <ReferralRow
+        referralLink={referralLink}
+        referralCount={referralCount}
+        copied={copied}
+        onCopy={onCopyReferral}
+      />
     </>
   );
 }
 
-function ReferralRow({ referralLink, copied, onCopy }) {
+function ReferralRow({ referralLink, referralCount = 0, copied, onCopy }) {
   return (
     <div className="space-y-2 pt-4 border-t border-pe-border/60">
-      <p className="pe-label text-[10px]">Referral link</p>
+      <div>
+        <p className="pe-label text-[10px]">Referral link</p>
+        <p className="text-xs text-pe-text-muted mt-1">
+          {referralCount === 0
+            ? 'No one has joined using your link yet'
+            : `${referralCount} ${referralCount === 1 ? 'person has' : 'people have'} joined using your link`}
+        </p>
+      </div>
       <div className="flex gap-2">
         <input
           readOnly

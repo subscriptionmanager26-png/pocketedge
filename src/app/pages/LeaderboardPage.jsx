@@ -1,15 +1,14 @@
-import React, { useMemo } from 'react';
-import { Trophy, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import ChallengeLeaderboardGate from '../../components/ChallengeLeaderboardGate';
 import ChallengeEntryPanel from '../../components/ChallengeEntryPanel';
 import LeaderboardTable from '../../components/LeaderboardTable';
+import ChallengeWelcomeCard from '../components/ChallengeWelcomeCard';
+import ChallengeBasketSlots from '../components/ChallengeBasketSlots';
 import PageHeader from '../../components/PageHeader';
-import {
-  buildLeaderboard,
-  catalogBaskets,
-} from '../basketCatalog';
-import { getChallengeProgress } from '../../challengeEligibility';
+import { buildLeaderboard, catalogBaskets } from '../basketCatalog';
+import { getChallengeProgress, hasEnteredChallenge } from '../../challengeEligibility';
 import { navigateApp } from '../appRoute';
+import { getReferralLink } from '../../supabase';
 import AppPageLayout from '../components/AppPageLayout';
 
 const CHALLENGE_DESCRIPTION =
@@ -22,28 +21,29 @@ export default function LeaderboardPage({
   publicView = false,
   embedded = false,
   limit,
+  accessLimited = false,
+  challengeEntered = null,
+  challengePersistEntered = true,
   onChallengeEnter,
 }) {
   const signedIn = !!user;
-
-  const entries = useMemo(
-    () => buildLeaderboard([...userBaskets, ...catalogBaskets]),
-    [userBaskets]
+  const [entered, setEntered] = useState(() =>
+    challengeEntered ?? hasEnteredChallenge()
   );
 
+  useEffect(() => {
+    if (challengeEntered !== null) {
+      setEntered(challengeEntered);
+    }
+  }, [challengeEntered]);
+
+  const entries = buildLeaderboard([...userBaskets, ...catalogBaskets]);
   const progress = getChallengeProgress({ user, userBaskets, waitlistStatus });
-
-  const top = entries[0];
-
-  const yourBest = useMemo(() => {
-    if (!signedIn || userBaskets.length === 0) return null;
-    const ownIds = new Set(userBaskets.map((b) => b.id));
-    const own = entries.filter((e) => ownIds.has(e.basket.id));
-    return own.reduce((best, e) => (!best || e.rank < best.rank ? e : best), null);
-  }, [entries, signedIn, userBaskets]);
 
   const handleBasketClick = (basketId) => {
     if (publicView) return;
+    const ownIds = new Set(userBaskets.map((b) => b.id));
+    if (accessLimited && !ownIds.has(basketId)) return;
     navigateApp({ tab: 'basket', basketId });
   };
 
@@ -60,6 +60,11 @@ export default function LeaderboardPage({
   );
 
   const handleSignIn = onChallengeEnter ?? (() => {});
+
+  const handleEntered = () => {
+    setEntered(true);
+    navigateApp({ tab: 'leaderboard' });
+  };
 
   const leaderboardBlock = signedIn ? (
     table
@@ -86,7 +91,14 @@ export default function LeaderboardPage({
         }
       />
 
-      {signedIn && (
+      {signedIn && entered && (
+        <>
+          <ChallengeWelcomeCard />
+          <ChallengeBasketSlots userBaskets={userBaskets} />
+        </>
+      )}
+
+      {signedIn && !entered && (
         <ChallengeEntryPanel
           progress={progress}
           onSignIn={handleSignIn}
@@ -94,57 +106,14 @@ export default function LeaderboardPage({
             if (publicView) window.location.href = '/?tab=create';
             else navigateApp({ tab: 'create' });
           }}
-          onGoReferrals={() => {
-            window.location.href = '/?waitlist=1';
-          }}
+          referralLink={user ? getReferralLink(user.id) : null}
+          initialEntered={false}
+          persistEntered={challengePersistEntered}
+          onEntered={handleEntered}
         />
       )}
 
-      {signedIn && top && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="pe-card p-5 border-neutral-900/10 bg-neutral-900/[0.03]">
-            <div className="flex items-center gap-2 text-pe-text-secondary mb-2">
-              <Trophy className="w-4 h-4" />
-              <span className="pe-label text-[10px] font-semibold uppercase tracking-wide">Top rank</span>
-            </div>
-            <p className="pe-card-title">{top.basket.name}</p>
-            <p className="pe-body-s text-pe-text-muted mt-2">
-              #{top.rank} · {top.volatility} volatility · {top.creatorName}
-            </p>
-          </div>
-
-          {yourBest ? (
-            <div className="pe-card p-5">
-              <div className="flex items-center gap-2 text-pe-text-secondary mb-2">
-                <User className="w-4 h-4" />
-                <span className="pe-label text-[10px] font-semibold uppercase tracking-wide">Your rank</span>
-              </div>
-              <p className="pe-card-title">{yourBest.basket.name}</p>
-              <p className="pe-body-s text-pe-text-muted mt-2">
-                #{yourBest.rank} of {entries.length} · {yourBest.volatility} volatility
-              </p>
-            </div>
-          ) : (
-            <div className="pe-card border-dashed p-5 flex flex-col justify-center">
-              <p className="pe-body font-medium text-pe-text">No baskets on the board yet</p>
-              <p className="pe-body-s text-pe-text-muted mt-1">
-                Create a basket to compete for the top spot.
-              </p>
-              {!publicView && (
-                <button
-                  type="button"
-                  onClick={() => navigateApp({ tab: 'create' })}
-                  className="mt-3 text-sm font-semibold text-pe-positive hover:underline text-left"
-                >
-                  Create basket →
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {leaderboardBlock}
+      {!signedIn && leaderboardBlock}
     </AppPageLayout>
   );
 }

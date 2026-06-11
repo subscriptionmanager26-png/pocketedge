@@ -10,7 +10,15 @@ import RequestInviteButton from './RequestInviteButton';
 import { catalogBaskets, formatCurrency, formatPercent } from './app/basketCatalog';
 import { getChallengeProgress } from './challengeEligibility';
 import { BRAND_REFERENCE, CANVAS, cssClasses, edgeX, layout, palette, typography } from './designTokens';
-import { CHALLENGE_NAME, CHALLENGE_WINDOW } from './challengeMeta';
+import {
+  CHALLENGE_NAME,
+  CHALLENGE_WINDOW,
+  CHALLENGE_PRIZE_HEADLINE,
+  CHALLENGE_BASKETS_HINT,
+  CHALLENGE_START_LABEL,
+} from './challengeMeta';
+import ChallengeWelcomeCard from './app/components/ChallengeWelcomeCard';
+import ChallengeBasketSlots from './app/components/ChallengeBasketSlots';
 
 const SECTIONS = [
   { id: 'intro', label: 'Overview' },
@@ -341,17 +349,24 @@ export default function DesignLibraryPage() {
                 </div>
               </Preview>
               <p className="text-sm text-neutral-500">
-                Challenge copy: <Code>{CHALLENGE_NAME}</Code> · <Code>{CHALLENGE_WINDOW}</Code>
+                Challenge copy: <Code>{CHALLENGE_NAME}</Code> · <Code>{CHALLENGE_PRIZE_HEADLINE}</Code> ·{' '}
+                <Code>{CHALLENGE_START_LABEL}</Code>
               </p>
             </Section>
 
             <Section id="challenge" title="Challenge UI">
+              <Preview label="Challenge welcome + basket slots (entered)">
+                <div className="space-y-5 max-w-3xl">
+                  <ChallengeWelcomeCard />
+                  <ChallengeBasketSlots userBaskets={[]} />
+                </div>
+              </Preview>
               <Preview label="ChallengeEntryPanel — in progress">
                 <ChallengeEntryPanel
                   progress={progressSamples.partial}
                   onSignIn={() => {}}
                   onGoCreate={() => {}}
-                  onGoReferrals={() => {}}
+                  referralLink="https://pocketedge.app/?ref=demo"
                 />
               </Preview>
               <Preview label="ChallengeEntryPanel — eligible to enter">
@@ -359,7 +374,7 @@ export default function DesignLibraryPage() {
                   progress={progressSamples.ready}
                   onSignIn={() => {}}
                   onGoCreate={() => {}}
-                  onGoReferrals={() => {}}
+                  referralLink="https://pocketedge.app/?ref=demo"
                 />
               </Preview>
             </Section>

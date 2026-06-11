@@ -2,12 +2,20 @@ import React, { useCallback, useEffect, useState } from 'react';
 import AppTopBar from './components/AppTopBar';
 import BottomNav from './components/BottomNav';
 import BasketDetailView from './components/BasketDetailView';
+import BasketAccessGate from './components/BasketAccessGate';
+import SearchWaitlistGate from './components/SearchWaitlistGate';
 import DashboardPage from './pages/DashboardPage';
+import WaitlistHomePage from './pages/WaitlistHomePage';
 import SearchPage from './pages/SearchPage';
 import CreateBasketPage from './pages/CreateBasketPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import AccountPage from './pages/AccountPage';
-import { getAppTab, getBasketIdFromUrl, getEditBasketIdFromUrl, navigateApp } from './appRoute';
+import {
+  getAppTab,
+  getBasketIdFromUrl,
+  getCreateRouteFromUrl,
+  navigateApp,
+} from './appRoute';
 import { loadNotifications } from './notificationStore';
 import { enrichBasket, getBasketById } from './basketCatalog';
 import { loadUserProfile } from './profileStore';
@@ -22,10 +30,12 @@ export default function AppShell({
   userBaskets,
   waitlistStatus,
   challengeProgress,
+  accessLimited = false,
   onBasketsChange,
 }) {
   const [tab, setTab] = useState(getAppTab);
   const [basketId, setBasketId] = useState(getBasketIdFromUrl);
+  const [createRoute, setCreateRoute] = useState(getCreateRouteFromUrl);
   const [localWaitlistStatus, setLocalWaitlistStatus] = useState(waitlistStatus);
   const [profileVersion, setProfileVersion] = useState(0);
 
@@ -42,12 +52,17 @@ export default function AppShell({
   const syncRoute = useCallback(() => {
     setTab(getAppTab());
     setBasketId(getBasketIdFromUrl());
+    setCreateRoute(getCreateRouteFromUrl());
   }, []);
 
   useEffect(() => {
     window.addEventListener('popstate', syncRoute);
     return () => window.removeEventListener('popstate', syncRoute);
   }, [syncRoute]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tab, basketId, createRoute.editId, createRoute.isNew]);
 
   useEffect(() => {
     loadNotifications();
@@ -71,16 +86,21 @@ export default function AppShell({
   };
 
   const handleNavigate = (nextTab) => {
-    navigateApp({ tab: nextTab });
+    if (nextTab === 'create') {
+      navigateApp({ tab: 'create', createNew: false });
+    } else {
+      navigateApp({ tab: nextTab });
+    }
     setTab(nextTab);
     setBasketId(null);
+    setCreateRoute(getCreateRouteFromUrl());
   };
 
   const selectedBasket = basketId
     ? enrichBasket(getBasketById(basketId, userBaskets))
     : null;
   const isOwnBasket = userBaskets.some((b) => b.id === basketId);
-  const editBasketId = getEditBasketIdFromUrl();
+  const { editId: editBasketId, isNew: creatingNew } = createRoute;
   const editBasket = editBasketId
     ? userBaskets.find((b) => b.id === editBasketId) ?? null
     : null;
@@ -97,7 +117,13 @@ export default function AppShell({
     <div className="min-h-screen w-full bg-[#F7F7F5] text-neutral-900 flex flex-col">
       <StickyTopChrome
         banner={banner}
-        navigation={<AppTopBar activeTab={navTab} onNavigate={handleNavigate} />}
+        navigation={
+          <AppTopBar
+            activeTab={navTab}
+            onNavigate={handleNavigate}
+            accessLimited={accessLimited}
+          />
+        }
       />
 
       <main
@@ -107,37 +133,53 @@ export default function AppShell({
           tab === 'basket' ? 'py-0' : 'py-4 sm:py-5'
         } ${showMainNav ? 'pb-24 lg:pb-10' : 'pb-8'}`}
       >
-        {tab === 'basket' && selectedBasket ? (
+        {tab === 'basket' && selectedBasket && accessLimited && !isOwnBasket ? (
+          <BasketAccessGate onBack={() => handleNavigate('dashboard')} />
+        ) : tab === 'basket' && selectedBasket ? (
           <BasketDetailView
             basket={selectedBasket}
             isOwn={isOwnBasket}
-            onBack={() => handleNavigate('search')}
+            onBack={() => handleNavigate(accessLimited ? 'dashboard' : 'search')}
             onEdit={
               isOwnBasket
                 ? () => {
                     navigateApp({ tab: 'create', editBasketId: basketId });
-                    setTab('create');
-                    setBasketId(null);
                   }
                 : undefined
             }
           />
         ) : (
           <>
-            {tab === 'dashboard' && <DashboardPage userBaskets={userBaskets} />}
-            {tab === 'search' && <SearchPage userBaskets={userBaskets} />}
+            {tab === 'dashboard' && accessLimited ? (
+              <WaitlistHomePage
+                user={user}
+                waitlistStatus={effectiveWaitlistStatus}
+                challengeProgress={challengeProgress}
+              />
+            ) : (
+              tab === 'dashboard' && <DashboardPage userBaskets={userBaskets} />
+            )}
+            {tab === 'search' && accessLimited ? (
+              <SearchWaitlistGate>
+                <SearchPage userBaskets={userBaskets} />
+              </SearchWaitlistGate>
+            ) : (
+              tab === 'search' && <SearchPage userBaskets={userBaskets} />
+            )}
             {tab === 'leaderboard' && (
               <LeaderboardPage
                 userBaskets={userBaskets}
                 user={user}
                 waitlistStatus={effectiveWaitlistStatus}
+                accessLimited={accessLimited}
                 onChallengeEnter={handleSignIn}
               />
             )}
             {tab === 'create' && (
               <CreateBasketPage
-                key={`${profileVersion}-${editBasketId || 'new'}`}
+                key={`${profileVersion}-${editBasketId || (creatingNew ? 'new' : 'hub')}`}
                 editBasketId={editBasketId}
+                creatingNew={creatingNew}
                 editBasket={editBasket}
                 onCreated={onBasketsChange}
                 userProfile={userProfile}
@@ -150,6 +192,7 @@ export default function AppShell({
                 key={profileVersion}
                 user={user}
                 userId={userId}
+                referralCount={effectiveWaitlistStatus?.referral_count ?? 0}
                 onProfileSaved={() => setProfileVersion((v) => v + 1)}
               />
             )}
@@ -158,10 +201,10 @@ export default function AppShell({
                 Basket not found.{' '}
                 <button
                   type="button"
-                  onClick={() => handleNavigate('search')}
+                  onClick={() => handleNavigate(accessLimited ? 'dashboard' : 'search')}
                   className="text-neutral-900 font-medium"
                 >
-                  Browse baskets
+                  {accessLimited ? 'Back to dashboard' : 'Browse baskets'}
                 </button>
               </div>
             )}
@@ -170,7 +213,11 @@ export default function AppShell({
       </main>
 
       {showMainNav && (
-        <BottomNav activeTab={navTab} onNavigate={handleNavigate} />
+        <BottomNav
+          activeTab={navTab}
+          onNavigate={handleNavigate}
+          accessLimited={accessLimited}
+        />
       )}
     </div>
   );

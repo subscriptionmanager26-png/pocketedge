@@ -11,6 +11,10 @@ import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute'
 import { loadUserBaskets } from './app/basketStore';
 import { getChallengeProgress } from './challengeEligibility';
 import { isLegalRoute } from './legalRoute';
+import { isChallengeDemoRoute, isReferralsDemoRoute, isStep2DemoRoute } from './demoRoute';
+import ReferralsDemoPage from './ReferralsDemoPage';
+import ChallengeDemoPage from './ChallengeDemoPage';
+import Step2DemoPage from './Step2DemoPage';
 import {
   supabase,
   isWaitlistRoute,
@@ -36,22 +40,22 @@ function PageShell({ children, user, challengeProgress }) {
   );
 }
 
-function resolveRoute(session, accessConfirmed = false) {
+function resolveRoute(session) {
+  if (isStep2DemoRoute()) return 'step2-demo';
+  if (isChallengeDemoRoute()) return 'challenge-demo';
+  if (isReferralsDemoRoute()) return 'referrals-demo';
   if (isDesignRoute()) return 'design';
   if (isLegalRoute()) return 'legal';
   if (isLeaderboardRoute()) return 'leaderboard';
-  if (isWaitlistRoute()) return 'waitlist';
+  if (isWaitlistRoute()) return session ? 'app' : 'waitlist';
   if (import.meta.env.DEV && isLocalAppRoute()) return 'app';
-  if (session) {
-    if (accessConfirmed) return 'app';
-    return 'waitlist';
-  }
+  if (session) return 'app';
   if (isAppShellRoute()) return 'landing';
   return 'landing';
 }
 
 export default function App() {
-  const [route, setRoute] = useState(() => resolveRoute(null, false));
+  const [route, setRoute] = useState(() => resolveRoute(null));
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
   const [waitlistStatus, setWaitlistStatus] = useState(null);
@@ -73,10 +77,14 @@ export default function App() {
   const refreshBaskets = () => setUserBaskets(loadUserBaskets());
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [route]);
+
+  useEffect(() => {
     captureReferralFromUrl();
 
     if (!supabase) {
-      setRoute(resolveRoute(null, false));
+      setRoute(resolveRoute(null));
       return undefined;
     }
 
@@ -110,7 +118,7 @@ export default function App() {
       if (session) cleanOAuthCallbackUrl();
       const accessConfirmed = await syncSession(session);
       if (!mounted) return;
-      setRoute(resolveRoute(session, accessConfirmed));
+      setRoute(resolveRoute(session));
       setBootstrapping(false);
     };
 
@@ -120,7 +128,7 @@ export default function App() {
       }
       if (event === 'SIGNED_OUT') {
         syncSession(null);
-        setRoute(resolveRoute(null, false));
+        setRoute(resolveRoute(null));
       }
     });
 
@@ -143,7 +151,7 @@ export default function App() {
         .then((status) => {
           setWaitlistStatus(status);
           setRoute((prev) => {
-            const next = resolveRoute(user, Boolean(status?.access_confirmed));
+            const next = resolveRoute(user);
             return next === prev ? prev : next;
           });
         })
@@ -153,6 +161,18 @@ export default function App() {
     window.addEventListener('focus', refreshWaitlist);
     return () => window.removeEventListener('focus', refreshWaitlist);
   }, [user]);
+
+  if (route === 'step2-demo') {
+    return <Step2DemoPage />;
+  }
+
+  if (route === 'challenge-demo') {
+    return <ChallengeDemoPage />;
+  }
+
+  if (route === 'referrals-demo') {
+    return <ReferralsDemoPage />;
+  }
 
   if (route === 'design') {
     return <DesignLibraryPage />;
@@ -177,12 +197,15 @@ export default function App() {
   }
 
   if (route === 'app') {
+    const accessLimited = Boolean(user && waitlistStatus?.access_confirmed !== true);
+
     return (
       <AppShell
         user={user}
         userBaskets={userBaskets}
         waitlistStatus={waitlistStatus}
         challengeProgress={challengeProgress}
+        accessLimited={accessLimited}
         onBasketsChange={refreshBaskets}
       />
     );
