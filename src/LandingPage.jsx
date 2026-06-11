@@ -8,10 +8,10 @@ import {
   homepageBenefits,
   homepageFaq,
   countries,
-  footerColumns,
-  footerBottomLinks,
+  footerLegalLinks,
   footerDisclaimer,
 } from './mockData';
+import { getLegalUrl } from './legalRoute';
 import { CHALLENGE_DESCRIPTION } from './app/pages/LeaderboardPage';
 import { CHALLENGE_NAME } from './challengeMeta';
 import { catalogBaskets } from './app/basketCatalog';
@@ -222,8 +222,8 @@ export default function LandingPage() {
 
       <footer id="about" className="border-t border-neutral-200 bg-white py-12">
         <div className={content}>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-            <div className="sm:col-span-2 lg:col-span-1">
+          <div className="grid sm:grid-cols-2 gap-8 mb-10">
+            <div>
               <LogoMark size="sm" className="mb-4" />
               <p className="text-sm text-neutral-500 leading-relaxed max-w-sm">
                 A product of SRK One9 Finance Services LLP — global basket investing for Indian
@@ -231,29 +231,33 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {footerColumns.map((column) => (
-              <div key={column.title}>
-                <h4 className="font-semibold text-neutral-900 mb-4 text-sm">{column.title}</h4>
-                <ul className="space-y-2.5 text-sm">
-                  {column.links.map((link) => (
-                    <li key={link.label}>
-                      <a href={link.href} className="text-neutral-500 hover:text-neutral-900 transition-colors">
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-4 text-sm">Legal</h4>
+              <ul className="space-y-2.5 text-sm">
+                {footerLegalLinks.map((link) => (
+                  <li key={link.slug}>
+                    <a
+                      href={getLegalUrl(link.slug)}
+                      className="text-neutral-500 hover:text-neutral-900 transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div className="border-t border-neutral-200 pt-6 pb-8">
-            <p className="text-xs text-neutral-400 font-medium uppercase tracking-wider mb-3">Company</p>
-            <nav className="flex flex-wrap items-center gap-y-2 text-sm">
-              {footerBottomLinks.map((link, index) => (
-                <React.Fragment key={link.label}>
-                  {index > 0 && <span className="text-neutral-300 mx-2">|</span>}
-                  <a href={link.href} className="text-neutral-600 hover:text-neutral-900 transition-colors">
+            <p className="text-xs text-neutral-400 font-medium uppercase tracking-wider mb-3">Legal</p>
+            <nav className="flex flex-wrap items-center gap-y-2 text-sm" aria-label="Legal">
+              {footerLegalLinks.map((link, index) => (
+                <React.Fragment key={link.slug}>
+                  {index > 0 && <span className="text-neutral-300 mx-2" aria-hidden>|</span>}
+                  <a
+                    href={getLegalUrl(link.slug)}
+                    className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                  >
                     {link.label}
                   </a>
                 </React.Fragment>
@@ -269,7 +273,10 @@ export default function LandingPage() {
             <p className="text-xs text-neutral-500 leading-relaxed">{footerDisclaimer[1]}</p>
             <p className="text-xs text-neutral-500 leading-relaxed">
               For disclosures related to SRK One9 Finance Services LLP, visit the{' '}
-              <a href="#disclosures" className="underline underline-offset-2 hover:text-neutral-900">
+              <a
+                href={getLegalUrl('disclosures')}
+                className="underline underline-offset-2 hover:text-neutral-900"
+              >
                 Disclosures
               </a>{' '}
               page.

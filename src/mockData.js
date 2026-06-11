@@ -110,46 +110,11 @@ export const homepageFaq = [
   },
 ];
 
-export const footerColumns = [
-  {
-    title: 'Product',
-    links: [
-      { label: 'Investment Baskets', href: '#baskets' },
-      { label: 'Global Stocks & ETFs', href: '#countries' },
-      { label: 'Community Baskets', href: '#baskets' },
-      { label: 'Portfolio Tracking', href: '#how-it-works' },
-      { label: 'Challenge', href: '#challenge' },
-    ],
-  },
-  {
-    title: 'Company',
-    links: [
-      { label: 'About', href: '#about' },
-      { label: 'Press', href: '#press' },
-      { label: 'Careers', href: '#careers' },
-      { label: 'Contact', href: '#contact' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'Terms & Conditions', href: '#terms' },
-      { label: 'Privacy Policy', href: '#privacy' },
-      { label: 'Disclosures', href: '#disclosures' },
-      { label: 'Risk Disclosure', href: '#risk-disclosure' },
-    ],
-  },
-];
-
-export const footerBottomLinks = [
-  { label: 'About', href: '#about' },
-  { label: 'Disclosures', href: '#disclosures' },
-  { label: 'Terms & Conditions', href: '#terms' },
-  { label: 'Privacy Policy', href: '#privacy' },
-  { label: 'User Created Baskets', href: '#user-created-baskets' },
-  { label: 'Investment Tools', href: '#investment-tools' },
-  { label: 'Press', href: '#press' },
-  { label: 'For Businesses', href: '#for-businesses' },
+export const footerLegalLinks = [
+  { label: 'Terms & Conditions', slug: 'terms' },
+  { label: 'Privacy Policy', slug: 'privacy' },
+  { label: 'Disclosures', slug: 'disclosures' },
+  { label: 'Risk Disclosure', slug: 'risk-disclosure' },
 ];
 
 export const footerDisclaimer = [

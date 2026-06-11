@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import LandingPage from './LandingPage';
 import DesignLibraryPage from './DesignLibraryPage';
 import WaitlistPage from './WaitlistPage';
+import LegalPage from './LegalPage';
 import PublicLeaderboardPage from './PublicLeaderboardPage';
 import AppShell from './app/AppShell';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
@@ -9,6 +10,7 @@ import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
 import { loadUserBaskets } from './app/basketStore';
 import { getChallengeProgress } from './challengeEligibility';
+import { isLegalRoute } from './legalRoute';
 import {
   supabase,
   isWaitlistRoute,
@@ -36,6 +38,7 @@ function PageShell({ children, user, challengeProgress }) {
 
 function resolveRoute(session, accessConfirmed = false) {
   if (isDesignRoute()) return 'design';
+  if (isLegalRoute()) return 'legal';
   if (isLeaderboardRoute()) return 'leaderboard';
   if (isWaitlistRoute()) return 'waitlist';
   if (import.meta.env.DEV && isLocalAppRoute()) return 'app';
@@ -153,6 +156,14 @@ export default function App() {
 
   if (route === 'design') {
     return <DesignLibraryPage />;
+  }
+
+  if (route === 'legal') {
+    return (
+      <PageShell user={user} challengeProgress={challengeProgress}>
+        <LegalPage />
+      </PageShell>
+    );
   }
 
   if (bootstrapping && route !== 'app') {
