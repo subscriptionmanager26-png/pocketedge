@@ -18,7 +18,7 @@ export default function ChallengeLeaderboardGate({ children, onSignIn }) {
             onClick={onSignIn}
             className="mt-6 pe-btn-primary w-full sm:w-auto px-8 py-3.5 text-base"
           >
-            Sign in with Google
+            Enter the Challenge
           </button>
         </div>
       </div>
