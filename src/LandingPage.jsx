@@ -13,6 +13,7 @@ import {
   footerDisclaimer,
 } from './mockData';
 import { CHALLENGE_DESCRIPTION } from './app/pages/LeaderboardPage';
+import { CHALLENGE_NAME } from './challengeMeta';
 import { catalogBaskets } from './app/basketCatalog';
 import RequestInviteButton from './RequestInviteButton';
 import { edgeX, content } from './designTokens';
@@ -88,12 +89,14 @@ export default function LandingPage() {
       </section>
 
       {/* Market Whisperer Challenge + leaderboard */}
-      <section id="challenge" className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white">
+      <section id="challenge" className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white scroll-mt-28 sm:scroll-mt-32">
         <div className={content}>
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-[3.5rem] font-normal tracking-tight leading-[1.05]">
-              The Market Whisperer Challenge
-            </h2>
+            <div className="overflow-x-auto scrollbar-hide">
+              <h2 className="pe-display w-max max-w-full mx-auto text-[clamp(1.75rem,4.5vw,3.5rem)] leading-[1.1]">
+                {CHALLENGE_NAME}
+              </h2>
+            </div>
             <p className="text-lg sm:text-xl text-neutral-500 mt-4 leading-relaxed">
               {CHALLENGE_DESCRIPTION}
             </p>

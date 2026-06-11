@@ -1,6 +1,6 @@
 export const CHALLENGE_NAME = 'The Market Whisperer Challenge';
 
-export const CHALLENGE_WINDOW = 'Starts on 1st July to 31st July';
+export const CHALLENGE_WINDOW = 'Win Grand Prize of INR 50K';
 
 export function getChallengeBannerHref() {
   if (typeof window === 'undefined') return '#challenge';
