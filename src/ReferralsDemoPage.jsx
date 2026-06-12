@@ -53,7 +53,7 @@ export default function ReferralsDemoPage() {
           <h1 className="pe-title text-2xl sm:text-3xl mt-1">5 referrals completed</h1>
           <p className="pe-body mt-2">
             Alex joined the waitlist at #{REFERRALS_DEMO_WAITLIST.waitlist_number.toLocaleString()},
-            referred 5 friends, created a basket, and can now enter the Market Whisperer Challenge.
+            referred 5 friends, created a basket, and can now enter The Global Portfolio League.
             Rank will move up <span className="font-medium text-neutral-900">{spotsMoved} spots</span> at
             the next update.
           </p>

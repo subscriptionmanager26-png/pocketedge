@@ -1,24 +1,24 @@
 import React from 'react';
-import { Briefcase } from 'lucide-react';
+
+const heights = {
+  sm: 'h-7',
+  md: 'h-8',
+  lg: 'h-9',
+};
 
 export default function LogoMark({ size = 'md', showWordmark = true, className = '' }) {
-  const iconBox =
-    size === 'sm'
-      ? 'w-8 h-8 rounded-lg'
-      : size === 'lg'
-        ? 'w-10 h-10 rounded-xl'
-        : 'w-9 h-9 rounded-lg';
-  const iconSize = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-5 h-5' : 'w-4 h-4';
-  const wordSize = size === 'lg' ? 'text-xl' : size === 'sm' ? 'text-lg' : 'text-xl';
+  const heightClass = heights[size] || heights.md;
 
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      <div className={`${iconBox} bg-neutral-900 flex items-center justify-center shrink-0`}>
-        <Briefcase className={`${iconSize} text-white`} />
-      </div>
+    <div className={`flex items-center gap-2 ${className}`}>
+      <img
+        src="/logo.png"
+        alt="pocketedge"
+        className={`${heightClass} w-auto object-contain shrink-0`}
+      />
       {showWordmark && (
-        <span className={`${wordSize} font-display font-semibold tracking-tight text-pe-text`}>
-          PocketEdge
+        <span className="text-lg sm:text-xl font-medium tracking-tight text-pe-text lowercase italic font-serif">
+          pocketedge
         </span>
       )}
     </div>

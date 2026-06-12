@@ -169,7 +169,7 @@ export default function WaitlistHomePage({
               <div>
                 <p className="pe-eyebrow !normal-case !tracking-wide text-neutral-500">Challenge</p>
                 <h2 className="text-lg sm:text-xl font-semibold text-neutral-900 leading-tight">
-                  Market Whisperer
+                  Global Portfolio League
                 </h2>
                 <p className="text-sm text-neutral-500 mt-1">{CHALLENGE_WINDOW}</p>
               </div>

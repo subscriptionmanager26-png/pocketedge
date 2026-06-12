@@ -120,7 +120,7 @@ function CreateBasketsHub({ userBaskets }) {
           <Layers className="w-8 h-8 text-neutral-400 mx-auto mb-3" aria-hidden />
           <p className="text-base font-medium text-neutral-900">No baskets yet</p>
           <p className="text-sm text-neutral-500 mt-1 mb-5">
-            Build your first basket and enter the Market Whisperer Challenge.
+            Build your first basket and enter The Global Portfolio League.
           </p>
           {canCreate && (
             <button

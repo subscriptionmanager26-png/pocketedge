@@ -88,7 +88,7 @@ export default function LandingPage() {
         <BasketMarquee baskets={catalogBaskets} />
       </section>
 
-      {/* Market Whisperer Challenge + leaderboard */}
+      {/* Global Portfolio League + leaderboard */}
       <section id="challenge" className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white scroll-mt-28 sm:scroll-mt-32">
         <div className={content}>
           <div className="max-w-3xl mx-auto text-center">

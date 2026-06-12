@@ -1,4 +1,4 @@
-export const CHALLENGE_NAME = 'The Market Whisperer Challenge';
+export const CHALLENGE_NAME = 'The Global Portfolio League';
 
 export const CHALLENGE_WINDOW = 'Win Grand Prize of INR 50K';
 

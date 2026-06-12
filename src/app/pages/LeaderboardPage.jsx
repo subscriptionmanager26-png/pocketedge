@@ -7,12 +7,13 @@ import ChallengeBasketSlots from '../components/ChallengeBasketSlots';
 import PageHeader from '../../components/PageHeader';
 import { buildLeaderboard, catalogBaskets } from '../basketCatalog';
 import { getChallengeProgress, hasEnteredChallenge } from '../../challengeEligibility';
+import { CHALLENGE_NAME } from '../../challengeMeta';
 import { navigateApp } from '../appRoute';
 import { getReferralLink } from '../../supabase';
 import AppPageLayout from '../components/AppPageLayout';
 
 const CHALLENGE_DESCRIPTION =
-  'Your portfolio curation skill is tested against thousands of others to find if you have what it takes to be a market whisperer.';
+  'Your portfolio curation skill is tested against thousands of others in The Global Portfolio League.';
 
 export default function LeaderboardPage({
   userBaskets = [],
@@ -81,7 +82,7 @@ export default function LeaderboardPage({
   return (
     <AppPageLayout center>
       <PageHeader
-        title="The Market Whisperer Challenge"
+        title={CHALLENGE_NAME}
         align="center"
         className="!mb-0"
         description={
