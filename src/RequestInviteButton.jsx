@@ -15,7 +15,7 @@ export default function RequestInviteButton({
     setError('');
     setLoading(true);
     try {
-      await signInWithGoogle();
+      await signInWithGoogle({ intent: 'waitlist' });
     } catch (err) {
       setError(err.message || 'Could not start Google sign-in.');
       setLoading(false);

@@ -16,7 +16,8 @@ import {
   getCreateRouteFromUrl,
   navigateApp,
 } from './appRoute';
-import { loadNotifications } from './notificationStore';
+import { loadNotifications, syncSubscribedBasketNotifications } from './notificationStore';
+import { loadSubscribedBasketIds } from './subscriptionStore';
 import { enrichBasket, getBasketById } from './basketCatalog';
 import { loadUserProfile } from './profileStore';
 import { getWaitlistStatus, signInWithGoogle } from '../supabase';
@@ -66,6 +67,7 @@ export default function AppShell({
 
   useEffect(() => {
     loadNotifications();
+    syncSubscribedBasketNotifications(loadSubscribedBasketIds());
   }, []);
 
   useEffect(() => {

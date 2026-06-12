@@ -1,3 +1,5 @@
+import { ensureBasketUpdateNotifications } from './notificationStore';
+
 const STORAGE_KEY = 'pocketedge_basket_subscriptions';
 const CHANGED_EVENT = 'pocketedge-subscriptions-changed';
 
@@ -27,6 +29,7 @@ export function subscribeToBasket(basketId) {
   const ids = read();
   if (ids.includes(basketId)) return ids;
   write([basketId, ...ids]);
+  ensureBasketUpdateNotifications(basketId);
   return read();
 }
 

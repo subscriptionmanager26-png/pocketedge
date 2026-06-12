@@ -4,8 +4,8 @@ import {
   getUnreadNotificationCount,
   getVisibleNotifications,
   loadNotifications,
-  markAllNotificationsRead,
   markNotificationRead,
+  markVisibleNotificationsRead,
   subscribeNotifications,
 } from '../notificationStore';
 import { loadSubscribedBasketIds, subscribeSubscriptions } from '../subscriptionStore';
@@ -46,12 +46,7 @@ export default function NotificationBell() {
   }, [open]);
 
   const visible = getVisibleNotifications(subscribedIds);
-  const unread = getUnreadNotificationCount(
-    notifications.filter((item) => {
-      if (item.type !== 'basket_update') return true;
-      return subscribedIds.includes(item.basketId);
-    })
-  );
+  const unread = getUnreadNotificationCount(notifications, subscribedIds);
 
   const handleOpenItem = (item) => {
     markNotificationRead(item.id);
@@ -85,7 +80,7 @@ export default function NotificationBell() {
             {unread > 0 && (
               <button
                 type="button"
-                onClick={() => markAllNotificationsRead()}
+                onClick={() => markVisibleNotificationsRead(subscribedIds)}
                 className="text-xs font-medium text-pe-positive hover:underline"
               >
                 Mark all read

@@ -28,7 +28,7 @@ export default function LandingPage() {
 
   const handleNavInvite = async () => {
     try {
-      await signInWithGoogle();
+      await signInWithGoogle({ intent: 'waitlist' });
     } catch {
       scrollToInvite();
     }

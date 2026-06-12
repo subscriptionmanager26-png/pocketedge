@@ -1,4 +1,4 @@
-import { basketUpdatesCatalog, formatWeightChange } from './basketUpdatesCatalog';
+import { formatWeightChange, getBasketUpdates } from './basketUpdatesCatalog';
 import { catalogBaskets } from './basketCatalog';
 
 const STORAGE_KEY = 'pocketedge_notifications';
@@ -30,48 +30,45 @@ function buildUpdateBody(update) {
   return highlights.join(' · ') || update.summary;
 }
 
-function seedNotifications() {
-  const seeded = [
-    {
-      id: 'welcome',
-      type: 'platform',
-      title: 'Welcome to PocketEdge',
-      body: 'Browse baskets, paper-track investments, and get rebalance alerts when you subscribe.',
-      read: false,
-      createdAt: '2026-06-01T09:00:00.000Z',
-    },
-    {
-      id: 'challenge-live',
-      type: 'platform',
-      title: 'Market Whisperer challenge is live',
-      body: 'Create up to 5 baskets and compete on the leaderboard this month.',
-      read: false,
-      createdAt: '2026-06-02T08:30:00.000Z',
-    },
-    ...basketUpdatesCatalog.map((update) => ({
-      id: `notif-${update.id}`,
-      type: 'basket_update',
-      basketId: update.basketId,
-      updateId: update.id,
-      title: `${basketName(update.basketId)} · ${update.title}`,
-      body: buildUpdateBody(update),
-      read: false,
-      createdAt: `${update.date}T12:00:00.000Z`,
-    })),
-  ];
+function buildBasketUpdateNotification(update) {
+  return {
+    id: `notif-${update.id}`,
+    type: 'basket_update',
+    basketId: update.basketId,
+    updateId: update.id,
+    title: `${basketName(update.basketId)} · ${update.title}`,
+    body: buildUpdateBody(update),
+    read: false,
+    createdAt: `${update.date}T12:00:00.000Z`,
+  };
+}
 
-  write(seeded);
-  return seeded;
+function pruneDeprecatedNotifications(notifications) {
+  return notifications.filter((item) => item.type === 'basket_update' || item.type === 'admin');
+}
+
+export function isNotificationVisible(item, subscribedBasketIds) {
+  const subscribed = subscribedBasketIds instanceof Set
+    ? subscribedBasketIds
+    : new Set(subscribedBasketIds);
+
+  if (item.type === 'admin') return true;
+  if (item.type === 'basket_update') return subscribed.has(item.basketId);
+  return false;
+}
+
+export function filterVisibleNotifications(notifications, subscribedBasketIds) {
+  return notifications.filter((item) => isNotificationVisible(item, subscribedBasketIds));
 }
 
 export function loadNotifications() {
-  const existing = read();
-  if (existing.length === 0) return seedNotifications();
+  const existing = pruneDeprecatedNotifications(read());
+  if (existing.length !== read().length) write(existing);
   return existing;
 }
 
-export function getUnreadNotificationCount(notifications = loadNotifications()) {
-  return notifications.filter((item) => !item.read).length;
+export function getUnreadNotificationCount(notifications = loadNotifications(), subscribedBasketIds = []) {
+  return filterVisibleNotifications(notifications, subscribedBasketIds).filter((item) => !item.read).length;
 }
 
 export function markNotificationRead(id) {
@@ -86,6 +83,49 @@ export function markAllNotificationsRead() {
   return next;
 }
 
+export function markVisibleNotificationsRead(subscribedBasketIds) {
+  const visibleIds = new Set(
+    filterVisibleNotifications(read(), subscribedBasketIds).map((item) => item.id)
+  );
+  const next = read().map((item) => (visibleIds.has(item.id) ? { ...item, read: true } : item));
+  write(next);
+  return next;
+}
+
+export function syncSubscribedBasketNotifications(subscribedBasketIds = []) {
+  subscribedBasketIds.forEach(ensureBasketUpdateNotifications);
+}
+
+/** Create basket-update notifications when a user subscribes to a basket. */
+export function ensureBasketUpdateNotifications(basketId) {
+  const updates = getBasketUpdates(basketId);
+  if (updates.length === 0) return loadNotifications();
+
+  const existing = read();
+  const existingIds = new Set(existing.map((item) => item.id));
+  const toAdd = updates
+    .map(buildBasketUpdateNotification)
+    .filter((item) => !existingIds.has(item.id));
+
+  if (toAdd.length === 0) return existing;
+  write([...toAdd, ...existing]);
+  return read();
+}
+
+/** Admin broadcast — always visible to signed-in users. */
+export function addAdminNotification({ title, body, id = `admin-${Date.now()}` }) {
+  const item = {
+    id,
+    type: 'admin',
+    title,
+    body,
+    read: false,
+    createdAt: new Date().toISOString(),
+  };
+  write([item, ...read()]);
+  return item;
+}
+
 export function subscribeNotifications(callback) {
   const handler = () => callback(loadNotifications());
   window.addEventListener(CHANGED_EVENT, handler);
@@ -93,9 +133,5 @@ export function subscribeNotifications(callback) {
 }
 
 export function getVisibleNotifications(subscribedBasketIds) {
-  const subscribed = new Set(subscribedBasketIds);
-  return loadNotifications().filter((item) => {
-    if (item.type !== 'basket_update') return true;
-    return subscribed.has(item.basketId);
-  });
+  return filterVisibleNotifications(loadNotifications(), subscribedBasketIds);
 }

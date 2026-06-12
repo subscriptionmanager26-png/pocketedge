@@ -56,7 +56,7 @@ function CreateBasketsHub({ userBaskets }) {
         }
       />
 
-      {canCreate && (
+      {canCreate && userBaskets.length > 0 && (
         <button
           type="button"
           onClick={() => navigateApp({ tab: 'create', createNew: true })}

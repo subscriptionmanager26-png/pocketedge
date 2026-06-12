@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { isAppShellRoute, isLocalAppRoute } from './app/appRoute';
+import { getSiteOrigin, isSameSiteUrl, toAbsoluteUrl } from './siteUrl';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -26,48 +27,59 @@ export function isLeaderboardRoute() {
 }
 
 export function getLeaderboardUrl() {
-  const url = new URL(window.location.origin);
+  const url = new URL(window.location.pathname || '/', window.location.origin);
   url.searchParams.set('leaderboard', '1');
   return url.pathname + url.search;
 }
 
 function getLeaderboardRedirectUrl() {
-  const url = new URL(window.location.origin);
+  const url = new URL('/', getSiteOrigin());
   url.searchParams.set('leaderboard', '1');
   return url.toString();
 }
 
 /** OAuth callback must use query params — hash breaks PKCE code exchange */
 export function getWaitlistRedirectUrl() {
-  const url = new URL(window.location.href);
-  url.search = '';
-  url.hash = '';
+  const url = new URL('/', getSiteOrigin());
   url.searchParams.set('waitlist', '1');
   return url.toString();
 }
 
 function getHomeRedirectUrl() {
-  return new URL(window.location.origin).toString();
+  return new URL('/', getSiteOrigin()).toString();
+}
+
+function getCurrentAppRedirectUrl() {
+  const url = new URL(window.location.href);
+  url.hash = '';
+  return url.toString();
 }
 
 /** OAuth callback URL — must not include a hash (PKCE code lands in query). */
-export function getOAuthRedirectUrl() {
-  if (isAppShellRoute()) {
-    const url = new URL(window.location.href);
-    url.hash = '';
-    return url.toString();
-  }
+export function getOAuthRedirectUrl({ intent } = {}) {
+  if (intent === 'waitlist') return getWaitlistRedirectUrl();
+  if (isAppShellRoute()) return getCurrentAppRedirectUrl();
   if (isLeaderboardRoute()) return getLeaderboardRedirectUrl();
   if (isWaitlistRoute()) return getWaitlistRedirectUrl();
 
   const stored = sessionStorage.getItem('post_auth_redirect');
-  if (stored) {
+  if (stored && isSameSiteUrl(stored)) {
     const url = new URL(stored);
     url.hash = '';
     return url.toString();
   }
 
   return getHomeRedirectUrl();
+}
+
+function replaceUrlFromStoredRedirect(stored) {
+  if (!isSameSiteUrl(stored)) return false;
+
+  const parsed = new URL(stored, window.location.origin);
+  if (parsed.origin !== window.location.origin) return false;
+
+  window.history.replaceState({}, '', `${parsed.pathname}${parsed.search}`);
+  return true;
 }
 
 export function cleanOAuthCallbackUrl() {
@@ -87,8 +99,7 @@ export function cleanOAuthCallbackUrl() {
   url.searchParams.delete('error_description');
   url.hash = '';
 
-  if (stored) {
-    window.history.replaceState({}, '', stored);
+  if (stored && replaceUrlFromStoredRedirect(stored)) {
     return;
   }
 
@@ -109,23 +120,22 @@ export function cleanOAuthCallbackUrl() {
   window.history.replaceState({}, '', url.pathname);
 }
 
-export async function signInWithGoogle({ afterAuthPath } = {}) {
+export async function signInWithGoogle({ afterAuthPath, intent } = {}) {
   if (!supabase) throw new Error('Supabase is not configured');
 
   const ref = new URLSearchParams(window.location.search).get('ref');
   if (ref) sessionStorage.setItem('waitlist_ref', ref);
 
+  const wantsWaitlist = intent === 'waitlist' || isWaitlistRoute();
+
   if (!sessionStorage.getItem('post_auth_redirect')) {
     if (afterAuthPath) {
-      sessionStorage.setItem(
-        'post_auth_redirect',
-        new URL(afterAuthPath, window.location.origin).toString()
-      );
+      sessionStorage.setItem('post_auth_redirect', toAbsoluteUrl(afterAuthPath));
     } else if (isAppShellRoute()) {
-      const url = new URL(window.location.href);
-      url.hash = '';
-      sessionStorage.setItem('post_auth_redirect', url.toString());
-    } else if (!isWaitlistRoute() && !isLeaderboardRoute()) {
+      sessionStorage.setItem('post_auth_redirect', getCurrentAppRedirectUrl());
+    } else if (wantsWaitlist) {
+      sessionStorage.setItem('post_auth_redirect', getWaitlistRedirectUrl());
+    } else if (!isLeaderboardRoute()) {
       sessionStorage.setItem('post_auth_redirect', getHomeRedirectUrl());
     }
   }
@@ -133,7 +143,7 @@ export async function signInWithGoogle({ afterAuthPath } = {}) {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: getOAuthRedirectUrl(),
+      redirectTo: getOAuthRedirectUrl({ intent: wantsWaitlist ? 'waitlist' : undefined }),
       queryParams: { prompt: 'select_account' },
     },
   });
@@ -147,7 +157,7 @@ export function captureReferralFromUrl() {
 }
 
 export function getReferralLink(userId) {
-  const url = new URL(window.location.origin);
+  const url = new URL('/', getSiteOrigin());
   url.searchParams.set('ref', userId);
   return url.toString();
 }
@@ -179,4 +189,5 @@ export async function signOut() {
   if (!supabase) return;
   await supabase.auth.signOut();
   sessionStorage.removeItem('waitlist_ref');
+  sessionStorage.removeItem('post_auth_redirect');
 }
