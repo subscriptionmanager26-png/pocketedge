@@ -1,24 +1,34 @@
 import React from 'react';
 
-const heights = {
-  sm: 'h-7',
-  md: 'h-8',
-  lg: 'h-9',
+const logoHeights = {
+  sm: 'h-9',
+  md: 'h-11',
+  lg: 'h-12',
+};
+
+const wordSizes = {
+  sm: 'text-lg',
+  md: 'text-xl',
+  lg: 'text-2xl',
 };
 
 export default function LogoMark({ size = 'md', showWordmark = true, className = '' }) {
-  const heightClass = heights[size] || heights.md;
+  const heightClass = logoHeights[size] || logoHeights.md;
+  const wordClass = wordSizes[size] || wordSizes.md;
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2.5 ${className}`}>
       <img
         src="/logo.png"
-        alt="pocketedge"
+        alt=""
+        aria-hidden
         className={`${heightClass} w-auto object-contain shrink-0`}
       />
       {showWordmark && (
-        <span className="text-lg sm:text-xl font-medium tracking-tight text-pe-text lowercase italic font-serif">
-          pocketedge
+        <span
+          className={`${wordClass} font-display font-semibold tracking-tight text-pe-text`}
+        >
+          PocketEdge
         </span>
       )}
     </div>

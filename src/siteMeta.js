@@ -1,5 +1,5 @@
 /** Static site / share metadata (mirrored in index.html for crawlers). */
-export const SITE_NAME = 'pocketedge';
+export const SITE_NAME = 'PocketEdge';
 export const SITE_URL = 'https://www.pocketedge.in';
 
 export const SHARE_TITLE = 'The Global Portfolio League';
