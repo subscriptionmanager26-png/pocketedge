@@ -184,6 +184,25 @@ export const stockUniverse = [
   { symbol: 'RIVN', name: 'Rivian' },
 ];
 
+export const IBKR_SYMBOL_NOTE =
+  'Search our list or type any ticker symbol. The symbol must be available and tradable on Interactive Brokers (IBKR).';
+
+const STOCK_SYMBOL_PATTERN = /^[A-Z][A-Z0-9.\-]{0,11}$/;
+
+export function normalizeStockSymbol(raw) {
+  return raw.trim().toUpperCase();
+}
+
+export function isValidStockSymbol(raw) {
+  const symbol = normalizeStockSymbol(raw);
+  return symbol.length >= 1 && symbol.length <= 12 && STOCK_SYMBOL_PATTERN.test(symbol);
+}
+
+export function buildCustomStock(raw) {
+  const symbol = normalizeStockSymbol(raw);
+  return { symbol, name: 'Custom symbol', isCustom: true };
+}
+
 /** Mock invested positions for dashboard demo */
 export const demoInvestments = [
   {

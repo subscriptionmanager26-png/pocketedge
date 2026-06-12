@@ -10,7 +10,13 @@ import {
   Trash2,
   FileText,
 } from 'lucide-react';
-import { stockUniverse } from '../basketCatalog';
+import {
+  buildCustomStock,
+  IBKR_SYMBOL_NOTE,
+  isValidStockSymbol,
+  normalizeStockSymbol,
+  stockUniverse,
+} from '../basketCatalog';
 import { REBALANCE_FREQUENCIES } from '../rebalanceOptions';
 import { canCreateBasket, createBasketId, MAX_USER_BASKETS, saveUserBasket } from '../basketStore';
 import { navigateApp } from '../appRoute';
@@ -194,6 +200,23 @@ export default function CreateBasketPage({
     );
   }, [stockQuery, constituents]);
 
+  const normalizedStockQuery = useMemo(() => normalizeStockSymbol(stockQuery), [stockQuery]);
+
+  const exactUniverseMatch = useMemo(
+    () => stockUniverse.find((s) => s.symbol === normalizedStockQuery),
+    [normalizedStockQuery]
+  );
+
+  const canAddCustomSymbol = useMemo(() => {
+    if (!stockQuery.trim() || !isValidStockSymbol(stockQuery)) return false;
+    if (constituents.some((c) => c.symbol === normalizedStockQuery)) return false;
+    if (exactUniverseMatch) return false;
+    return true;
+  }, [stockQuery, normalizedStockQuery, constituents, exactUniverseMatch]);
+
+  const showStockSuggestions =
+    stockQuery.trim().length > 0 && (filteredStocks.length > 0 || canAddCustomSymbol);
+
   const draftBasket = useMemo(
     () => ({
       id: 'preview',
@@ -250,10 +273,41 @@ export default function CreateBasketPage({
 
   const addStock = (stock) => {
     setConstituents((prev) => {
-      const next = [...prev, { ...stock, weight: 0, segment: 'Largecap' }];
+      const next = [
+        ...prev,
+        {
+          ...stock,
+          weight: 0,
+          segment: stock.isCustom ? 'Custom' : 'Largecap',
+        },
+      ];
       return weightingType === 'equal' ? applyEqualWeights(next) : next;
     });
     setStockQuery('');
+  };
+
+  const addCustomSymbol = () => {
+    if (!canAddCustomSymbol) return;
+    addStock(buildCustomStock(stockQuery));
+  };
+
+  const handleStockQueryKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+
+    const selected = new Set(constituents.map((c) => c.symbol));
+
+    if (exactUniverseMatch && !selected.has(exactUniverseMatch.symbol)) {
+      addStock(exactUniverseMatch);
+      return;
+    }
+
+    if (filteredStocks.length === 1) {
+      addStock(filteredStocks[0]);
+      return;
+    }
+
+    addCustomSymbol();
   };
 
   const removeStock = (symbol) => {
@@ -601,7 +655,7 @@ export default function CreateBasketPage({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="pe-section-title text-base">Constituents</h2>
-                <p className="pe-body-s mt-0.5">Add at least 2 stocks</p>
+                <p className="pe-body-s mt-0.5">Add at least 2 stocks — search or enter a custom symbol</p>
               </div>
               {weightingType === 'custom' && (
                 <span
@@ -620,30 +674,50 @@ export default function CreateBasketPage({
               <input
                 value={stockQuery}
                 onChange={(e) => setStockQuery(e.target.value)}
-                placeholder="Search to add stock (symbol or name)"
+                onKeyDown={handleStockQueryKeyDown}
+                placeholder="Search or enter a ticker symbol (e.g. AAPL, BRK.B)"
                 className="pe-input"
+                autoComplete="off"
+                spellCheck={false}
               />
-              {stockQuery && filteredStocks.length > 0 && (
+              {showStockSuggestions && (
                 <ul className="absolute z-10 left-0 right-0 mt-1 bg-white border border-neutral-200/80 rounded-xl overflow-hidden shadow-xl">
                   {filteredStocks.slice(0, 5).map((s) => (
                     <li key={s.symbol}>
                       <button
                         type="button"
                         onClick={() => addStock(s)}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-neutral-50"
+                        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
                       >
                         <span className="text-neutral-900 font-medium">{s.symbol}</span>
-                        <span className="text-neutral-500">{s.name}</span>
-                        <Plus className="w-4 h-4 text-emerald-600" />
+                        <span className="text-neutral-500 truncate flex-1 text-right">{s.name}</span>
+                        <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
                       </button>
                     </li>
                   ))}
+                  {canAddCustomSymbol && (
+                    <li className="border-t border-neutral-100">
+                      <button
+                        type="button"
+                        onClick={addCustomSymbol}
+                        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
+                      >
+                        <span className="text-neutral-900 font-medium">{normalizedStockQuery}</span>
+                        <span className="text-neutral-500 truncate flex-1 text-right">Add custom symbol</span>
+                        <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
+                      </button>
+                    </li>
+                  )}
                 </ul>
               )}
             </div>
 
+            <p className="text-xs text-neutral-500 leading-relaxed">{IBKR_SYMBOL_NOTE}</p>
+
             {constituents.length === 0 && (
-              <p className="text-sm text-neutral-400 italic py-2">No stocks added yet — search above to add.</p>
+              <p className="text-sm text-neutral-400 italic py-2">
+                No stocks added yet — pick from suggestions or press Enter to add a custom symbol.
+              </p>
             )}
 
             <ul className="space-y-2 max-h-64 sm:max-h-80 overflow-y-auto">
@@ -654,7 +728,9 @@ export default function CreateBasketPage({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-neutral-900">{c.symbol}</div>
-                    <div className="text-xs text-neutral-500 truncate">{c.name}</div>
+                    <div className="text-xs text-neutral-500 truncate">
+                      {c.isCustom ? 'Custom symbol · verify on IBKR' : c.name}
+                    </div>
                   </div>
                   {weightingType === 'custom' ? (
                     <input
