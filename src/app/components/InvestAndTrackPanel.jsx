@@ -6,6 +6,7 @@ import {
   trackInvestment,
 } from '../investmentStore';
 import { formatCurrency } from '../basketCatalog';
+import { posthog, isPostHogEnabled } from '../../posthog';
 
 const QUICK_AMOUNTS = [5000, 10000, 25000];
 
@@ -51,15 +52,25 @@ export default function InvestAndTrackPanel({
 
     setStatus('loading');
     try {
+      const isUpdate = Boolean(tracked);
       const next = trackInvestment(basket.id, parsedAmount);
       setTracked(next);
       setAmount('');
       setStatus('success');
+      if (isPostHogEnabled) {
+        posthog.capture('investment_tracked', {
+          basket_id: basket.id,
+          basket_name: basket.name,
+          amount: parsedAmount,
+          is_update: isUpdate,
+        });
+      }
       onTracked?.(next);
       setTimeout(() => setStatus('idle'), 2500);
     } catch (err) {
       setStatus('idle');
       setError(err.message || 'Could not track investment');
+      if (isPostHogEnabled) posthog.captureException(err);
     }
   };
 

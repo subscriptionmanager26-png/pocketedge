@@ -23,6 +23,7 @@ import { navigateApp } from '../appRoute';
 import PageHeader from '../../components/PageHeader';
 import BasketPreviewPanel from '../components/BasketPreviewPanel';
 import AppPageLayout from '../components/AppPageLayout';
+import { posthog, isPostHogEnabled } from '../../posthog';
 
 const GRADIENTS = [
   'from-emerald-600 to-cyan-500',
@@ -405,6 +406,24 @@ export default function CreateBasketPage({
     } catch (err) {
       setError(err.message || `You can create up to ${MAX_USER_BASKETS} baskets.`);
       return;
+    }
+    if (isPostHogEnabled) {
+      if (isEditing) {
+        posthog.capture('basket_updated', {
+          basket_id: basket.id,
+          basket_name: basket.name,
+          stock_count: basket.constituents.length,
+          weighting_type: basket.weightingType,
+          rebalance_frequency: basket.rebalanceFrequency,
+        });
+      } else {
+        posthog.capture('basket_created', {
+          basket_name: basket.name,
+          stock_count: basket.constituents.length,
+          weighting_type: basket.weightingType,
+          rebalance_frequency: basket.rebalanceFrequency,
+        });
+      }
     }
     onCreated?.();
     setSaved(true);

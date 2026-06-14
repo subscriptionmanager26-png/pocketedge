@@ -24,6 +24,7 @@ import {
   enrollWaitlistMember,
   getWaitlistStatus,
 } from './supabase';
+import { identifyPostHogUser, resetPostHogUser } from './posthog';
 
 function PageShell({ children, user, challengeProgress }) {
   const banner = user ? (
@@ -98,6 +99,7 @@ export default function App() {
       setUserBaskets(loadUserBaskets());
 
       if (nextUser) {
+        identifyPostHogUser(nextUser);
         try {
           await enrollWaitlistMember();
           const status = await getWaitlistStatus();
@@ -110,6 +112,7 @@ export default function App() {
       }
 
       setWaitlistStatus(null);
+      resetPostHogUser();
       return false;
     };
 
@@ -127,6 +130,7 @@ export default function App() {
         finishBootstrap(session);
       }
       if (event === 'SIGNED_OUT') {
+        resetPostHogUser();
         syncSession(null);
         setRoute(resolveRoute(null));
       }

@@ -11,6 +11,7 @@ import { getBasketDetailTabFromUrl } from '../appRoute';
 import NavChart from './NavChart';
 import InvestAndTrackPanel from './InvestAndTrackPanel';
 import BottomSheet from './BottomSheet';
+import { posthog, isPostHogEnabled } from '../../posthog';
 
 const VALID_TAB_IDS = new Set(['about', 'info', 'updates']);
 
@@ -48,6 +49,18 @@ export default function BasketDetailView({
 
   const description = basket.description || basket.shortDescription || '';
   const canExpandDesc = description.length > 140;
+
+  useEffect(() => {
+    if (preview) return;
+    if (isPostHogEnabled) {
+      posthog.capture('basket_viewed', {
+        basket_id: basket.id,
+        basket_name: basket.name,
+        basket_type: basket.type || 'Basket',
+        is_own: isOwn ?? false,
+      });
+    }
+  }, [basket.id]);
 
   useEffect(() => {
     if (preview) return undefined;
@@ -284,6 +297,12 @@ export default function BasketDetailView({
             onSubscribe={() => {
               subscribeToBasket(basket.id);
               setSubscribed(true);
+              if (isPostHogEnabled) {
+                posthog.capture('basket_subscribed', {
+                  basket_id: basket.id,
+                  basket_name: basket.name,
+                });
+              }
             }}
           />
         )}

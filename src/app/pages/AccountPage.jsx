@@ -4,9 +4,13 @@ import PageHeader from '../../components/PageHeader';
 import { signOut } from '../../supabase';
 import AboutYouSection from '../components/AboutYouSection';
 import AppPageLayout from '../components/AppPageLayout';
+import { posthog, isPostHogEnabled } from '../../posthog';
 
 export default function AccountPage({ user, userId = 'local', referralCount = 0, onProfileSaved }) {
   const handleSignOut = async () => {
+    if (isPostHogEnabled) {
+      posthog.capture('sign_out');
+    }
     await signOut();
     const url = new URL(window.location.href);
     url.search = '';

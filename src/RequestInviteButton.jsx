@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { signInWithGoogle } from './supabase';
+import { posthog, isPostHogEnabled } from './posthog';
 
 export default function RequestInviteButton({
   className = '',
@@ -14,6 +15,9 @@ export default function RequestInviteButton({
   const handleClick = async () => {
     setError('');
     setLoading(true);
+    if (isPostHogEnabled) {
+      posthog.capture('invite_requested', { button_variant: variant, button_id: id ?? null });
+    }
     try {
       await signInWithGoogle({ intent: 'waitlist' });
     } catch (err) {

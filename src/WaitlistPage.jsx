@@ -10,6 +10,7 @@ import {
   signInWithGoogle,
   signOut,
 } from './supabase';
+import { posthog, isPostHogEnabled } from './posthog';
 
 function formatCountdown(ms) {
   if (ms <= 0) return 'Updating ranks...';
@@ -72,11 +73,16 @@ export default function WaitlistPage() {
       setError('');
 
       try {
-        await enrollWaitlistMember();
+        const hadReferral = Boolean(sessionStorage.getItem('waitlist_ref'));
+        const enrollment = await enrollWaitlistMember();
+        if (isPostHogEnabled && enrollment?.status === 'joined') {
+          posthog.capture('waitlist_joined', { referred_by_code: hadReferral });
+        }
         const data = await getWaitlistStatus();
         if (mounted) setStatus(data);
       } catch (err) {
         if (mounted) setError(err.message || 'Failed to join waitlist.');
+        if (isPostHogEnabled) posthog.captureException(err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -120,6 +126,9 @@ export default function WaitlistPage() {
 
   const handleSignIn = async () => {
     setError('');
+    if (isPostHogEnabled) {
+      posthog.capture('sign_in_started');
+    }
     try {
       await signInWithGoogle();
     } catch (err) {
@@ -138,6 +147,12 @@ export default function WaitlistPage() {
       await navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      if (isPostHogEnabled) {
+        posthog.capture('referral_link_copied', {
+          source: 'waitlist',
+          referral_count: status?.referral_count ?? 0,
+        });
+      }
     } catch {
       setError('Could not copy link. Please copy it manually.');
     }
