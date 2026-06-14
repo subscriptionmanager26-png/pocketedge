@@ -25,6 +25,10 @@ import StickyTopChrome from '../components/StickyTopChrome';
 import ChallengeProgressBanner from '../components/ChallengeProgressBanner';
 import MarketWhispererBanner from '../components/MarketWhispererBanner';
 import { edgeX } from '../designTokens';
+import {
+  captureAppTabViewed,
+  captureAuthStarted,
+} from '../analytics';
 
 export default function AppShell({
   user,
@@ -66,6 +70,22 @@ export default function AppShell({
   }, [tab, basketId, createRoute.editId, createRoute.isNew]);
 
   useEffect(() => {
+    const createMode = createRoute.isNew
+      ? 'new'
+      : createRoute.editId
+        ? 'edit'
+        : tab === 'create'
+          ? 'hub'
+          : null;
+
+    captureAppTabViewed(tab, {
+      accessLimited,
+      basketId,
+      createMode,
+    });
+  }, [tab, basketId, createRoute.editId, createRoute.isNew, accessLimited]);
+
+  useEffect(() => {
     loadNotifications();
     syncSubscribedBasketNotifications(loadSubscribedBasketIds());
   }, []);
@@ -80,6 +100,7 @@ export default function AppShell({
   }, [user, tab, waitlistStatus]);
 
   const handleSignIn = async () => {
+    captureAuthStarted('app_leaderboard');
     try {
       await signInWithGoogle();
     } catch {

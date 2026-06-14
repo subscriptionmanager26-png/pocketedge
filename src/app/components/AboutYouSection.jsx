@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { getReferralLink } from '../../supabase';
 import { createLinkId, loadUserProfile, saveUserProfile } from '../profileStore';
-import { posthog, isPostHogEnabled } from '../../posthog';
+import { capture, captureReferralLinkCopied } from '../../analytics';
 
 function hydrateFromProfile(userId, authName) {
   const profile = loadUserProfile(userId);
@@ -77,13 +77,11 @@ export default function AboutYouSection({ user, userId = 'local', referralCount 
       avatarUrl,
       links: links.filter((link) => link.label.trim() || link.url.trim()),
     });
-    if (isPostHogEnabled) {
-      posthog.capture('profile_saved', {
-        has_bio: Boolean(bio.trim()),
-        has_avatar: Boolean(avatarUrl),
-        link_count: savedLinkCount,
-      });
-    }
+    capture('profile_saved', {
+      has_bio: Boolean(bio.trim()),
+      has_avatar: Boolean(avatarUrl),
+      link_count: savedLinkCount,
+    });
     setEditing(false);
     setSaved(true);
     onSaved?.();
@@ -100,12 +98,7 @@ export default function AboutYouSection({ user, userId = 'local', referralCount 
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      if (isPostHogEnabled) {
-        posthog.capture('referral_link_copied', {
-          source: 'account',
-          referral_count: referralCount,
-        });
-      }
+      captureReferralLinkCopied('account', referralCount);
     } catch {
       // Clipboard blocked
     }

@@ -10,7 +10,13 @@ import {
   signInWithGoogle,
   signOut,
 } from './supabase';
-import { posthog, isPostHogEnabled } from './posthog';
+import {
+  captureAuthFailed,
+  captureAuthStarted,
+  captureReferralLinkCopied,
+  captureScreen,
+  captureWaitlistJoinFailed,
+} from './analytics';
 
 function formatCountdown(ms) {
   if (ms <= 0) return 'Updating ranks...';
@@ -73,16 +79,12 @@ export default function WaitlistPage() {
       setError('');
 
       try {
-        const hadReferral = Boolean(sessionStorage.getItem('waitlist_ref'));
-        const enrollment = await enrollWaitlistMember();
-        if (isPostHogEnabled && enrollment?.status === 'joined') {
-          posthog.capture('waitlist_joined', { referred_by_code: hadReferral });
-        }
+        await enrollWaitlistMember();
         const data = await getWaitlistStatus();
         if (mounted) setStatus(data);
       } catch (err) {
         if (mounted) setError(err.message || 'Failed to join waitlist.');
-        if (isPostHogEnabled) posthog.captureException(err);
+        captureWaitlistJoinFailed(err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -124,15 +126,30 @@ export default function WaitlistPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      captureScreen('waitlist_sign_in', { signed_in: false });
+      return;
+    }
+    if (status) {
+      captureScreen('waitlist_status', {
+        signed_in: true,
+        waitlist_rank: status.effective_rank,
+        referral_count: status.referral_count,
+        access_confirmed: status.access_confirmed,
+      });
+    }
+  }, [loading, user, status]);
+
   const handleSignIn = async () => {
     setError('');
-    if (isPostHogEnabled) {
-      posthog.capture('sign_in_started');
-    }
+    captureAuthStarted('waitlist');
     try {
       await signInWithGoogle();
     } catch (err) {
       setError(err.message || 'Could not start Google sign-in.');
+      captureAuthFailed({ source: 'waitlist', error: err.message });
     }
   };
 
@@ -147,12 +164,7 @@ export default function WaitlistPage() {
       await navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      if (isPostHogEnabled) {
-        posthog.capture('referral_link_copied', {
-          source: 'waitlist',
-          referral_count: status?.referral_count ?? 0,
-        });
-      }
+      captureReferralLinkCopied('waitlist', status?.referral_count ?? 0);
     } catch {
       setError('Could not copy link. Please copy it manually.');
     }

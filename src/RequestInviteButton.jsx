@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { signInWithGoogle } from './supabase';
-import { posthog, isPostHogEnabled } from './posthog';
+import { capture, captureAuthFailed, captureAuthStarted } from './analytics';
 
 export default function RequestInviteButton({
   className = '',
   size = 'default',
   variant = 'brand',
   id,
+  source = 'landing_hero',
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,14 +16,14 @@ export default function RequestInviteButton({
   const handleClick = async () => {
     setError('');
     setLoading(true);
-    if (isPostHogEnabled) {
-      posthog.capture('invite_requested', { button_variant: variant, button_id: id ?? null });
-    }
+    capture('invite_requested', { button_variant: variant, button_id: id ?? null, source });
+    captureAuthStarted(source);
     try {
       await signInWithGoogle({ intent: 'waitlist' });
     } catch (err) {
       setError(err.message || 'Could not start Google sign-in.');
       setLoading(false);
+      captureAuthFailed({ source, error: err.message });
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,7 +23,12 @@ import { navigateApp } from '../appRoute';
 import PageHeader from '../../components/PageHeader';
 import BasketPreviewPanel from '../components/BasketPreviewPanel';
 import AppPageLayout from '../components/AppPageLayout';
-import { posthog, isPostHogEnabled } from '../../posthog';
+import {
+  capture,
+  captureCreateFlowAbandoned,
+  captureCreateFlowStarted,
+  captureCreateStepViewed,
+} from '../../analytics';
 
 const GRADIENTS = [
   'from-emerald-600 to-cyan-500',
@@ -184,6 +189,8 @@ export default function CreateBasketPage({
   const [stockQuery, setStockQuery] = useState('');
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const flowTrackedRef = useRef(false);
+  const savedRef = useRef(false);
 
   const step = STEPS[stepIndex];
   const weightTotal = useMemo(
@@ -217,6 +224,33 @@ export default function CreateBasketPage({
 
   const showStockSuggestions =
     stockQuery.trim().length > 0 && (filteredStocks.length > 0 || canAddCustomSymbol);
+
+  useEffect(() => {
+    if (!inWizard || flowTrackedRef.current) return;
+    flowTrackedRef.current = true;
+    captureCreateFlowStarted({ mode: isEditing ? 'edit' : 'new' });
+  }, [inWizard, isEditing]);
+
+  useEffect(() => {
+    if (!inWizard) return;
+    captureCreateStepViewed(step.id, stepIndex, STEPS.length);
+  }, [inWizard, step.id, stepIndex]);
+
+  const wizardStateRef = useRef({ stepId: step.id, stepIndex, isEditing });
+  wizardStateRef.current = { stepId: step.id, stepIndex, isEditing };
+
+  useEffect(() => {
+    return () => {
+      if (savedRef.current) return;
+      const { stepId, stepIndex: idx, isEditing: editing } = wizardStateRef.current;
+      captureCreateFlowAbandoned({
+        mode: editing ? 'edit' : 'new',
+        lastStepId: stepId,
+        lastStepIndex: idx,
+        totalSteps: STEPS.length,
+      });
+    };
+  }, []);
 
   const draftBasket = useMemo(
     () => ({
@@ -407,25 +441,15 @@ export default function CreateBasketPage({
       setError(err.message || `You can create up to ${MAX_USER_BASKETS} baskets.`);
       return;
     }
-    if (isPostHogEnabled) {
-      if (isEditing) {
-        posthog.capture('basket_updated', {
-          basket_id: basket.id,
-          basket_name: basket.name,
-          stock_count: basket.constituents.length,
-          weighting_type: basket.weightingType,
-          rebalance_frequency: basket.rebalanceFrequency,
-        });
-      } else {
-        posthog.capture('basket_created', {
-          basket_name: basket.name,
-          stock_count: basket.constituents.length,
-          weighting_type: basket.weightingType,
-          rebalance_frequency: basket.rebalanceFrequency,
-        });
-      }
-    }
+    capture(isEditing ? 'basket_updated' : 'basket_created', {
+      basket_id: isEditing ? basket.id : undefined,
+      basket_name: basket.name,
+      stock_count: basket.constituents.length,
+      weighting_type: basket.weightingType,
+      rebalance_frequency: basket.rebalanceFrequency,
+    });
     onCreated?.();
+    savedRef.current = true;
     setSaved(true);
     setTimeout(() => navigateApp({ tab: 'basket', basketId: basket.id }), 800);
   };

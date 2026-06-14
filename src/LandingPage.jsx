@@ -18,6 +18,7 @@ import { catalogBaskets } from './app/basketCatalog';
 import RequestInviteButton from './RequestInviteButton';
 import { edgeX, content } from './designTokens';
 import { signInWithGoogle } from './supabase';
+import { captureAuthFailed, captureAuthStarted, captureFaqItemOpened } from './analytics';
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState(null);
@@ -27,9 +28,11 @@ export default function LandingPage() {
   };
 
   const handleNavInvite = async () => {
+    captureAuthStarted('landing_nav');
     try {
       await signInWithGoogle({ intent: 'waitlist' });
-    } catch {
+    } catch (err) {
+      captureAuthFailed({ source: 'landing_nav', error: err?.message });
       scrollToInvite();
     }
   };
@@ -68,13 +71,13 @@ export default function LandingPage() {
       <section className={`pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16 lg:pb-20 ${edgeX}`}>
         <div className="max-w-[100vw] mx-auto text-center overflow-x-auto scrollbar-hide">
           <h1 className="pe-display whitespace-nowrap text-[clamp(1.75rem,5.2vw,5.5rem)] leading-[1.05]">
-            A place for hot investment ideas
+            Discover Global Investment Ideas
           </h1>
           <p className="pe-body mt-6 sm:mt-8 text-lg sm:text-xl md:text-2xl font-light max-w-2xl mx-auto">
             Access investment portfolios built around themes, trends and beliefs.
           </p>
           <div id="hero-invite" className="mt-10 sm:mt-12 flex justify-center">
-            <RequestInviteButton size="large" variant="dark" />
+            <RequestInviteButton size="large" variant="dark" source="landing_hero" />
           </div>
         </div>
       </section>
@@ -182,7 +185,11 @@ export default function LandingPage() {
                 <li key={item.q}>
                   <button
                     type="button"
-                    onClick={() => setOpenFaq(open ? null : index)}
+                    onClick={() => {
+                      const next = open ? null : index;
+                      if (next !== null) captureFaqItemOpened(item.q, index);
+                      setOpenFaq(next);
+                    }}
                     className="w-full flex items-center justify-between gap-4 py-5 text-left"
                   >
                     <span className="text-lg font-medium text-neutral-900">{item.q}</span>
@@ -215,6 +222,7 @@ export default function LandingPage() {
             id="bottom-invite"
             size="large"
             variant="dark"
+            source="landing_footer"
             className="flex justify-center mt-8"
           />
         </div>

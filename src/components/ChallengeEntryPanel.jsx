@@ -2,6 +2,10 @@ import React from 'react';
 import { Check, Circle } from 'lucide-react';
 import { CHALLENGE_WINDOW } from '../challengeMeta';
 import {
+  captureChallengeEntered,
+  captureChallengeTaskClicked,
+} from '../analytics';
+import {
   REQUIRED_REFERRALS,
   isChallengeEligible,
   markChallengeEntered,
@@ -26,6 +30,7 @@ export default function ChallengeEntryPanel({
   const eligible = isChallengeEligible(progress);
 
   const handleCopyReferral = async () => {
+    captureChallengeTaskClicked('referrals', 'Copy referral link');
     if (!referralLink) return;
     try {
       await navigator.clipboard.writeText(referralLink);
@@ -41,7 +46,12 @@ export default function ChallengeEntryPanel({
       id: 'register',
       label: 'Register on PocketEdge',
       done: progress.registered,
-      action: progress.registered ? null : onSignIn,
+      action: progress.registered
+        ? null
+        : () => {
+            captureChallengeTaskClicked('register', 'Sign in');
+            onSignIn?.();
+          },
       actionLabel: 'Sign in',
     },
     {
@@ -49,7 +59,12 @@ export default function ChallengeEntryPanel({
       label: 'Create a basket (up to 5)',
       detail: `${progress.basketCount}/${progress.maxBaskets} created`,
       done: progress.hasBaskets,
-      action: progress.hasBaskets ? null : onGoCreate,
+      action: progress.hasBaskets
+        ? null
+        : () => {
+            captureChallengeTaskClicked('baskets', 'Create basket');
+            onGoCreate?.();
+          },
       actionLabel: 'Create basket',
     },
     {
@@ -65,6 +80,10 @@ export default function ChallengeEntryPanel({
 
   const handleEnter = () => {
     if (!eligible) return;
+    captureChallengeEntered({
+      referralCount: progress.referralCount,
+      basketCount: progress.basketCount,
+    });
     if (persistEntered) markChallengeEntered();
     setEntered(true);
     onEntered?.();

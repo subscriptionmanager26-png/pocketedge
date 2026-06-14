@@ -11,7 +11,11 @@ import { getBasketDetailTabFromUrl } from '../appRoute';
 import NavChart from './NavChart';
 import InvestAndTrackPanel from './InvestAndTrackPanel';
 import BottomSheet from './BottomSheet';
-import { posthog, isPostHogEnabled } from '../../posthog';
+import {
+  capture,
+  captureBasketDetailTabViewed,
+  captureInvestPanelOpened,
+} from '../../analytics';
 
 const VALID_TAB_IDS = new Set(['about', 'info', 'updates']);
 
@@ -52,15 +56,18 @@ export default function BasketDetailView({
 
   useEffect(() => {
     if (preview) return;
-    if (isPostHogEnabled) {
-      posthog.capture('basket_viewed', {
-        basket_id: basket.id,
-        basket_name: basket.name,
-        basket_type: basket.type || 'Basket',
-        is_own: isOwn ?? false,
-      });
-    }
-  }, [basket.id]);
+    capture('basket_viewed', {
+      basket_id: basket.id,
+      basket_name: basket.name,
+      basket_type: basket.type || 'Basket',
+      is_own: isOwn ?? false,
+    });
+  }, [basket.id, preview]);
+
+  useEffect(() => {
+    if (preview) return;
+    captureBasketDetailTabViewed(basket.id, activeTab, { isOwn: isOwn ?? false });
+  }, [basket.id, activeTab, preview, isOwn]);
 
   useEffect(() => {
     if (preview) return undefined;
@@ -297,12 +304,10 @@ export default function BasketDetailView({
             onSubscribe={() => {
               subscribeToBasket(basket.id);
               setSubscribed(true);
-              if (isPostHogEnabled) {
-                posthog.capture('basket_subscribed', {
-                  basket_id: basket.id,
-                  basket_name: basket.name,
-                });
-              }
+              capture('basket_subscribed', {
+                basket_id: basket.id,
+                basket_name: basket.name,
+              });
             }}
           />
         )}
@@ -321,7 +326,10 @@ export default function BasketDetailView({
           <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-4 bg-gradient-to-t from-[#F7F7F5] via-[#F7F7F5] to-transparent">
             <button
               type="button"
-              onClick={() => setInvestOpen(true)}
+              onClick={() => {
+                captureInvestPanelOpened(basket.id);
+                setInvestOpen(true);
+              }}
               className="w-full h-12 rounded-xl bg-neutral-900 text-white text-sm font-semibold shadow-lg shadow-black/10"
             >
               Invest and Track

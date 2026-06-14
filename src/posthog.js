@@ -3,7 +3,13 @@ import posthog from 'posthog-js';
 const apiKey = import.meta.env.VITE_POSTHOG_PROJECT_TOKEN;
 const apiHost = import.meta.env.VITE_POSTHOG_HOST;
 
-export const isPostHogEnabled = Boolean(apiKey && apiHost);
+function isLocalhost() {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+}
+
+export const isPostHogEnabled = Boolean(apiKey && apiHost && !isLocalhost());
 
 let initialized = false;
 

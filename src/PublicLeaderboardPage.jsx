@@ -4,6 +4,10 @@ import SiteHeader from './components/SiteHeader';
 import { loadUserBaskets } from './app/basketStore';
 import { edgeX } from './designTokens';
 import { getWaitlistStatus, supabase, signInWithGoogle } from './supabase';
+import {
+  captureAuthFailed,
+  captureAuthStarted,
+} from './analytics';
 
 export default function PublicLeaderboardPage() {
   const [user, setUser] = useState(null);
@@ -43,10 +47,11 @@ export default function PublicLeaderboardPage() {
   };
 
   const handleSignIn = async () => {
+    captureAuthStarted('public_leaderboard');
     try {
       await signInWithGoogle({ afterAuthPath: '/?leaderboard=1' });
-    } catch {
-      // Supabase not configured or user cancelled
+    } catch (err) {
+      captureAuthFailed({ source: 'public_leaderboard', error: err?.message });
     }
   };
 

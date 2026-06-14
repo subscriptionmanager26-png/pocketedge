@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import LandingPage from './LandingPage';
 import DesignLibraryPage from './DesignLibraryPage';
 import WaitlistPage from './WaitlistPage';
@@ -25,6 +25,17 @@ import {
   getWaitlistStatus,
 } from './supabase';
 import { identifyPostHogUser, resetPostHogUser } from './posthog';
+import {
+  captureOAuthCallbackError,
+  captureAuthCompleted,
+  captureChallengeProgress,
+  captureScreen,
+  captureUserSessionStarted,
+  captureWaitlistJoined,
+  captureWaitlistJoinFailed,
+  syncUserWaitlistTraits,
+} from './analytics';
+import { getAppTab } from './app/appRoute';
 
 function PageShell({ children, user, challengeProgress }) {
   const banner = user ? (
@@ -76,12 +87,48 @@ export default function App() {
   );
 
   const refreshBaskets = () => setUserBaskets(loadUserBaskets());
+  const sessionTrackedRef = useRef(false);
+  const lastProgressKeyRef = useRef('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [route]);
 
   useEffect(() => {
+    const tab = route === 'app' ? getAppTab() : null;
+    const screen =
+      route === 'app' && tab ? `app_${tab}` : route === 'landing' ? 'landing' : route;
+
+    captureScreen(screen, {
+      route,
+      tab,
+      signed_in: Boolean(user),
+      access_confirmed: waitlistStatus?.access_confirmed ?? false,
+    });
+  }, [route, user, waitlistStatus?.access_confirmed]);
+
+  useEffect(() => {
+    if (!user || !waitlistStatus || sessionTrackedRef.current) return;
+    sessionTrackedRef.current = true;
+    syncUserWaitlistTraits(user, waitlistStatus);
+    captureUserSessionStarted({
+      accessConfirmed: Boolean(waitlistStatus.access_confirmed),
+      waitlistStatus,
+      challengeProgress,
+    });
+  }, [user, waitlistStatus, challengeProgress]);
+
+  useEffect(() => {
+    if (!user) return;
+    const key = `${challengeProgress.basketCount}:${challengeProgress.referralCount}:${challengeProgress.referralsMet}`;
+    if (lastProgressKeyRef.current === key) return;
+    lastProgressKeyRef.current = key;
+    captureChallengeProgress(challengeProgress, 'progress_changed');
+  }, [user, challengeProgress]);
+
+  useEffect(() => {
+    captureOAuthCallbackError();
+
     captureReferralFromUrl();
 
     if (!supabase) {
@@ -92,7 +139,7 @@ export default function App() {
     let mounted = true;
 
     const syncSession = async (session) => {
-      if (!mounted) return false;
+      if (!mounted) return { accessConfirmed: false, isNewWaitlistMember: false };
 
       const nextUser = session?.user ?? null;
       setUser(nextUser);
@@ -101,33 +148,46 @@ export default function App() {
       if (nextUser) {
         identifyPostHogUser(nextUser);
         try {
-          await enrollWaitlistMember();
+          const hadReferral = Boolean(sessionStorage.getItem('waitlist_ref'));
+          const enrollment = await enrollWaitlistMember();
+          const isNewWaitlistMember = enrollment?.status === 'joined';
+          if (isNewWaitlistMember) {
+            captureWaitlistJoined({ referredByCode: hadReferral });
+          }
           const status = await getWaitlistStatus();
           if (mounted) setWaitlistStatus(status);
-          return Boolean(status?.access_confirmed);
-        } catch {
+          if (mounted && status) syncUserWaitlistTraits(nextUser, status);
+          return {
+            accessConfirmed: Boolean(status?.access_confirmed),
+            isNewWaitlistMember,
+          };
+        } catch (err) {
+          captureWaitlistJoinFailed(err);
           if (mounted) setWaitlistStatus(null);
-          return false;
+          return { accessConfirmed: false, isNewWaitlistMember: false };
         }
       }
 
       setWaitlistStatus(null);
       resetPostHogUser();
-      return false;
+      return { accessConfirmed: false, isNewWaitlistMember: false };
     };
 
-    const finishBootstrap = async (session) => {
+    const finishBootstrap = async (session, { trackSignIn = false } = {}) => {
       if (!mounted) return;
       if (session) cleanOAuthCallbackUrl();
-      const accessConfirmed = await syncSession(session);
+      const { accessConfirmed, isNewWaitlistMember } = await syncSession(session);
       if (!mounted) return;
+      if (trackSignIn && session?.user) {
+        captureAuthCompleted({ isNewWaitlistMember });
+      }
       setRoute(resolveRoute(session));
       setBootstrapping(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-        finishBootstrap(session);
+        finishBootstrap(session, { trackSignIn: event === 'SIGNED_IN' });
       }
       if (event === 'SIGNED_OUT') {
         resetPostHogUser();

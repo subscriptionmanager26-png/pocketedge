@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Copy, Check, Users, Clock, Trophy } from 'lucide-react';
 import AppPageLayout from '../components/AppPageLayout';
+import {
+  captureReferralLinkCopied,
+  captureScreen,
+} from '../../analytics';
 import ChallengeEntryPanel from '../../components/ChallengeEntryPanel';
 import { CHALLENGE_WINDOW } from '../../challengeMeta';
 import { getReferralLink } from '../../supabase';
@@ -50,6 +54,16 @@ export default function WaitlistHomePage({
   challengePersistEntered = true,
 }) {
   const [copied, setCopied] = useState(false);
+  const challengeEntered = hasEnteredChallenge();
+
+  useEffect(() => {
+    if (!waitlistStatus) return;
+    captureScreen('waitlist_home', {
+      waitlist_rank: waitlistStatus.effective_rank,
+      referral_count: waitlistStatus.referral_count,
+      challenge_entered: challengeEntered,
+    });
+  }, [waitlistStatus?.effective_rank, waitlistStatus?.referral_count, challengeEntered]);
 
   if (!user) return null;
 
@@ -67,13 +81,13 @@ export default function WaitlistHomePage({
   const referralLink = getReferralLink(user.id);
   const spotsMoved = waitlistStatus.referral_count * 10;
   const firstName = user.user_metadata?.full_name?.split(' ')[0];
-  const challengeEntered = hasEnteredChallenge();
 
   const handleCopyReferral = async () => {
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      captureReferralLinkCopied('waitlist_home', waitlistStatus.referral_count ?? 0);
     } catch {
       // clipboard unavailable
     }
