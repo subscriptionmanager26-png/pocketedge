@@ -20,9 +20,7 @@ import { edgeX, content } from './designTokens';
 import { signInWithGoogle } from './supabase';
 import { captureAuthFailed, captureAuthStarted, captureFaqItemOpened } from './analytics';
 
-export default function LandingPage() {
-  const [openFaq, setOpenFaq] = useState(null);
-
+export function LandingSiteHeader() {
   const scrollToInvite = () => {
     document.getElementById('hero-invite')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
@@ -38,39 +36,55 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
-      <SiteHeader logoHref="/">
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#baskets" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
-            Baskets
-          </a>
-          <a href="#challenge" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
-            Challenge
-          </a>
-          <a href="#faq" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
-            FAQ
-          </a>
-          <button
-            type="button"
-            onClick={handleNavInvite}
-            className="text-base font-semibold bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 rounded-full transition-colors"
-          >
-            Request invite
-          </button>
-        </nav>
+    <SiteHeader logoHref="/" embedded sticky={false}>
+      <nav className="hidden md:flex items-center gap-8">
+        <a href="#baskets" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
+          Baskets
+        </a>
+        <a href="#challenge" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
+          Challenge
+        </a>
+        <a href="#faq" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
+          FAQ
+        </a>
         <button
           type="button"
           onClick={handleNavInvite}
-          className="md:hidden text-base font-semibold bg-neutral-900 text-white px-5 py-2.5 rounded-full shrink-0"
+          className="text-base font-semibold bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 rounded-full transition-colors"
         >
-          Join
+          Request invite
         </button>
-      </SiteHeader>
+      </nav>
+      <button
+        type="button"
+        onClick={handleNavInvite}
+        className="md:hidden text-base font-semibold bg-neutral-900 text-white px-5 py-2.5 rounded-full shrink-0"
+      >
+        Join
+      </button>
+    </SiteHeader>
+  );
+}
 
+export default function LandingPage() {
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const handleNavInvite = async () => {
+    captureAuthStarted('landing_nav');
+    try {
+      await signInWithGoogle({ intent: 'waitlist' });
+    } catch (err) {
+      captureAuthFailed({ source: 'landing_nav', error: err?.message });
+      document.getElementById('hero-invite')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
       {/* Hero — Cesto-scale headline + subcopy */}
       <section className={`pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16 lg:pb-20 ${edgeX}`}>
-        <div className="max-w-[100vw] mx-auto text-center overflow-x-auto scrollbar-hide">
-          <h1 className="pe-display whitespace-nowrap text-[clamp(1.75rem,5.2vw,5.5rem)] leading-[1.05]">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="pe-display text-[clamp(2rem,7vw,5.5rem)] leading-[1.05] text-balance">
             Discover Global Investment Ideas
           </h1>
           <p className="pe-body mt-6 sm:mt-8 text-lg sm:text-xl md:text-2xl font-light max-w-2xl mx-auto">
@@ -95,11 +109,9 @@ export default function LandingPage() {
       <section id="challenge" className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white scroll-mt-28 sm:scroll-mt-32">
         <div className={content}>
           <div className="max-w-3xl mx-auto text-center">
-            <div className="overflow-x-auto scrollbar-hide">
-              <h2 className="pe-display w-max max-w-full mx-auto text-[clamp(1.75rem,4.5vw,3.5rem)] leading-[1.1]">
-                {CHALLENGE_NAME}
-              </h2>
-            </div>
+            <h2 className="pe-display text-[clamp(1.875rem,6vw,3.5rem)] leading-[1.1] text-balance">
+              {CHALLENGE_NAME}
+            </h2>
             <p className="text-lg sm:text-xl text-neutral-500 mt-4 leading-relaxed">
               {CHALLENGE_DESCRIPTION}
             </p>
@@ -114,11 +126,9 @@ export default function LandingPage() {
       {/* Benefits */}
       <section className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white">
         <div className={content}>
-          <div className="overflow-x-auto scrollbar-hide text-center">
-            <h2 className="w-max mx-auto whitespace-nowrap text-[clamp(1.125rem,3.2vw,3.5rem)] font-normal tracking-tight leading-[1.05]">
-              Read Thesis, Build Conviction, Start Investing
-            </h2>
-          </div>
+          <h2 className="pe-display max-w-3xl mx-auto text-[clamp(1.875rem,6vw,3.5rem)] font-normal tracking-tight leading-[1.1] text-balance text-center">
+            Read Thesis, Build Conviction, Start Investing
+          </h2>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mt-14 sm:mt-20">
             {homepageBenefits.map((item) => (

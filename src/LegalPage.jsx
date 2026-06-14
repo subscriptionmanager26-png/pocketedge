@@ -6,6 +6,20 @@ import { legalPages } from './legalContent';
 import { footerLegalLinks } from './mockData';
 import { getLegalSlug, getLegalUrl } from './legalRoute';
 
+export function LegalSiteHeader() {
+  return (
+    <SiteHeader logoHref="/" embedded sticky={false}>
+      <a
+        href="/"
+        className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" aria-hidden />
+        Back to home
+      </a>
+    </SiteHeader>
+  );
+}
+
 export default function LegalPage() {
   const slug = getLegalSlug();
   const page = legalPages[slug];
@@ -19,16 +33,6 @@ export default function LegalPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
-      <SiteHeader logoHref="/">
-        <a
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden />
-          Back to home
-        </a>
-      </SiteHeader>
-
       <main className={`${content} py-10 sm:py-14 pb-16`}>
         <div className="max-w-3xl">
           <p className="pe-eyebrow">Legal</p>

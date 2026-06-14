@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import LeaderboardPage from './app/pages/LeaderboardPage';
 import SiteHeader from './components/SiteHeader';
+import StickyTopChrome from './components/StickyTopChrome';
+import MarketWhispererBanner from './components/MarketWhispererBanner';
 import { loadUserBaskets } from './app/basketStore';
 import { edgeX } from './designTokens';
 import { getWaitlistStatus, supabase, signInWithGoogle } from './supabase';
@@ -57,28 +59,33 @@ export default function PublicLeaderboardPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#F7F7F5] text-neutral-900">
-      <SiteHeader onLogoClick={goHome}>
-        <button
-          type="button"
-          onClick={goHome}
-          className="text-base text-neutral-600 hover:text-neutral-900 transition-colors"
-        >
-          Home
-        </button>
-        {!user ? (
-          <button
-            type="button"
-            onClick={handleSignIn}
-            className="pe-btn-primary text-sm px-5 py-2.5 shrink-0"
-          >
-            Sign in
-          </button>
-        ) : (
-          <a href="/?waitlist=1" className="pe-btn-primary text-sm px-5 py-2.5 shrink-0">
-            My waitlist
-          </a>
-        )}
-      </SiteHeader>
+      <StickyTopChrome
+        banner={<MarketWhispererBanner />}
+        navigation={
+          <SiteHeader onLogoClick={goHome} embedded sticky={false}>
+            <button
+              type="button"
+              onClick={goHome}
+              className="text-base text-neutral-600 hover:text-neutral-900 transition-colors"
+            >
+              Home
+            </button>
+            {!user ? (
+              <button
+                type="button"
+                onClick={handleSignIn}
+                className="pe-btn-primary text-sm px-5 py-2.5 shrink-0"
+              >
+                Sign in
+              </button>
+            ) : (
+              <a href="/?waitlist=1" className="pe-btn-primary text-sm px-5 py-2.5 shrink-0">
+                My waitlist
+              </a>
+            )}
+          </SiteHeader>
+        }
+      />
 
       <main className={`${edgeX} py-8 sm:py-12`}>
         <LeaderboardPage

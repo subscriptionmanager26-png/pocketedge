@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Copy, Check, Users, Clock } from 'lucide-react';
-import SiteHeader from './components/SiteHeader';
 import { edgeX } from './designTokens';
 import {
   supabase,
@@ -179,8 +178,6 @@ export default function WaitlistPage() {
       {user && status?.next_rank_update_at && (
         <RankUpdateTimer nextUpdateAt={status.next_rank_update_at} />
       )}
-
-      <SiteHeader logoHref="/" />
 
       <main className={`flex items-center justify-center ${edgeX} py-12 sm:py-20 min-h-[calc(100vh-4.5rem)]`}>
         <div className="w-full max-w-md">

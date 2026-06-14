@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import LandingPage from './LandingPage';
+import LandingPage, { LandingSiteHeader } from './LandingPage';
 import DesignLibraryPage from './DesignLibraryPage';
 import WaitlistPage from './WaitlistPage';
-import LegalPage from './LegalPage';
+import LegalPage, { LegalSiteHeader } from './LegalPage';
 import PublicLeaderboardPage from './PublicLeaderboardPage';
 import AppShell from './app/AppShell';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
 import ChallengeProgressBanner from './components/ChallengeProgressBanner';
+import StickyTopChrome from './components/StickyTopChrome';
+import SiteHeader from './components/SiteHeader';
 import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
 import { loadUserBaskets } from './app/basketStore';
 import { getChallengeProgress } from './challengeEligibility';
@@ -37,7 +39,7 @@ import {
 } from './analytics';
 import { getAppTab } from './app/appRoute';
 
-function PageShell({ children, user, challengeProgress }) {
+function PageShell({ children, user, challengeProgress, navigation = null }) {
   const banner = user ? (
     <ChallengeProgressBanner progress={challengeProgress} />
   ) : (
@@ -46,7 +48,7 @@ function PageShell({ children, user, challengeProgress }) {
 
   return (
     <>
-      <div className="sticky top-0 z-50 w-full isolate">{banner}</div>
+      <StickyTopChrome banner={banner} navigation={navigation} />
       {children}
     </>
   );
@@ -244,7 +246,7 @@ export default function App() {
 
   if (route === 'legal') {
     return (
-      <PageShell user={user} challengeProgress={challengeProgress}>
+      <PageShell user={user} challengeProgress={challengeProgress} navigation={<LegalSiteHeader />}>
         <LegalPage />
       </PageShell>
     );
@@ -276,23 +278,23 @@ export default function App() {
   }
 
   if (route === 'leaderboard') {
-    return (
-      <PageShell user={user} challengeProgress={challengeProgress}>
-        <PublicLeaderboardPage />
-      </PageShell>
-    );
+    return <PublicLeaderboardPage />;
   }
 
   if (route === 'waitlist') {
     return (
-      <PageShell user={user} challengeProgress={challengeProgress}>
+      <PageShell
+        user={user}
+        challengeProgress={challengeProgress}
+        navigation={<SiteHeader logoHref="/" embedded sticky={false} />}
+      >
         <WaitlistPage />
       </PageShell>
     );
   }
 
   return (
-    <PageShell user={user} challengeProgress={challengeProgress}>
+    <PageShell user={user} challengeProgress={challengeProgress} navigation={<LandingSiteHeader />}>
       <LandingPage />
     </PageShell>
   );
