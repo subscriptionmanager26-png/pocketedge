@@ -9,16 +9,16 @@ import {
   Trash2,
 } from 'lucide-react';
 import { getReferralLink } from '../../supabase';
-import { createLinkId, loadUserProfile, saveUserProfile } from '../profileStore';
+import { createLinkId, loadUserProfileAsync, saveUserProfile } from '../profileStore';
+import { isDbUserId } from '../userDataApi';
 import { capture, captureReferralLinkCopied } from '../../analytics';
 
-function hydrateFromProfile(userId, authName) {
-  const profile = loadUserProfile(userId);
+function emptyForm(authName) {
   return {
-    name: profile.name || authName || '',
-    bio: profile.bio || '',
-    avatarUrl: profile.avatarUrl || '',
-    links: profile.links?.length ? profile.links : [],
+    name: authName || '',
+    bio: '',
+    avatarUrl: '',
+    links: [],
   };
 }
 
@@ -34,15 +34,25 @@ export default function AboutYouSection({ user, userId = 'local', referralCount 
   const [avatarUrl, setAvatarUrl] = useState('');
   const [links, setLinks] = useState([]);
 
+  const [saveError, setSaveError] = useState('');
+
   const referralLink = getReferralLink(user?.id || userId);
   const displayName = name.trim() || authName || 'Investor';
 
-  const loadForm = () => {
-    const next = hydrateFromProfile(userId, authName);
-    setName(next.name);
-    setBio(next.bio);
-    setAvatarUrl(next.avatarUrl);
-    setLinks(next.links);
+  const loadForm = async () => {
+    try {
+      const profile = await loadUserProfileAsync(userId);
+      setName(profile.name || authName || '');
+      setBio(profile.bio || '');
+      setAvatarUrl(profile.avatarUrl || '');
+      setLinks(profile.links?.length ? profile.links : []);
+    } catch {
+      const fallback = emptyForm(authName);
+      setName(fallback.name);
+      setBio(fallback.bio);
+      setAvatarUrl(fallback.avatarUrl);
+      setLinks(fallback.links);
+    }
   };
 
   useEffect(() => {
@@ -69,23 +79,32 @@ export default function AboutYouSection({ user, userId = 'local', referralCount 
     setLinks((prev) => prev.filter((link) => link.id !== id));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaveError('');
     const savedLinkCount = links.filter((link) => link.label.trim() || link.url.trim()).length;
-    saveUserProfile(userId, {
-      name: name.trim(),
-      bio: bio.trim(),
-      avatarUrl,
-      links: links.filter((link) => link.label.trim() || link.url.trim()),
-    });
-    capture('profile_saved', {
-      has_bio: Boolean(bio.trim()),
-      has_avatar: Boolean(avatarUrl),
-      link_count: savedLinkCount,
-    });
-    setEditing(false);
-    setSaved(true);
-    onSaved?.();
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await saveUserProfile(userId, {
+        name: name.trim(),
+        bio: bio.trim(),
+        avatarUrl,
+        links: links.filter((link) => link.label.trim() || link.url.trim()),
+      });
+      capture('profile_saved', {
+        has_bio: Boolean(bio.trim()),
+        has_avatar: Boolean(avatarUrl),
+        link_count: savedLinkCount,
+      });
+      setEditing(false);
+      setSaved(true);
+      onSaved?.();
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setSaveError(
+        isDbUserId(userId)
+          ? err.message || 'Could not save profile.'
+          : 'Sign in to save your profile to the cloud.'
+      );
+    }
   };
 
   const handleCancel = () => {
@@ -176,6 +195,7 @@ export default function AboutYouSection({ user, userId = 'local', referralCount 
             onCopyReferral={handleCopyReferral}
           />
         )}
+        {saveError && <p className="text-sm text-rose-600">{saveError}</p>}
       </div>
     </section>
   );

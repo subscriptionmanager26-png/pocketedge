@@ -19,6 +19,7 @@ import {
 } from '../basketCatalog';
 import { REBALANCE_FREQUENCIES } from '../rebalanceOptions';
 import { canCreateBasket, createBasketId, MAX_USER_BASKETS, saveUserBasket } from '../basketStore';
+import { isDbUserId } from '../userDataApi';
 import { navigateApp } from '../appRoute';
 import PageHeader from '../../components/PageHeader';
 import BasketPreviewPanel from '../components/BasketPreviewPanel';
@@ -157,6 +158,7 @@ export default function CreateBasketPage({
   userProfile,
   displayName = 'You',
   userBaskets = [],
+  userId = 'local',
 }) {
   const isEditing = Boolean(editBasketId);
   const inWizard = isEditing || creatingNew;
@@ -400,7 +402,7 @@ export default function CreateBasketPage({
     setStepIndex(STEPS.length - 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (atBasketLimit) {
       setError(`You can create up to ${MAX_USER_BASKETS} baskets. Delete one to add another.`);
       return;
@@ -412,7 +414,7 @@ export default function CreateBasketPage({
 
     const basket = {
       ...draftBasket,
-      id: isEditing ? editBasket.id : createBasketId(),
+      id: isEditing ? editBasket.id : isDbUserId(userId) ? undefined : createBasketId(),
       name: name.trim(),
       shortDescription:
         shortDescription.trim() || description.trim().slice(0, 120) || name.trim(),
@@ -436,22 +438,23 @@ export default function CreateBasketPage({
     };
 
     try {
-      saveUserBasket(basket);
+      const saved = await saveUserBasket(basket, userId, {
+        previousVersion: isEditing ? editBasket : null,
+      });
+      capture(isEditing ? 'basket_updated' : 'basket_created', {
+        basket_id: saved.id,
+        basket_name: saved.name,
+        stock_count: saved.constituents.length,
+        weighting_type: saved.weightingType,
+        rebalance_frequency: saved.rebalanceFrequency,
+      });
+      onCreated?.();
+      savedRef.current = true;
+      setSaved(true);
+      setTimeout(() => navigateApp({ tab: 'basket', basketId: saved.id }), 800);
     } catch (err) {
       setError(err.message || `You can create up to ${MAX_USER_BASKETS} baskets.`);
-      return;
     }
-    capture(isEditing ? 'basket_updated' : 'basket_created', {
-      basket_id: isEditing ? basket.id : undefined,
-      basket_name: basket.name,
-      stock_count: basket.constituents.length,
-      weighting_type: basket.weightingType,
-      rebalance_frequency: basket.rebalanceFrequency,
-    });
-    onCreated?.();
-    savedRef.current = true;
-    setSaved(true);
-    setTimeout(() => navigateApp({ tab: 'basket', basketId: basket.id }), 800);
   };
 
   if (atBasketLimit) {

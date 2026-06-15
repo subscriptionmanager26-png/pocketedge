@@ -208,6 +208,7 @@ export default function AppShell({
                 userProfile={userProfile}
                 displayName={displayName}
                 userBaskets={userBaskets}
+                userId={userId}
               />
             )}
             {tab === 'account' && (

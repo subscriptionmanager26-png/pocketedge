@@ -10,7 +10,8 @@ import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import StickyTopChrome from './components/StickyTopChrome';
 import SiteHeader from './components/SiteHeader';
 import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
-import { loadUserBaskets } from './app/basketStore';
+import { loadUserBaskets, loadUserBasketsAsync, migrateLocalBasketsToDb } from './app/basketStore';
+import { migrateLocalProfileToDb } from './app/profileStore';
 import { getChallengeProgress } from './challengeEligibility';
 import { isLegalRoute } from './legalRoute';
 import { isChallengeDemoRoute, isReferralsDemoRoute, isStep2DemoRoute } from './demoRoute';
@@ -88,7 +89,17 @@ export default function App() {
     [user, userBaskets, waitlistStatus]
   );
 
-  const refreshBaskets = () => setUserBaskets(loadUserBaskets());
+  const refreshBaskets = async () => {
+    if (user?.id) {
+      try {
+        setUserBaskets(await loadUserBasketsAsync(user.id));
+      } catch {
+        setUserBaskets([]);
+      }
+      return;
+    }
+    setUserBaskets(loadUserBaskets());
+  };
   const sessionTrackedRef = useRef(false);
   const lastProgressKeyRef = useRef('');
 
@@ -145,7 +156,18 @@ export default function App() {
 
       const nextUser = session?.user ?? null;
       setUser(nextUser);
-      setUserBaskets(loadUserBaskets());
+
+      if (nextUser) {
+        try {
+          const baskets = await migrateLocalBasketsToDb(nextUser.id);
+          if (mounted) setUserBaskets(baskets);
+          await migrateLocalProfileToDb(nextUser.id);
+        } catch {
+          if (mounted) setUserBaskets([]);
+        }
+      } else if (mounted) {
+        setUserBaskets(loadUserBaskets());
+      }
 
       if (nextUser) {
         identifyPostHogUser(nextUser);
@@ -171,7 +193,6 @@ export default function App() {
       }
 
       setWaitlistStatus(null);
-      resetPostHogUser();
       return { accessConfirmed: false, isNewWaitlistMember: false };
     };
 
