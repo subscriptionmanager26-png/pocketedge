@@ -19,7 +19,7 @@ import {
 import { loadNotifications, syncSubscribedBasketNotifications } from './notificationStore';
 import { loadSubscribedBasketIds } from './subscriptionStore';
 import { enrichBasket, getBasketById } from './basketCatalog';
-import { loadUserProfile } from './profileStore';
+import { loadUserProfile, loadUserProfileAsync } from './profileStore';
 import { getWaitlistStatus, signInWithGoogle } from '../supabase';
 import StickyTopChrome from '../components/StickyTopChrome';
 import ChallengeProgressBanner from '../components/ChallengeProgressBanner';
@@ -43,11 +43,26 @@ export default function AppShell({
   const [createRoute, setCreateRoute] = useState(getCreateRouteFromUrl);
   const [localWaitlistStatus, setLocalWaitlistStatus] = useState(waitlistStatus);
   const [profileVersion, setProfileVersion] = useState(0);
+  const [userProfile, setUserProfile] = useState(() => loadUserProfile(user?.id || 'local'));
 
   const effectiveWaitlistStatus = waitlistStatus ?? localWaitlistStatus;
 
   const userId = user?.id || 'local';
-  const userProfile = loadUserProfile(userId);
+
+  useEffect(() => {
+    let mounted = true;
+    loadUserProfileAsync(userId)
+      .then((profile) => {
+        if (mounted) setUserProfile(profile);
+      })
+      .catch(() => {
+        if (mounted) setUserProfile(loadUserProfile(userId));
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [userId, profileVersion]);
+
   const displayName =
     userProfile.name?.trim() ||
     user?.user_metadata?.full_name ||

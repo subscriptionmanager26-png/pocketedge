@@ -1,4 +1,10 @@
-import { fetchCreatorProfile, isDbUserId, saveCreatorProfile } from './userDataApi';
+import {
+  ensureCreatorProfileFromAuth,
+  fetchCreatorProfile,
+  isDbUserId,
+  profileHasContent,
+  saveCreatorProfile,
+} from './userDataApi';
 
 const STORAGE_KEY = 'pocketedge_user_profiles';
 
@@ -8,6 +14,10 @@ const emptyProfile = () => ({
   avatarUrl: '',
   links: [],
 });
+
+function isHugeDataUrl(url) {
+  return typeof url === 'string' && url.startsWith('data:') && url.length > 500_000;
+}
 
 function readAll() {
   try {
@@ -20,6 +30,38 @@ function readAll() {
 
 function writeAll(profiles) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
+}
+
+function readMergedLocalProfile(userId) {
+  const profiles = readAll();
+  const local = profiles.local || {};
+  const owned = profiles[userId] || {};
+
+  return {
+    ...emptyProfile(),
+    ...local,
+    ...owned,
+    name: owned.name?.trim() || local.name?.trim() || '',
+    bio: owned.bio?.trim() || local.bio?.trim() || '',
+    avatarUrl: owned.avatarUrl || local.avatarUrl || '',
+    links: owned.links?.length ? owned.links : local.links || [],
+  };
+}
+
+function clearLocalProfiles(userId) {
+  const profiles = readAll();
+  delete profiles[userId];
+  delete profiles.local;
+  writeAll(profiles);
+}
+
+async function saveProfileResilient(userId, profile) {
+  try {
+    return await saveCreatorProfile(userId, profile);
+  } catch (err) {
+    if (!profile.avatarUrl || !profile.avatarUrl.startsWith('data:')) throw err;
+    return saveCreatorProfile(userId, { ...profile, avatarUrl: '' });
+  }
 }
 
 /** Sync read — local demo only. Prefer loadUserProfileAsync when signed in. */
@@ -43,8 +85,12 @@ export async function saveUserProfile(userId = 'local', profile) {
     links: profile.links || [],
   };
 
+  if (isHugeDataUrl(payload.avatarUrl)) {
+    payload.avatarUrl = '';
+  }
+
   if (isDbUserId(userId)) {
-    return saveCreatorProfile(userId, payload);
+    return saveProfileResilient(userId, payload);
   }
 
   const profiles = readAll();
@@ -57,22 +103,22 @@ export function createLinkId() {
   return `link-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-/** One-time import of local profile after first sign-in. */
-export async function migrateLocalProfileToDb(userId) {
+/**
+ * Import local profile (user id + legacy `local` key), then seed from Google if DB is empty.
+ */
+export async function migrateLocalProfileToDb(userId, authUser = null) {
   if (!isDbUserId(userId)) return loadUserProfile(userId);
 
-  const local = loadUserProfile(userId);
-  const hasContent =
-    local.name?.trim() ||
-    local.bio?.trim() ||
-    local.avatarUrl ||
-    (local.links || []).some((l) => l.label?.trim() || l.url?.trim());
+  const merged = readMergedLocalProfile(userId);
 
-  if (hasContent) {
-    await saveCreatorProfile(userId, local);
-    const profiles = readAll();
-    delete profiles[userId];
-    writeAll(profiles);
+  if (profileHasContent(merged)) {
+    const toSave = isHugeDataUrl(merged.avatarUrl)
+      ? { ...merged, avatarUrl: '' }
+      : merged;
+    await saveProfileResilient(userId, toSave);
+    clearLocalProfiles(userId);
+  } else {
+    await ensureCreatorProfileFromAuth(authUser);
   }
 
   return loadUserProfileAsync(userId);

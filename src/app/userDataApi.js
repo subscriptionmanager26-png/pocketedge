@@ -49,6 +49,39 @@ function mapDbProfile(row) {
   };
 }
 
+export function profileHasContent(profile) {
+  if (!profile) return false;
+  return Boolean(
+    profile.name?.trim() ||
+      profile.bio?.trim() ||
+      profile.avatarUrl ||
+      (profile.links || []).some((l) => l.label?.trim() || l.url?.trim())
+  );
+}
+
+function profileFromAuthUser(user) {
+  const meta = user?.user_metadata || {};
+  return {
+    name: (meta.full_name || meta.name || '').trim(),
+    bio: '',
+    avatarUrl: meta.avatar_url || meta.picture || '',
+    links: [],
+  };
+}
+
+/** Create a DB profile from Google auth when none exists yet. */
+export async function ensureCreatorProfileFromAuth(user) {
+  if (!supabase || !user?.id || !isDbUserId(user.id)) return null;
+
+  const existing = await fetchCreatorProfile(user.id);
+  if (profileHasContent(existing)) return existing;
+
+  const seed = profileFromAuthUser(user);
+  if (!profileHasContent(seed)) return existing;
+
+  return saveCreatorProfile(user.id, seed);
+}
+
 export function computeBasketVersionChanges(previous, next) {
   if (!previous) return { initial: true };
 

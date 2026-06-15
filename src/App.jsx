@@ -161,9 +161,14 @@ export default function App() {
         try {
           const baskets = await migrateLocalBasketsToDb(nextUser.id);
           if (mounted) setUserBaskets(baskets);
-          await migrateLocalProfileToDb(nextUser.id);
         } catch {
           if (mounted) setUserBaskets([]);
+        }
+
+        try {
+          await migrateLocalProfileToDb(nextUser.id, nextUser);
+        } catch {
+          // Profile sync is best-effort; user can save manually on Account.
         }
       } else if (mounted) {
         setUserBaskets(loadUserBaskets());
