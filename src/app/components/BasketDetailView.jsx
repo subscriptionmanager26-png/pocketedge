@@ -9,12 +9,12 @@ import {
 } from '../subscriptionStore';
 import { getBasketDetailTabFromUrl } from '../appRoute';
 import NavChart from './NavChart';
-import InvestAndTrackPanel from './InvestAndTrackPanel';
+import FollowBasketPanel from './FollowBasketPanel';
 import BottomSheet from './BottomSheet';
 import {
   capture,
   captureBasketDetailTabViewed,
-  captureInvestPanelOpened,
+  captureFollowPanelOpened,
 } from '../../analytics';
 
 const VALID_TAB_IDS = new Set(['about', 'info', 'updates']);
@@ -40,7 +40,7 @@ export default function BasketDetailView({
   );
   const [descExpanded, setDescExpanded] = useState(false);
   const [chartPeriod, setChartPeriod] = useState('3M');
-  const [investOpen, setInvestOpen] = useState(false);
+  const [followOpen, setFollowOpen] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
 
   const basket = enrichBasket(rawBasket);
@@ -316,7 +316,7 @@ export default function BasketDetailView({
 
         {!preview && (
           <aside className="hidden lg:block lg:sticky lg:top-28 self-start">
-            <InvestAndTrackPanel basket={basket} />
+            <FollowBasketPanel basket={basket} />
           </aside>
         )}
       </div>
@@ -327,24 +327,26 @@ export default function BasketDetailView({
             <button
               type="button"
               onClick={() => {
-                captureInvestPanelOpened(basket.id);
-                setInvestOpen(true);
+                if (subscribed) return;
+                captureFollowPanelOpened(basket.id);
+                setFollowOpen(true);
               }}
-              className="w-full h-12 rounded-xl bg-neutral-900 text-white text-sm font-semibold shadow-lg shadow-black/10"
+              disabled={subscribed}
+              className="w-full h-12 rounded-xl bg-neutral-900 text-white text-sm font-semibold shadow-lg shadow-black/10 disabled:opacity-60"
             >
-              Invest and Track
+              {subscribed ? 'Following' : 'Start Following'}
             </button>
           </div>
           <BottomSheet
-            open={investOpen}
-            onClose={() => setInvestOpen(false)}
-            title="Invest and Track"
+            open={followOpen}
+            onClose={() => setFollowOpen(false)}
+            title="Start Following"
           >
-            <InvestAndTrackPanel
+            <FollowBasketPanel
               basket={basket}
-              onTracked={() => {
+              onFollowed={() => {
                 setSubscribed(true);
-                setInvestOpen(false);
+                setFollowOpen(false);
               }}
             />
           </BottomSheet>

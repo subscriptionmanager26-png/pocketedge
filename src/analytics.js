@@ -143,8 +143,8 @@ export function captureBasketDetailTabViewed(basketId, tab, { isOwn = false } = 
   capture('basket_detail_tab_viewed', { basket_id: basketId, tab, is_own: isOwn });
 }
 
-export function captureInvestPanelOpened(basketId, { source = 'mobile_cta' } = {}) {
-  capture('invest_panel_opened', { basket_id: basketId, source });
+export function captureFollowPanelOpened(basketId, { source = 'mobile_cta' } = {}) {
+  capture('follow_panel_opened', { basket_id: basketId, source });
 }
 
 export function captureCreateFlowAbandoned({ mode, lastStepId, lastStepIndex, totalSteps }) {

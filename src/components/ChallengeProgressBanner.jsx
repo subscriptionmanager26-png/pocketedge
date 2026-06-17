@@ -1,9 +1,12 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
+import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
 import { getLoggedInChallengeBanner } from '../challengeEligibility';
 import { BANNER_HEIGHT_CLASS, edgeX } from '../designTokens';
 
 export default function ChallengeProgressBanner({ progress }) {
+  if (!CAMPAIGN_UI_ENABLED) return null;
+
   const { message, href } = getLoggedInChallengeBanner(progress);
 
   const className = `w-full shrink-0 ${BANNER_HEIGHT_CLASS} bg-neutral-900 text-neutral-100 border-b border-neutral-800 ${edgeX} flex items-center justify-center gap-2.5 sm:gap-3 text-center leading-snug`;

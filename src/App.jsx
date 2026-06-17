@@ -13,6 +13,7 @@ import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute'
 import { loadUserBaskets, loadUserBasketsAsync, migrateLocalBasketsToDb } from './app/basketStore';
 import { migrateLocalProfileToDb } from './app/profileStore';
 import { getChallengeProgress } from './challengeEligibility';
+import { CAMPAIGN_UI_ENABLED } from './campaignFlags';
 import { isLegalRoute } from './legalRoute';
 import { isChallengeDemoRoute, isReferralsDemoRoute, isStep2DemoRoute } from './demoRoute';
 import ReferralsDemoPage from './ReferralsDemoPage';
@@ -61,7 +62,7 @@ function resolveRoute(session) {
   if (isReferralsDemoRoute()) return 'referrals-demo';
   if (isDesignRoute()) return 'design';
   if (isLegalRoute()) return 'legal';
-  if (isLeaderboardRoute()) return 'leaderboard';
+  if (isLeaderboardRoute()) return CAMPAIGN_UI_ENABLED ? 'leaderboard' : 'landing';
   if (isWaitlistRoute()) return session ? 'app' : 'waitlist';
   if (import.meta.env.DEV && isLocalAppRoute()) return 'app';
   if (session) return 'app';

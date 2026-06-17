@@ -1,14 +1,15 @@
 import React from 'react';
 import { LayoutDashboard, Search, PlusCircle, User, Trophy, Lock } from 'lucide-react';
 import { edgeX } from '../../designTokens';
+import { CAMPAIGN_UI_ENABLED } from '../../campaignFlags';
 
 const tabs = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
   { id: 'search', label: 'Discover', icon: Search, waitlistLocked: true },
-  { id: 'leaderboard', label: 'Challenge', icon: Trophy },
+  { id: 'leaderboard', label: 'Challenge', icon: Trophy, campaignOnly: true },
   { id: 'create', label: 'Create', icon: PlusCircle },
   { id: 'account', label: 'Account', icon: User },
-];
+].filter((tab) => CAMPAIGN_UI_ENABLED || !tab.campaignOnly);
 
 export default function BottomNav({ activeTab, onNavigate, accessLimited = false }) {
   return (

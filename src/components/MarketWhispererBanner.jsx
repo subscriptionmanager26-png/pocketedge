@@ -1,9 +1,12 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
+import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
 import { CHALLENGE_NAME, CHALLENGE_WINDOW, getChallengeBannerHref } from '../challengeMeta';
 import { BANNER_HEIGHT_CLASS, edgeX } from '../designTokens';
 
 export default function MarketWhispererBanner() {
+  if (!CAMPAIGN_UI_ENABLED) return null;
+
   const href = getChallengeBannerHref();
 
   const inner = (

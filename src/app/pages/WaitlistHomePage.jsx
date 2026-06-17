@@ -11,6 +11,7 @@ import { getReferralLink } from '../../supabase';
 import { navigateApp } from '../appRoute';
 import { hasEnteredChallenge } from '../../challengeEligibility';
 import ChallengeWelcomeCard from '../components/ChallengeWelcomeCard';
+import { CAMPAIGN_UI_ENABLED } from '../../campaignFlags';
 
 function formatCountdown(ms) {
   if (ms <= 0) return 'Updating ranks…';
@@ -101,12 +102,15 @@ export default function WaitlistHomePage({
         </h1>
         <p className="pe-body max-w-md mx-auto">
           We&apos;ll email <span className="text-neutral-900 font-medium">{user.email}</span> when your
-          spot opens. Until then, compete in the challenge below.
+          spot opens.
+          {CAMPAIGN_UI_ENABLED
+            ? ' Until then, compete in the challenge below.'
+            : ' Until then, share your referral link to move up faster.'}
         </p>
         <RankUpdateTimer nextUpdateAt={waitlistStatus.next_rank_update_at} />
       </header>
 
-      <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+      <div className={CAMPAIGN_UI_ENABLED ? 'grid lg:grid-cols-2 gap-4 sm:gap-5' : 'max-w-lg mx-auto w-full'}>
         {/* Waitlist */}
         <section
           id="waitlist-status"
@@ -173,7 +177,7 @@ export default function WaitlistHomePage({
           </div>
         </section>
 
-        {/* Challenge */}
+        {CAMPAIGN_UI_ENABLED && (
         <section className="pe-card flex flex-col overflow-hidden">
           <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-pe-border/80">
             <div className="flex items-start gap-3">
@@ -218,6 +222,7 @@ export default function WaitlistHomePage({
             )}
           </div>
         </section>
+        )}
       </div>
     </AppPageLayout>
   );

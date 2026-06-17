@@ -1,4 +1,11 @@
+import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
+
 const APP_TABS = ['dashboard', 'search', 'leaderboard', 'create', 'account', 'basket'];
+
+function normalizeAppTab(tab) {
+  if (tab === 'leaderboard' && !CAMPAIGN_UI_ENABLED) return 'dashboard';
+  return tab;
+}
 
 export function isDesignRoute() {
   return new URLSearchParams(window.location.search).get('design') === '1';
@@ -18,7 +25,7 @@ export function isAppShellRoute() {
 
 export function getAppTab() {
   const tab = new URLSearchParams(window.location.search).get('tab');
-  if (APP_TABS.includes(tab)) return tab;
+  if (APP_TABS.includes(tab)) return normalizeAppTab(tab);
   return 'dashboard';
 }
 
@@ -59,7 +66,7 @@ export function navigateApp({
   const url = new URL(window.location.href);
   url.searchParams.delete('waitlist');
   url.searchParams.delete('leaderboard');
-  url.searchParams.set('tab', tab);
+  url.searchParams.set('tab', normalizeAppTab(tab));
   if (basketId) url.searchParams.set('basket', basketId);
   else url.searchParams.delete('basket');
   if (basketTab) url.searchParams.set('basketTab', basketTab);

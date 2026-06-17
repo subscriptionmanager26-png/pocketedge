@@ -14,6 +14,7 @@ import {
 import { getLegalUrl } from './legalRoute';
 import { CHALLENGE_DESCRIPTION } from './app/pages/LeaderboardPage';
 import { CHALLENGE_NAME } from './challengeMeta';
+import { CAMPAIGN_UI_ENABLED } from './campaignFlags';
 import { catalogBaskets } from './app/basketCatalog';
 import RequestInviteButton from './RequestInviteButton';
 import { edgeX, content } from './designTokens';
@@ -41,9 +42,11 @@ export function LandingSiteHeader() {
         <a href="#baskets" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
           Baskets
         </a>
-        <a href="#challenge" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
-          Challenge
-        </a>
+        {CAMPAIGN_UI_ENABLED && (
+          <a href="#challenge" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
+            Challenge
+          </a>
+        )}
         <a href="#faq" className="text-base text-neutral-600 hover:text-neutral-900 transition-colors">
           FAQ
         </a>
@@ -106,6 +109,7 @@ export default function LandingPage() {
       </section>
 
       {/* Global Portfolio League + leaderboard */}
+      {CAMPAIGN_UI_ENABLED && (
       <section id="challenge" className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white scroll-mt-28 sm:scroll-mt-32">
         <div className={content}>
           <div className="max-w-3xl mx-auto text-center">
@@ -122,6 +126,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Benefits */}
       <section className="py-20 sm:py-28 border-t border-neutral-200/60 bg-white">

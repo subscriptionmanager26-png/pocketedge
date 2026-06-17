@@ -3,14 +3,15 @@ import { Lock } from 'lucide-react';
 import SiteHeader from '../../components/SiteHeader';
 import { navigateApp } from '../appRoute';
 import NotificationBell from './NotificationBell';
+import { CAMPAIGN_UI_ENABLED } from '../../campaignFlags';
 
 const tabs = [
   { id: 'dashboard', label: 'Home' },
   { id: 'search', label: 'Discover', waitlistLocked: true },
-  { id: 'leaderboard', label: 'Challenge' },
+  { id: 'leaderboard', label: 'Challenge', campaignOnly: true },
   { id: 'create', label: 'Create' },
   { id: 'account', label: 'Account' },
-];
+].filter((tab) => CAMPAIGN_UI_ENABLED || !tab.campaignOnly);
 
 export default function AppTopBar({ activeTab, onNavigate, accessLimited = false }) {
   const goHome = () => {

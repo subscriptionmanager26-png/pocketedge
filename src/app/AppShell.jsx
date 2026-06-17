@@ -29,6 +29,7 @@ import {
   captureAppTabViewed,
   captureAuthStarted,
 } from '../analytics';
+import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
 
 export default function AppShell({
   user,
@@ -204,7 +205,7 @@ export default function AppShell({
             ) : (
               tab === 'search' && <SearchPage userBaskets={userBaskets} />
             )}
-            {tab === 'leaderboard' && (
+            {CAMPAIGN_UI_ENABLED && tab === 'leaderboard' && (
               <LeaderboardPage
                 userBaskets={userBaskets}
                 user={user}
