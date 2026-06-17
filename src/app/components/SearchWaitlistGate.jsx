@@ -21,7 +21,7 @@ export default function SearchWaitlistGate({ children }) {
             <Lock className="w-5 h-5 text-neutral-600" aria-hidden />
           </div>
           <p className="text-sm sm:text-base text-neutral-600 leading-relaxed">
-            Search and basket details unlock once your waitlist spot is confirmed.
+            Discover and basket details unlock once your waitlist spot is confirmed.
           </p>
           <button
             type="button"

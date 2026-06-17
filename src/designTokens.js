@@ -41,7 +41,7 @@ export const typography = [
     cesto: 'web-h2',
     name: 'Display',
     class: 'pe-display',
-    sample: 'Discover Global Investment Ideas',
+    sample: 'Create and Discover Investment Portfolios',
     usage: 'Landing hero only',
   },
   {

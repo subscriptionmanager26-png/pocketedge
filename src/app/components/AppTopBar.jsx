@@ -6,7 +6,7 @@ import NotificationBell from './NotificationBell';
 
 const tabs = [
   { id: 'dashboard', label: 'Home' },
-  { id: 'search', label: 'Search', waitlistLocked: true },
+  { id: 'search', label: 'Discover', waitlistLocked: true },
   { id: 'leaderboard', label: 'Challenge' },
   { id: 'create', label: 'Create' },
   { id: 'account', label: 'Account' },

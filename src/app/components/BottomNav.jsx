@@ -4,7 +4,7 @@ import { edgeX } from '../../designTokens';
 
 const tabs = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-  { id: 'search', label: 'Search', icon: Search, waitlistLocked: true },
+  { id: 'search', label: 'Discover', icon: Search, waitlistLocked: true },
   { id: 'leaderboard', label: 'Challenge', icon: Trophy },
   { id: 'create', label: 'Create', icon: PlusCircle },
   { id: 'account', label: 'Account', icon: User },

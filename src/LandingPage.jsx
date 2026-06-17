@@ -85,7 +85,7 @@ export default function LandingPage() {
       <section className={`pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16 lg:pb-20 ${edgeX}`}>
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="pe-display text-[clamp(2rem,7vw,5.5rem)] leading-[1.05] text-balance">
-            Discover Global Investment Ideas
+            Create and Discover Investment Portfolios
           </h1>
           <p className="pe-body mt-6 sm:mt-8 text-lg sm:text-xl md:text-2xl font-light max-w-2xl mx-auto">
             Access investment portfolios built around themes, trends and beliefs.
