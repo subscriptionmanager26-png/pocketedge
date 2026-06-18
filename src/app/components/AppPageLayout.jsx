@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** App page shell — left-aligned by default; opt into center for Create / Challenge */
+/** App page shell — left-aligned by default; opt into center for Challenge */
 export default function AppPageLayout({
   children,
   className = '',

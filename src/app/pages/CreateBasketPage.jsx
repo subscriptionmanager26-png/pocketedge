@@ -57,10 +57,10 @@ function CreateBasketsHub({ userBaskets }) {
   const canCreate = canCreateBasket(userBaskets);
 
   return (
-    <AppPageLayout center className="pb-4 max-w-2xl">
+    <AppPageLayout className="pb-4">
       <PageHeader
         title="Create"
-        align="center"
+        align="left"
         className="!mb-0"
         description={
           canCreate
@@ -129,8 +129,8 @@ function CreateBasketsHub({ userBaskets }) {
           </ul>
         </section>
       ) : (
-        <div className="pe-card border-dashed p-8 text-center">
-          <Layers className="w-8 h-8 text-neutral-400 mx-auto mb-3" aria-hidden />
+        <div className="pe-card border-dashed p-8">
+          <Layers className="w-8 h-8 text-neutral-400 mb-3" aria-hidden />
           <p className="text-base font-medium text-neutral-900">No baskets yet</p>
           <p className="text-sm text-neutral-500 mt-1 mb-5">
             Build your first basket and enter The Global Portfolio League.
@@ -459,7 +459,7 @@ export default function CreateBasketPage({
 
   if (atBasketLimit) {
     return (
-      <AppPageLayout center className="pb-4 max-w-lg text-center">
+      <AppPageLayout narrow className="pb-4">
         <p className="text-sm text-neutral-500">Basket limit reached.</p>
         <button
           type="button"
@@ -474,7 +474,7 @@ export default function CreateBasketPage({
 
   if (isEditing && !editBasket) {
     return (
-      <div className="max-w-lg mx-auto text-center py-16 px-6">
+      <AppPageLayout narrow className="py-16">
         <h2 className="text-xl font-bold text-neutral-900">Basket not found</h2>
         <p className="text-sm text-neutral-500 mt-2">
           This basket may have been removed or you don&apos;t have permission to edit it.
@@ -486,13 +486,13 @@ export default function CreateBasketPage({
         >
           ← Back to your baskets
         </button>
-      </div>
+      </AppPageLayout>
     );
   }
 
   if (saved) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
+      <AppPageLayout narrow className="py-20">
         <div className="w-14 h-14 rounded-full bg-neutral-900/10 flex items-center justify-center mb-4">
           <Check className="w-7 h-7 text-emerald-600" />
         </div>
@@ -500,12 +500,12 @@ export default function CreateBasketPage({
           {isEditing ? 'Basket updated!' : 'Basket created!'}
         </h2>
         <p className="text-neutral-500 text-sm mt-2">Opening your basket...</p>
-      </div>
+      </AppPageLayout>
     );
   }
 
   return (
-    <AppPageLayout center className="pb-4">
+    <AppPageLayout className="pb-4">
       <div className="space-y-4">
         <button
           type="button"
@@ -519,12 +519,12 @@ export default function CreateBasketPage({
         <PageHeader
           eyebrow={isEditing ? 'Edit' : undefined}
           title={isEditing ? 'Edit basket' : 'New basket'}
-          align="center"
+          align="left"
           className="!mb-0"
           description={`Step ${stepIndex + 1} of ${STEPS.length} — ${step.label}`}
         />
         {step.id !== 'preview' && (
-          <div className="flex justify-center">
+          <div>
             <button
               type="button"
               onClick={goToPreview}
