@@ -45,6 +45,9 @@ const STEPS = [
   { id: 'preview', label: 'Preview', icon: Eye },
 ];
 
+const HUB_CARD_GRID =
+  'grid grid-cols-2 gap-2 sm:grid-cols-2 xl:grid-cols-3 sm:gap-3 sm:items-stretch';
+
 function applyEqualWeights(list) {
   const w = list.length ? Math.floor((100 / list.length) * 10) / 10 : 0;
   return list.map((c, i) => ({
@@ -73,73 +76,34 @@ function CreateBasketsHub({ userBaskets }) {
         <button
           type="button"
           onClick={() => navigateApp({ tab: 'create', createNew: true })}
-          className="w-full pe-btn-primary py-3.5 text-base justify-center gap-2"
+          className="pe-btn-primary px-5 py-2.5 text-sm inline-flex items-center gap-2"
         >
-          <Plus className="w-5 h-5" aria-hidden />
+          <Plus className="w-4 h-4" aria-hidden />
           Create new basket
         </button>
       )}
 
       {userBaskets.length > 0 ? (
-        <section className="space-y-2">
-          <h2 className="pe-section-title text-base px-0.5">Your baskets</h2>
-          <ul className="space-y-2">
+        <section className="space-y-3">
+          <h2 className="pe-section-title text-base">Your baskets</h2>
+          <div className={HUB_CARD_GRID}>
             {userBaskets.map((basket) => (
-              <li key={basket.id}>
-                <div className="pe-card p-4 flex items-center gap-3 sm:gap-4">
-                  <div
-                    className={`shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${
-                      basket.imageGradient || 'from-emerald-600 to-cyan-500'
-                    } flex items-center justify-center overflow-hidden`}
-                  >
-                    {basket.imageUrl ? (
-                      <img src={basket.imageUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-lg font-bold text-white/90">{basket.name.charAt(0)}</span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="pe-card-title truncate">{basket.name}</p>
-                    <p className="pe-body-s mt-0.5">
-                      {basket.constituents?.length ?? 0} stocks ·{' '}
-                      {basket.weightingType === 'equal' ? 'Equal' : 'Custom'} weight
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => navigateApp({ tab: 'basket', basketId: basket.id })}
-                      className="px-3 py-2 rounded-lg border border-pe-border/80 text-xs font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-300 transition-colors"
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigateApp({ tab: 'create', editBasketId: basket.id })}
-                      className="px-3 py-2 rounded-lg bg-neutral-900 text-xs font-semibold text-white hover:bg-neutral-800 transition-colors"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              </li>
+              <CreateHubBasketCard key={basket.id} basket={basket} />
             ))}
-          </ul>
+          </div>
         </section>
       ) : (
-        <div className="pe-card border-dashed p-8">
-          <Layers className="w-8 h-8 text-neutral-400 mb-3" aria-hidden />
-          <p className="text-base font-medium text-neutral-900">No baskets yet</p>
-          <p className="text-sm text-neutral-500 mt-1 mb-5">
-            Build your first basket and enter The Global Portfolio League.
+        <div className="pe-card border-dashed p-5 max-w-md">
+          <Layers className="w-6 h-6 text-neutral-400 mb-2" aria-hidden />
+          <p className="text-sm font-medium text-neutral-900">No baskets yet</p>
+          <p className="text-sm text-neutral-500 mt-1 mb-4">
+            Build your first basket and share your investment idea.
           </p>
           {canCreate && (
             <button
               type="button"
               onClick={() => navigateApp({ tab: 'create', createNew: true })}
-              className="pe-btn-primary px-6 py-3 text-sm"
+              className="pe-btn-primary px-5 py-2.5 text-sm"
             >
               Create your first basket
             </button>
@@ -857,6 +821,58 @@ export default function CreateBasketPage({
         )}
       </div>
     </AppPageLayout>
+  );
+}
+
+function CreateHubBasketCard({ basket }) {
+  const description =
+    basket.shortDescription?.trim() ||
+    basket.description?.trim().slice(0, 140) ||
+    'No description yet.';
+
+  return (
+    <article className="pe-card overflow-hidden flex flex-col">
+      <div className="relative aspect-[3/2] w-full overflow-hidden bg-neutral-100">
+        {basket.imageUrl ? (
+          <img src={basket.imageUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div
+            className={`h-full w-full bg-gradient-to-br ${
+              basket.imageGradient || 'from-emerald-600 to-cyan-500'
+            } flex items-center justify-center`}
+          >
+            <span className="text-2xl font-bold text-white/25 select-none">
+              {basket.name.charAt(0)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col flex-1 gap-2 p-3">
+        <h3 className="text-sm font-semibold text-neutral-900 leading-snug line-clamp-2">
+          {basket.name}
+        </h3>
+        <p className="text-xs text-neutral-500 leading-relaxed line-clamp-2 flex-1">
+          {description}
+        </p>
+        <div className="flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => navigateApp({ tab: 'basket', basketId: basket.id })}
+            className="flex-1 px-3 py-1.5 rounded-lg border border-pe-border/80 text-xs font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-300 transition-colors"
+          >
+            View
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateApp({ tab: 'create', editBasketId: basket.id })}
+            className="flex-1 px-3 py-1.5 rounded-lg bg-neutral-900 text-xs font-semibold text-white hover:bg-neutral-800 transition-colors"
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
