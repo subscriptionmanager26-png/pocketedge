@@ -2,5 +2,32 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "crons": [
+    {
+      "path": "/api/cron/universe-price-fetch",
+      "schedule": "5 21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/universe-price-fetch",
+      "schedule": "5 9 * * 1-5"
+    }
+  ],
+  "functions": {
+    "api/ibkr-preflight-ladder-probe.ts": {
+      "maxDuration": 60
+    },
+    "api/yahoo-probe.ts": {
+      "maxDuration": 60
+    },
+    "api/cron/universe-price-fetch.ts": {
+      "maxDuration": 300
+    },
+    "api/cron/seed-yahoo-mappings.ts": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

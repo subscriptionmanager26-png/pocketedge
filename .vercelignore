@@ -1,0 +1,8 @@
+data/**
+scripts/**
+supabase/**
+*.log
+*.csv
+*.jsonl
+.git/**
+node_modules/**
