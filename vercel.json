@@ -2,16 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "crons": [
-    {
-      "path": "/api/cron/universe-price-fetch",
-      "schedule": "5 21 * * 1-5"
-    },
-    {
-      "path": "/api/cron/universe-price-fetch",
-      "schedule": "5 9 * * 1-5"
-    }
-  ],
   "functions": {
     "api/ibkr-preflight-ladder-probe.ts": {
       "maxDuration": 60

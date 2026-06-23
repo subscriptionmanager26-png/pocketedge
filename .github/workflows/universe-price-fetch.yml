@@ -1,0 +1,53 @@
+name: Universe price fetch
+
+on:
+  schedule:
+    # Weekdays — matches former Vercel crons (UTC)
+    - cron: '5 9 * * 1-5'   # ~overnight (US pre-market)
+    - cron: '5 21 * * 1-5'  # ~us_close (US after-hours)
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Fetch slot (auto-detect if empty)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - overnight
+          - us_close
+      limit:
+        description: 'Max instruments (empty = full universe)'
+        required: false
+        type: string
+
+concurrency:
+  group: universe-price-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run universe price fetch
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ARGS=()
+          if [ -n "${{ github.event.inputs.slot }}" ]; then
+            ARGS+=(--slot="${{ github.event.inputs.slot }}")
+          fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then
+            ARGS+=(--limit="${{ github.event.inputs.limit }}")
+          fi
+          node scripts/run-universe-price-fetch.mjs "${ARGS[@]}"
