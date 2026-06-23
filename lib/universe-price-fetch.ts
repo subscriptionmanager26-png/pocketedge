@@ -33,7 +33,7 @@ export type PriceRow = {
 };
 
 const STEPS_VERCEL = LADDER_STEPS.slice(0, 2);
-const CHUNK_SIZE_DEFAULT = 2000;
+const CHUNK_SIZE_DEFAULT = 200;
 const BATCH_SIZE_DEFAULT = 10;
 const DEADLINE_MS_DEFAULT = 240_000;
 
@@ -499,7 +499,10 @@ export async function runUniversePriceFetch(options: {
     const nextUrl = `${continuationBaseUrl}?slot=${fetchSlot}&run_id=${runId}&offset=${offset}`;
     fetch(nextUrl, {
       headers: {
-        Authorization: `Bearer ${process.env.CRON_SECRET ?? ''}`,
+        'x-vercel-cron': '1',
+        ...(process.env.CRON_SECRET
+          ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
+          : {}),
       },
     }).catch(() => {});
   }
