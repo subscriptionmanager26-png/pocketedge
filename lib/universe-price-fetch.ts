@@ -413,6 +413,15 @@ export async function runUniversePriceFetch(options: {
 
   let runId = options.runId;
   let runRecord: Record<string, unknown>;
+  let aggregate = {
+    processed: 0,
+    priced: 0,
+    missing: 0,
+    ibkrCount: 0,
+    yahooCount: 0,
+    finraCount: 0,
+    stepCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  };
 
   if (!runId) {
     runRecord = await db.insertReturning({
@@ -428,18 +437,41 @@ export async function runUniversePriceFetch(options: {
     runId = String(runRecord.id);
   } else {
     runRecord = { id: runId };
+    const existing = await db.selectOne<{
+      processed_count: number;
+      ibkr_priced: number;
+      yahoo_priced: number;
+      finra_priced: number;
+      missing: number;
+      ibkr_step_1: number;
+      ibkr_step_2: number;
+      ibkr_step_3: number;
+      ibkr_step_4: number;
+      yahoo_backup: number;
+    }>({ id: `eq.${runId}` });
+    if (existing) {
+      aggregate = {
+        processed: existing.processed_count ?? chunkOffset,
+        priced:
+          (existing.ibkr_priced ?? 0) +
+          (existing.yahoo_priced ?? 0) +
+          (existing.finra_priced ?? 0),
+        missing: existing.missing ?? 0,
+        ibkrCount: existing.ibkr_priced ?? 0,
+        yahooCount: existing.yahoo_priced ?? 0,
+        finraCount: existing.finra_priced ?? 0,
+        stepCounts: {
+          1: existing.ibkr_step_1 ?? 0,
+          2: existing.ibkr_step_2 ?? 0,
+          3: existing.ibkr_step_3 ?? 0,
+          4: existing.ibkr_step_4 ?? 0,
+          5: existing.yahoo_backup ?? 0,
+        },
+      };
+    }
   }
 
   let offset = chunkOffset;
-  let aggregate = {
-    processed: 0,
-    priced: 0,
-    missing: 0,
-    ibkrCount: 0,
-    yahooCount: 0,
-    finraCount: 0,
-    stepCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-  };
 
   while (offset < universeSize && Date.now() - startedAt < deadlineMs) {
     const instruments = await rpc.rpc<InstrumentRow[]>(
@@ -486,6 +518,7 @@ export async function runUniversePriceFetch(options: {
   }
 
   const completed = offset >= universeSize;
+  let continuationUrl: string | undefined;
   if (completed) {
     await db.update(
       { id: `eq.${runId}` },
@@ -496,15 +529,7 @@ export async function runUniversePriceFetch(options: {
       }
     );
   } else if (continuationBaseUrl) {
-    const nextUrl = `${continuationBaseUrl}?slot=${fetchSlot}&run_id=${runId}&offset=${offset}`;
-    fetch(nextUrl, {
-      headers: {
-        'x-vercel-cron': '1',
-        ...(process.env.CRON_SECRET
-          ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
-          : {}),
-      },
-    }).catch(() => {});
+    continuationUrl = `${continuationBaseUrl}?slot=${fetchSlot}&run_id=${runId}&offset=${offset}`;
   }
 
   return {
@@ -514,6 +539,7 @@ export async function runUniversePriceFetch(options: {
     universe_size: universeSize,
     processed_offset: offset,
     completed,
+    continuation_url: continuationUrl,
     ...aggregate,
     duration_ms: Date.now() - startedAt,
   };

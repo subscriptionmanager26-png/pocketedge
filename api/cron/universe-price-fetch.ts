@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { waitUntil } from '@vercel/functions';
 import {
   detectFetchSlot,
   runUniversePriceFetch,
@@ -73,6 +74,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       continuationBaseUrl,
       limit: Number.isFinite(limit) && limit! > 0 ? limit : undefined,
     });
+
+    if (result.continuation_url) {
+      const cronSecret = process.env.CRON_SECRET;
+      waitUntil(
+        fetch(result.continuation_url, {
+          headers: {
+            'x-vercel-cron': '1',
+            ...(cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {}),
+          },
+        }).catch(() => {})
+      );
+    }
+
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({

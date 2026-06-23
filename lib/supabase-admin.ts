@@ -78,5 +78,18 @@ export function supabaseRest(table: string, config: SupabaseConfig) {
         throw new Error(`Update ${table} failed (${response.status}): ${await response.text()}`);
       }
     },
+
+    async selectOne<T = Record<string, unknown>>(
+      match: Record<string, string>,
+      columns = '*'
+    ): Promise<T | null> {
+      const params = new URLSearchParams({ ...match, select: columns, limit: '1' });
+      const response = await fetch(`${base}?${params}`, { headers });
+      if (!response.ok) {
+        throw new Error(`Select ${table} failed (${response.status}): ${await response.text()}`);
+      }
+      const data = await response.json();
+      return (Array.isArray(data) ? data[0] : data) ?? null;
+    },
   };
 }
