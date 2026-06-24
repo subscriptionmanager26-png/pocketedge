@@ -3,7 +3,7 @@ import { Medal } from 'lucide-react';
 
 const MEDAL_STYLES = {
   1: 'bg-amber-100 text-amber-700 border-amber-200',
-  2: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+  2: 'bg-neutral-100 text-pe-text-secondary border-neutral-200',
   3: 'bg-orange-50 text-orange-700 border-orange-200',
 };
 
@@ -28,7 +28,7 @@ export default function LeaderboardTable({
   return (
     <div className="bg-white border border-neutral-200/80 rounded-2xl overflow-hidden">
       <div
-        className={`grid ${gridClass} gap-x-3 sm:gap-x-4 px-4 sm:px-5 py-3 border-b border-neutral-100 text-[10px] font-semibold uppercase tracking-wider text-neutral-400`}
+        className={`grid ${gridClass} gap-x-3 sm:gap-x-4 px-4 sm:px-5 py-3 border-b border-neutral-100 text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted`}
       >
         <span>Rank</span>
         <span>Basket</span>
@@ -60,15 +60,15 @@ export default function LeaderboardTable({
                   <RankBadge rank={entry.rank} />
 
                   <div className="min-w-0">
-                    <p className="font-medium text-neutral-900 text-sm sm:text-base leading-snug line-clamp-2">
+                    <p className="font-medium text-pe-text text-sm sm:text-base leading-snug line-clamp-2">
                       {entry.basket.name}
                     </p>
                     {isYours && signedIn && (
-                      <span className="text-[10px] font-medium text-neutral-600">Your basket</span>
+                      <span className="text-[10px] font-medium text-pe-text-secondary">Your basket</span>
                     )}
                   </div>
 
-                  <p className="text-xs sm:text-sm text-neutral-600 font-medium truncate">
+                  <p className="text-xs sm:text-sm text-pe-text-secondary font-medium truncate">
                     {entry.creatorName}
                   </p>
                 </div>
@@ -94,7 +94,7 @@ function RankBadge({ rank }) {
   }
 
   return (
-    <span className="w-8 h-8 rounded-full bg-neutral-100 text-neutral-600 text-sm font-bold flex items-center justify-center shrink-0">
+    <span className="w-8 h-8 rounded-full bg-neutral-100 text-pe-text-secondary text-sm font-bold flex items-center justify-center shrink-0">
       {rank}
     </span>
   );

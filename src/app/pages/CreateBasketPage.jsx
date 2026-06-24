@@ -24,6 +24,7 @@ import { navigateApp } from '../appRoute';
 import PageHeader from '../../components/PageHeader';
 import BasketPreviewPanel from '../components/BasketPreviewPanel';
 import AppPageLayout from '../components/AppPageLayout';
+import PrimaryCta from '../../components/PrimaryCta';
 import {
   capture,
   captureCreateFlowAbandoned,
@@ -73,14 +74,15 @@ function CreateBasketsHub({ userBaskets }) {
       />
 
       {canCreate && userBaskets.length > 0 && (
-        <button
+        <PrimaryCta
           type="button"
           onClick={() => navigateApp({ tab: 'create', createNew: true })}
-          className="pe-btn-primary px-5 py-2.5 text-sm inline-flex items-center gap-2"
+          size="sm"
+          className="inline-flex"
         >
           <Plus className="w-4 h-4" aria-hidden />
           Create new basket
-        </button>
+        </PrimaryCta>
       )}
 
       {userBaskets.length > 0 ? (
@@ -94,19 +96,19 @@ function CreateBasketsHub({ userBaskets }) {
         </section>
       ) : (
         <div className="pe-card border-dashed p-5 max-w-md">
-          <Layers className="w-6 h-6 text-neutral-400 mb-2" aria-hidden />
-          <p className="text-sm font-medium text-neutral-900">No baskets yet</p>
-          <p className="text-sm text-neutral-500 mt-1 mb-4">
+          <Layers className="w-6 h-6 text-pe-text-muted mb-2" aria-hidden />
+          <p className="text-sm font-medium text-pe-text">No baskets yet</p>
+          <p className="text-sm text-pe-text-secondary mt-1 mb-4">
             Build your first basket and share your investment idea.
           </p>
           {canCreate && (
-            <button
+            <PrimaryCta
               type="button"
               onClick={() => navigateApp({ tab: 'create', createNew: true })}
-              className="pe-btn-primary px-5 py-2.5 text-sm"
+              size="sm"
             >
               Create your first basket
-            </button>
+            </PrimaryCta>
           )}
         </div>
       )}
@@ -473,11 +475,11 @@ export default function CreateBasketPage({
   if (atBasketLimit) {
     return (
       <AppPageLayout narrow className="pb-4">
-        <p className="text-sm text-neutral-500">Basket limit reached.</p>
+        <p className="text-sm text-pe-text-secondary">Basket limit reached.</p>
         <button
           type="button"
           onClick={() => navigateApp({ tab: 'create', createNew: false })}
-          className="mt-4 text-sm font-semibold text-neutral-900 hover:text-neutral-600"
+          className="mt-4 text-sm font-semibold text-pe-text hover:text-pe-text-secondary"
         >
           ← Back to your baskets
         </button>
@@ -488,8 +490,8 @@ export default function CreateBasketPage({
   if (isEditing && !editBasket) {
     return (
       <AppPageLayout narrow className="py-16">
-        <h2 className="text-xl font-bold text-neutral-900">Basket not found</h2>
-        <p className="text-sm text-neutral-500 mt-2">
+        <h2 className="text-xl font-bold text-pe-text">Basket not found</h2>
+        <p className="text-sm text-pe-text-secondary mt-2">
           This basket may have been removed or you don&apos;t have permission to edit it.
         </p>
         <button
@@ -509,10 +511,10 @@ export default function CreateBasketPage({
         <div className="w-14 h-14 rounded-full bg-neutral-900/10 flex items-center justify-center mb-4">
           <Check className="w-7 h-7 text-emerald-600" />
         </div>
-        <h2 className="text-xl font-bold text-neutral-900">
+        <h2 className="text-xl font-bold text-pe-text">
           {isEditing ? 'Basket updated!' : 'Basket created!'}
         </h2>
-        <p className="text-neutral-500 text-sm mt-2">Opening your basket...</p>
+        <p className="text-pe-text-secondary text-sm mt-2">Opening your basket...</p>
       </AppPageLayout>
     );
   }
@@ -523,7 +525,7 @@ export default function CreateBasketPage({
         <button
           type="button"
           onClick={() => navigateApp({ tab: 'create', createNew: false })}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-pe-text-secondary hover:text-pe-text transition-colors"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden />
           Your baskets
@@ -631,8 +633,8 @@ export default function CreateBasketPage({
                     <img src={imageUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="text-center p-6">
-                      <ImagePlus className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                      <span className="text-sm text-neutral-500">Click to upload</span>
+                      <ImagePlus className="w-8 h-8 text-pe-text-muted mx-auto mb-2" />
+                      <span className="text-sm text-pe-text-secondary">Click to upload</span>
                     </div>
                   )}
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -642,7 +644,7 @@ export default function CreateBasketPage({
                 <button
                   type="button"
                   onClick={() => setImageUrl('')}
-                  className="mt-2 text-xs text-neutral-500 hover:text-rose-500"
+                  className="mt-2 text-xs text-pe-text-secondary hover:text-rose-500"
                 >
                   Remove image
                 </button>
@@ -673,7 +675,7 @@ export default function CreateBasketPage({
           </div>
 
           <div className="pt-4 border-t border-neutral-100">
-            <p className="text-xs text-neutral-500 mb-3 uppercase tracking-wide">Live thumbnail</p>
+            <p className="text-xs text-pe-text-secondary mb-3 uppercase tracking-wide">Live thumbnail</p>
             <div className="max-w-xs pointer-events-none">
               <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-neutral-200/80">
                 {imageUrl ? (
@@ -720,7 +722,7 @@ export default function CreateBasketPage({
                 <span
                   className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                     Math.abs(weightTotal - 100) < 0.1
-                      ? 'bg-neutral-100 text-neutral-900'
+                      ? 'bg-neutral-100 text-pe-text'
                       : 'bg-amber-500/15 text-amber-700'
                   }`}
                 >
@@ -742,7 +744,7 @@ export default function CreateBasketPage({
               {showStockSuggestions && (
                 <ul className="absolute z-10 left-0 right-0 mt-1 bg-white border border-neutral-200/80 rounded-xl overflow-hidden shadow-xl">
                   {stockSearchLoading && (
-                    <li className="px-4 py-2.5 text-sm text-neutral-500">Searching IBKR universe…</li>
+                    <li className="px-4 py-2.5 text-sm text-pe-text-secondary">Searching IBKR universe…</li>
                   )}
                   {!stockSearchLoading &&
                     filteredStocks.slice(0, 8).map((s) => (
@@ -752,8 +754,8 @@ export default function CreateBasketPage({
                           onClick={() => addStock(s)}
                           className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
                         >
-                          <span className="text-neutral-900 font-medium">{s.symbol}</span>
-                          <span className="text-neutral-500 truncate flex-1 text-right">
+                          <span className="text-pe-text font-medium">{s.symbol}</span>
+                          <span className="text-pe-text-secondary truncate flex-1 text-right">
                             {s.name}
                             {s.exchange ? ` · ${s.exchange}` : ''}
                             {s.instrumentType ? ` · ${formatInstrumentType(s.instrumentType)}` : ''}
@@ -769,8 +771,8 @@ export default function CreateBasketPage({
                         onClick={addCustomSymbol}
                         className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
                       >
-                        <span className="text-neutral-900 font-medium">{normalizedStockQuery}</span>
-                        <span className="text-neutral-500 truncate flex-1 text-right">
+                        <span className="text-pe-text font-medium">{normalizedStockQuery}</span>
+                        <span className="text-pe-text-secondary truncate flex-1 text-right">
                           Add custom symbol · verify on IBKR
                         </span>
                         <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -781,7 +783,7 @@ export default function CreateBasketPage({
               )}
             </div>
 
-            <p className="text-xs text-neutral-500 leading-relaxed">{IBKR_SYMBOL_NOTE}</p>
+            <p className="text-xs text-pe-text-secondary leading-relaxed">{IBKR_SYMBOL_NOTE}</p>
             {stockSearchSource === 'local-fallback' && stockQuery.trim() && (
               <p className="text-xs text-amber-700">
                 Live IBKR search unavailable — showing a small local list. Run `npm run sync:ibkr:upload` to
@@ -790,7 +792,7 @@ export default function CreateBasketPage({
             )}
 
             {constituents.length === 0 && (
-              <p className="text-sm text-neutral-400 italic py-2">
+              <p className="text-sm text-pe-text-muted italic py-2">
                 No stocks added yet — pick from suggestions or press Enter to add a custom symbol.
               </p>
             )}
@@ -804,8 +806,8 @@ export default function CreateBasketPage({
                   className="flex items-center gap-2 bg-neutral-50 rounded-xl px-3 py-2.5 border border-neutral-100"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-neutral-900">{c.symbol}</div>
-                    <div className="text-xs text-neutral-500 truncate">
+                    <div className="text-sm font-medium text-pe-text">{c.symbol}</div>
+                    <div className="text-xs text-pe-text-secondary truncate">
                       {c.isCustom
                         ? 'Custom symbol · verify on IBKR'
                         : [
@@ -825,7 +827,7 @@ export default function CreateBasketPage({
                       step="0.1"
                       value={c.weight}
                       onChange={(e) => updateWeight(key, e.target.value)}
-                      className="w-16 bg-white border border-neutral-200/80 rounded-lg px-2 py-1 text-sm text-right text-neutral-900"
+                      className="w-16 bg-white border border-neutral-200/80 rounded-lg px-2 py-1 text-sm text-right text-pe-text"
                     />
                   ) : (
                     <span className="text-sm text-emerald-600 font-medium w-16 text-right">
@@ -835,7 +837,7 @@ export default function CreateBasketPage({
                   <button
                     type="button"
                     onClick={() => removeStock(key)}
-                    className="p-1.5 text-neutral-400 hover:text-rose-500"
+                    className="p-1.5 text-pe-text-muted hover:text-rose-500"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -870,30 +872,22 @@ export default function CreateBasketPage({
           type="button"
           onClick={goBack}
           disabled={stepIndex === 0}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-neutral-200/80 text-sm font-medium text-neutral-600 hover:text-neutral-900 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-neutral-200/80 text-sm font-medium text-pe-text-secondary hover:text-pe-text disabled:opacity-40 disabled:pointer-events-none transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
 
         {step.id === 'preview' ? (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors"
-          >
+          <PrimaryCta type="button" onClick={handleSubmit}>
             <Check className="w-4 h-4" />
             {isEditing ? 'Save changes' : 'Publish basket'}
-          </button>
+          </PrimaryCta>
         ) : (
-          <button
-            type="button"
-            onClick={goNext}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors"
-          >
+          <PrimaryCta type="button" onClick={goNext}>
             Continue
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </PrimaryCta>
         )}
       </div>
     </AppPageLayout>
@@ -925,27 +919,28 @@ function CreateHubBasketCard({ basket }) {
       </div>
 
       <div className="flex flex-col flex-1 gap-2 p-3">
-        <h3 className="text-sm font-semibold text-neutral-900 leading-snug line-clamp-2">
+        <h3 className="text-sm font-semibold text-pe-text leading-snug line-clamp-2">
           {basket.name}
         </h3>
-        <p className="text-xs text-neutral-500 leading-relaxed line-clamp-2 flex-1">
+        <p className="text-xs text-pe-text-secondary leading-relaxed line-clamp-2 flex-1">
           {description}
         </p>
         <div className="flex gap-2 pt-1">
           <button
             type="button"
             onClick={() => navigateApp({ tab: 'basket', basketId: basket.id })}
-            className="flex-1 px-3 py-1.5 rounded-lg border border-pe-border/80 text-xs font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-300 transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg border border-pe-border/80 text-xs font-semibold text-pe-text hover:text-pe-text hover:border-neutral-300 transition-colors"
           >
             View
           </button>
-          <button
+          <PrimaryCta
             type="button"
+            size="sm"
+            fullWidth
             onClick={() => navigateApp({ tab: 'create', editBasketId: basket.id })}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-neutral-900 text-xs font-semibold text-white hover:bg-neutral-800 transition-colors"
           >
             Edit
-          </button>
+          </PrimaryCta>
         </div>
       </div>
     </article>
@@ -974,15 +969,15 @@ function StepIndicator({ steps, currentIndex, onStepClick }) {
                       active
                         ? 'bg-neutral-900 border-neutral-900 text-white'
                         : done
-                          ? 'bg-neutral-100 border-neutral-300 text-neutral-900'
-                          : 'bg-neutral-50 border-neutral-200/80 text-neutral-400'
+                          ? 'bg-neutral-100 border-neutral-300 text-pe-text'
+                          : 'bg-neutral-50 border-neutral-200/80 text-pe-text-muted'
                     }`}
                   >
                     {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                   </span>
                   <span
                     className={`text-[10px] sm:text-xs font-medium text-center leading-tight ${
-                      active ? 'text-neutral-900' : 'text-neutral-500'
+                      active ? 'text-pe-text' : 'text-pe-text-secondary'
                     }`}
                   >
                     {s.label}

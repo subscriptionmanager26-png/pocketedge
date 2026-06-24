@@ -1,0 +1,32 @@
+/* Dev-only legacy light theme — active when html has .theme-legacy */
+
+html.theme-legacy {
+  --pe-canvas: #f7f7f5;
+  --pe-surface: #ffffff;
+  --pe-text: #171717;
+  --pe-text-secondary: #525252;
+  --pe-text-muted: #737373;
+  --pe-border: #e5e5e5;
+  --pe-accent: #00c853;
+  --pe-accent-bright: #00ff6a;
+  --pe-positive: #059669;
+  --pe-negative: #e11d48;
+  --pe-warning: #e97a50;
+}
+
+html.theme-legacy .pe-nav {
+  background-color: rgb(247 247 245 / 0.95) !important;
+  border-color: rgb(229 229 229 / 0.6) !important;
+}
+
+html.theme-legacy .pe-logo-img {
+  filter: none !important;
+}
+
+html.theme-legacy .pe-redesign-cta,
+html.theme-legacy .pe-btn-primary {
+  background-color: var(--pe-text) !important;
+  color: var(--pe-surface) !important;
+  box-shadow: none !important;
+  border-radius: 9999px !important;
+}

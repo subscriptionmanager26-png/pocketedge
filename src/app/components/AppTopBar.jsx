@@ -33,8 +33,8 @@ export default function AppTopBar({ activeTab, onNavigate }) {
               onClick={() => onNavigate(id)}
               className={`text-base transition-colors whitespace-nowrap ${
                 active
-                  ? 'font-semibold text-neutral-900'
-                  : 'font-normal text-neutral-600 hover:text-neutral-900'
+                  ? 'font-semibold text-pe-text'
+                  : 'font-normal text-pe-text-secondary hover:text-pe-text'
               }`}
             >
               {displayLabel}

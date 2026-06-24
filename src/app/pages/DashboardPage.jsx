@@ -103,8 +103,8 @@ function EmptyState({ message, onAction }) {
       onClick={onAction}
       className="w-full pe-card border-dashed p-5 text-left hover:border-neutral-300 transition-colors"
     >
-      <p className="text-base font-medium text-neutral-900">{message}</p>
-      <p className="text-sm text-neutral-500 mt-1">Tap to get started →</p>
+      <p className="text-base font-medium text-pe-text">{message}</p>
+      <p className="text-sm text-pe-text-secondary mt-1">Tap to get started →</p>
     </button>
   );
 }

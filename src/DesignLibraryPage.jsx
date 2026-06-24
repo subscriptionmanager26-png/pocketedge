@@ -60,10 +60,10 @@ export default function DesignLibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
+    <div className="min-h-screen bg-[#F7F7F5] text-pe-text">
       <SiteHeader logoHref="/">
-        <span className="text-sm font-medium text-neutral-500 hidden sm:inline">Design library</span>
-        <a href="/" className="text-sm font-semibold text-neutral-900 hover:text-neutral-600">
+        <span className="text-sm font-medium text-pe-text-secondary hidden sm:inline">Design library</span>
+        <a href="/" className="text-sm font-semibold text-pe-text hover:text-pe-text-secondary">
           ← Back to site
         </a>
       </SiteHeader>
@@ -72,7 +72,7 @@ export default function DesignLibraryPage() {
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-12">
           <aside className="lg:w-52 shrink-0">
             <nav className="lg:sticky lg:top-24 space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3 px-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-pe-text-muted mb-3 px-2">
                 Contents
               </p>
               {SECTIONS.map(({ id, label }) => (
@@ -83,7 +83,7 @@ export default function DesignLibraryPage() {
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     activeSection === id
                       ? 'bg-neutral-900 text-white font-medium'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                      : 'text-pe-text-secondary hover:bg-neutral-100 hover:text-pe-text'
                   }`}
                 >
                   {label}
@@ -134,9 +134,9 @@ export default function DesignLibraryPage() {
                       style={{ backgroundColor: swatch.hex }}
                     />
                     <div className="p-3">
-                      <p className="text-sm font-semibold text-neutral-900">{key}</p>
-                      <p className="text-xs text-neutral-500 mt-0.5 font-mono">{swatch.hex}</p>
-                      <p className="text-xs text-neutral-500 mt-1">{swatch.usage}</p>
+                      <p className="text-sm font-semibold text-pe-text">{key}</p>
+                      <p className="text-xs text-pe-text-secondary mt-0.5 font-mono">{swatch.hex}</p>
+                      <p className="text-xs text-pe-text-secondary mt-1">{swatch.usage}</p>
                     </div>
                   </div>
                 ))}
@@ -167,16 +167,16 @@ export default function DesignLibraryPage() {
               <div className="space-y-3">
                 {layout.map((row) => (
                   <div key={row.name} className="pe-card p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-                    <p className="text-sm font-semibold text-neutral-900 w-32 shrink-0">{row.name}</p>
+                    <p className="text-sm font-semibold text-pe-text w-32 shrink-0">{row.name}</p>
                     <Code className="flex-1">{row.value}</Code>
-                    <p className="text-sm text-neutral-500 sm:w-48 shrink-0">{row.usage}</p>
+                    <p className="text-sm text-pe-text-secondary sm:w-48 shrink-0">{row.usage}</p>
                   </div>
                 ))}
               </div>
               <Preview label="edgeX padding demo">
                 <div className="bg-neutral-900/5 border border-dashed border-neutral-300 rounded-xl overflow-hidden">
                   <div className={`${edgeX} py-6 bg-white/80`}>
-                    <p className="text-sm text-neutral-600">Content respects edgeX horizontal padding</p>
+                    <p className="text-sm text-pe-text-secondary">Content respects edgeX horizontal padding</p>
                   </div>
                 </div>
               </Preview>
@@ -200,7 +200,7 @@ export default function DesignLibraryPage() {
               <Preview label="Sign out / destructive outline">
                 <button
                   type="button"
-                  className="w-full max-w-xs flex items-center justify-center gap-2 py-3.5 rounded-xl border border-neutral-200/80 text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 transition-colors text-sm"
+                  className="w-full max-w-xs flex items-center justify-center gap-2 py-3.5 rounded-xl border border-neutral-200/80 text-pe-text-secondary hover:text-pe-text hover:border-neutral-300 transition-colors text-sm"
                 >
                   Sign out
                 </button>
@@ -210,11 +210,11 @@ export default function DesignLibraryPage() {
             <Section id="forms" title="Forms">
               <div className="max-w-md space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">Text input</label>
+                  <label className="block text-sm font-medium text-pe-text mb-1.5">Text input</label>
                   <input type="text" className="pe-input" placeholder="e.g. My growth basket" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">Textarea</label>
+                  <label className="block text-sm font-medium text-pe-text mb-1.5">Textarea</label>
                   <textarea
                     className="pe-input min-h-[100px] resize-y"
                     placeholder="Describe your investment thesis…"
@@ -227,11 +227,11 @@ export default function DesignLibraryPage() {
               <Preview label="Stat card (dashboard)">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl">
                   <div className="pe-card p-4 sm:p-5">
-                    <p className="text-sm font-medium text-neutral-600">Portfolio value</p>
+                    <p className="text-sm font-medium text-pe-text-secondary">Portfolio value</p>
                     <p className="text-2xl sm:text-3xl font-bold mt-1">{formatCurrency(52770)}</p>
                   </div>
                   <div className="pe-card p-4 sm:p-5">
-                    <p className="text-sm font-medium text-neutral-600">Overall return</p>
+                    <p className="text-sm font-medium text-pe-text-secondary">Overall return</p>
                     <p className="text-2xl sm:text-3xl font-bold mt-1 text-emerald-600">{formatPercent(32.1)}</p>
                   </div>
                 </div>
@@ -241,18 +241,18 @@ export default function DesignLibraryPage() {
                 <div className="max-w-sm">
                   <div className="pe-card p-4 sm:p-5">
                     <h3 className="text-base sm:text-lg font-semibold">US Tech Giants</h3>
-                    <p className="text-sm text-neutral-500 mt-1">Invested since 12 Nov 2025</p>
+                    <p className="text-sm text-pe-text-secondary mt-1">Invested since 12 Nov 2025</p>
                     <dl className="mt-4 grid grid-cols-3 gap-3 pt-3 border-t border-neutral-100">
                       <div>
-                        <dt className="text-sm text-neutral-500">Amount invested</dt>
+                        <dt className="text-sm text-pe-text-secondary">Amount invested</dt>
                         <dd className="text-base font-semibold mt-0.5">{formatCurrency(25000)}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm text-neutral-500">Current value</dt>
+                        <dt className="text-sm text-pe-text-secondary">Current value</dt>
                         <dd className="text-base font-semibold mt-0.5">{formatCurrency(31125)}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm text-neutral-500">Return</dt>
+                        <dt className="text-sm text-pe-text-secondary">Return</dt>
                         <dd className="text-base font-semibold text-emerald-600 mt-0.5">{formatPercent(24.5)}</dd>
                       </div>
                     </dl>
@@ -273,9 +273,9 @@ export default function DesignLibraryPage() {
 
               <Preview label="Empty state">
                 <div className="pe-card border-dashed p-5 max-w-md text-left">
-                  <p className="text-base text-neutral-700">No investments yet</p>
-                  <p className="text-sm text-neutral-500 mt-1 mb-3">Browse baskets and start investing</p>
-                  <button type="button" className="text-sm font-semibold text-neutral-900">
+                  <p className="text-base text-pe-text">No investments yet</p>
+                  <p className="text-sm text-pe-text-secondary mt-1 mb-3">Browse baskets and start investing</p>
+                  <button type="button" className="text-sm font-semibold text-pe-text">
                     Get started →
                   </button>
                 </div>
@@ -323,7 +323,7 @@ export default function DesignLibraryPage() {
                   {['AI', 'Infrastructure'].map((tag) => (
                     <span
                       key={tag}
-                      className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200/80"
+                      className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-pe-text-secondary border border-neutral-200/80"
                     >
                       {tag}
                     </span>
@@ -348,7 +348,7 @@ export default function DesignLibraryPage() {
                   <ChallengeProgressBanner progress={progressSamples.ready} />
                 </div>
               </Preview>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-pe-text-secondary">
                 Challenge copy: <Code>{CHALLENGE_NAME}</Code> · <Code>{CHALLENGE_PRIZE_HEADLINE}</Code> ·{' '}
                 <Code>{CHALLENGE_START_LABEL}</Code>
               </p>
@@ -383,10 +383,10 @@ export default function DesignLibraryPage() {
               <Preview label="Section with divider + description (dashboard)">
                 <div className="pt-5 border-t border-neutral-200">
                   <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Invested baskets</h2>
-                  <p className="text-sm sm:text-base text-neutral-500 mt-1">
+                  <p className="text-sm sm:text-base text-pe-text-secondary mt-1">
                     Baskets you&apos;ve invested in — amounts and returns at a glance.
                   </p>
-                  <div className="mt-3 h-20 rounded-xl bg-neutral-100 border border-dashed border-neutral-200 flex items-center justify-center text-sm text-neutral-400">
+                  <div className="mt-3 h-20 rounded-xl bg-neutral-100 border border-dashed border-neutral-200 flex items-center justify-center text-sm text-pe-text-muted">
                     Card grid goes here
                   </div>
                 </div>
@@ -399,7 +399,7 @@ export default function DesignLibraryPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold">Display name</h2>
-                    <p className="text-sm text-neutral-500">you@example.com</p>
+                    <p className="text-sm text-pe-text-secondary">you@example.com</p>
                   </div>
                 </div>
               </Preview>
@@ -410,15 +410,15 @@ export default function DesignLibraryPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-neutral-200 bg-neutral-50">
-                      <th className="text-left p-3 font-semibold text-neutral-700">Class</th>
-                      <th className="text-left p-3 font-semibold text-neutral-700">Usage</th>
+                      <th className="text-left p-3 font-semibold text-pe-text">Class</th>
+                      <th className="text-left p-3 font-semibold text-pe-text">Usage</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
                     {cssClasses.map((row) => (
                       <tr key={row.class}>
-                        <td className="p-3 font-mono text-xs text-neutral-800">{row.class}</td>
-                        <td className="p-3 text-neutral-600">{row.desc}</td>
+                        <td className="p-3 font-mono text-xs text-pe-text">{row.class}</td>
+                        <td className="p-3 text-pe-text-secondary">{row.desc}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -436,8 +436,8 @@ function Section({ id, title, lead, children }) {
   return (
     <section id={id} className="scroll-mt-24">
       <div className="mb-4 sm:mb-5">
-        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-neutral-900">{title}</h2>
-        {lead && <p className="text-sm sm:text-base text-neutral-500 mt-1.5">{lead}</p>}
+        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-pe-text">{title}</h2>
+        {lead && <p className="text-sm sm:text-base text-pe-text-secondary mt-1.5">{lead}</p>}
       </div>
       <div className="space-y-4">{children}</div>
     </section>
@@ -447,7 +447,7 @@ function Section({ id, title, lead, children }) {
 function Preview({ label, children }) {
   return (
     <div>
-      <p className="text-sm font-medium text-neutral-600 mb-2">{label}</p>
+      <p className="text-sm font-medium text-pe-text-secondary mb-2">{label}</p>
       {children}
     </div>
   );
@@ -456,7 +456,7 @@ function Preview({ label, children }) {
 function Code({ children, className = '' }) {
   return (
     <code
-      className={`font-mono text-xs bg-neutral-100 text-neutral-800 px-1.5 py-0.5 rounded ${className}`}
+      className={`font-mono text-xs bg-neutral-100 text-pe-text px-1.5 py-0.5 rounded ${className}`}
     >
       {children}
     </code>
@@ -467,8 +467,8 @@ function InfoRow({ label, value }) {
   return (
     <div className="flex items-center gap-3 px-5 py-4">
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-neutral-500">{label}</div>
-        <div className="text-base text-neutral-900 font-medium truncate">{value}</div>
+        <div className="text-sm text-pe-text-secondary">{label}</div>
+        <div className="text-base text-pe-text font-medium truncate">{value}</div>
       </div>
     </div>
   );

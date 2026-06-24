@@ -8,7 +8,7 @@
 
 export const BRAND_REFERENCE = 'https://cesto.co/brand-kit';
 
-export const CANVAS = '#F7F7F5';
+export const CANVAS = '#000000';
 
 export const edgeX = 'px-5 sm:px-8 lg:px-12';
 
@@ -18,19 +18,19 @@ export const HEADER_BELOW_BANNER = 'top-14 sm:top-16';
 
 export const content = `max-w-6xl mx-auto ${edgeX}`;
 
-/** PocketEdge palette — light-mode adaptation of Cesto’s green / accent system */
+/** PocketEdge palette — institutional dark theme (June 2026) */
 export const palette = {
-  canvas: { hex: '#F7F7F5', token: 'bg-pe-canvas', usage: 'Page background (Cesto green-240 adapted)' },
-  surface: { hex: '#FFFFFF', token: 'bg-pe-surface', usage: 'Cards, inputs (Cesto green-10)' },
-  text: { hex: '#171717', token: 'text-pe-text', usage: 'Primary text' },
-  textSecondary: { hex: '#525252', token: 'text-pe-text-secondary', usage: 'Body, labels (Cesto green-40)' },
-  textMuted: { hex: '#737373', token: 'text-pe-text-muted', usage: 'Captions, metadata (Cesto green-50)' },
-  border: { hex: '#E5E5E5', token: 'border-pe-border', usage: 'Borders, dividers (Cesto green-80)' },
-  accent: { hex: '#00C853', token: 'text-pe-accent', usage: 'Primary accent — toned from Cesto #00ff6a for light UI' },
-  accentBright: { hex: '#00FF6A', token: 'text-pe-accent-bright', usage: 'Cesto neon-green — banners, dark surfaces' },
-  positive: { hex: '#059669', token: 'text-pe-positive', usage: 'Returns, success' },
-  negative: { hex: '#E11D48', token: 'text-pe-negative', usage: 'Losses, errors (Cesto coral family)' },
-  warning: { hex: '#E97A50', token: 'text-pe-warning', usage: 'Highlights (Cesto coral-60)' },
+  canvas: { hex: '#000000', token: 'bg-pe-canvas', usage: 'Page background' },
+  surface: { hex: '#000000', token: 'bg-pe-surface', usage: 'Cards, inputs' },
+  text: { hex: '#FFFFFF', token: 'text-pe-text', usage: 'Primary text' },
+  textSecondary: { hex: '#A0A0A0', token: 'text-pe-text-secondary', usage: 'Body, labels' },
+  textMuted: { hex: '#A0A0A0', token: 'text-pe-text-muted', usage: 'Captions, metadata' },
+  border: { hex: '#1A1A1A', token: 'border-pe-border', usage: 'Borders, dividers' },
+  accent: { hex: '#FFFFFF', token: 'text-pe-accent', usage: 'Primary accent — CTAs on dark canvas' },
+  accentBright: { hex: '#FFFFFF', token: 'text-pe-accent-bright', usage: 'High-contrast accent' },
+  positive: { hex: '#10B981', token: 'text-pe-positive', usage: 'Returns, success' },
+  negative: { hex: '#F43F5E', token: 'text-pe-negative', usage: 'Losses, errors' },
+  warning: { hex: '#F59E0B', token: 'text-pe-warning', usage: 'Highlights' },
 };
 
 /**

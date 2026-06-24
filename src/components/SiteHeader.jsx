@@ -25,7 +25,7 @@ export default function SiteHeader({
 
   return (
     <header
-      className={`${positionClass} inset-x-0 w-full bg-[#F7F7F5] border-b border-neutral-200/60 ${className}`}
+      className={`${positionClass} inset-x-0 w-full bg-pe-canvas border-b border-neutral-200/60 ${className}`}
     >
       <div className={`flex items-center justify-between gap-4 h-16 sm:h-[4.5rem] ${edgeX}`}>
         {logoHref ? (

@@ -11,7 +11,7 @@ export function LegalSiteHeader() {
     <SiteHeader logoHref="/" embedded sticky={false}>
       <a
         href="/"
-        className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-pe-text-secondary hover:text-pe-text transition-colors"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden />
         Back to home
@@ -32,18 +32,18 @@ export default function LegalPage() {
   }, [page.title]);
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
+    <div className="min-h-screen bg-[#F7F7F5] text-pe-text">
       <main className={`${content} py-10 sm:py-14 pb-16`}>
         <div className="max-w-3xl">
           <p className="pe-eyebrow">Legal</p>
           <h1 className="pe-title mt-2">{page.title}</h1>
-          <p className="text-sm text-neutral-500 mt-2">Last updated {page.updated}</p>
+          <p className="text-sm text-pe-text-secondary mt-2">Last updated {page.updated}</p>
 
           <div className="mt-10 space-y-8">
             {page.sections.map((section) => (
               <section key={section.heading}>
-                <h2 className="text-lg font-semibold text-neutral-900">{section.heading}</h2>
-                <p className="mt-2 text-base text-neutral-600 leading-relaxed">{section.body}</p>
+                <h2 className="text-lg font-semibold text-pe-text">{section.heading}</h2>
+                <p className="mt-2 text-base text-pe-text-secondary leading-relaxed">{section.body}</p>
               </section>
             ))}
           </div>
@@ -52,7 +52,7 @@ export default function LegalPage() {
             className="mt-12 pt-8 border-t border-neutral-200"
             aria-label="Other legal pages"
           >
-            <p className="text-xs font-medium uppercase tracking-wider text-neutral-400 mb-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-pe-text-muted mb-3">
               Legal
             </p>
             <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -62,8 +62,8 @@ export default function LegalPage() {
                     href={getLegalUrl(link.slug)}
                     className={
                       link.slug === slug
-                        ? 'text-neutral-900 font-medium'
-                        : 'text-neutral-600 hover:text-neutral-900 transition-colors'
+                        ? 'text-pe-text font-medium'
+                        : 'text-pe-text-secondary hover:text-pe-text transition-colors'
                     }
                     aria-current={link.slug === slug ? 'page' : undefined}
                   >

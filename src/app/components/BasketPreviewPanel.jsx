@@ -22,7 +22,7 @@ export default function BasketPreviewPanel({ basket }) {
             type="button"
             onClick={() => setView(id)}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
-              view === id ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+              view === id ? 'bg-white text-pe-text shadow-sm' : 'text-pe-text-secondary hover:text-pe-text'
             }`}
           >
             <Icon className="w-4 h-4 shrink-0" />

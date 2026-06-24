@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import PrimaryCta from '../../components/PrimaryCta';
 import { getReferralLink } from '../../supabase';
 import { createLinkId, loadUserProfileAsync, saveUserProfile } from '../profileStore';
 import { isDbUserId } from '../userDataApi';
@@ -437,11 +438,7 @@ function ReferralRow({ referralLink, referralCount = 0, copied, onCopy }) {
           aria-label="Your referral link"
           className="flex-1 min-w-0 pe-input py-2.5 text-xs sm:text-sm truncate bg-neutral-50"
         />
-        <button
-          type="button"
-          onClick={onCopy}
-          className="shrink-0 inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition-colors"
-        >
+        <PrimaryCta type="button" onClick={onCopy} className="shrink-0">
           {copied ? (
             <>
               <Check className="w-4 h-4" />
@@ -453,7 +450,7 @@ function ReferralRow({ referralLink, referralCount = 0, copied, onCopy }) {
               Copy
             </>
           )}
-        </button>
+        </PrimaryCta>
       </div>
     </div>
   );

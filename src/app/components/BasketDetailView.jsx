@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { enrichBasket } from '../basketCatalog';
 import { getBasketUpdates } from '../basketUpdatesCatalog';
@@ -11,11 +11,13 @@ import { getBasketDetailTabFromUrl } from '../appRoute';
 import NavChart from './NavChart';
 import FollowBasketPanel from './FollowBasketPanel';
 import BottomSheet from './BottomSheet';
+import PrimaryCta from '../../components/PrimaryCta';
 import {
   capture,
   captureBasketDetailTabViewed,
   captureFollowPanelOpened,
 } from '../../analytics';
+import { fetchBasketNavHistory, fetchBasketNavSummary, fetchBasketConstituentWeights, isDbBasketId, missingSymbols } from '../navApi';
 
 const VALID_TAB_IDS = new Set(['about', 'info', 'updates']);
 
@@ -42,8 +44,19 @@ export default function BasketDetailView({
   const [chartPeriod, setChartPeriod] = useState('3M');
   const [followOpen, setFollowOpen] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [navHistory, setNavHistory] = useState(null);
+  const [navSummary, setNavSummary] = useState(null);
+  const [constituentWeights, setConstituentWeights] = useState(null);
 
-  const basket = enrichBasket(rawBasket);
+  const basket = useMemo(
+    () =>
+      enrichBasket({
+        ...rawBasket,
+        navHistory: navHistory ?? rawBasket?.navHistory,
+        navSummary: navSummary ?? rawBasket?.navSummary,
+      }),
+    [rawBasket, navHistory, navSummary]
+  );
 
   const segmentMix = basket.constituents.reduce((acc, c) => {
     const seg = c.segment || 'Other';
@@ -53,6 +66,30 @@ export default function BasketDetailView({
 
   const description = basket.description || basket.shortDescription || '';
   const canExpandDesc = description.length > 140;
+
+  useEffect(() => {
+    if (preview || !isDbBasketId(rawBasket?.id)) return undefined;
+    let mounted = true;
+
+    Promise.all([
+      fetchBasketNavHistory(rawBasket.id),
+      fetchBasketNavSummary(rawBasket.id),
+      fetchBasketConstituentWeights(rawBasket.id),
+    ])
+      .then(([history, summary, weights]) => {
+        if (!mounted) return;
+        if (history?.length) setNavHistory(history);
+        if (summary) setNavSummary(summary);
+        if (weights?.length) setConstituentWeights(weights);
+      })
+      .catch(() => {
+        // NAV tables may not exist yet — fall back to mock curve
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [rawBasket?.id, preview]);
 
   useEffect(() => {
     if (preview) return;
@@ -79,7 +116,7 @@ export default function BasketDetailView({
   return (
     <div className={`w-full ${preview ? '' : 'pb-24 lg:pb-10'}`}>
       {preview && (
-        <p className="text-xs text-neutral-500 mb-4 px-4 sm:px-0">
+        <p className="text-xs text-pe-text-secondary mb-4 px-4 sm:px-0">
           Preview — switch tabs below to see About, Basket, and Updates
         </p>
       )}
@@ -249,6 +286,17 @@ export default function BasketDetailView({
       )}
 
       <div className="px-5 pt-4 sm:pt-5 lg:px-0 lg:pt-0">
+        {navSummary?.navStatus === 'error' && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            <p className="font-semibold">Basket performance calculation error</p>
+            <p className="mt-1 text-red-800/90">
+              Missing prices for:{' '}
+              {missingSymbols(navSummary.missingConids, rawBasket?.constituents).join(', ') ||
+                'unknown tickers'}
+              . NAV updates are paused until all required quotes are available.
+            </p>
+          </div>
+        )}
         <NavChart data={basket.navHistory} height={160} period={chartPeriod} />
 
         <div className="mt-3 flex gap-1">
@@ -296,7 +344,13 @@ export default function BasketDetailView({
 
       <div className="px-5 pt-5 pb-8 sm:pb-10 lg:px-0 lg:pb-10">
         {activeTab === 'about' && <AboutTab basket={basket} isOwn={isOwn} />}
-        {activeTab === 'info' && <BasketInfoTab basket={basket} segmentMix={segmentMix} />}
+        {activeTab === 'info' && (
+          <BasketInfoTab
+            basket={basket}
+            segmentMix={segmentMix}
+            constituentWeights={constituentWeights}
+          />
+        )}
         {activeTab === 'updates' && (
           <UpdatesTab
             basket={basket}
@@ -323,8 +377,8 @@ export default function BasketDetailView({
 
       {!preview && (
         <>
-          <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-4 bg-gradient-to-t from-[#F7F7F5] via-[#F7F7F5] to-transparent">
-            <button
+          <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-4 bg-gradient-to-t from-pe-canvas via-pe-canvas to-transparent">
+            <PrimaryCta
               type="button"
               onClick={() => {
                 if (subscribed) return;
@@ -332,10 +386,11 @@ export default function BasketDetailView({
                 setFollowOpen(true);
               }}
               disabled={subscribed}
-              className="w-full h-12 rounded-xl bg-neutral-900 text-white text-sm font-semibold shadow-lg shadow-black/10 disabled:opacity-60"
+              fullWidth
+              className="shadow-lg shadow-black/10"
             >
               {subscribed ? 'Following' : 'Start Following'}
-            </button>
+            </PrimaryCta>
           </div>
           <BottomSheet
             open={followOpen}
@@ -443,7 +498,16 @@ function AboutTab({ basket, isOwn }) {
   );
 }
 
-function BasketInfoTab({ basket, segmentMix }) {
+function BasketInfoTab({ basket, segmentMix, constituentWeights }) {
+  const weightByConid = new Map(
+    (constituentWeights || []).map((w) => [w.conid, w])
+  );
+  const showDrift =
+    constituentWeights?.length > 0 &&
+    constituentWeights.some(
+      (w) => Math.abs(w.currentWeight - w.targetWeight) > 0.05
+    );
+
   const hasSegmentMix = Object.keys(segmentMix).length > 0;
 
   return (
@@ -476,14 +540,30 @@ function BasketInfoTab({ basket, segmentMix }) {
       )}
 
       <section className={`pe-card overflow-hidden ${hasSegmentMix ? 'xl:col-span-2' : ''}`}>
-        <div className="px-5 sm:px-6 py-4 border-b border-pe-border/60 flex items-center justify-between">
+        <div className="px-5 sm:px-6 py-4 border-b border-pe-border/60 flex items-center justify-between gap-3">
           <h2 className="pe-section-title text-base">Constituents</h2>
-          <span className="text-xs text-pe-text-muted capitalize">
-            {basket.weightingType === 'equal' ? 'Equal weighted' : 'Custom weighted'}
-          </span>
+          <div className="text-right">
+            <span className="text-xs text-pe-text-muted capitalize block">
+              {basket.weightingType === 'equal' ? 'Equal weighted' : 'Custom weighted'}
+            </span>
+            {showDrift && (
+              <span className="text-[10px] text-pe-text-muted">Target vs current allocation</span>
+            )}
+          </div>
         </div>
+        {showDrift && (
+          <div className="px-5 sm:px-6 py-2 border-b border-pe-border/40 bg-neutral-50/80 text-[11px] text-pe-text-muted">
+            Current weights drift from your targets as prices move between fetches.
+          </div>
+        )}
         <ul className="lg:grid lg:grid-cols-2">
-          {basket.constituents.map((c, i) => (
+          {basket.constituents.map((c, i) => {
+            const w = weightByConid.get(Number(c.conid));
+            const target = w?.targetWeight ?? c.weight;
+            const current = w?.currentWeight ?? c.weight;
+            const drifted = Math.abs(current - target) > 0.05;
+
+            return (
             <li
               key={c.symbol}
               className={`flex items-center justify-between px-5 sm:px-6 py-3 border-pe-border/60 ${
@@ -495,11 +575,27 @@ function BasketInfoTab({ basket, segmentMix }) {
                 <div className="text-xs text-pe-text-muted">{c.name}</div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-semibold text-pe-positive">{c.weight}%</div>
+                {showDrift ? (
+                  <>
+                    <div className="text-[10px] uppercase tracking-wide text-pe-text-muted">
+                      Target / Current
+                    </div>
+                    <div className="text-sm font-semibold tabular-nums">
+                      <span className="text-pe-text">{target.toFixed(1)}%</span>
+                      <span className="text-pe-text-muted mx-1">/</span>
+                      <span className={drifted ? 'text-amber-700' : 'text-pe-positive'}>
+                        {current.toFixed(1)}%
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm font-semibold text-pe-positive">{target}%</div>
+                )}
                 {c.segment && <div className="text-[10px] text-pe-text-muted">{c.segment}</div>}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
     </div>
@@ -517,13 +613,9 @@ function UpdatesTab({ basket, subscribed, onSubscribe }) {
           Subscribe to this basket to see rebalance alerts and allocation changes — like
           which stocks were trimmed or added.
         </p>
-        <button
-          type="button"
-          onClick={onSubscribe}
-          className="mt-5 h-11 px-6 rounded-xl bg-neutral-900 text-white text-sm font-semibold"
-        >
+        <PrimaryCta type="button" onClick={onSubscribe} className="mt-5">
           Subscribe for updates
-        </button>
+        </PrimaryCta>
         <p className="text-[11px] text-pe-text-muted mt-3">
           Tracking an investment on this basket also subscribes you.
         </p>

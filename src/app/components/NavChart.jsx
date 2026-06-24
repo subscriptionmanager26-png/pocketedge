@@ -65,7 +65,7 @@ export default function NavChart({ data, height = 160, period = '3M' }) {
 
   if (!data?.length) {
     return (
-      <div className="h-40 flex items-center justify-center text-sm text-neutral-500">
+      <div className="h-40 flex items-center justify-center text-sm text-pe-text-secondary">
         NAV data unavailable
       </div>
     );

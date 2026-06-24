@@ -58,7 +58,7 @@ export default function PublicLeaderboardPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F7F7F5] text-neutral-900">
+    <div className="min-h-screen w-full bg-[#F7F7F5] text-pe-text">
       <StickyTopChrome
         banner={<MarketWhispererBanner />}
         navigation={
@@ -66,7 +66,7 @@ export default function PublicLeaderboardPage() {
             <button
               type="button"
               onClick={goHome}
-              className="text-base text-neutral-600 hover:text-neutral-900 transition-colors"
+              className="text-base text-pe-text-secondary hover:text-pe-text transition-colors"
             >
               Home
             </button>

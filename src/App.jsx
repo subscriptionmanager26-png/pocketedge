@@ -269,8 +269,8 @@ export default function App() {
   if (bootstrapping && route !== 'app') {
     return (
       <PageShell user={user} challengeProgress={challengeProgress}>
-        <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center">
-          <div className="w-10 h-10 border-2 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
+        <div className="min-h-screen flex items-center justify-center bg-pe-canvas">
+          <div className={`w-10 h-10 border-2 rounded-full animate-spin border-pe-border border-t-pe-text`} />
         </div>
       </PageShell>
     );
@@ -293,7 +293,11 @@ export default function App() {
   }
 
   return (
-    <PageShell user={user} challengeProgress={challengeProgress} navigation={<LandingSiteHeader />}>
+    <PageShell
+      user={user}
+      challengeProgress={challengeProgress}
+      navigation={<LandingSiteHeader />}
+    >
       <LandingPage />
     </PageShell>
   );

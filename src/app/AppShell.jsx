@@ -27,7 +27,6 @@ import {
   captureAuthStarted,
 } from '../analytics';
 import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
-
 export default function AppShell({
   user,
   userBaskets,
@@ -148,7 +147,7 @@ export default function AppShell({
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#F7F7F5] text-neutral-900 flex flex-col">
+    <div className="min-h-screen w-full flex flex-col bg-pe-canvas text-pe-text">
       <StickyTopChrome
         banner={banner}
         navigation={
@@ -211,12 +210,12 @@ export default function AppShell({
               />
             )}
             {tab === 'basket' && !selectedBasket && (
-              <div className="text-center py-16 text-neutral-500 text-sm">
+              <div className="text-center py-16 text-pe-text-secondary text-sm">
                 Basket not found.{' '}
                 <button
                   type="button"
                   onClick={() => handleNavigate('search')}
-                  className="text-neutral-900 font-medium"
+                  className="text-pe-text font-medium"
                 >
                   Browse baskets
                 </button>

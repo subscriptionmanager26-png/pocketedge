@@ -23,7 +23,7 @@ const step2Progress = getChallengeProgress({
 
 export default function Step2DemoPage() {
   return (
-    <div className="min-h-screen w-full bg-[#F7F7F5] text-neutral-900 flex flex-col">
+    <div className="min-h-screen w-full bg-[#F7F7F5] text-pe-text flex flex-col">
       <div className={`${edgeX} bg-sky-50 border-b border-sky-200/80 py-2.5 shrink-0`}>
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3 text-sm">
           <p className="text-sky-950">

@@ -4,17 +4,17 @@
 
 @layer base {
   :root {
-    --pe-canvas: #f7f7f5;
-    --pe-surface: #ffffff;
-    --pe-text: #171717;
-    --pe-text-secondary: #525252;
-    --pe-text-muted: #737373;
-    --pe-border: #e5e5e5;
-    --pe-accent: #00c853;
-    --pe-accent-bright: #00ff6a;
-    --pe-positive: #059669;
-    --pe-negative: #e11d48;
-    --pe-warning: #e97a50;
+    --pe-canvas: #000000;
+    --pe-surface: #000000;
+    --pe-text: #ffffff;
+    --pe-text-secondary: #a0a0a0;
+    --pe-text-muted: #a0a0a0;
+    --pe-border: #1a1a1a;
+    --pe-accent: #ffffff;
+    --pe-accent-bright: #ffffff;
+    --pe-positive: #10b981;
+    --pe-negative: #f43f5e;
+    --pe-warning: #f59e0b;
   }
 }
 
@@ -41,11 +41,17 @@ body {
   .pe-card {
     @apply rounded-2xl;
     background-color: var(--pe-surface);
-    border: 1px solid rgb(229 229 229 / 0.8);
+    border: 1px solid var(--pe-border);
   }
 
   .pe-card-hover {
-    @apply hover:border-neutral-300 hover:shadow-lg transition-all duration-300;
+    @apply transition-all duration-300;
+    border-color: var(--pe-border);
+  }
+
+  .pe-card-hover:hover {
+    border-color: #374151;
+    box-shadow: none;
   }
 
   /* —— Typography (Cesto role mapping) —— */
@@ -100,60 +106,71 @@ body {
 
   /* —— Forms —— */
   .pe-input {
-    @apply w-full rounded-xl px-4 py-3 pe-body-s placeholder:text-neutral-400 focus:outline-none focus:ring-2;
+    @apply w-full rounded-xl px-4 py-3 pe-body-s placeholder:text-pe-text-muted focus:outline-none focus:ring-2;
     background-color: var(--pe-surface);
-    border: 1px solid rgb(229 229 229 / 0.8);
+    border: 1px solid var(--pe-border);
     color: var(--pe-text);
   }
 
   .pe-input:focus {
     border-color: var(--pe-text);
-    --tw-ring-color: rgb(23 23 23 / 0.1);
+    --tw-ring-color: rgb(255 255 255 / 0.1);
   }
 
   .pe-nav {
-    @apply backdrop-blur-xl;
-    background-color: rgb(247 247 245 / 0.95);
-    border-color: rgb(229 229 229 / 0.6);
+    @apply backdrop-blur-xl border-b;
+    background-color: rgb(0 0 0 / 0.95);
+    border-color: rgb(26 26 26 / 0.6);
   }
 
   /* —— Buttons —— */
   .pe-btn-primary {
-    @apply pe-btn-label inline-flex items-center justify-center text-white rounded-full transition-colors;
+    @apply pe-btn-label inline-flex items-center justify-center rounded-full transition-colors;
     background-color: var(--pe-text);
+    color: var(--pe-surface);
   }
 
   .pe-btn-primary:hover {
-    @apply bg-neutral-800;
+    opacity: 0.9;
   }
 
   .pe-btn-secondary {
     @apply pe-btn-label inline-flex items-center justify-center font-medium rounded-full transition-colors;
-    @apply bg-neutral-100 hover:bg-neutral-200;
+    background-color: #1a1a1a;
     color: var(--pe-text);
+  }
+
+  .pe-btn-secondary:hover {
+    background-color: #262626;
   }
 
   /* —— Chips & nav —— */
   .pe-pill-active {
-    @apply text-white;
     background-color: var(--pe-text);
+    color: var(--pe-surface);
   }
 
   .pe-pill-inactive {
-    @apply bg-neutral-100 border hover:text-neutral-900;
+    @apply border hover:text-pe-text;
+    background-color: #1a1a1a;
     color: var(--pe-text-secondary);
-    border-color: rgb(229 229 229 / 0.8);
+    border-color: rgb(55 65 81 / 0.8);
   }
 
   .pe-nav-item-active {
-    @apply text-white border;
+    @apply border;
     background-color: var(--pe-text);
+    color: var(--pe-surface);
     border-color: var(--pe-text);
   }
 
   .pe-nav-item-inactive {
-    @apply hover:bg-neutral-100 border border-transparent;
+    @apply border border-transparent;
     color: var(--pe-text-secondary);
+  }
+
+  .pe-nav-item-inactive:hover {
+    background-color: #1a1a1a;
   }
 
   .pe-nav-item-inactive:hover {

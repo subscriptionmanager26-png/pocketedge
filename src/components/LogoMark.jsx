@@ -22,7 +22,7 @@ export default function LogoMark({ size = 'md', showWordmark = true, className =
         src="/logo.png"
         alt=""
         aria-hidden
-        className={`${heightClass} w-auto object-contain shrink-0`}
+        className={`pe-logo-img ${heightClass} w-auto object-contain shrink-0`}
       />
       {showWordmark && (
         <span

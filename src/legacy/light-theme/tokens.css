@@ -1,0 +1,17 @@
+/**
+ * Legacy light theme — PocketEdge pre-dark redesign
+ * Backup only. Production uses dark tokens in src/index.css
+ */
+:root {
+  --pe-canvas: #f7f7f5;
+  --pe-surface: #ffffff;
+  --pe-text: #171717;
+  --pe-text-secondary: #525252;
+  --pe-text-muted: #737373;
+  --pe-border: #e5e5e5;
+  --pe-accent: #00c853;
+  --pe-accent-bright: #00ff6a;
+  --pe-positive: #059669;
+  --pe-negative: #e11d48;
+  --pe-warning: #e97a50;
+}

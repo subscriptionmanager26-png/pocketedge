@@ -6,6 +6,7 @@ import {
   subscribeToBasket,
 } from '../subscriptionStore';
 import { capture } from '../../analytics';
+import PrimaryCta from '../../components/PrimaryCta';
 
 export default function FollowBasketPanel({
   basket,
@@ -69,11 +70,12 @@ export default function FollowBasketPanel({
         </div>
       )}
 
-      <button
+      <PrimaryCta
         type="button"
         onClick={handleFollow}
         disabled={following || status === 'loading'}
-        className="mt-4 w-full h-11 rounded-xl bg-neutral-900 text-white text-sm font-semibold transition-colors hover:bg-neutral-800 disabled:opacity-40 disabled:pointer-events-none"
+        fullWidth
+        className="mt-4"
       >
         {status === 'loading'
           ? 'Saving…'
@@ -82,7 +84,7 @@ export default function FollowBasketPanel({
             : following
               ? 'Following'
               : 'Start Following'}
-      </button>
+      </PrimaryCta>
     </div>
   );
 }

@@ -53,20 +53,20 @@ export default function BasketCard({ basket, subtitle, onClick, showReturn = tru
               {(basket.tags || []).slice(0, 2).map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200/80"
+                  className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-pe-text-secondary border border-neutral-200/80"
                 >
                   {tag}
                 </span>
               ))}
             </div>
-            <div className="flex items-center gap-3 text-neutral-500">
+            <div className="flex items-center gap-3 text-pe-text-secondary">
               {basket.followers != null && (
                 <span className="flex items-center gap-1 text-xs">
                   <Users className="w-3.5 h-3.5" />
                   {basket.followers.toLocaleString()}
                 </span>
               )}
-              <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-neutral-900" />
+              <ChevronRight className="w-4 h-4 text-pe-text-muted group-hover:text-pe-text" />
             </div>
           </div>
         </div>

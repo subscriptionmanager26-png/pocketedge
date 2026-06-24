@@ -1,0 +1,389 @@
+/* Local-only redesign — requires .theme-redesign wrapper (see RedesignRoot.jsx) */
+
+html.theme-redesign,
+.theme-redesign {
+  color-scheme: dark;
+  background-color: #000;
+}
+
+/* —— Pure black surfaces everywhere —— */
+
+.theme-redesign,
+.theme-redesign body,
+.theme-redesign #root,
+.theme-redesign .bg-pe-canvas,
+.theme-redesign .bg-pe-surface,
+.theme-redesign .bg-\[\#F7F7F5\],
+.theme-redesign .bg-white,
+.theme-redesign .bg-white\/50,
+.theme-redesign .bg-white\/80,
+.theme-redesign .bg-white\/85,
+.theme-redesign .bg-white\/95,
+.theme-redesign .bg-pe-canvas\/95,
+.theme-redesign .bg-\[\#F7F7F5\]\/95,
+.theme-redesign .bg-neutral-50,
+.theme-redesign .bg-neutral-100,
+.theme-redesign .bg-neutral-800\/40,
+.theme-redesign .bg-neutral-900,
+.theme-redesign .pe-card,
+.theme-redesign .pe-page,
+.theme-redesign .pe-nav,
+.theme-redesign .pe-input,
+.theme-redesign header,
+.theme-redesign .sticky.top-0 {
+  background-color: #000 !important;
+}
+
+.theme-redesign .pe-card-hover:hover {
+  background-color: #000 !important;
+  border-color: #374151 !important;
+  box-shadow: none !important;
+}
+
+/* Logo mark — invert black PNG to white on dark canvas */
+.theme-redesign .pe-logo-img {
+  filter: brightness(0) invert(1);
+}
+
+/* —— Force light text (do not rely on variable cascade alone) —— */
+
+.theme-redesign,
+.theme-redesign #root {
+  color: #fff !important;
+}
+
+.theme-redesign .text-pe-text,
+.theme-redesign .pe-display,
+.theme-redesign .pe-title,
+.theme-redesign .pe-section-title,
+.theme-redesign .pe-card-title,
+.theme-redesign .pe-stat,
+.theme-redesign h1,
+.theme-redesign h2,
+.theme-redesign h3,
+.theme-redesign h4 {
+  color: #fff !important;
+}
+
+.theme-redesign .text-pe-text-secondary,
+.theme-redesign .pe-body,
+.theme-redesign .pe-body-s {
+  color: #a0a0a0 !important;
+}
+
+.theme-redesign .text-pe-text-muted,
+.theme-redesign .pe-eyebrow,
+.theme-redesign .pe-label {
+  color: #a0a0a0 !important;
+}
+
+.theme-redesign .hover\:text-pe-text:hover {
+  color: #fff !important;
+}
+
+.theme-redesign .text-pe-positive,
+.theme-redesign .text-emerald-600,
+.theme-redesign .text-emerald-700 {
+  color: #10b981 !important;
+}
+
+.theme-redesign .text-pe-negative,
+.theme-redesign .text-rose-500,
+.theme-redesign .text-rose-600 {
+  color: #f43f5e !important;
+}
+
+.theme-redesign .text-amber-600,
+.theme-redesign .text-amber-700 {
+  color: #fbbf24 !important;
+}
+
+/* White CTAs — Get Started standard */
+.theme-redesign .pe-redesign-cta,
+.theme-redesign .pe-btn-primary,
+.theme-redesign .pe-pill-active,
+.theme-redesign .pe-nav-item-active,
+.theme-redesign button.bg-white,
+.theme-redesign .bg-white.text-black {
+  color: #000 !important;
+  background-color: #fff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 0 20px rgb(255 255 255 / 0.2) !important;
+}
+
+.theme-redesign .pe-redesign-cta:hover:not(:disabled),
+.theme-redesign .pe-btn-primary:hover:not(:disabled) {
+  background-color: #e5e5e5 !important;
+  box-shadow: 0 0 30px rgb(255 255 255 / 0.4) !important;
+}
+
+.theme-redesign .pe-btn-secondary {
+  background-color: transparent !important;
+  border-color: #4b5563 !important;
+  color: #fff !important;
+}
+
+.theme-redesign .border-neutral-200,
+.theme-redesign .border-neutral-200\/60,
+.theme-redesign .border-neutral-300,
+.theme-redesign .border-pe-border,
+.theme-redesign .border-neutral-100,
+.theme-redesign .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1a1a1a !important;
+}
+
+.theme-redesign .pe-card {
+  border-color: #1a1a1a !important;
+}
+
+.theme-redesign .pe-input {
+  background-color: #000 !important;
+  border: none !important;
+  border-bottom: 1px solid #374151 !important;
+  border-radius: 0 !important;
+  color: #fff !important;
+}
+
+.theme-redesign .pe-input:focus {
+  border-bottom-color: #fff !important;
+  box-shadow: none !important;
+}
+
+.theme-redesign ::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+.theme-redesign .shadow-sm {
+  box-shadow: none !important;
+}
+
+.theme-redesign .from-\[\#F7F7F5\] {
+  --tw-gradient-from: #000 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.theme-redesign .bg-red-50,
+.theme-redesign .bg-rose-50 {
+  background-color: #000 !important;
+}
+
+.theme-redesign .text-red-900,
+.theme-redesign .text-red-800 {
+  color: #fca5a5 !important;
+}
+
+/* —— Globe hero —— */
+
+.pe-globe-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  cursor: grab;
+}
+
+.pe-globe-canvas:active {
+  cursor: grabbing;
+}
+
+.pe-globe-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pe-globe-city-label {
+  position: absolute;
+  color: rgb(255 255 255 / 0.85);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transform: translate(12px, -50%);
+  transition: opacity 0.2s ease;
+  text-shadow: 0 0 4px rgb(0 0 0 / 0.9);
+  display: flex;
+  align-items: center;
+}
+
+.pe-globe-city-label::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  width: 3px;
+  height: 3px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px 1px rgb(255 255 255 / 0.9);
+}
+
+.pe-redesign-hero-ui {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 6rem 1.5rem 3rem;
+}
+
+.pe-redesign-hero--chrome .pe-redesign-hero-ui {
+  min-height: calc(100dvh - 7rem);
+  padding-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  .pe-redesign-hero-ui {
+    padding: 8rem 6rem 4rem;
+  }
+
+  .pe-redesign-hero--chrome .pe-redesign-hero-ui {
+    padding-top: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pe-redesign-hero-ui {
+    padding-left: 8rem;
+  }
+}
+
+.pe-redesign-hero-ui .interactive-ui {
+  pointer-events: auto;
+}
+
+.pe-redesign-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  pointer-events: auto;
+  background: transparent;
+}
+
+@media (min-width: 768px) {
+  .pe-redesign-nav {
+    padding: 2rem 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pe-redesign-nav {
+    padding-left: 8rem;
+    padding-right: 8rem;
+  }
+}
+
+.pe-redesign-hero-title {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -1px;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .pe-redesign-hero-title {
+    font-size: 3.5rem;
+    letter-spacing: -1.5px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pe-redesign-hero-title {
+    font-size: 4.5rem;
+  }
+}
+
+.pe-redesign-feature-text {
+  font-size: 10px;
+  color: #a0a0a0;
+  line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+  .pe-redesign-feature-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .pe-globe-canvas {
+    pointer-events: none;
+  }
+}
+
+.pe-redesign-cta {
+  background-color: #fff;
+  color: #000;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.3s;
+  box-shadow: 0 0 20px rgb(255 255 255 / 0.2);
+}
+
+.pe-redesign-cta:hover:not(:disabled) {
+  background-color: #e5e5e5;
+  box-shadow: 0 0 30px rgb(255 255 255 / 0.4);
+}
+
+.pe-redesign-devbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  background: #000;
+  border-top: 1px solid #374151;
+  font-size: 11px;
+  color: #a0a0a0;
+}
+
+.pe-redesign-devbar a,
+.pe-redesign-devbar button {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+@media (min-width: 1024px) {
+  .pe-redesign-devbar {
+    bottom: auto;
+    top: 0;
+    border-top: none;
+    border-bottom: 1px solid #374151;
+  }
+
+  .theme-redesign {
+    padding-top: 2rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  .theme-redesign {
+    padding-bottom: 2.5rem;
+  }
+}

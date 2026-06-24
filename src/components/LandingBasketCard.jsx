@@ -26,19 +26,19 @@ export default function LandingBasketCard({ basket }) {
 
       <div className="flex flex-1 flex-col p-5 min-h-0">
         <div className="h-14 shrink-0">
-          <h3 className="text-xl font-semibold text-neutral-900 leading-snug line-clamp-2">
+          <h3 className="text-xl font-semibold text-pe-text leading-snug line-clamp-2">
             {basket.name}
           </h3>
         </div>
 
         <div className="h-[4.5rem] shrink-0 mt-2">
-          <p className="text-base text-neutral-500 leading-relaxed line-clamp-3">
+          <p className="text-base text-pe-text-secondary leading-relaxed line-clamp-3">
             {basket.shortDescription || basket.description}
           </p>
         </div>
 
         <div className="h-[4.25rem] shrink-0 mt-4 pt-4 border-t border-neutral-100 flex flex-col justify-center">
-          <p className="text-xs font-medium uppercase tracking-wider text-neutral-400">
+          <p className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
             {returnLabel}
           </p>
           <p
@@ -54,7 +54,7 @@ export default function LandingBasketCard({ basket }) {
           {tagItems.map((tag) => (
             <span
               key={tag}
-              className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600"
+              className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-md bg-neutral-100 text-pe-text-secondary"
             >
               {tag}
             </span>

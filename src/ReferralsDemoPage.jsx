@@ -21,7 +21,7 @@ export default function ReferralsDemoPage() {
   const referralLink = getReferralLink(REFERRALS_DEMO_USER.id);
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
+    <div className="min-h-screen bg-[#F7F7F5] text-pe-text">
       <div className="sticky top-0 z-50 w-full isolate">
         <MarketWhispererBanner />
         <div className={`${edgeX} bg-amber-50 border-b border-amber-200/80 py-2.5`}>
@@ -111,17 +111,17 @@ export default function ReferralsDemoPage() {
           <h2 className="pe-section-title text-base">Summary</h2>
           <dl className="mt-4 grid sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <dt className="text-neutral-500">Referrals</dt>
-              <dd className="font-semibold text-neutral-900 mt-0.5">5 people joined via link</dd>
+              <dt className="text-pe-text-secondary">Referrals</dt>
+              <dd className="font-semibold text-pe-text mt-0.5">5 people joined via link</dd>
             </div>
             <div>
-              <dt className="text-neutral-500">Baskets created</dt>
-              <dd className="font-semibold text-neutral-900 mt-0.5">
+              <dt className="text-pe-text-secondary">Baskets created</dt>
+              <dd className="font-semibold text-pe-text mt-0.5">
                 {REFERRALS_DEMO_BASKETS.length} — {REFERRALS_DEMO_BASKETS[0].name}
               </dd>
             </div>
             <div>
-              <dt className="text-neutral-500">Challenge status</dt>
+              <dt className="text-pe-text-secondary">Challenge status</dt>
               <dd className="font-semibold text-emerald-700 mt-0.5">Eligible to enter</dd>
             </div>
           </dl>

@@ -69,7 +69,7 @@ function BasketBadgeOverlay({ basket, compact = false }) {
       )}
       {basket.isOwn && (
         <span
-          className={`absolute ${ownPos} px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 text-neutral-900 border border-white/80 shadow-sm`}
+          className={`absolute ${ownPos} px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 text-pe-text border border-white/80 shadow-sm`}
         >
           Yours
         </span>
