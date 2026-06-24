@@ -15,8 +15,8 @@ import {
   IBKR_SYMBOL_NOTE,
   isValidStockSymbol,
   normalizeStockSymbol,
-  stockUniverse,
 } from '../basketCatalog';
+import { constituentKey, formatInstrumentType, searchInstruments } from '../instrumentsApi';
 import { REBALANCE_FREQUENCIES } from '../rebalanceOptions';
 import { canCreateBasket, createBasketId, MAX_USER_BASKETS, saveUserBasket } from '../basketStore';
 import { isDbUserId } from '../userDataApi';
@@ -153,6 +153,9 @@ export default function CreateBasketPage({
         ]
   );
   const [stockQuery, setStockQuery] = useState('');
+  const [stockSearchResults, setStockSearchResults] = useState([]);
+  const [stockSearchLoading, setStockSearchLoading] = useState(false);
+  const [stockSearchSource, setStockSearchSource] = useState('empty');
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const flowTrackedRef = useRef(false);
@@ -164,32 +167,68 @@ export default function CreateBasketPage({
     [constituents]
   );
 
-  const filteredStocks = useMemo(() => {
-    const q = stockQuery.trim().toLowerCase();
-    const selected = new Set(constituents.map((c) => c.symbol));
-    return stockUniverse.filter(
-      (s) =>
-        !selected.has(s.symbol) &&
-        (s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
-    );
-  }, [stockQuery, constituents]);
+  const selectedConstituentKeys = useMemo(
+    () => new Set(constituents.map((c) => constituentKey(c))),
+    [constituents]
+  );
 
   const normalizedStockQuery = useMemo(() => normalizeStockSymbol(stockQuery), [stockQuery]);
 
-  const exactUniverseMatch = useMemo(
-    () => stockUniverse.find((s) => s.symbol === normalizedStockQuery),
-    [normalizedStockQuery]
+  const filteredStocks = useMemo(
+    () =>
+      stockSearchResults.filter((s) => {
+        const key = constituentKey(s);
+        return !selectedConstituentKeys.has(key);
+      }),
+    [stockSearchResults, selectedConstituentKeys]
   );
+
+  const exactSearchMatch = useMemo(() => {
+    if (!normalizedStockQuery) return null;
+    return (
+      filteredStocks.find((s) => s.symbol === normalizedStockQuery && s.isPrime) ??
+      filteredStocks.find((s) => s.symbol === normalizedStockQuery) ??
+      null
+    );
+  }, [filteredStocks, normalizedStockQuery]);
 
   const canAddCustomSymbol = useMemo(() => {
     if (!stockQuery.trim() || !isValidStockSymbol(stockQuery)) return false;
-    if (constituents.some((c) => c.symbol === normalizedStockQuery)) return false;
-    if (exactUniverseMatch) return false;
+    if (stockSearchLoading) return false;
+    if (filteredStocks.length > 0) return false;
+    if (constituents.some((c) => c.symbol === normalizedStockQuery && !c.exchange)) return false;
     return true;
-  }, [stockQuery, normalizedStockQuery, constituents, exactUniverseMatch]);
+  }, [stockQuery, normalizedStockQuery, constituents, stockSearchLoading, filteredStocks.length]);
 
   const showStockSuggestions =
-    stockQuery.trim().length > 0 && (filteredStocks.length > 0 || canAddCustomSymbol);
+    stockQuery.trim().length > 0 &&
+    (stockSearchLoading || filteredStocks.length > 0 || canAddCustomSymbol);
+
+  useEffect(() => {
+    const term = stockQuery.trim();
+    if (!term) {
+      setStockSearchResults([]);
+      setStockSearchLoading(false);
+      setStockSearchSource('empty');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setStockSearchLoading(true);
+
+    const timer = window.setTimeout(async () => {
+      const { results, source } = await searchInstruments(term, { limit: 12 });
+      if (cancelled) return;
+      setStockSearchResults(results);
+      setStockSearchSource(source);
+      setStockSearchLoading(false);
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [stockQuery]);
 
   useEffect(() => {
     if (!inWizard || flowTrackedRef.current) return;
@@ -277,7 +316,16 @@ export default function CreateBasketPage({
       const next = [
         ...prev,
         {
-          ...stock,
+          symbol: stock.symbol,
+          name: stock.name,
+          exchange: stock.exchange ?? null,
+          conid: stock.conid ?? null,
+          currency: stock.currency ?? null,
+          country: stock.country ?? null,
+          isin: stock.isin ?? null,
+          localSymbol: stock.localSymbol ?? stock.symbol,
+          instrumentType: stock.instrumentType ?? (stock.isCustom ? 'CUSTOM' : 'STK'),
+          isCustom: Boolean(stock.isCustom),
           weight: 0,
           segment: stock.isCustom ? 'Custom' : 'Largecap',
         },
@@ -285,6 +333,7 @@ export default function CreateBasketPage({
       return weightingType === 'equal' ? applyEqualWeights(next) : next;
     });
     setStockQuery('');
+    setStockSearchResults([]);
   };
 
   const addCustomSymbol = () => {
@@ -296,10 +345,8 @@ export default function CreateBasketPage({
     if (e.key !== 'Enter') return;
     e.preventDefault();
 
-    const selected = new Set(constituents.map((c) => c.symbol));
-
-    if (exactUniverseMatch && !selected.has(exactUniverseMatch.symbol)) {
-      addStock(exactUniverseMatch);
+    if (exactSearchMatch) {
+      addStock(exactSearchMatch);
       return;
     }
 
@@ -311,16 +358,18 @@ export default function CreateBasketPage({
     addCustomSymbol();
   };
 
-  const removeStock = (symbol) => {
+  const removeStock = (key) => {
     setConstituents((prev) => {
-      const next = prev.filter((c) => c.symbol !== symbol);
+      const next = prev.filter((c) => constituentKey(c) !== key);
       return weightingType === 'equal' ? applyEqualWeights(next) : next;
     });
   };
 
-  const updateWeight = (symbol, weight) => {
+  const updateWeight = (key, weight) => {
     setConstituents((prev) =>
-      prev.map((c) => (c.symbol === symbol ? { ...c, weight: Number(weight) || 0 } : c))
+      prev.map((c) =>
+        constituentKey(c) === key ? { ...c, weight: Number(weight) || 0 } : c
+      )
     );
   };
 
@@ -665,7 +714,7 @@ export default function CreateBasketPage({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="pe-section-title text-base">Constituents</h2>
-                <p className="pe-body-s mt-0.5">Add at least 2 stocks — search or enter a custom symbol</p>
+                <p className="pe-body-s mt-0.5">Add at least 2 stocks — search IBKR listings worldwide</p>
               </div>
               {weightingType === 'custom' && (
                 <span
@@ -685,27 +734,35 @@ export default function CreateBasketPage({
                 value={stockQuery}
                 onChange={(e) => setStockQuery(e.target.value)}
                 onKeyDown={handleStockQueryKeyDown}
-                placeholder="Search or enter a ticker symbol (e.g. AAPL, BRK.B)"
+                placeholder="Search ticker or company (e.g. AAPL, TSMC, ASML)"
                 className="pe-input"
                 autoComplete="off"
                 spellCheck={false}
               />
               {showStockSuggestions && (
                 <ul className="absolute z-10 left-0 right-0 mt-1 bg-white border border-neutral-200/80 rounded-xl overflow-hidden shadow-xl">
-                  {filteredStocks.slice(0, 5).map((s) => (
-                    <li key={s.symbol}>
-                      <button
-                        type="button"
-                        onClick={() => addStock(s)}
-                        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
-                      >
-                        <span className="text-neutral-900 font-medium">{s.symbol}</span>
-                        <span className="text-neutral-500 truncate flex-1 text-right">{s.name}</span>
-                        <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
-                      </button>
-                    </li>
-                  ))}
-                  {canAddCustomSymbol && (
+                  {stockSearchLoading && (
+                    <li className="px-4 py-2.5 text-sm text-neutral-500">Searching IBKR universe…</li>
+                  )}
+                  {!stockSearchLoading &&
+                    filteredStocks.slice(0, 8).map((s) => (
+                      <li key={constituentKey(s)}>
+                        <button
+                          type="button"
+                          onClick={() => addStock(s)}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
+                        >
+                          <span className="text-neutral-900 font-medium">{s.symbol}</span>
+                          <span className="text-neutral-500 truncate flex-1 text-right">
+                            {s.name}
+                            {s.exchange ? ` · ${s.exchange}` : ''}
+                            {s.instrumentType ? ` · ${formatInstrumentType(s.instrumentType)}` : ''}
+                          </span>
+                          <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
+                        </button>
+                      </li>
+                    ))}
+                  {!stockSearchLoading && canAddCustomSymbol && (
                     <li className="border-t border-neutral-100">
                       <button
                         type="button"
@@ -713,7 +770,9 @@ export default function CreateBasketPage({
                         className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
                       >
                         <span className="text-neutral-900 font-medium">{normalizedStockQuery}</span>
-                        <span className="text-neutral-500 truncate flex-1 text-right">Add custom symbol</span>
+                        <span className="text-neutral-500 truncate flex-1 text-right">
+                          Add custom symbol · verify on IBKR
+                        </span>
                         <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
                       </button>
                     </li>
@@ -723,6 +782,12 @@ export default function CreateBasketPage({
             </div>
 
             <p className="text-xs text-neutral-500 leading-relaxed">{IBKR_SYMBOL_NOTE}</p>
+            {stockSearchSource === 'local-fallback' && stockQuery.trim() && (
+              <p className="text-xs text-amber-700">
+                Live IBKR search unavailable — showing a small local list. Run `npm run sync:ibkr:upload` to
+                enable the full universe.
+              </p>
+            )}
 
             {constituents.length === 0 && (
               <p className="text-sm text-neutral-400 italic py-2">
@@ -731,15 +796,25 @@ export default function CreateBasketPage({
             )}
 
             <ul className="space-y-2 max-h-64 sm:max-h-80 overflow-y-auto">
-              {constituents.map((c) => (
+              {constituents.map((c) => {
+                const key = constituentKey(c);
+                return (
                 <li
-                  key={c.symbol}
+                  key={key}
                   className="flex items-center gap-2 bg-neutral-50 rounded-xl px-3 py-2.5 border border-neutral-100"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-neutral-900">{c.symbol}</div>
                     <div className="text-xs text-neutral-500 truncate">
-                      {c.isCustom ? 'Custom symbol · verify on IBKR' : c.name}
+                      {c.isCustom
+                        ? 'Custom symbol · verify on IBKR'
+                        : [
+                            c.name,
+                            c.exchange,
+                            c.instrumentType ? formatInstrumentType(c.instrumentType) : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
                     </div>
                   </div>
                   {weightingType === 'custom' ? (
@@ -749,7 +824,7 @@ export default function CreateBasketPage({
                       max="100"
                       step="0.1"
                       value={c.weight}
-                      onChange={(e) => updateWeight(c.symbol, e.target.value)}
+                      onChange={(e) => updateWeight(key, e.target.value)}
                       className="w-16 bg-white border border-neutral-200/80 rounded-lg px-2 py-1 text-sm text-right text-neutral-900"
                     />
                   ) : (
@@ -759,13 +834,14 @@ export default function CreateBasketPage({
                   )}
                   <button
                     type="button"
-                    onClick={() => removeStock(c.symbol)}
+                    onClick={() => removeStock(key)}
                     className="p-1.5 text-neutral-400 hover:text-rose-500"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           </section>
         </div>

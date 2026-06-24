@@ -13,14 +13,14 @@ export const trendingBaskets = [
 
 export const heroStats = [
   { value: '10+', label: 'Countries' },
-  { value: '15000+', label: 'Tickers' },
+  { value: '80000+', label: 'Tickers' },
   { value: '100+', label: 'Baskets' },
 ];
 
 export const platformStats = [
   { value: '10', label: 'Countries' },
   { value: '9', label: 'Currencies' },
-  { value: '15,000+', label: 'Stocks & ETFs' },
+  { value: '80,000+', label: 'Stocks & ETFs' },
 ];
 
 export const countries = [
@@ -74,7 +74,7 @@ export const homepageBenefits = [
   {
     title: 'Global by default',
     description:
-      'Access US, Europe, and Asia markets. One platform, 10 countries, 15,000+ tickers.',
+      'Access US, Europe, and Asia markets. One platform, 10 countries, 80,000+ IBKR-tradable tickers.',
   },
   {
     title: 'Create & compete',

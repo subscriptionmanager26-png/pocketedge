@@ -185,7 +185,7 @@ export const stockUniverse = [
 ];
 
 export const IBKR_SYMBOL_NOTE =
-  'Search our list or type any ticker symbol. The symbol must be available and tradable on Interactive Brokers (IBKR).';
+  'Search 80,000+ IBKR-tradable stocks and ETFs worldwide. Pick the listing exchange when multiple matches appear.';
 
 const STOCK_SYMBOL_PATTERN = /^[A-Z][A-Z0-9.\-]{0,11}$/;
 
@@ -255,6 +255,17 @@ export function formatPercent(value) {
 }
 
 export function getBasketReturn(basket) {
+  if (basket.navSummary?.navStatus === 'error') {
+    return basket.navSummary?.totalReturnPct ?? 0;
+  }
+  if (basket.navSummary?.totalReturnPct != null) {
+    return basket.navSummary.totalReturnPct;
+  }
+  if (basket.navHistory?.length >= 2) {
+    const first = basket.navHistory[0].nav;
+    const last = basket.navHistory[basket.navHistory.length - 1].nav;
+    if (first > 0) return ((last / first) - 1) * 100;
+  }
   return basket.stats?.cagr ?? basket.returnPct ?? 0;
 }
 
@@ -347,6 +358,6 @@ export function enrichBasket(basket) {
       pb: 4.2,
       divYield: 1.1,
     },
-    navHistory: basket.navHistory || defaultNavHistory(cagr),
+    navHistory: basket.navHistory?.length ? basket.navHistory : defaultNavHistory(cagr),
   };
 }
