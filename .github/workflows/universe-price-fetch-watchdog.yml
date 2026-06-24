@@ -1,0 +1,76 @@
+name: Universe price fetch watchdog
+
+# Backup trigger if GitHub's scheduled cron was skipped or delayed.
+# Runs ~2.5h after each primary cron (primary fetch takes ~70 min).
+
+on:
+  schedule:
+    - cron: '0 3 * * 1-5'   # check after 00:30 us_close run
+    - cron: '0 15 * * 1-5'  # check after 12:30 overnight run
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Slot to verify (default: auto from UTC hour)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - us_close
+          - overnight
+
+concurrency:
+  group: universe-price-fetch-watchdog
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Resolve watchdog window
+        id: window
+        run: |
+          INPUT="${{ github.event.inputs.slot }}"
+          if [ -n "$INPUT" ]; then
+            SLOT="$INPUT"
+            if [ "$SLOT" = "us_close" ]; then
+              SINCE="$(date -u +%Y-%m-%d)T00:00:00Z"
+            else
+              SINCE="$(date -u +%Y-%m-%d)T12:00:00Z"
+            fi
+          else
+            H=$(date -u +%H)
+            if [ "$H" -lt 12 ]; then
+              SLOT="us_close"
+              SINCE="$(date -u +%Y-%m-%d)T00:00:00Z"
+            else
+              SLOT="overnight"
+              SINCE="$(date -u +%Y-%m-%d)T12:00:00Z"
+            fi
+          fi
+          echo "slot=$SLOT" >> "$GITHUB_OUTPUT"
+          echo "since=$SINCE" >> "$GITHUB_OUTPUT"
+          echo "Checking slot=$SLOT since=$SINCE"
+
+      - name: Verify run or dispatch backup
+        env:
+          EXPECTED_SLOT: ${{ steps.window.outputs.slot }}
+          SINCE_ISO: ${{ steps.window.outputs.since }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/watchdog-universe-price-fetch.mjs

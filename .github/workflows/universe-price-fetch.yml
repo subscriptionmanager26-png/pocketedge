@@ -2,9 +2,9 @@ name: Universe price fetch
 
 on:
   schedule:
-    # Weekdays — matches former Vercel crons (UTC)
-    - cron: '5 9 * * 1-5'   # ~overnight (US pre-market)
-    - cron: '5 21 * * 1-5'  # ~us_close (US after-hours)
+    # Weekdays — 12:30 AM UTC (us_close) and 12:30 PM UTC (overnight)
+    - cron: '30 0 * * 1-5'
+    - cron: '30 12 * * 1-5'
   workflow_dispatch:
     inputs:
       slot:
@@ -24,6 +24,9 @@ concurrency:
   group: universe-price-fetch
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -38,14 +41,34 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Resolve fetch slot
+        id: slot
+        run: |
+          INPUT="${{ github.event.inputs.slot }}"
+          if [ -n "$INPUT" ]; then
+            echo "value=$INPUT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            H=$(date -u +%H)
+            if [ "$H" -lt 6 ]; then
+              echo "value=us_close" >> "$GITHUB_OUTPUT"
+            else
+              echo "value=overnight" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+          echo "value=" >> "$GITHUB_OUTPUT"
+
       - name: Run universe price fetch
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           ARGS=()
-          if [ -n "${{ github.event.inputs.slot }}" ]; then
-            ARGS+=(--slot="${{ github.event.inputs.slot }}")
+          SLOT="${{ steps.slot.outputs.value }}"
+          if [ -n "$SLOT" ]; then
+            ARGS+=(--slot="$SLOT")
           fi
           if [ -n "${{ github.event.inputs.limit }}" ]; then
             ARGS+=(--limit="${{ github.event.inputs.limit }}")
