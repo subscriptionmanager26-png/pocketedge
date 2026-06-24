@@ -3,26 +3,22 @@ import { ArrowLeft } from 'lucide-react';
 import AppTopBar from './app/components/AppTopBar';
 import BottomNav from './app/components/BottomNav';
 import LeaderboardPage from './app/pages/LeaderboardPage';
-import WaitlistHomePage from './app/pages/WaitlistHomePage';
+import DashboardPage from './app/pages/DashboardPage';
 import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import StickyTopChrome from './components/StickyTopChrome';
 import { edgeX } from './designTokens';
 import { getChallengeProgress } from './challengeEligibility';
 import { REFERRALS_DEMO_USER } from './demo/referralsDemoData';
 
-const STEP2_WAITLIST = {
-  waitlist_number: 2847,
-  effective_rank: 2847,
+const STEP2_REFERRAL_STATS = {
   referral_count: 0,
   referred_by: null,
-  next_rank_update_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-  access_confirmed: false,
 };
 
 const step2Progress = getChallengeProgress({
   user: REFERRALS_DEMO_USER,
   userBaskets: [],
-  waitlistStatus: STEP2_WAITLIST,
+  referralStats: STEP2_REFERRAL_STATS,
 });
 
 export default function Step2DemoPage() {
@@ -56,22 +52,17 @@ export default function Step2DemoPage() {
         <section className="space-y-4">
           <div>
             <h2 className="pe-section-title">Home tab</h2>
-            <p className="pe-body-s mt-1">Compact checklist — register step hidden.</p>
+            <p className="pe-body-s mt-1">Empty dashboard for a new user.</p>
           </div>
           <div className="rounded-2xl border border-neutral-200/80 bg-white/50 overflow-hidden">
             <StickyTopChrome
               banner={<ChallengeProgressBanner progress={step2Progress} />}
-              navigation={<AppTopBar activeTab="dashboard" onNavigate={() => {}} accessLimited />}
+              navigation={<AppTopBar activeTab="dashboard" onNavigate={() => {}} />}
             />
             <div className="p-3 sm:p-4">
-              <WaitlistHomePage
-                user={REFERRALS_DEMO_USER}
-                waitlistStatus={STEP2_WAITLIST}
-                challengeProgress={step2Progress}
-                challengePersistEntered={false}
-              />
+              <DashboardPage userBaskets={[]} />
             </div>
-            <BottomNav activeTab="dashboard" onNavigate={() => {}} accessLimited />
+            <BottomNav activeTab="dashboard" onNavigate={() => {}} />
           </div>
         </section>
 
@@ -83,19 +74,18 @@ export default function Step2DemoPage() {
           <div className="rounded-2xl border border-neutral-200/80 bg-white/50 overflow-hidden">
             <StickyTopChrome
               banner={<ChallengeProgressBanner progress={step2Progress} />}
-              navigation={<AppTopBar activeTab="leaderboard" onNavigate={() => {}} accessLimited />}
+              navigation={<AppTopBar activeTab="leaderboard" onNavigate={() => {}} />}
             />
             <div className="p-3 sm:p-4">
               <LeaderboardPage
                 user={REFERRALS_DEMO_USER}
                 userBaskets={[]}
-                waitlistStatus={STEP2_WAITLIST}
-                accessLimited
+                referralStats={STEP2_REFERRAL_STATS}
                 challengeEntered={false}
                 challengePersistEntered={false}
               />
             </div>
-            <BottomNav activeTab="leaderboard" onNavigate={() => {}} accessLimited />
+            <BottomNav activeTab="leaderboard" onNavigate={() => {}} />
           </div>
         </section>
       </div>

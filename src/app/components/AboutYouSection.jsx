@@ -423,11 +423,11 @@ function ReferralRow({ referralLink, referralCount = 0, copied, onCopy }) {
   return (
     <div className="space-y-2 pt-4 border-t border-pe-border/60">
       <div>
-        <p className="pe-label text-[10px]">Referral link</p>
+        <p className="pe-label text-[10px]">Invite friends</p>
         <p className="text-xs text-pe-text-muted mt-1">
           {referralCount === 0
-            ? 'No one has joined using your link yet'
-            : `${referralCount} ${referralCount === 1 ? 'person has' : 'people have'} joined using your link`}
+            ? 'Share your link — friends who sign up count as your referrals'
+            : `${referralCount} ${referralCount === 1 ? 'friend has' : 'friends have'} signed up using your link`}
         </p>
       </div>
       <div className="flex gap-2">

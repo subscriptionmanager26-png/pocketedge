@@ -16,16 +16,16 @@ export function captureScreen(screen, properties = {}) {
   capture('screen_viewed', { screen, ...properties });
 }
 
-export function syncUserWaitlistTraits(user, status) {
+export function syncUserReferralTraits(user, stats) {
   if (!isPostHogEnabled || !user?.id) return;
   posthog.identify(user.id, {
     email: user.email ?? undefined,
-    access_confirmed: status?.access_confirmed ?? false,
-    waitlist_rank: status?.effective_rank ?? null,
-    waitlist_number: status?.waitlist_number ?? null,
-    referral_count: status?.referral_count ?? 0,
+    referral_count: stats?.referral_count ?? 0,
   });
 }
+
+/** @deprecated Use syncUserReferralTraits */
+export const syncUserWaitlistTraits = syncUserReferralTraits;
 
 export function captureAuthStarted(source) {
   try {
@@ -36,7 +36,7 @@ export function captureAuthStarted(source) {
   capture('sign_in_started', { source });
 }
 
-export function captureAuthCompleted({ source, isNewWaitlistMember = false } = {}) {
+export function captureAuthCompleted({ source, isNewMember = false } = {}) {
   let resolvedSource = source;
   if (!resolvedSource) {
     try {
@@ -48,7 +48,7 @@ export function captureAuthCompleted({ source, isNewWaitlistMember = false } = {
   }
   capture('sign_in_completed', {
     source: resolvedSource,
-    is_new_waitlist_member: isNewWaitlistMember,
+    is_new_member: isNewMember,
   });
 }
 
@@ -66,21 +66,25 @@ export function captureOAuthCallbackError() {
   if (error) captureAuthFailed({ source: 'oauth_callback', error });
 }
 
-export function captureWaitlistJoined({ referredByCode = false } = {}) {
-  capture('waitlist_joined', { referred_by_code: referredByCode });
+export function captureSignupRecorded({ referredByCode = false } = {}) {
+  capture('signup_recorded', { referred_by_code: referredByCode });
 }
 
-export function captureWaitlistJoinFailed(error) {
-  capture('waitlist_join_failed', {
+export function captureSignupFailed(error) {
+  capture('signup_failed', {
     error_message: (error?.message || String(error)).slice(0, 200),
   });
 }
 
-export function captureUserSessionStarted({ accessConfirmed, waitlistStatus, challengeProgress }) {
+/** @deprecated Use captureSignupRecorded */
+export const captureWaitlistJoined = captureSignupRecorded;
+
+/** @deprecated Use captureSignupFailed */
+export const captureWaitlistJoinFailed = captureSignupFailed;
+
+export function captureUserSessionStarted({ referralStats, challengeProgress }) {
   capture('user_session_started', {
-    access_confirmed: accessConfirmed,
-    waitlist_rank: waitlistStatus?.effective_rank ?? null,
-    referral_count: waitlistStatus?.referral_count ?? 0,
+    referral_count: referralStats?.referral_count ?? 0,
     basket_count: challengeProgress?.basketCount ?? 0,
     challenge_eligible: challengeProgress ? isChallengeEligible(challengeProgress) : false,
   });

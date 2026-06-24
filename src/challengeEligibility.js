@@ -4,8 +4,8 @@ export const REQUIRED_REFERRALS = 5;
 
 const ENTERED_KEY = 'pocketedge_challenge_entered';
 
-export function getChallengeProgress({ user, userBaskets = [], waitlistStatus = null }) {
-  const referralCount = waitlistStatus?.referral_count ?? 0;
+export function getChallengeProgress({ user, userBaskets = [], referralStats = null }) {
+  const referralCount = referralStats?.referral_count ?? 0;
 
   return {
     registered: !!user,

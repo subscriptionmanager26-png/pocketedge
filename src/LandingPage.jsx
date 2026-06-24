@@ -29,7 +29,7 @@ export function LandingSiteHeader() {
   const handleNavInvite = async () => {
     captureAuthStarted('landing_nav');
     try {
-      await signInWithGoogle({ intent: 'waitlist' });
+      await signInWithGoogle();
     } catch (err) {
       captureAuthFailed({ source: 'landing_nav', error: err?.message });
       scrollToInvite();
@@ -55,7 +55,7 @@ export function LandingSiteHeader() {
           onClick={handleNavInvite}
           className="text-base font-semibold bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 rounded-full transition-colors"
         >
-          Request invite
+          Get Started
         </button>
       </nav>
       <button
@@ -63,7 +63,7 @@ export function LandingSiteHeader() {
         onClick={handleNavInvite}
         className="md:hidden text-base font-semibold bg-neutral-900 text-white px-5 py-2.5 rounded-full shrink-0"
       >
-        Join
+        Get Started
       </button>
     </SiteHeader>
   );
@@ -75,7 +75,7 @@ export default function LandingPage() {
   const handleNavInvite = async () => {
     captureAuthStarted('landing_nav');
     try {
-      await signInWithGoogle({ intent: 'waitlist' });
+      await signInWithGoogle();
     } catch (err) {
       captureAuthFailed({ source: 'landing_nav', error: err?.message });
       document.getElementById('hero-invite')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -231,7 +231,7 @@ export default function LandingPage() {
             Ready to put your money where your conviction is?
           </h2>
           <p className="text-neutral-500 mt-5 text-lg sm:text-xl">
-            Join the waitlist for early access to global basket investing.
+            Start exploring global basket investing on PocketEdge.
           </p>
           <RequestInviteButton
             id="bottom-invite"

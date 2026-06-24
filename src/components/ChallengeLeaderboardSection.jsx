@@ -5,14 +5,14 @@ import ChallengeEntryPanel from './ChallengeEntryPanel';
 import { buildLeaderboard, catalogBaskets } from '../app/basketCatalog';
 import { loadUserBaskets } from '../app/basketStore';
 import { getChallengeProgress } from '../challengeEligibility';
-import { getReferralLink, getWaitlistStatus, signInWithGoogle, supabase } from '../supabase';
+import { getReferralLink, getReferralStats, signInWithGoogle, supabase } from '../supabase';
 export default function ChallengeLeaderboardSection({
   entries: entriesProp,
   onSignIn,
 }) {
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
-  const [waitlistStatus, setWaitlistStatus] = useState(null);
+  const [referralStats, setReferralStats] = useState(null);
 
   const entries = useMemo(
     () => entriesProp ?? buildLeaderboard([...loadUserBaskets(), ...catalogBaskets]),
@@ -27,13 +27,13 @@ export default function ChallengeLeaderboardSection({
       setUserBaskets(loadUserBaskets());
       if (session?.user) {
         try {
-          const status = await getWaitlistStatus();
-          setWaitlistStatus(status);
+          const status = await getReferralStats();
+          setReferralStats(status);
         } catch {
-          setWaitlistStatus(null);
+          setReferralStats(null);
         }
       } else {
-        setWaitlistStatus(null);
+        setReferralStats(null);
       }
     };
 
@@ -47,7 +47,7 @@ export default function ChallengeLeaderboardSection({
   }, []);
 
   const signedIn = !!user;
-  const progress = getChallengeProgress({ user, userBaskets, waitlistStatus });
+  const progress = getChallengeProgress({ user, userBaskets, referralStats });
 
   const handleSignIn = async () => {
     if (onSignIn) {

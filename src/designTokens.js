@@ -97,7 +97,7 @@ export const typography = [
     cesto: 'web-btn-label-s',
     name: 'Button label',
     class: 'pe-btn-label',
-    sample: 'Request invite',
+    sample: 'Get Started',
     usage: 'Primary / secondary buttons',
   },
   {

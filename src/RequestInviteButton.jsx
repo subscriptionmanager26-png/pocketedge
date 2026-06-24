@@ -19,7 +19,7 @@ export default function RequestInviteButton({
     capture('invite_requested', { button_variant: variant, button_id: id ?? null, source });
     captureAuthStarted(source);
     try {
-      await signInWithGoogle({ intent: 'waitlist' });
+      await signInWithGoogle();
     } catch (err) {
       setError(err.message || 'Could not start Google sign-in.');
       setLoading(false);
@@ -46,7 +46,7 @@ export default function RequestInviteButton({
         disabled={loading}
         className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 font-semibold transition-all w-full sm:w-auto ${sizeClasses} ${variantClasses}`}
       >
-        {loading ? 'Redirecting to Google...' : 'Request Invite'}
+        {loading ? 'Redirecting to Google...' : 'Get Started'}
         {!loading && <ArrowRight className="w-5 h-5" />}
       </button>
       {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}

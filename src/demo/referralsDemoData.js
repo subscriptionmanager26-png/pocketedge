@@ -6,14 +6,13 @@ export const REFERRALS_DEMO_USER = {
   user_metadata: { full_name: 'Alex Investor' },
 };
 
-export const REFERRALS_DEMO_WAITLIST = {
-  waitlist_number: 1284,
-  effective_rank: 1234,
+export const REFERRALS_DEMO_STATS = {
   referral_count: 5,
   referred_by: null,
-  next_rank_update_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-  access_confirmed: false,
 };
+
+/** @deprecated Use REFERRALS_DEMO_STATS */
+export const REFERRALS_DEMO_WAITLIST = REFERRALS_DEMO_STATS;
 
 export const REFERRALS_DEMO_BASKETS = [
   {
@@ -42,6 +41,6 @@ export function getReferralsDemoProgress() {
   return getChallengeProgress({
     user: REFERRALS_DEMO_USER,
     userBaskets: REFERRALS_DEMO_BASKETS,
-    waitlistStatus: REFERRALS_DEMO_WAITLIST,
+    referralStats: REFERRALS_DEMO_STATS,
   });
 }

@@ -5,7 +5,7 @@ import StickyTopChrome from './components/StickyTopChrome';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
 import { loadUserBaskets } from './app/basketStore';
 import { edgeX } from './designTokens';
-import { getWaitlistStatus, supabase, signInWithGoogle } from './supabase';
+import { getReferralStats, supabase, signInWithGoogle } from './supabase';
 import {
   captureAuthFailed,
   captureAuthStarted,
@@ -14,7 +14,7 @@ import {
 export default function PublicLeaderboardPage() {
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
-  const [waitlistStatus, setWaitlistStatus] = useState(null);
+  const [referralStats, setReferralStats] = useState(null);
 
   useEffect(() => {
     if (!supabase) return undefined;
@@ -24,12 +24,12 @@ export default function PublicLeaderboardPage() {
       setUserBaskets(loadUserBaskets());
       if (session?.user) {
         try {
-          setWaitlistStatus(await getWaitlistStatus());
+          setReferralStats(await getReferralStats());
         } catch {
-          setWaitlistStatus(null);
+          setReferralStats(null);
         }
       } else {
-        setWaitlistStatus(null);
+        setReferralStats(null);
       }
     };
 
@@ -79,8 +79,8 @@ export default function PublicLeaderboardPage() {
                 Sign in
               </button>
             ) : (
-              <a href="/?waitlist=1" className="pe-btn-primary text-sm px-5 py-2.5 shrink-0">
-                My waitlist
+              <a href="/?tab=dashboard" className="pe-btn-primary text-sm px-5 py-2.5 shrink-0">
+                Open app
               </a>
             )}
           </SiteHeader>
@@ -91,7 +91,7 @@ export default function PublicLeaderboardPage() {
         <LeaderboardPage
           user={user}
           userBaskets={userBaskets}
-          waitlistStatus={waitlistStatus}
+          referralStats={referralStats}
           publicView
           onChallengeEnter={handleSignIn}
         />

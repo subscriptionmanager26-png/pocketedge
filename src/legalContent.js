@@ -11,7 +11,7 @@ export const legalPages = {
       {
         heading: '2. Eligibility',
         body:
-          'You must be at least 18 years old and legally capable of entering into a binding contract under applicable Indian law. Access to certain features may require waitlist confirmation or additional verification.',
+          'You must be at least 18 years old and legally capable of entering into a binding contract under applicable Indian law. Access to certain features may require additional verification.',
       },
       {
         heading: '3. Platform use',
@@ -29,9 +29,9 @@ export const legalPages = {
           'Community baskets, profiles, and other user submissions reflect the views of their creators, not SRK One9 Finance Services LLP. We may remove content that violates these terms or applicable law.',
       },
       {
-        heading: '6. Waitlist and challenges',
+        heading: '6. Referrals and challenges',
         body:
-          'Waitlist placement, referral benefits, and challenge rankings are governed by the rules displayed on the platform. We may modify challenge mechanics, prizes, or eligibility criteria with reasonable notice where practicable.',
+          'Referral tracking and any challenge rankings are governed by the rules displayed on the platform. We may modify challenge mechanics, prizes, or eligibility criteria with reasonable notice where practicable.',
       },
       {
         heading: '7. Limitation of liability',
@@ -62,7 +62,7 @@ export const legalPages = {
       {
         heading: '3. How we use information',
         body:
-          'We use your information to authenticate you, operate the waitlist, display leaderboards and baskets, send service-related communications, prevent fraud, and improve PocketEdge. We do not sell your personal data.',
+          'We use your information to authenticate you, operate referral tracking, display leaderboards and baskets, send service-related communications, prevent fraud, and improve PocketEdge. We do not sell your personal data.',
       },
       {
         heading: '4. Sharing',

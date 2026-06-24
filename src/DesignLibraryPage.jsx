@@ -38,16 +38,16 @@ const SECTIONS = [
 const sampleBasket = catalogBaskets[0];
 
 const progressSamples = {
-  none: getChallengeProgress({ user: { id: '1' }, userBaskets: [], waitlistStatus: { referral_count: 0 } }),
+  none: getChallengeProgress({ user: { id: '1' }, userBaskets: [], referralStats: { referral_count: 0 } }),
   partial: getChallengeProgress({
     user: { id: '1' },
     userBaskets: [sampleBasket],
-    waitlistStatus: { referral_count: 2 },
+    referralStats: { referral_count: 2 },
   }),
   ready: getChallengeProgress({
     user: { id: '1' },
     userBaskets: [sampleBasket],
-    waitlistStatus: { referral_count: 5 },
+    referralStats: { referral_count: 5 },
   }),
 };
 

@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import LandingPage, { LandingSiteHeader } from './LandingPage';
 import DesignLibraryPage from './DesignLibraryPage';
-import WaitlistPage from './WaitlistPage';
 import LegalPage, { LegalSiteHeader } from './LegalPage';
 import PublicLeaderboardPage from './PublicLeaderboardPage';
 import AppShell from './app/AppShell';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
 import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import StickyTopChrome from './components/StickyTopChrome';
-import SiteHeader from './components/SiteHeader';
 import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
 import { loadUserBaskets, loadUserBasketsAsync, migrateLocalBasketsToDb } from './app/basketStore';
 import { migrateLocalProfileToDb } from './app/profileStore';
@@ -21,12 +19,11 @@ import ChallengeDemoPage from './ChallengeDemoPage';
 import Step2DemoPage from './Step2DemoPage';
 import {
   supabase,
-  isWaitlistRoute,
   isLeaderboardRoute,
   cleanOAuthCallbackUrl,
   captureReferralFromUrl,
-  enrollWaitlistMember,
-  getWaitlistStatus,
+  recordAppSignup,
+  getReferralStats,
 } from './supabase';
 import { identifyPostHogUser, resetPostHogUser } from './posthog';
 import {
@@ -34,10 +31,10 @@ import {
   captureAuthCompleted,
   captureChallengeProgress,
   captureScreen,
+  captureSignupFailed,
+  captureSignupRecorded,
   captureUserSessionStarted,
-  captureWaitlistJoined,
-  captureWaitlistJoinFailed,
-  syncUserWaitlistTraits,
+  syncUserReferralTraits,
 } from './analytics';
 import { getAppTab } from './app/appRoute';
 
@@ -63,7 +60,6 @@ function resolveRoute(session) {
   if (isDesignRoute()) return 'design';
   if (isLegalRoute()) return 'legal';
   if (isLeaderboardRoute()) return CAMPAIGN_UI_ENABLED ? 'leaderboard' : 'landing';
-  if (isWaitlistRoute()) return session ? 'app' : 'waitlist';
   if (import.meta.env.DEV && isLocalAppRoute()) return 'app';
   if (session) return 'app';
   if (isAppShellRoute()) return 'landing';
@@ -74,7 +70,7 @@ export default function App() {
   const [route, setRoute] = useState(() => resolveRoute(null));
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
-  const [waitlistStatus, setWaitlistStatus] = useState(null);
+  const [referralStats, setReferralStats] = useState(null);
   const [bootstrapping, setBootstrapping] = useState(() => {
     if (!supabase) return false;
     const params = new URLSearchParams(window.location.search);
@@ -86,8 +82,8 @@ export default function App() {
   });
 
   const challengeProgress = useMemo(
-    () => getChallengeProgress({ user, userBaskets, waitlistStatus }),
-    [user, userBaskets, waitlistStatus]
+    () => getChallengeProgress({ user, userBaskets, referralStats }),
+    [user, userBaskets, referralStats]
   );
 
   const refreshBaskets = async () => {
@@ -117,20 +113,19 @@ export default function App() {
       route,
       tab,
       signed_in: Boolean(user),
-      access_confirmed: waitlistStatus?.access_confirmed ?? false,
+      referral_count: referralStats?.referral_count ?? 0,
     });
-  }, [route, user, waitlistStatus?.access_confirmed]);
+  }, [route, user, referralStats?.referral_count]);
 
   useEffect(() => {
-    if (!user || !waitlistStatus || sessionTrackedRef.current) return;
+    if (!user || !referralStats || sessionTrackedRef.current) return;
     sessionTrackedRef.current = true;
-    syncUserWaitlistTraits(user, waitlistStatus);
+    syncUserReferralTraits(user, referralStats);
     captureUserSessionStarted({
-      accessConfirmed: Boolean(waitlistStatus.access_confirmed),
-      waitlistStatus,
+      referralStats,
       challengeProgress,
     });
-  }, [user, waitlistStatus, challengeProgress]);
+  }, [user, referralStats, challengeProgress]);
 
   useEffect(() => {
     if (!user) return;
@@ -142,7 +137,6 @@ export default function App() {
 
   useEffect(() => {
     captureOAuthCallbackError();
-
     captureReferralFromUrl();
 
     if (!supabase) {
@@ -153,7 +147,7 @@ export default function App() {
     let mounted = true;
 
     const syncSession = async (session) => {
-      if (!mounted) return { accessConfirmed: false, isNewWaitlistMember: false };
+      if (!mounted) return { isNewMember: false };
 
       const nextUser = session?.user ?? null;
       setUser(nextUser);
@@ -178,37 +172,34 @@ export default function App() {
       if (nextUser) {
         identifyPostHogUser(nextUser);
         try {
-          const hadReferral = Boolean(sessionStorage.getItem('waitlist_ref'));
-          const enrollment = await enrollWaitlistMember();
-          const isNewWaitlistMember = enrollment?.status === 'joined';
-          if (isNewWaitlistMember) {
-            captureWaitlistJoined({ referredByCode: hadReferral });
+          const hadReferral = Boolean(sessionStorage.getItem('referral_ref'));
+          const signup = await recordAppSignup();
+          const isNewMember = signup?.status === 'joined';
+          if (isNewMember) {
+            captureSignupRecorded({ referredByCode: hadReferral });
           }
-          const status = await getWaitlistStatus();
-          if (mounted) setWaitlistStatus(status);
-          if (mounted && status) syncUserWaitlistTraits(nextUser, status);
-          return {
-            accessConfirmed: Boolean(status?.access_confirmed),
-            isNewWaitlistMember,
-          };
+          const stats = await getReferralStats();
+          if (mounted) setReferralStats(stats);
+          if (mounted && stats) syncUserReferralTraits(nextUser, stats);
+          return { isNewMember };
         } catch (err) {
-          captureWaitlistJoinFailed(err);
-          if (mounted) setWaitlistStatus(null);
-          return { accessConfirmed: false, isNewWaitlistMember: false };
+          captureSignupFailed(err);
+          if (mounted) setReferralStats(null);
+          return { isNewMember: false };
         }
       }
 
-      setWaitlistStatus(null);
-      return { accessConfirmed: false, isNewWaitlistMember: false };
+      setReferralStats(null);
+      return { isNewMember: false };
     };
 
     const finishBootstrap = async (session, { trackSignIn = false } = {}) => {
       if (!mounted) return;
       if (session) cleanOAuthCallbackUrl();
-      const { accessConfirmed, isNewWaitlistMember } = await syncSession(session);
+      const { isNewMember } = await syncSession(session);
       if (!mounted) return;
       if (trackSignIn && session?.user) {
-        captureAuthCompleted({ isNewWaitlistMember });
+        captureAuthCompleted({ isNewMember });
       }
       setRoute(resolveRoute(session));
       setBootstrapping(false);
@@ -239,20 +230,16 @@ export default function App() {
   useEffect(() => {
     if (!user) return undefined;
 
-    const refreshWaitlist = () => {
-      getWaitlistStatus()
-        .then((status) => {
-          setWaitlistStatus(status);
-          setRoute((prev) => {
-            const next = resolveRoute(user);
-            return next === prev ? prev : next;
-          });
+    const refreshReferrals = () => {
+      getReferralStats()
+        .then((stats) => {
+          setReferralStats(stats);
         })
         .catch(() => {});
     };
 
-    window.addEventListener('focus', refreshWaitlist);
-    return () => window.removeEventListener('focus', refreshWaitlist);
+    window.addEventListener('focus', refreshReferrals);
+    return () => window.removeEventListener('focus', refreshReferrals);
   }, [user]);
 
   if (route === 'step2-demo') {
@@ -290,15 +277,12 @@ export default function App() {
   }
 
   if (route === 'app') {
-    const accessLimited = Boolean(user && waitlistStatus?.access_confirmed !== true);
-
     return (
       <AppShell
         user={user}
         userBaskets={userBaskets}
-        waitlistStatus={waitlistStatus}
+        referralStats={referralStats}
         challengeProgress={challengeProgress}
-        accessLimited={accessLimited}
         onBasketsChange={refreshBaskets}
       />
     );
@@ -306,18 +290,6 @@ export default function App() {
 
   if (route === 'leaderboard') {
     return <PublicLeaderboardPage />;
-  }
-
-  if (route === 'waitlist') {
-    return (
-      <PageShell
-        user={user}
-        challengeProgress={challengeProgress}
-        navigation={<SiteHeader logoHref="/" embedded sticky={false} />}
-      >
-        <WaitlistPage />
-      </PageShell>
-    );
   }
 
   return (

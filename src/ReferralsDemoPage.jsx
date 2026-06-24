@@ -4,7 +4,7 @@ import MarketWhispererBanner from './components/MarketWhispererBanner';
 import ChallengeEntryPanel from './components/ChallengeEntryPanel';
 import ChallengeWelcomeCard from './app/components/ChallengeWelcomeCard';
 import ChallengeBasketSlots from './app/components/ChallengeBasketSlots';
-import WaitlistHomePage from './app/pages/WaitlistHomePage';
+import DashboardPage from './app/pages/DashboardPage';
 import PageHeader from './components/PageHeader';
 import AboutYouSection from './app/components/AboutYouSection';
 import { getReferralLink } from './supabase';
@@ -13,13 +13,12 @@ import {
   getReferralsDemoProgress,
   REFERRALS_DEMO_BASKETS,
   REFERRALS_DEMO_USER,
-  REFERRALS_DEMO_WAITLIST,
+  REFERRALS_DEMO_STATS,
 } from './demo/referralsDemoData';
 
 export default function ReferralsDemoPage() {
   const challengeProgress = getReferralsDemoProgress();
   const referralLink = getReferralLink(REFERRALS_DEMO_USER.id);
-  const spotsMoved = REFERRALS_DEMO_WAITLIST.referral_count * 10;
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-neutral-900">
@@ -52,25 +51,17 @@ export default function ReferralsDemoPage() {
           <p className="pe-eyebrow">Scenario</p>
           <h1 className="pe-title text-2xl sm:text-3xl mt-1">5 referrals completed</h1>
           <p className="pe-body mt-2">
-            Alex joined the waitlist at #{REFERRALS_DEMO_WAITLIST.waitlist_number.toLocaleString()},
-            referred 5 friends, created a basket, and can now enter The Global Portfolio League.
-            Rank will move up <span className="font-medium text-neutral-900">{spotsMoved} spots</span> at
-            the next update.
+            Alex referred 5 friends, created a basket, and can now enter The Global Portfolio League.
           </p>
         </header>
 
         <section className="space-y-4">
           <div>
-            <h2 className="pe-section-title">Home screen</h2>
-            <p className="pe-body-s mt-1">What a waitlisted user sees on the Home tab after 5 referrals.</p>
+            <h2 className="pe-section-title">Dashboard</h2>
+            <p className="pe-body-s mt-1">Home tab for a user with baskets and referrals.</p>
           </div>
           <div className="rounded-2xl border border-neutral-200/80 bg-white/50 p-3 sm:p-4">
-            <WaitlistHomePage
-              user={REFERRALS_DEMO_USER}
-              waitlistStatus={REFERRALS_DEMO_WAITLIST}
-              challengeProgress={challengeProgress}
-              challengePersistEntered={false}
-            />
+            <DashboardPage userBaskets={REFERRALS_DEMO_BASKETS} />
           </div>
         </section>
 
@@ -111,7 +102,7 @@ export default function ReferralsDemoPage() {
             <AboutYouSection
               user={REFERRALS_DEMO_USER}
               userId={REFERRALS_DEMO_USER.id}
-              referralCount={REFERRALS_DEMO_WAITLIST.referral_count}
+              referralCount={REFERRALS_DEMO_STATS.referral_count}
             />
           </div>
         </section>
@@ -121,16 +112,7 @@ export default function ReferralsDemoPage() {
           <dl className="mt-4 grid sm:grid-cols-2 gap-4 text-sm">
             <div>
               <dt className="text-neutral-500">Referrals</dt>
-              <dd className="font-semibold text-neutral-900 mt-0.5">5 / 5 complete</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-500">Waitlist rank</dt>
-              <dd className="font-semibold text-neutral-900 mt-0.5">
-                #{REFERRALS_DEMO_WAITLIST.effective_rank.toLocaleString()}{' '}
-                <span className="font-normal text-neutral-500">
-                  (from #{REFERRALS_DEMO_WAITLIST.waitlist_number.toLocaleString()})
-                </span>
-              </dd>
+              <dd className="font-semibold text-neutral-900 mt-0.5">5 people joined via link</dd>
             </div>
             <div>
               <dt className="text-neutral-500">Baskets created</dt>

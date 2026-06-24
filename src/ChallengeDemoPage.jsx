@@ -10,7 +10,7 @@ import {
   getReferralsDemoProgress,
   REFERRALS_DEMO_BASKETS,
   REFERRALS_DEMO_USER,
-  REFERRALS_DEMO_WAITLIST,
+  REFERRALS_DEMO_STATS,
 } from './demo/referralsDemoData';
 
 export default function ChallengeDemoPage() {
@@ -60,14 +60,13 @@ export default function ChallengeDemoPage() {
           key={entered ? 'entered' : 'ready'}
           user={REFERRALS_DEMO_USER}
           userBaskets={REFERRALS_DEMO_BASKETS}
-          waitlistStatus={REFERRALS_DEMO_WAITLIST}
-          accessLimited
+          referralStats={REFERRALS_DEMO_STATS}
           challengeEntered={entered}
           challengePersistEntered={false}
         />
       </main>
 
-      <BottomNav activeTab="leaderboard" onNavigate={() => {}} accessLimited />
+      <BottomNav activeTab="leaderboard" onNavigate={() => {}} />
     </div>
   );
 }

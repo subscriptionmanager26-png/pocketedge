@@ -18,11 +18,10 @@ const CHALLENGE_DESCRIPTION =
 export default function LeaderboardPage({
   userBaskets = [],
   user = null,
-  waitlistStatus = null,
+  referralStats = null,
   publicView = false,
   embedded = false,
   limit,
-  accessLimited = false,
   challengeEntered = null,
   challengePersistEntered = true,
   onChallengeEnter,
@@ -39,12 +38,10 @@ export default function LeaderboardPage({
   }, [challengeEntered]);
 
   const entries = buildLeaderboard([...userBaskets, ...catalogBaskets]);
-  const progress = getChallengeProgress({ user, userBaskets, waitlistStatus });
+  const progress = getChallengeProgress({ user, userBaskets, referralStats });
 
   const handleBasketClick = (basketId) => {
     if (publicView) return;
-    const ownIds = new Set(userBaskets.map((b) => b.id));
-    if (accessLimited && !ownIds.has(basketId)) return;
     navigateApp({ tab: 'basket', basketId });
   };
 
