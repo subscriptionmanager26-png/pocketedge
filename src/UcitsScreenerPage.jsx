@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, ChevronDown, ChevronUp, Search, SlidersHorizontal, X } from 'lucide-react';
 import SiteHeader from './components/SiteHeader';
 import { edgeX } from './designTokens';
 import {
@@ -37,18 +37,33 @@ function formatWeight(holding) {
   return holding.weightFmt || (holding.weightPct != null ? `${holding.weightPct}%` : '—');
 }
 
-function IndexCategoryFilter({ selected, onChange }) {
+function countActiveFilters({ sectorFilter, minAumMillions, indexCategories, exchange }) {
+  let count = 0;
+  if (sectorFilter !== 'All') count += 1;
+  if (Number(minAumMillions) > 0) count += 1;
+  if (indexCategories.length > 0) count += 1;
+  if (exchange !== 'All') count += 1;
+  return count;
+}
+
+function aumSortLabel(aumSort) {
+  if (aumSort === 'desc') return 'AUM ↓';
+  if (aumSort === 'asc') return 'AUM ↑';
+  return 'Default';
+}
+
+function IndexCategoryFilter({ selected, onChange, layout = 'dropdown' }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (layout !== 'dropdown' || !open) return undefined;
     const onDocClick = (e) => {
       if (!rootRef.current?.contains(e.target)) setOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
-  }, [open]);
+  }, [open, layout]);
 
   const toggle = (id) => {
     if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
@@ -61,6 +76,43 @@ function IndexCategoryFilter({ selected, onChange }) {
       : selected.length === 1
         ? getIndexCategoryLabel(selected[0])
         : `${selected.length} selected`;
+
+  if (layout === 'list') {
+    return (
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
+            Index type
+          </span>
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="text-xs text-pe-text-muted hover:text-pe-text"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="rounded-lg border border-pe-border bg-black/20 p-2 max-h-48 overflow-y-auto space-y-0.5">
+          {INDEX_CATEGORIES.map((category) => (
+            <label
+              key={category.id}
+              className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/[0.04] cursor-pointer text-sm text-pe-text-secondary"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(category.id)}
+                onChange={() => toggle(category.id)}
+                className="rounded border-pe-border"
+              />
+              <span>{category.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={rootRef} className="relative">
@@ -100,6 +152,210 @@ function IndexCategoryFilter({ selected, onChange }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ScreenerFilterFields({
+  sectorFilter,
+  setSectorFilter,
+  sectorOptions,
+  minSectorPct,
+  setMinSectorPct,
+  minAumMillions,
+  setMinAumMillions,
+  aumSort,
+  setAumSort,
+  exchange,
+  setExchange,
+  exchanges,
+  indexCategories,
+  setIndexCategories,
+  indexCategoryLayout = 'dropdown',
+}) {
+  return (
+    <>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">Sector</span>
+        <select
+          value={sectorFilter}
+          onChange={(e) => setSectorFilter(e.target.value)}
+          className="pe-input py-2.5"
+        >
+          <option value="All">All sectors</option>
+          {sectorOptions.map((sector) => (
+            <option key={sector.key} value={sector.key}>
+              {sector.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
+          Min exposure
+        </span>
+        <div className="relative">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={minSectorPct}
+            disabled={sectorFilter === 'All'}
+            onChange={(e) => setMinSectorPct(e.target.value)}
+            className="pe-input py-2.5 pr-8 w-full disabled:opacity-40"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">%</span>
+        </div>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">Min AUM</span>
+        <div className="relative">
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={minAumMillions}
+            onChange={(e) => setMinAumMillions(e.target.value)}
+            placeholder="Any"
+            className="pe-input py-2.5 pr-8 w-full"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">M</span>
+        </div>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">Sort by AUM</span>
+        <select value={aumSort} onChange={(e) => setAumSort(e.target.value)} className="pe-input py-2.5">
+          <option value="none">Default order</option>
+          <option value="desc">Largest first</option>
+          <option value="asc">Smallest first</option>
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">Exchange</span>
+        <select value={exchange} onChange={(e) => setExchange(e.target.value)} className="pe-input py-2.5">
+          {exchanges.map((ex) => (
+            <option key={ex} value={ex}>
+              {ex === 'All' ? 'All exchanges' : ex}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <IndexCategoryFilter
+        selected={indexCategories}
+        onChange={setIndexCategories}
+        layout={indexCategoryLayout}
+      />
+    </>
+  );
+}
+
+function MobileFilterSheet({
+  open,
+  onClose,
+  filteredCount,
+  activeFilterCount,
+  aumSort,
+  onClear,
+  children,
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Filters and sort">
+      <button
+        type="button"
+        aria-label="Close filters"
+        className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 flex max-h-[min(88vh,720px)] flex-col rounded-t-2xl border border-pe-border border-b-0 bg-[#0a0a0a] shadow-[0_-16px_48px_rgba(0,0,0,0.45)]">
+        <div className="flex shrink-0 items-center justify-center pt-3 pb-1">
+          <div className="h-1 w-10 rounded-full bg-pe-border" aria-hidden />
+        </div>
+        <div className="flex shrink-0 items-center justify-between gap-3 px-4 pb-3 border-b border-pe-border">
+          <div>
+            <h2 className="text-base font-semibold text-pe-text">Filters & sort</h2>
+            <p className="text-xs text-pe-text-muted mt-0.5">
+              {filteredCount.toLocaleString()} funds
+              {activeFilterCount > 0 ? ` · ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : ''}
+              {aumSort !== 'none' ? ` · ${aumSortLabel(aumSort)}` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-lg text-pe-text-muted hover:text-pe-text hover:bg-white/[0.05]"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">{children}</div>
+        <div className="shrink-0 border-t border-pe-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2 bg-[#0a0a0a]">
+          <button
+            type="button"
+            onClick={onClear}
+            className="flex-1 py-3 rounded-xl border border-pe-border text-sm font-medium text-pe-text-secondary hover:text-pe-text hover:bg-white/[0.03]"
+          >
+            Clear all
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl bg-pe-text text-pe-canvas text-sm font-semibold hover:opacity-90"
+          >
+            Show results
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileFilterBar({ activeFilterCount, aumSort, filteredCount, onOpenFilters }) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden border-t border-pe-border bg-[#0a0a0a]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+      <div className={`${edgeX} max-w-[90rem] mx-auto px-4 py-2.5 flex items-center gap-2`}>
+        <button
+          type="button"
+          onClick={onOpenFilters}
+          className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-pe-border bg-white/[0.03] text-sm font-medium text-pe-text"
+        >
+          <SlidersHorizontal className="w-4 h-4 shrink-0" />
+          <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-pe-text text-pe-canvas text-[11px] font-semibold">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onOpenFilters}
+          className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-pe-border bg-white/[0.03] text-sm font-medium text-pe-text-secondary"
+        >
+          <ArrowUpDown className="w-4 h-4 shrink-0" />
+          <span>{aumSortLabel(aumSort)}</span>
+        </button>
+        <p className="text-xs text-pe-text-muted tabular-nums shrink-0 w-14 text-right">
+          {filteredCount > 999 ? `${Math.round(filteredCount / 1000)}k` : filteredCount}
+        </p>
+      </div>
     </div>
   );
 }
@@ -367,6 +623,7 @@ export default function UcitsScreenerPage() {
   const [minAumMillions, setMinAumMillions] = useState('');
   const [indexCategories, setIndexCategories] = useState([]);
   const [aumSort, setAumSort] = useState('none');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [screenerData, setScreenerData] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -482,6 +739,38 @@ export default function UcitsScreenerPage() {
   const sectorFilterLabel =
     sectorOptions.find((s) => s.key === sectorFilter)?.label ?? 'Sector';
   const headerGrid = sectorFilter !== 'All' ? DESKTOP_GRID_SECTOR : DESKTOP_GRID_BASE;
+  const activeFilterCount = countActiveFilters({
+    sectorFilter,
+    minAumMillions,
+    indexCategories,
+    exchange,
+  });
+
+  const clearAllFilters = () => {
+    setSectorFilter('All');
+    setMinSectorPct(10);
+    setMinAumMillions('');
+    setIndexCategories([]);
+    setExchange('All');
+    setAumSort('none');
+  };
+
+  const filterFieldProps = {
+    sectorFilter,
+    setSectorFilter,
+    sectorOptions,
+    minSectorPct,
+    setMinSectorPct,
+    minAumMillions,
+    setMinAumMillions,
+    aumSort,
+    setAumSort,
+    exchange,
+    setExchange,
+    exchanges,
+    indexCategories,
+    setIndexCategories,
+  };
 
   useEffect(() => {
     document.title = 'UCITS Screener · PocketEdge';
@@ -529,104 +818,49 @@ export default function UcitsScreenerPage() {
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <label className="flex flex-col gap-1.5 lg:col-span-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              Sector
-            </span>
-            <select
-              value={sectorFilter}
-              onChange={(e) => setSectorFilter(e.target.value)}
-              className="pe-input py-2.5"
-            >
-              <option value="All">All sectors</option>
-              {sectorOptions.map((sector) => (
-                <option key={sector.key} value={sector.key}>
-                  {sector.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1.5 lg:col-span-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              Min exposure
-            </span>
-            <div className="relative">
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                value={minSectorPct}
-                disabled={sectorFilter === 'All'}
-                onChange={(e) => setMinSectorPct(e.target.value)}
-                className="pe-input py-2.5 pr-8 w-full disabled:opacity-40"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">
-                %
-              </span>
-            </div>
-          </label>
-
-          <label className="flex flex-col gap-1.5 lg:col-span-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              Min AUM
-            </span>
-            <div className="relative">
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={minAumMillions}
-                onChange={(e) => setMinAumMillions(e.target.value)}
-                placeholder="Any"
-                className="pe-input py-2.5 pr-8 w-full"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">
-                M
-              </span>
-            </div>
-          </label>
-
-          <label className="flex flex-col gap-1.5 lg:col-span-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              Sort by AUM
-            </span>
-            <select
-              value={aumSort}
-              onChange={(e) => setAumSort(e.target.value)}
-              className="pe-input py-2.5"
-            >
-              <option value="none">Default order</option>
-              <option value="desc">Largest first</option>
-              <option value="asc">Smallest first</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1.5 lg:col-span-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              Exchange
-            </span>
-            <select
-              value={exchange}
-              onChange={(e) => setExchange(e.target.value)}
-              className="pe-input py-2.5"
-            >
-              {exchanges.map((ex) => (
-                <option key={ex} value={ex}>
-                  {ex === 'All' ? 'All exchanges' : ex}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="lg:col-span-1">
-            <IndexCategoryFilter selected={indexCategories} onChange={setIndexCategories} />
-          </div>
+        {/* Mobile: compact active-filter summary */}
+        <div className="mt-3 lg:hidden flex flex-wrap items-center gap-2">
+          <p className="text-sm text-pe-text-muted">
+            {filtered.length.toLocaleString()} fund{filtered.length === 1 ? '' : 's'}
+          </p>
+          {activeFilterCount > 0 || aumSort !== 'none' ? (
+            <>
+              <span className="text-pe-border">·</span>
+              {sectorFilter !== 'All' && (
+                <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
+                  {sectorFilterLabel}
+                </span>
+              )}
+              {Number(minAumMillions) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
+                  ≥{minAumMillions}M AUM
+                </span>
+              )}
+              {exchange !== 'All' && (
+                <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
+                  {exchange}
+                </span>
+              )}
+              {indexCategories.length > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
+                  {indexCategories.length} index type{indexCategories.length === 1 ? '' : 's'}
+                </span>
+              )}
+              {aumSort !== 'none' && (
+                <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
+                  {aumSortLabel(aumSort)}
+                </span>
+              )}
+            </>
+          ) : null}
         </div>
 
-        <p className="mt-3 text-sm text-pe-text-muted">
+        {/* Desktop filters */}
+        <div className="mt-4 hidden lg:grid grid-cols-6 gap-3">
+          <ScreenerFilterFields {...filterFieldProps} />
+        </div>
+
+        <p className="mt-3 hidden lg:block text-sm text-pe-text-muted">
           {filtered.length} fund{filtered.length === 1 ? '' : 's'}
           {sectorFilter !== 'All' && (
             <>
@@ -649,7 +883,7 @@ export default function UcitsScreenerPage() {
         </p>
       </section>
 
-      <main className={`${wideContent} py-6 sm:py-8 pb-16`}>
+      <main className={`${wideContent} py-6 sm:py-8 pb-28 lg:pb-16`}>
         <div
           className={`hidden lg:grid ${headerGrid} gap-x-4 px-5 py-3 mb-3 text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted`}
         >
@@ -707,6 +941,24 @@ export default function UcitsScreenerPage() {
           </div>
         )}
       </main>
+
+      <MobileFilterBar
+        activeFilterCount={activeFilterCount}
+        aumSort={aumSort}
+        filteredCount={filtered.length}
+        onOpenFilters={() => setMobileFiltersOpen(true)}
+      />
+
+      <MobileFilterSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        filteredCount={filtered.length}
+        activeFilterCount={activeFilterCount}
+        aumSort={aumSort}
+        onClear={clearAllFilters}
+      >
+        <ScreenerFilterFields {...filterFieldProps} indexCategoryLayout="list" />
+      </MobileFilterSheet>
     </div>
   );
 }
