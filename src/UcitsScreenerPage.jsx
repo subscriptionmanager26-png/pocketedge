@@ -2,6 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import SiteHeader from './components/SiteHeader';
 import { edgeX } from './designTokens';
+import {
+  INDEX_CATEGORIES,
+  compareFundsByAum,
+  formatAumDisplay,
+  fundMatchesIndexCategories,
+  getIndexCategoryLabel,
+} from './ucitsScreenerUtils';
 
 const wideContent = `max-w-[90rem] mx-auto ${edgeX}`;
 const SCREENER_DATA_URL = '/data/ucits-screener.json';
@@ -30,10 +37,71 @@ function formatWeight(holding) {
   return holding.weightFmt || (holding.weightPct != null ? `${holding.weightPct}%` : '—');
 }
 
-function formatAum(fund) {
-  if (!fund?.aumFmt && fund?.aum == null) return '—';
-  const amount = fund.aumFmt || String(fund.aum);
-  return `${amount} USD`;
+function IndexCategoryFilter({ selected, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocClick = (e) => {
+      if (!rootRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const toggle = (id) => {
+    if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
+    else onChange([...selected, id]);
+  };
+
+  const summary =
+    selected.length === 0
+      ? 'All index types'
+      : selected.length === 1
+        ? getIndexCategoryLabel(selected[0])
+        : `${selected.length} selected`;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
+        Index type
+      </span>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="pe-input py-2.5 w-full mt-1.5 flex items-center justify-between gap-2 text-left"
+      >
+        <span className="truncate text-sm">{summary}</span>
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-30 mt-1 w-full min-w-[14rem] rounded-lg border border-pe-border bg-[#111] shadow-xl p-2 max-h-64 overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="w-full text-left px-2 py-1.5 text-xs text-pe-text-muted hover:text-pe-text rounded"
+          >
+            Clear selection
+          </button>
+          {INDEX_CATEGORIES.map((category) => (
+            <label
+              key={category.id}
+              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/[0.04] cursor-pointer text-sm text-pe-text-secondary"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(category.id)}
+                onChange={() => toggle(category.id)}
+                className="rounded border-pe-border"
+              />
+              <span>{category.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function TopHoldingsList({ holdings, limit = 4, compact = false }) {
@@ -132,10 +200,10 @@ function FundDetailPanel({ fund, highlightSector }) {
               <p className="font-medium text-pe-text">{fund.assetMix.cash}</p>
             </div>
           )}
-          {fund.aumFmt && (
+          {(fund.aum != null || fund.aumFmt) && (
             <div className="rounded-lg border border-pe-border px-3 py-2">
-              <p className="text-xs text-pe-text-muted">AUM</p>
-              <p className="font-medium text-pe-text">{formatAum(fund)}</p>
+              <p className="text-xs text-pe-text-muted">AUM (USD)</p>
+              <p className="font-medium text-pe-text">{formatAumDisplay(fund)}</p>
             </div>
           )}
           {fund.turnover && (
@@ -185,7 +253,7 @@ const FundCard = React.memo(function FundCard({
             <p className="mt-1 text-xs sm:text-sm text-pe-text-muted lg:hidden">
               <span className="font-medium text-pe-text">{fund.symbol}</span>
               {fund.expenseRatio ? ` · TER ${fund.expenseRatio}` : ''}
-              {fund.aumFmt ? ` · AUM ${formatAum(fund)}` : ''}
+              {fund.aum != null ? ` · AUM ${formatAumDisplay(fund)}` : ''}
               {sectorFilter !== 'All' && sectorMatch && (
                 <span className="text-pe-text-secondary">
                   {' '}
@@ -209,9 +277,9 @@ const FundCard = React.memo(function FundCard({
 
           <p
             className="hidden lg:block min-w-0 text-sm text-pe-text-secondary tabular-nums truncate pt-0.5"
-            title={formatAum(fund) !== '—' ? formatAum(fund) : undefined}
+            title={formatAumDisplay(fund) !== '—' ? formatAumDisplay(fund) : undefined}
           >
-            {formatAum(fund)}
+            {formatAumDisplay(fund)}
           </p>
 
           {sectorFilter !== 'All' && (
@@ -296,6 +364,9 @@ export default function UcitsScreenerPage() {
   const [exchange, setExchange] = useState('All');
   const [sectorFilter, setSectorFilter] = useState('All');
   const [minSectorPct, setMinSectorPct] = useState(10);
+  const [minAumMillions, setMinAumMillions] = useState('');
+  const [indexCategories, setIndexCategories] = useState([]);
+  const [aumSort, setAumSort] = useState('none');
   const [expandedId, setExpandedId] = useState(null);
   const [screenerData, setScreenerData] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -343,14 +414,22 @@ export default function UcitsScreenerPage() {
     const q = query.trim().toLowerCase();
     const sectorActive = sectorFilter !== 'All';
     const minPct = Number(minSectorPct) || 0;
+    const minAum = Number(minAumMillions);
+    const minAumUsd = Number.isFinite(minAum) && minAum > 0 ? minAum * 1_000_000 : 0;
 
-    return funds.filter((fund) => {
+    const rows = funds.filter((fund) => {
       if (exchange !== 'All' && fund.exchange !== exchange) return false;
 
       if (sectorActive) {
         const sector = getSectorWeight(fund, sectorFilter);
         if (!sector || sector.weightPct < minPct) return false;
       }
+
+      if (minAumUsd > 0) {
+        if (fund.aum == null || fund.aum < minAumUsd) return false;
+      }
+
+      if (!fundMatchesIndexCategories(fund, indexCategories)) return false;
 
       if (!q) return true;
       const haystack = [
@@ -365,7 +444,12 @@ export default function UcitsScreenerPage() {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [funds, query, exchange, sectorFilter, minSectorPct]);
+
+    if (aumSort === 'desc' || aumSort === 'asc') {
+      return [...rows].sort((a, b) => compareFundsByAum(a, b, aumSort));
+    }
+    return rows;
+  }, [funds, query, exchange, sectorFilter, minSectorPct, minAumMillions, indexCategories, aumSort]);
 
   const visibleFunds = useMemo(
     () => filtered.slice(0, visibleCount),
@@ -376,7 +460,7 @@ export default function UcitsScreenerPage() {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
     setExpandedId(null);
-  }, [query, exchange, sectorFilter, minSectorPct]);
+  }, [query, exchange, sectorFilter, minSectorPct, minAumMillions, indexCategories, aumSort]);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -445,8 +529,8 @@ export default function UcitsScreenerPage() {
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <label className="flex flex-col gap-1.5">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <label className="flex flex-col gap-1.5 lg:col-span-1">
             <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
               Sector
             </span>
@@ -464,7 +548,7 @@ export default function UcitsScreenerPage() {
             </select>
           </label>
 
-          <label className="flex flex-col gap-1.5">
+          <label className="flex flex-col gap-1.5 lg:col-span-1">
             <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
               Min exposure
             </span>
@@ -485,7 +569,42 @@ export default function UcitsScreenerPage() {
             </div>
           </label>
 
-          <label className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+          <label className="flex flex-col gap-1.5 lg:col-span-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
+              Min AUM
+            </span>
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={minAumMillions}
+                onChange={(e) => setMinAumMillions(e.target.value)}
+                placeholder="Any"
+                className="pe-input py-2.5 pr-8 w-full"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">
+                M
+              </span>
+            </div>
+          </label>
+
+          <label className="flex flex-col gap-1.5 lg:col-span-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
+              Sort by AUM
+            </span>
+            <select
+              value={aumSort}
+              onChange={(e) => setAumSort(e.target.value)}
+              className="pe-input py-2.5"
+            >
+              <option value="none">Default order</option>
+              <option value="desc">Largest first</option>
+              <option value="asc">Smallest first</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1.5 lg:col-span-1">
             <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">
               Exchange
             </span>
@@ -502,16 +621,32 @@ export default function UcitsScreenerPage() {
             </select>
           </label>
 
-          <p className="flex items-end text-sm text-pe-text-muted sm:col-span-2 lg:col-span-1 pb-2.5">
-            {filtered.length} fund{filtered.length === 1 ? '' : 's'}
-            {sectorFilter !== 'All' && (
-              <>
-                {' '}
-                with ≥{minSectorPct}% {sectorFilterLabel}
-              </>
-            )}
-          </p>
+          <div className="lg:col-span-1">
+            <IndexCategoryFilter selected={indexCategories} onChange={setIndexCategories} />
+          </div>
         </div>
+
+        <p className="mt-3 text-sm text-pe-text-muted">
+          {filtered.length} fund{filtered.length === 1 ? '' : 's'}
+          {sectorFilter !== 'All' && (
+            <>
+              {' '}
+              with ≥{minSectorPct}% {sectorFilterLabel}
+            </>
+          )}
+          {Number(minAumMillions) > 0 && (
+            <>
+              {' '}
+              · min AUM {minAumMillions}M USD
+            </>
+          )}
+          {indexCategories.length > 0 && (
+            <>
+              {' '}
+              · {indexCategories.length} index type{indexCategories.length === 1 ? '' : 's'}
+            </>
+          )}
+        </p>
       </section>
 
       <main className={`${wideContent} py-6 sm:py-8 pb-16`}>
