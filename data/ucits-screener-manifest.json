@@ -1,309 +1,309 @@
 {
-  "generatedAt": "2026-06-25T11:14:56.114Z",
+  "generatedAt": "2026-06-25T11:48:23.492Z",
   "universeSize": 2955,
-  "enrichedCount": 1106,
+  "enrichedCount": 2891,
   "processedCount": 2955,
-  "failureCount": 1849,
-  "successRate": "37%",
+  "failureCount": 128,
+  "successRate": "98%",
   "failures": [
     {
-      "id": "XSPR.L-LSE",
-      "symbol": "XSPR.L",
+      "id": "EONS-MTA",
+      "symbol": "EONS",
+      "exchange": "MTA",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "ESNB-XDUS",
+      "symbol": "ESNB",
+      "exchange": "XDUS",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "EUAI-XDUS",
+      "symbol": "EUAI",
+      "exchange": "XDUS",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "FEGI-MTA",
+      "symbol": "FEGI",
+      "exchange": "MTA",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "FPX.L-LSE",
+      "symbol": "FPX.L",
       "exchange": "LSE",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSPS.L-LSE",
-      "symbol": "XSPS.L",
+      "id": "H4ZZ-XBER",
+      "symbol": "H4ZZ",
+      "exchange": "XBER",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "HP2A-Munich",
+      "symbol": "HP2A",
+      "exchange": "Munich",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "HP8E-Munich",
+      "symbol": "HP8E",
+      "exchange": "Munich",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "HSRID-Euronext",
+      "symbol": "HSRID",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "HUBE-XETR",
+      "symbol": "HUBE",
+      "exchange": "XETR",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "HYEP-MTA",
+      "symbol": "HYEP",
+      "exchange": "MTA",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IB28-XBER",
+      "symbol": "IB28",
+      "exchange": "XBER",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IMAE-Euronext",
+      "symbol": "IMAE",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "INFBN-Euronext",
+      "symbol": "INFBN",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IQSD-MTA",
+      "symbol": "IQSD",
+      "exchange": "MTA",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IU28-Euronext",
+      "symbol": "IU28",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IU29-Euronext",
+      "symbol": "IU29",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IUSP-Euronext",
+      "symbol": "IUSP",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "IWDS-Euronext",
+      "symbol": "IWDS",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "JCAG.L-LSE",
+      "symbol": "JCAG.L",
       "exchange": "LSE",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSPU.L-LSE",
-      "symbol": "XSPU.L",
+      "id": "JCHA.L-LSE",
+      "symbol": "JCHA.L",
       "exchange": "LSE",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSPX.L-LSE",
-      "symbol": "XSPX.L",
+      "id": "LVWC-XDUS",
+      "symbol": "LVWC",
+      "exchange": "XDUS",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "MAGU-Euronext",
+      "symbol": "MAGU",
+      "exchange": "Euronext",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "MKK1-XETR",
+      "symbol": "MKK1",
+      "exchange": "XETR",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "MWOQ-XBER",
+      "symbol": "MWOQ",
+      "exchange": "XBER",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "NRJC.L-LSE",
+      "symbol": "NRJC.L",
       "exchange": "LSE",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSSX.L-LSE",
-      "symbol": "XSSX.L",
+      "id": "QDV7-Munich",
+      "symbol": "QDV7",
+      "exchange": "Munich",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "R1VL.L-LSE",
+      "symbol": "R1VL.L",
       "exchange": "LSE",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSTC.L-LSE",
-      "symbol": "XSTC.L",
-      "exchange": "LSE",
+      "id": "SK9A-XETR",
+      "symbol": "SK9A",
+      "exchange": "XETR",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSTR.L-LSE",
-      "symbol": "XSTR.L",
-      "exchange": "LSE",
+      "id": "SLQX-XETR",
+      "symbol": "SLQX",
+      "exchange": "XETR",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSX6.L-LSE",
-      "symbol": "XSX6.L",
-      "exchange": "LSE",
+      "id": "SP20-Euronext",
+      "symbol": "SP20",
+      "exchange": "Euronext",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XSXD.L-LSE",
-      "symbol": "XSXD.L",
-      "exchange": "LSE",
+      "id": "SPF5-XDUS",
+      "symbol": "SPF5",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XT01.L-LSE",
-      "symbol": "XT01.L",
-      "exchange": "LSE",
+      "id": "SPF6-Munich",
+      "symbol": "SPF6",
+      "exchange": "Munich",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XT0D.L-LSE",
-      "symbol": "XT0D.L",
-      "exchange": "LSE",
+      "id": "SPF7-XDUS",
+      "symbol": "SPF7",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XT2D.L-LSE",
-      "symbol": "XT2D.L",
-      "exchange": "LSE",
+      "id": "SPF8-XDUS",
+      "symbol": "SPF8",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUCD.L-LSE",
-      "symbol": "XUCD.L",
-      "exchange": "LSE",
+      "id": "SPF9-XDUS",
+      "symbol": "SPF9",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUCM.L-LSE",
-      "symbol": "XUCM.L",
-      "exchange": "LSE",
+      "id": "SPFW-XDUS",
+      "symbol": "SPFW",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUCS.L-LSE",
-      "symbol": "XUCS.L",
-      "exchange": "LSE",
+      "id": "SUST-XDUS",
+      "symbol": "SUST",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUEB.L-LSE",
-      "symbol": "XUEB.L",
-      "exchange": "LSE",
+      "id": "US100-Euronext",
+      "symbol": "US100",
+      "exchange": "Euronext",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUEK.L-LSE",
-      "symbol": "XUEK.L",
-      "exchange": "LSE",
+      "id": "USAH-XDUS",
+      "symbol": "USAH",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUEM.L-LSE",
-      "symbol": "XUEM.L",
-      "exchange": "LSE",
+      "id": "USCE-Euronext",
+      "symbol": "USCE",
+      "exchange": "Euronext",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUEN.L-LSE",
-      "symbol": "XUEN.L",
-      "exchange": "LSE",
+      "id": "VECA-NYSE",
+      "symbol": "VECA",
+      "exchange": "NYSE",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUFB.L-LSE",
-      "symbol": "XUFB.L",
-      "exchange": "LSE",
+      "id": "VEUR-Euronext",
+      "symbol": "VEUR",
+      "exchange": "Euronext",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUFN.L-LSE",
-      "symbol": "XUFN.L",
-      "exchange": "LSE",
+      "id": "VHYL-Euronext",
+      "symbol": "VHYL",
+      "exchange": "Euronext",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUHC.L-LSE",
-      "symbol": "XUHC.L",
-      "exchange": "LSE",
+      "id": "VITD-XDUS",
+      "symbol": "VITD",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUHY.L-LSE",
-      "symbol": "XUHY.L",
-      "exchange": "LSE",
+      "id": "VLDP-XDUS",
+      "symbol": "VLDP",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUHY.SW-SIX",
-      "symbol": "XUHY.SW",
-      "exchange": "SIX",
+      "id": "VLDS-XDUS",
+      "symbol": "VLDS",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUIN.L-LSE",
-      "symbol": "XUIN.L",
-      "exchange": "LSE",
+      "id": "WLDHC-Euronext",
+      "symbol": "WLDHC",
+      "exchange": "Euronext",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUKS.L-LSE",
-      "symbol": "XUKS.L",
-      "exchange": "LSE",
+      "id": "XBCT-XDUS",
+      "symbol": "XBCT",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     },
     {
-      "id": "XUKX.L-LSE",
-      "symbol": "XUKX.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XUT3.L-LSE",
-      "symbol": "XUT3.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XUTC.L-LSE",
-      "symbol": "XUTC.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XUTD.L-LSE",
-      "symbol": "XUTD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XVTD.L-LSE",
-      "symbol": "XVTD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XWLD.L-LSE",
-      "symbol": "XWLD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XWTS.L-LSE",
-      "symbol": "XWTS.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XX25.L-LSE",
-      "symbol": "XX25.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XX2D.L-LSE",
-      "symbol": "XX2D.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XXSC.L-LSE",
-      "symbol": "XXSC.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XYLD.L-LSE",
-      "symbol": "XYLD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZBD.L-LSE",
-      "symbol": "XZBD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZBU.L-LSE",
-      "symbol": "XZBU.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZE5.L-LSE",
-      "symbol": "XZE5.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZEM.L-LSE",
-      "symbol": "XZEM.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZEU.L-LSE",
-      "symbol": "XZEU.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZEZ.L-LSE",
-      "symbol": "XZEZ.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZMD.L-LSE",
-      "symbol": "XZMD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZMJ.L-LSE",
-      "symbol": "XZMJ.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZMU.L-LSE",
-      "symbol": "XZMU.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZUD.L-LSE",
-      "symbol": "XZUD.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZW0.L-LSE",
-      "symbol": "XZW0.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZWG.L-LSE",
-      "symbol": "XZWG.L",
-      "exchange": "LSE",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "XZWS.L-LSE",
-      "symbol": "XZWS.L",
-      "exchange": "LSE",
+      "id": "XE01-XDUS",
+      "symbol": "XE01",
+      "exchange": "XDUS",
       "reason": "no_yahoo_data"
     }
   ]

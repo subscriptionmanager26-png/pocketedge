@@ -6,6 +6,7 @@
  * Usage:
  *   node scripts/fetch-ucits-screener.mjs
  *   node scripts/fetch-ucits-screener.mjs --resume
+ *     Skips rows already enriched (ok); retries miss/error rows.
  *   node scripts/fetch-ucits-screener.mjs --delay=200
  */
 
@@ -111,7 +112,7 @@ async function main() {
   for (let i = 0; i < all.length; i += 1) {
     const row = all[i];
     const id = ucitsRowId(row);
-    if (state.processed[id]) continue;
+    if (resume && state.processed[id] === 'ok') continue;
 
     const progress = `[${i + 1}/${all.length}]`;
     process.stdout.write(`${progress} ${row.symbol} (${row.exchange})… `);
@@ -124,6 +125,7 @@ async function main() {
         const existingIdx = state.funds.findIndex((f) => f.id === id);
         if (existingIdx >= 0) state.funds[existingIdx] = enriched;
         else state.funds.push(enriched);
+        state.failures = state.failures.filter((f) => f.id !== id);
         console.log(`✓ ${enriched.yahooSymbol}`);
       } else {
         state.failures.push({ id, symbol: row.symbol, exchange: row.exchange, reason: 'no_yahoo_data' });

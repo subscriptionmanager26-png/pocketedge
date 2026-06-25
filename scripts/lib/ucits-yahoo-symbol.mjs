@@ -27,6 +27,12 @@ export function yahooSymbolCandidates(symbol, exchange) {
   const base = String(symbol || '').trim().toUpperCase();
   if (!base) return [];
 
+  // ucits.info often ships venue-qualified tickers (e.g. CSPX.L, GCVC.SW).
+  // Use as-is — do not append another exchange suffix.
+  if (base.includes('.')) {
+    return [base];
+  }
+
   const suffixes = EXCHANGE_SUFFIXES[exchange] || ['.L', '.DE', '.PA', '.AS', '.MI', '.SW'];
   const candidates = suffixes.map((suffix) => `${base}${suffix}`);
   return [...new Set(candidates)];
