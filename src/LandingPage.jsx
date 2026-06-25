@@ -4,6 +4,7 @@ import BasketMarquee from './components/BasketMarquee';
 import ChallengeLeaderboardSection from './components/ChallengeLeaderboardSection';
 import LogoMark from './components/LogoMark';
 import SiteHeader from './components/SiteHeader';
+import MobileNavMenu from './components/MobileNavMenu';
 import {
   homepageBenefits,
   homepageFaq,
@@ -26,9 +27,13 @@ import { captureAuthFailed, captureAuthStarted, captureFaqItemOpened } from './a
 const RedesignLandingHero = React.lazy(() => import('./redesign/RedesignLandingHero'));
 
 export function LandingSiteHeader() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const scrollToInvite = () => {
     document.getElementById('hero-invite')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  const closeMenu = () => setMenuOpen(false);
 
   const handleNavInvite = async () => {
     captureAuthStarted('landing_nav');
@@ -38,7 +43,11 @@ export function LandingSiteHeader() {
       captureAuthFailed({ source: 'landing_nav', error: err?.message });
       scrollToInvite();
     }
+    closeMenu();
   };
+
+  const navLinkClass =
+    'block w-full text-left py-3 text-base text-pe-text-secondary hover:text-pe-text transition-colors border-b border-pe-border last:border-0';
 
   return (
     <SiteHeader logoHref="/" embedded sticky={false}>
@@ -61,9 +70,28 @@ export function LandingSiteHeader() {
           Get Started
         </PrimaryCta>
       </nav>
-      <PrimaryCta type="button" onClick={handleNavInvite} size="sm" className="md:hidden shrink-0">
-        Get Started
-      </PrimaryCta>
+
+      <MobileNavMenu open={menuOpen} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
+        <a href="#baskets" className={navLinkClass} onClick={closeMenu}>
+          Baskets
+        </a>
+        <a href={getUcitsScreenerUrl()} className={navLinkClass} onClick={closeMenu}>
+          UCITS Screener
+        </a>
+        {CAMPAIGN_UI_ENABLED && (
+          <a href="#challenge" className={navLinkClass} onClick={closeMenu}>
+            Challenge
+          </a>
+        )}
+        <a href="#faq" className={navLinkClass} onClick={closeMenu}>
+          FAQ
+        </a>
+        <div className="pt-3">
+          <PrimaryCta type="button" onClick={handleNavInvite} size="md" className="w-full">
+            Get Started
+          </PrimaryCta>
+        </div>
+      </MobileNavMenu>
     </SiteHeader>
   );
 }

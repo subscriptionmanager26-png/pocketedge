@@ -89,9 +89,10 @@ export default function GlobeHero() {
 
     const updateGlobePosition = () => {
       if (window.innerWidth < 768) {
+        // Center Southeast Asia on narrow viewports.
         sceneGroup.position.set(0, -10.5, 0);
-        sceneGroup.rotation.x = 0.2;
-        sceneGroup.rotation.y = 1.0;
+        sceneGroup.rotation.x = -0.45;
+        sceneGroup.rotation.y = 3.2;
       } else {
         sceneGroup.position.set(9.5, -2.0, 0);
         sceneGroup.rotation.x = 0.35;
@@ -297,9 +298,9 @@ export default function GlobeHero() {
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       if (!isDragging) {
-        sceneGroup.rotation.y += 0.0003;
+        sceneGroup.rotation.y += 0.00045;
       }
-      particlesMesh.rotation.y -= 0.0001;
+      particlesMesh.rotation.y -= 0.00015;
       renderer.render(scene, camera);
       updateLabels();
     };
