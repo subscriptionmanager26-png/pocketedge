@@ -2,12 +2,18 @@
  * Supabase admin REST client for batch jobs (service role or anon key).
  */
 
-export function getSupabaseAdminConfig() {
+export function getSupabaseAdminConfig({ requireServiceRole = false } = {}) {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  const key = serviceKey || anonKey;
   if (!url || !key) {
     throw new Error('VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or anon key) required');
+  }
+  if (requireServiceRole && !serviceKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY is required for basket NAV writes (anon key cannot bypass RLS)'
+    );
   }
   return { url, key };
 }

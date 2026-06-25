@@ -11,6 +11,7 @@
 
 import { detectFetchSlot } from './lib/nav-engine.mjs';
 import { getSupabaseAdminConfig, supabaseRest } from './lib/supabase-admin.mjs';
+import { updateBasketNavs } from './lib/basket-nav-update.mjs';
 import { IBKR_BATCH_SIZE, processInstrumentChunk } from './lib/universe-price-ladder.mjs';
 
 const slotArg = process.argv.find((a) => a.startsWith('--slot='));
@@ -49,7 +50,7 @@ async function insertInBatches(table, rows, batchSize = 500) {
 
 async function main() {
   const startedAt = Date.now();
-  const config = getSupabaseAdminConfig();
+  const config = getSupabaseAdminConfig({ requireServiceRole: !DRY_RUN });
   const rpc = supabaseRest('instrument_prices', config);
   const runsTable = supabaseRest('universe_price_fetch_runs', config);
 
@@ -249,6 +250,15 @@ async function main() {
       );
       console.log('Updated universe_price_fetch_runs');
     }
+
+    // ── Phase 2: basket NAV (uses prices written above) ───────────────────
+    console.log('\n── Basket NAV update ──');
+    await updateBasketNavs({
+      fetchSlot: FETCH_SLOT,
+      fetchedAt: FETCHED_AT,
+      dryRun: DRY_RUN,
+      config,
+    });
   } catch (error) {
     if (!DRY_RUN && runId) {
       await runsTable

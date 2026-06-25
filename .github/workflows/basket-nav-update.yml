@@ -1,0 +1,68 @@
+name: Basket NAV update
+
+# Manual backfill or ad-hoc NAV recompute after prices are already in the DB.
+# Scheduled runs: universe-price-fetch.yml now chains NAV at the end automatically.
+
+on:
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Fetch slot (auto-detect if empty)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - overnight
+          - us_close
+      fetched_at:
+        description: 'Price snapshot timestamp (ISO). Empty = latest completed universe run for slot.'
+        required: false
+        type: string
+
+concurrency:
+  group: basket-nav-update
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  nav:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Resolve fetch slot
+        id: slot
+        run: |
+          INPUT="${{ github.event.inputs.slot }}"
+          if [ -n "$INPUT" ]; then
+            echo "value=$INPUT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          H=$(date -u +%H)
+          if [ "$H" -lt 12 ]; then
+            echo "value=us_close" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=overnight" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run basket NAV update
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ARGS=(--slot="${{ steps.slot.outputs.value }}")
+          FETCHED_AT="${{ github.event.inputs.fetched_at }}"
+          if [ -n "$FETCHED_AT" ]; then
+            ARGS+=(--fetched-at="$FETCHED_AT")
+          fi
+          node scripts/run-basket-nav-update.mjs "${ARGS[@]}"
