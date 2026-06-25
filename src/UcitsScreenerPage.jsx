@@ -8,10 +8,10 @@ const SCREENER_DATA_URL = '/data/ucits-screener.json';
 const PAGE_SIZE = 50;
 
 const DESKTOP_GRID_BASE =
-  'lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_4.5rem_3.5rem_4.5rem_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
+  'lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_4.5rem_3.5rem_minmax(5.75rem,0.65fr)_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
 
 const DESKTOP_GRID_SECTOR =
-  'lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,0.95fr)_4.5rem_3.5rem_4.5rem_4rem_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
+  'lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)_4.5rem_3.5rem_minmax(5.75rem,0.65fr)_4rem_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
 
 function decodeName(name = '') {
   return name.replace(/&amp;/g, '&');
@@ -162,7 +162,7 @@ const FundCard = React.memo(function FundCard({
   const desktopGrid = sectorFilter !== 'All' ? DESKTOP_GRID_SECTOR : DESKTOP_GRID_BASE;
 
   return (
-    <article className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden">
+    <article className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <button
         type="button"
         onClick={onToggle}
@@ -195,24 +195,27 @@ const FundCard = React.memo(function FundCard({
             </p>
           </div>
 
-          <p className="hidden lg:block text-sm text-pe-text-secondary truncate pt-0.5">
+          <p className="hidden lg:block min-w-0 text-sm text-pe-text-secondary truncate pt-0.5" title={fund.trackedIndex || undefined}>
             {fund.trackedIndex || '—'}
           </p>
 
-          <p className="hidden lg:block text-sm font-medium text-pe-text tabular-nums pt-0.5">
+          <p className="hidden lg:block min-w-0 text-sm font-medium text-pe-text tabular-nums pt-0.5">
             {fund.symbol}
           </p>
 
-          <p className="hidden lg:block text-sm text-pe-text-secondary tabular-nums pt-0.5">
+          <p className="hidden lg:block min-w-0 text-sm text-pe-text-secondary tabular-nums pt-0.5">
             {fund.expenseRatio || '—'}
           </p>
 
-          <p className="hidden lg:block text-sm text-pe-text-secondary tabular-nums pt-0.5">
+          <p
+            className="hidden lg:block min-w-0 text-sm text-pe-text-secondary tabular-nums truncate pt-0.5"
+            title={formatAum(fund) !== '—' ? formatAum(fund) : undefined}
+          >
             {formatAum(fund)}
           </p>
 
           {sectorFilter !== 'All' && (
-            <p className="hidden lg:block text-sm font-medium text-pe-text tabular-nums pt-0.5">
+            <p className="hidden lg:block min-w-0 text-sm font-medium text-pe-text tabular-nums pt-0.5">
               {sectorMatch ? `${sectorMatch.weightPct}%` : '—'}
             </p>
           )}
@@ -516,10 +519,10 @@ export default function UcitsScreenerPage() {
           className={`hidden lg:grid ${headerGrid} gap-x-4 px-5 py-3 mb-3 text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted`}
         >
           <span>Fund</span>
-          <span>Tracks</span>
+          <span>Index</span>
           <span>Ticker</span>
           <span>TER</span>
-          <span>AUM</span>
+          <span>AUM (USD)</span>
           {sectorFilter !== 'All' && <span>{sectorFilterLabel}</span>}
           <span>Top holdings</span>
           <span>Top sectors</span>
