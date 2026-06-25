@@ -5,7 +5,7 @@ import LeaderboardTable from '../../components/LeaderboardTable';
 import ChallengeWelcomeCard from '../components/ChallengeWelcomeCard';
 import ChallengeBasketSlots from '../components/ChallengeBasketSlots';
 import PageHeader from '../../components/PageHeader';
-import { buildLeaderboard, catalogBaskets } from '../basketCatalog';
+import { buildLeaderboard, mergeDiscoverBaskets } from '../basketCatalog';
 import { getChallengeProgress, hasEnteredChallenge } from '../../challengeEligibility';
 import { CHALLENGE_NAME } from '../../challengeMeta';
 import { navigateApp } from '../appRoute';
@@ -17,6 +17,7 @@ const CHALLENGE_DESCRIPTION =
 
 export default function LeaderboardPage({
   userBaskets = [],
+  marketplaceBaskets = [],
   user = null,
   referralStats = null,
   publicView = false,
@@ -37,7 +38,7 @@ export default function LeaderboardPage({
     }
   }, [challengeEntered]);
 
-  const entries = buildLeaderboard([...userBaskets, ...catalogBaskets]);
+  const entries = buildLeaderboard(mergeDiscoverBaskets(userBaskets, marketplaceBaskets));
   const progress = getChallengeProgress({ user, userBaskets, referralStats });
 
   const handleBasketClick = (basketId) => {

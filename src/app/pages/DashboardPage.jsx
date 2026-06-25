@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import SearchBasketCard from '../components/SearchBasketCard';
-import { catalogBaskets, getBasketById } from '../basketCatalog';
+import { getBasketById, mergeDiscoverBaskets } from '../basketCatalog';
 import { navigateApp } from '../appRoute';
 import { loadSubscribedBasketIds, subscribeSubscriptions } from '../subscriptionStore';
 import AppPageLayout from '../components/AppPageLayout';
@@ -10,26 +10,28 @@ const CARD_GRID =
   'grid grid-cols-2 gap-2 sm:grid-cols-2 xl:grid-cols-3 sm:gap-3 sm:items-stretch';
 const SECTION_DIVIDER = 'pt-5 border-t border-pe-border';
 
-export default function DashboardPage({ userBaskets }) {
+export default function DashboardPage({ userBaskets, marketplaceBaskets = [] }) {
   const [followedIds, setFollowedIds] = useState(loadSubscribedBasketIds);
 
   useEffect(() => subscribeSubscriptions(setFollowedIds), []);
 
+  const discoverBaskets = useMemo(
+    () => mergeDiscoverBaskets(userBaskets, marketplaceBaskets),
+    [userBaskets, marketplaceBaskets]
+  );
+
   const followedBaskets = useMemo(
     () =>
       followedIds
-        .map((id) => getBasketById(id, userBaskets))
+        .map((id) => getBasketById(id, userBaskets, marketplaceBaskets))
         .filter(Boolean),
-    [followedIds, userBaskets]
+    [followedIds, userBaskets, marketplaceBaskets]
   );
 
-  const trendingBaskets = useMemo(
-    () =>
-      catalogBaskets.filter((b) => b.badge === 'trending' || b.badge === 'hot').length > 0
-        ? catalogBaskets.filter((b) => b.badge === 'trending' || b.badge === 'hot')
-        : catalogBaskets.slice(0, 6),
-    []
-  );
+  const trendingBaskets = useMemo(() => {
+    const tagged = discoverBaskets.filter((b) => b.badge === 'trending' || b.badge === 'hot');
+    return tagged.length > 0 ? tagged : discoverBaskets.slice(0, 6);
+  }, [discoverBaskets]);
 
   const openBasket = (id) => navigateApp({ tab: 'basket', basketId: id });
 

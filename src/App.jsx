@@ -9,6 +9,7 @@ import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import StickyTopChrome from './components/StickyTopChrome';
 import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
 import { loadUserBaskets, loadUserBasketsAsync, migrateLocalBasketsToDb } from './app/basketStore';
+import { fetchMarketplaceBaskets } from './app/userDataApi';
 import { migrateLocalProfileToDb } from './app/profileStore';
 import { getChallengeProgress } from './challengeEligibility';
 import { CAMPAIGN_UI_ENABLED } from './campaignFlags';
@@ -70,6 +71,7 @@ export default function App() {
   const [route, setRoute] = useState(() => resolveRoute(null));
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
+  const [marketplaceBaskets, setMarketplaceBaskets] = useState([]);
   const [referralStats, setReferralStats] = useState(null);
   const [bootstrapping, setBootstrapping] = useState(() => {
     if (!supabase) return false;
@@ -87,6 +89,13 @@ export default function App() {
   );
 
   const refreshBaskets = async () => {
+    try {
+      const market = await fetchMarketplaceBaskets();
+      if (market) setMarketplaceBaskets(market);
+    } catch {
+      setMarketplaceBaskets([]);
+    }
+
     if (user?.id) {
       try {
         setUserBaskets(await loadUserBasketsAsync(user.id));
@@ -97,6 +106,12 @@ export default function App() {
     }
     setUserBaskets(loadUserBaskets());
   };
+
+  useEffect(() => {
+    fetchMarketplaceBaskets()
+      .then(setMarketplaceBaskets)
+      .catch(() => setMarketplaceBaskets([]));
+  }, []);
   const sessionTrackedRef = useRef(false);
   const lastProgressKeyRef = useRef('');
 
@@ -281,6 +296,7 @@ export default function App() {
       <AppShell
         user={user}
         userBaskets={userBaskets}
+        marketplaceBaskets={marketplaceBaskets}
         referralStats={referralStats}
         challengeProgress={challengeProgress}
         onBasketsChange={refreshBaskets}
@@ -289,7 +305,7 @@ export default function App() {
   }
 
   if (route === 'leaderboard') {
-    return <PublicLeaderboardPage />;
+    return <PublicLeaderboardPage marketplaceBaskets={marketplaceBaskets} />;
   }
 
   return (
@@ -298,7 +314,7 @@ export default function App() {
       challengeProgress={challengeProgress}
       navigation={<LandingSiteHeader />}
     >
-      <LandingPage />
+      <LandingPage marketplaceBaskets={marketplaceBaskets} />
     </PageShell>
   );
 }

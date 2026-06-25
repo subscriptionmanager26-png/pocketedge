@@ -64,8 +64,9 @@ export function LandingSiteHeader() {
   );
 }
 
-export default function LandingPage() {
+export default function LandingPage({ marketplaceBaskets = [] }) {
   const [openFaq, setOpenFaq] = useState(null);
+  const marqueeBaskets = marketplaceBaskets.length ? marketplaceBaskets : catalogBaskets;
 
   const handleNavInvite = async () => {
     captureAuthStarted('landing_nav');
@@ -97,7 +98,7 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <BasketMarquee baskets={catalogBaskets} />
+        <BasketMarquee baskets={marqueeBaskets} />
       </section>
 
       {/* Global Portfolio League + leaderboard */}
@@ -114,7 +115,10 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 sm:mt-12">
-            <ChallengeLeaderboardSection onSignIn={handleNavInvite} />
+            <ChallengeLeaderboardSection
+              marketplaceBaskets={marketplaceBaskets}
+              onSignIn={handleNavInvite}
+            />
           </div>
         </div>
       </section>

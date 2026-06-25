@@ -16,6 +16,7 @@ import {
 import { loadNotifications, syncSubscribedBasketNotifications } from './notificationStore';
 import { loadSubscribedBasketIds } from './subscriptionStore';
 import { enrichBasket, getBasketById } from './basketCatalog';
+import { resolveCatalogBasketId } from './catalogIds';
 import { loadUserProfile, loadUserProfileAsync } from './profileStore';
 import { getReferralStats, signInWithGoogle } from '../supabase';
 import StickyTopChrome from '../components/StickyTopChrome';
@@ -30,6 +31,7 @@ import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
 export default function AppShell({
   user,
   userBaskets,
+  marketplaceBaskets = [],
   referralStats,
   challengeProgress,
   onBasketsChange,
@@ -130,9 +132,12 @@ export default function AppShell({
   };
 
   const selectedBasket = basketId
-    ? enrichBasket(getBasketById(basketId, userBaskets))
+    ? enrichBasket(getBasketById(basketId, userBaskets, marketplaceBaskets))
     : null;
-  const isOwnBasket = userBaskets.some((b) => b.id === basketId);
+  const resolvedBasketId = basketId ? resolveCatalogBasketId(basketId) : null;
+  const isOwnBasket = userBaskets.some(
+    (b) => b.id === basketId || b.id === resolvedBasketId
+  );
   const { editId: editBasketId, isNew: creatingNew } = createRoute;
   const editBasket = editBasketId
     ? userBaskets.find((b) => b.id === editBasketId) ?? null
@@ -177,11 +182,16 @@ export default function AppShell({
           />
         ) : (
           <>
-            {tab === 'dashboard' && <DashboardPage userBaskets={userBaskets} />}
-            {tab === 'search' && <SearchPage userBaskets={userBaskets} />}
+            {tab === 'dashboard' && (
+              <DashboardPage userBaskets={userBaskets} marketplaceBaskets={marketplaceBaskets} />
+            )}
+            {tab === 'search' && (
+              <SearchPage userBaskets={userBaskets} marketplaceBaskets={marketplaceBaskets} />
+            )}
             {CAMPAIGN_UI_ENABLED && tab === 'leaderboard' && (
               <LeaderboardPage
                 userBaskets={userBaskets}
+                marketplaceBaskets={marketplaceBaskets}
                 user={user}
                 referralStats={effectiveReferralStats}
                 onChallengeEnter={handleSignIn}

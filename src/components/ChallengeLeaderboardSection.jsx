@@ -2,22 +2,24 @@ import React, { useEffect, useMemo, useState } from 'react';
 import LeaderboardTable from './LeaderboardTable';
 import ChallengeLeaderboardGate from './ChallengeLeaderboardGate';
 import ChallengeEntryPanel from './ChallengeEntryPanel';
-import { buildLeaderboard, catalogBaskets } from '../app/basketCatalog';
+import { buildLeaderboard, catalogBaskets, mergeDiscoverBaskets } from '../app/basketCatalog';
 import { loadUserBaskets } from '../app/basketStore';
 import { getChallengeProgress } from '../challengeEligibility';
 import { getReferralLink, getReferralStats, signInWithGoogle, supabase } from '../supabase';
 export default function ChallengeLeaderboardSection({
   entries: entriesProp,
+  marketplaceBaskets = [],
   onSignIn,
 }) {
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
   const [referralStats, setReferralStats] = useState(null);
 
-  const entries = useMemo(
-    () => entriesProp ?? buildLeaderboard([...loadUserBaskets(), ...catalogBaskets]),
-    [entriesProp]
-  );
+  const entries = useMemo(() => {
+    if (entriesProp) return entriesProp;
+    const discover = mergeDiscoverBaskets(loadUserBaskets(), marketplaceBaskets);
+    return buildLeaderboard(discover.length ? discover : [...loadUserBaskets(), ...catalogBaskets]);
+  }, [entriesProp, marketplaceBaskets]);
 
   useEffect(() => {
     if (!supabase) return undefined;

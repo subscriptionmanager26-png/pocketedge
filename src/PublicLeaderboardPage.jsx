@@ -4,6 +4,7 @@ import SiteHeader from './components/SiteHeader';
 import StickyTopChrome from './components/StickyTopChrome';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
 import { loadUserBaskets } from './app/basketStore';
+import { fetchMarketplaceBaskets } from './app/userDataApi';
 import { edgeX } from './designTokens';
 import { getReferralStats, supabase, signInWithGoogle } from './supabase';
 import {
@@ -11,10 +12,21 @@ import {
   captureAuthStarted,
 } from './analytics';
 
-export default function PublicLeaderboardPage() {
+export default function PublicLeaderboardPage({ marketplaceBaskets: marketplaceBasketsProp = [] }) {
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
+  const [marketplaceBaskets, setMarketplaceBaskets] = useState(marketplaceBasketsProp);
   const [referralStats, setReferralStats] = useState(null);
+
+  useEffect(() => {
+    if (marketplaceBasketsProp.length) {
+      setMarketplaceBaskets(marketplaceBasketsProp);
+      return;
+    }
+    fetchMarketplaceBaskets()
+      .then(setMarketplaceBaskets)
+      .catch(() => setMarketplaceBaskets([]));
+  }, [marketplaceBasketsProp]);
 
   useEffect(() => {
     if (!supabase) return undefined;
@@ -91,6 +103,7 @@ export default function PublicLeaderboardPage() {
         <LeaderboardPage
           user={user}
           userBaskets={userBaskets}
+          marketplaceBaskets={marketplaceBaskets}
           referralStats={referralStats}
           publicView
           onChallengeEnter={handleSignIn}

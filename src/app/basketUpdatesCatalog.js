@@ -1,9 +1,11 @@
+import { CATALOG_BASKET_IDS, resolveCatalogBasketId } from './catalogIds';
+
 /** Mock rebalance / constituent change history for catalog baskets */
 
 export const basketUpdatesCatalog = [
   {
     id: 'update-ai-q2',
-    basketId: 'ai-data-center',
+    basketId: CATALOG_BASKET_IDS['ai-data-center'],
     date: '2026-05-28',
     title: 'Quarterly rebalance',
     summary:
@@ -17,7 +19,7 @@ export const basketUpdatesCatalog = [
   },
   {
     id: 'update-ai-q1',
-    basketId: 'ai-data-center',
+    basketId: CATALOG_BASKET_IDS['ai-data-center'],
     date: '2026-02-14',
     title: 'Constituent refresh',
     summary: 'Rotated out a lagging data-center REIT and increased TSMC weight after earnings momentum.',
@@ -29,7 +31,7 @@ export const basketUpdatesCatalog = [
   },
   {
     id: 'update-tech-q2',
-    basketId: 'us-tech-giants',
+    basketId: CATALOG_BASKET_IDS['us-tech-giants'],
     date: '2026-05-20',
     title: 'Equal-weight rebalance',
     summary: 'Restored equal weights after price drift widened NVIDIA versus the rest of the basket.',
@@ -43,7 +45,7 @@ export const basketUpdatesCatalog = [
   },
   {
     id: 'update-ev-may',
-    basketId: 'global-ev',
+    basketId: CATALOG_BASKET_IDS['global-ev'],
     date: '2026-05-10',
     title: 'EV supply chain tilt',
     summary: 'Reduced speculative small-cap EV exposure and reallocated to Tesla after delivery beat.',
@@ -57,8 +59,14 @@ export const basketUpdatesCatalog = [
 ];
 
 export function getBasketUpdates(basketId) {
+  const resolved = resolveCatalogBasketId(basketId);
   return basketUpdatesCatalog
-    .filter((update) => update.basketId === basketId)
+    .filter(
+      (update) =>
+        update.basketId === resolved ||
+        update.basketId === basketId ||
+        resolveCatalogBasketId(update.basketId) === resolved
+    )
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 

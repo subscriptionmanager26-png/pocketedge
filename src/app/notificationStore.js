@@ -1,5 +1,6 @@
 import { formatWeightChange, getBasketUpdates } from './basketUpdatesCatalog';
-import { catalogBaskets } from './basketCatalog';
+import { getBasketById } from './basketCatalog';
+import { CATALOG_SEED_BASKETS } from './catalogSeedData';
 
 const STORAGE_KEY = 'pocketedge_notifications';
 const CHANGED_EVENT = 'pocketedge-notifications-changed';
@@ -19,7 +20,11 @@ function write(notifications) {
 }
 
 function basketName(basketId) {
-  return catalogBaskets.find((basket) => basket.id === basketId)?.name || 'Basket';
+  return (
+    getBasketById(basketId, [], CATALOG_SEED_BASKETS)?.name ||
+    CATALOG_SEED_BASKETS.find((basket) => basket.id === basketId)?.name ||
+    'Basket'
+  );
 }
 
 function buildUpdateBody(update) {

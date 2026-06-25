@@ -6,7 +6,7 @@ import {
 
 const STORAGE_KEY = 'pocketedge_user_baskets';
 
-export const MAX_USER_BASKETS = 5;
+export const MAX_USER_BASKETS = 10;
 
 export function canCreateBasket(baskets) {
   return baskets.length < MAX_USER_BASKETS;

@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -9,8 +10,22 @@ export function isDbUserId(userId) {
 
 function mapDbBasket(row, profile = null) {
   if (!row) return null;
+  const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+  const constituentCount = Array.isArray(row.constituents) ? row.constituents.length : 0;
+  const creatorFromRow =
+    row.creator_display_name || row.creator_bio || row.creator_avatar_url
+      ? {
+          name: row.creator_display_name || 'Investor',
+          bio: row.creator_bio || '',
+          avatarUrl: row.creator_avatar_url || '',
+          links: [],
+          followers: meta.followers ?? 0,
+        }
+      : null;
+
   return {
     id: row.id,
+    catalogSlug: row.catalog_slug ?? null,
     name: row.name,
     shortDescription: row.short_description ?? '',
     description: row.description ?? '',
@@ -22,19 +37,36 @@ function mapDbBasket(row, profile = null) {
     versionNumber: row.version_number ?? row.current_version ?? 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    creator: profile
-      ? {
-          name: profile.display_name || profile.name || 'Investor',
-          bio: profile.bio || '',
-          avatarUrl: profile.avatar_url || profile.avatarUrl || '',
-          links: profile.links || [],
-          followers: 0,
-        }
-      : undefined,
-    type: 'Basket',
+    badge: meta.badge ?? null,
+    type: meta.type ?? 'Basket',
+    tags: Array.isArray(meta.tags) ? meta.tags : [],
+    methodology: meta.methodology,
+    factsheet: meta.factsheet,
+    risk: meta.risk,
+    creatorName: meta.creatorName,
+    followers: meta.followers,
+    creator: creatorFromRow ||
+      (profile
+        ? {
+            name: profile.display_name || profile.name || 'Investor',
+            bio: profile.bio || '',
+            avatarUrl: profile.avatar_url || profile.avatarUrl || '',
+            links: profile.links || [],
+            followers: meta.followers ?? 0,
+          }
+        : meta.creatorName
+          ? {
+              name: meta.creatorName,
+              bio: '',
+              avatarUrl: '',
+              links: [],
+              followers: meta.followers ?? 0,
+            }
+          : undefined),
     stats: {
-      constituents: Array.isArray(row.constituents) ? row.constituents.length : 0,
-      minInvestAmount: 5000,
+      ...(meta.stats || {}),
+      constituents: meta.stats?.constituents ?? constituentCount,
+      minInvestAmount: meta.stats?.minInvestAmount ?? 5000,
     },
   };
 }
@@ -168,6 +200,25 @@ export async function saveCreatorProfile(userId, profile) {
 
   if (error) throw error;
   return mapDbProfile(data);
+}
+
+export async function fetchMarketplaceBaskets() {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.rpc('list_marketplace_baskets');
+  if (error) throw error;
+
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map((row) => mapDbBasket(row));
+}
+
+export async function resolveBasketId(key) {
+  if (!supabase || !key) return key;
+  if (UUID_RE.test(key)) return key;
+
+  const { data, error } = await supabase.rpc('resolve_basket_id', { p_key: key });
+  if (error) throw error;
+  return data || key;
 }
 
 export async function fetchUserBaskets(userId) {

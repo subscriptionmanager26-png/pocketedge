@@ -2,19 +2,19 @@ import React, { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import SearchBasketCard from '../components/SearchBasketCard';
-import { catalogBaskets, searchBaskets } from '../basketCatalog';
+import { mergeDiscoverBaskets, searchBaskets } from '../basketCatalog';
 import { navigateApp } from '../appRoute';
 import AppPageLayout from '../components/AppPageLayout';
 
 const filters = ['All', 'Thematic', 'Strategy', 'US', 'AI', 'EV'];
 
-export default function SearchPage({ userBaskets }) {
+export default function SearchPage({ userBaskets, marketplaceBaskets = [] }) {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
   const allBaskets = useMemo(
-    () => [...userBaskets.map((b) => ({ ...b, isOwn: true })), ...catalogBaskets],
-    [userBaskets]
+    () => mergeDiscoverBaskets(userBaskets, marketplaceBaskets),
+    [userBaskets, marketplaceBaskets]
   );
 
   const results = useMemo(() => {
