@@ -30,17 +30,43 @@ export async function loadCurrentPricesFromDb(conids, fetchedAt, config = getSup
 
   const { url, key } = config;
   const inList = conids.join(',');
-  const response = await fetch(
-    `${url}/rest/v1/instrument_prices?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(fetchedAt)}&select=conid,price`,
-    {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-    }
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+
+  const prices = new Map();
+
+  const historyResponse = await fetch(
+    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(fetchedAt)}&select=conid,price`,
+    { headers }
   );
-  if (!response.ok) {
-    throw new Error(`Could not load current prices (${response.status}): ${await response.text()}`);
+  if (!historyResponse.ok) {
+    throw new Error(
+      `Could not load boundary prices (${historyResponse.status}): ${await historyResponse.text()}`
+    );
   }
-  const rows = await response.json();
-  return pricesMapFromRows(rows);
+  for (const row of await historyResponse.json()) {
+    prices.set(Number(row.conid), Number(row.price));
+  }
+
+  const missing = conids.filter((conid) => !prices.has(conid));
+  if (!missing.length) return prices;
+
+  const missingList = missing.join(',');
+  const latestResponse = await fetch(
+    `${url}/rest/v1/instrument_prices?conid=in.(${missingList})&select=conid,price`,
+    { headers }
+  );
+  if (!latestResponse.ok) {
+    throw new Error(
+      `Could not load latest prices (${latestResponse.status}): ${await latestResponse.text()}`
+    );
+  }
+  for (const row of await latestResponse.json()) {
+    if (row.price != null) {
+      prices.set(Number(row.conid), Number(row.price));
+    }
+  }
+
+  return prices;
 }
 
 export async function listBasketConidsForNav(config = getSupabaseAdminConfig()) {
