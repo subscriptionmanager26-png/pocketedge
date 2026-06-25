@@ -111,9 +111,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isUcitsScreenerRoute()) return undefined;
     fetchMarketplaceBaskets()
       .then(setMarketplaceBaskets)
       .catch(() => setMarketplaceBaskets([]));
+    return undefined;
   }, []);
   const sessionTrackedRef = useRef(false);
   const lastProgressKeyRef = useRef('');

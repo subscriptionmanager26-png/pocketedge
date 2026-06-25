@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import SiteHeader from './components/SiteHeader';
 import { edgeX } from './designTokens';
 
 const wideContent = `max-w-[90rem] mx-auto ${edgeX}`;
 const SCREENER_DATA_URL = '/data/ucits-screener.json';
+const PAGE_SIZE = 50;
 
 const DESKTOP_GRID_BASE =
   'lg:grid lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)_4.5rem_4rem_minmax(0,1.05fr)_minmax(0,1.05fr)_2rem] lg:gap-x-4 lg:items-start';
@@ -137,7 +138,14 @@ function FundDetailPanel({ fund, highlightSector }) {
   );
 }
 
-function FundCard({ fund, expanded, onToggle, sectorFilter, sectorFilterLabel, highlightSector }) {
+const FundCard = React.memo(function FundCard({
+  fund,
+  expanded,
+  onToggle,
+  sectorFilter,
+  sectorFilterLabel,
+  highlightSector,
+}) {
   const sectorMatch = getSectorWeight(fund, sectorFilter);
   const desktopGrid = sectorFilter !== 'All' ? DESKTOP_GRID_SECTOR : DESKTOP_GRID_BASE;
 
@@ -247,7 +255,7 @@ function FundCard({ fund, expanded, onToggle, sectorFilter, sectorFilterLabel, h
       )}
     </article>
   );
-}
+});
 
 export function UcitsScreenerSiteHeader() {
   return (
@@ -271,6 +279,8 @@ export default function UcitsScreenerPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [screenerData, setScreenerData] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadMoreRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -336,6 +346,34 @@ export default function UcitsScreenerPage() {
       return haystack.includes(q);
     });
   }, [funds, query, exchange, sectorFilter, minSectorPct]);
+
+  const visibleFunds = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+  const hasMore = visibleCount < filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+    setExpandedId(null);
+  }, [query, exchange, sectorFilter, minSectorPct]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasMore) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((count) => Math.min(count + PAGE_SIZE, filtered.length));
+        }
+      },
+      { rootMargin: '600px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, filtered.length]);
 
   const sectorFilterLabel =
     sectorOptions.find((s) => s.key === sectorFilter)?.label ?? 'Sector';
@@ -471,7 +509,7 @@ export default function UcitsScreenerPage() {
         </div>
 
         <ul className="space-y-3 sm:space-y-4">
-          {filtered.map((fund) => (
+          {visibleFunds.map((fund) => (
             <li key={fund.id}>
               <FundCard
                 fund={fund}
@@ -484,6 +522,28 @@ export default function UcitsScreenerPage() {
             </li>
           ))}
         </ul>
+
+        {filtered.length > 0 && (
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <p className="text-sm text-pe-text-muted">
+              Showing {visibleFunds.length.toLocaleString()} of {filtered.length.toLocaleString()} funds
+            </p>
+            {hasMore && (
+              <>
+                <div ref={loadMoreRef} className="h-1 w-full" aria-hidden />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount((count) => Math.min(count + PAGE_SIZE, filtered.length))
+                  }
+                  className="px-5 py-2.5 rounded-lg border border-pe-border text-sm font-medium text-pe-text-secondary hover:text-pe-text hover:bg-white/[0.03] transition-colors"
+                >
+                  Load more
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {filtered.length === 0 && (
           <div className="py-16 text-center text-pe-text-muted border border-pe-border rounded-xl">
