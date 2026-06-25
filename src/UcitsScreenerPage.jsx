@@ -367,18 +367,23 @@ function TopHoldingsList({ holdings, limit = 4, compact = false }) {
   }
 
   return (
-    <ul className={compact ? 'space-y-1' : 'space-y-1.5'}>
-      {rows.map((holding) => (
-        <li
-          key={holding.symbol || holding.name}
-          className={`flex items-center justify-between gap-2 ${
-            compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
-          }`}
-        >
-          <span className="text-pe-text-secondary truncate">{holding.symbol || holding.name}</span>
-          <span className="text-pe-text-muted tabular-nums shrink-0">{formatWeight(holding)}</span>
-        </li>
-      ))}
+    <ul className={`min-w-0 ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
+      {rows.map((holding) => {
+        const label = holding.symbol || holding.name;
+        return (
+          <li
+            key={holding.symbol || holding.name}
+            className={`flex items-center justify-between gap-2 min-w-0 ${
+              compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
+            }`}
+          >
+            <span className="min-w-0 flex-1 truncate text-pe-text-secondary" title={label}>
+              {label}
+            </span>
+            <span className="text-pe-text-muted tabular-nums shrink-0">{formatWeight(holding)}</span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -390,15 +395,17 @@ function TopSectorsList({ sectors, limit = 4, highlightKey, compact = false }) {
   }
 
   return (
-    <ul className={compact ? 'space-y-1' : 'space-y-1.5'}>
+    <ul className={`min-w-0 ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
       {rows.map((sector) => (
         <li
           key={sector.key}
-          className={`flex items-center justify-between gap-2 ${
+          className={`flex items-center justify-between gap-2 min-w-0 ${
             compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
           } ${highlightKey === sector.key ? 'text-pe-text font-medium' : 'text-pe-text-secondary'}`}
         >
-          <span className="truncate">{sector.label}</span>
+          <span className="min-w-0 flex-1 truncate" title={sector.label}>
+            {sector.label}
+          </span>
           <span className="tabular-nums shrink-0">{sector.weightPct}%</span>
         </li>
       ))}
@@ -417,11 +424,15 @@ function FundDetailPanel({ fund, highlightSector }) {
           {fund.topHoldings?.map((holding) => (
             <li
               key={`${fund.id}-hold-${holding.symbol}`}
-              className="flex items-center justify-between gap-3 text-sm"
+              className="flex items-center justify-between gap-3 min-w-0 text-sm"
             >
-              <div className="min-w-0">
-                <p className="font-medium text-pe-text truncate">{holding.name}</p>
-                <p className="text-xs text-pe-text-muted">{holding.symbol || '—'}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-pe-text truncate" title={holding.name}>
+                  {holding.name}
+                </p>
+                <p className="text-xs text-pe-text-muted truncate" title={holding.symbol || undefined}>
+                  {holding.symbol || '—'}
+                </p>
               </div>
               <span className="text-pe-text-secondary shrink-0 tabular-nums">
                 {formatWeight(holding)}
@@ -486,14 +497,14 @@ const FundCard = React.memo(function FundCard({
   const desktopGrid = sectorFilter !== 'All' ? DESKTOP_GRID_SECTOR : DESKTOP_GRID_BASE;
 
   return (
-    <article className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <article className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full text-left px-4 sm:px-5 py-4 sm:py-5 hover:bg-white/[0.02] transition-colors"
+        className="w-full min-w-0 text-left px-4 sm:px-5 py-4 sm:py-5 hover:bg-white/[0.02] transition-colors"
       >
         {/* Desktop table header row is global; this is the card body */}
-        <div className={desktopGrid}>
+        <div className={`${desktopGrid} min-w-0`}>
           <div className="min-w-0 lg:pr-2">
             <div className="flex items-start justify-between gap-3 lg:block">
               <p className="font-medium text-pe-text text-sm sm:text-base leading-snug">
@@ -544,14 +555,14 @@ const FundCard = React.memo(function FundCard({
             </p>
           )}
 
-          <div className="hidden lg:block min-w-0">
+          <div className="hidden lg:block min-w-0 overflow-hidden">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-1.5">
               Holdings
             </p>
             <TopHoldingsList holdings={fund.topHoldings} limit={4} compact />
           </div>
 
-          <div className="hidden lg:block min-w-0">
+          <div className="hidden lg:block min-w-0 overflow-hidden">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-1.5">
               Sectors
             </p>
@@ -572,14 +583,14 @@ const FundCard = React.memo(function FundCard({
           </div>
 
           {/* Mobile: holdings + sectors side by side */}
-          <div className="lg:hidden col-span-full mt-4 grid grid-cols-2 gap-4 border-t border-pe-border pt-4">
-            <div>
+          <div className="lg:hidden col-span-full mt-4 grid grid-cols-2 gap-4 border-t border-pe-border pt-4 min-w-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-2">
                 Top holdings
               </p>
               <TopHoldingsList holdings={fund.topHoldings} limit={4} compact />
             </div>
-            <div>
+            <div className="min-w-0 overflow-hidden">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-2">
                 Top sectors
               </p>
