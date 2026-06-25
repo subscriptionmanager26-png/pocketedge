@@ -1,4 +1,5 @@
 import { formatRebalanceFrequency } from './rebalanceOptions';
+import { catalogConstituents } from './catalogInstruments';
 
 /** Marketplace baskets — inspired by smallcase-style thematic portfolios */
 
@@ -17,7 +18,7 @@ export const catalogBaskets = [
     tags: ['AI', 'Infrastructure', 'Cloud'],
     weightingType: 'custom',
     rebalanceFrequency: 'quarterly',
-    constituents: [
+    constituents: catalogConstituents([
       { symbol: 'NVDA', name: 'NVIDIA Corp', weight: 12, segment: 'Largecap' },
       { symbol: 'MSFT', name: 'Microsoft', weight: 10, segment: 'Largecap' },
       { symbol: 'AMZN', name: 'Amazon', weight: 9, segment: 'Largecap' },
@@ -30,7 +31,7 @@ export const catalogBaskets = [
       { symbol: 'TSM', name: 'TSMC', weight: 10, segment: 'Largecap' },
       { symbol: 'AVGO', name: 'Broadcom', weight: 6, segment: 'Largecap' },
       { symbol: 'AMD', name: 'AMD', weight: 6, segment: 'Largecap' },
-    ],
+    ]),
     stats: {
       cagr: 44.3,
       returnLabel: '4M Returns',
@@ -85,13 +86,13 @@ export const catalogBaskets = [
     type: 'Thematic',
     tags: ['US', 'Technology'],
     weightingType: 'equal',
-    constituents: [
+    constituents: catalogConstituents([
       { symbol: 'AAPL', name: 'Apple', weight: 20, segment: 'Largecap' },
       { symbol: 'MSFT', name: 'Microsoft', weight: 20, segment: 'Largecap' },
       { symbol: 'GOOGL', name: 'Alphabet', weight: 20, segment: 'Largecap' },
       { symbol: 'AMZN', name: 'Amazon', weight: 20, segment: 'Largecap' },
       { symbol: 'NVDA', name: 'NVIDIA', weight: 20, segment: 'Largecap' },
-    ],
+    ]),
     stats: {
       cagr: 24.5,
       returnLabel: '1Y Returns',
@@ -114,13 +115,13 @@ export const catalogBaskets = [
     type: 'Thematic',
     tags: ['EV', 'Clean Energy'],
     weightingType: 'equal',
-    constituents: [
+    constituents: catalogConstituents([
       { symbol: 'TSLA', name: 'Tesla', weight: 20, segment: 'Largecap' },
       { symbol: 'RIVN', name: 'Rivian', weight: 20, segment: 'Smallcap' },
       { symbol: 'NIO', name: 'NIO', weight: 20, segment: 'Midcap' },
       { symbol: 'LI', name: 'Li Auto', weight: 20, segment: 'Midcap' },
       { symbol: 'LCID', name: 'Lucid', weight: 20, segment: 'Smallcap' },
-    ],
+    ]),
     stats: {
       cagr: 18.2,
       returnLabel: '1Y Returns',
@@ -143,7 +144,7 @@ export const catalogBaskets = [
     type: 'Strategy',
     tags: ['Dividend', 'Quality'],
     weightingType: 'custom',
-    constituents: [
+    constituents: catalogConstituents([
       { symbol: 'JNJ', name: 'Johnson & Johnson', weight: 15, segment: 'Largecap' },
       { symbol: 'PG', name: 'Procter & Gamble', weight: 15, segment: 'Largecap' },
       { symbol: 'KO', name: 'Coca-Cola', weight: 14, segment: 'Largecap' },
@@ -152,7 +153,7 @@ export const catalogBaskets = [
       { symbol: 'T', name: 'AT&T', weight: 13, segment: 'Largecap' },
       { symbol: 'MMM', name: '3M', weight: 13, segment: 'Largecap' },
       { symbol: 'IBM', name: 'IBM', weight: 12, segment: 'Largecap' },
-    ],
+    ]),
     stats: {
       cagr: 11.4,
       returnLabel: '1Y Returns',
