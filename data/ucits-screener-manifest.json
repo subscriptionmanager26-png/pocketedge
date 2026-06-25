@@ -1,0 +1,310 @@
+{
+  "generatedAt": "2026-06-25T11:14:56.114Z",
+  "universeSize": 2955,
+  "enrichedCount": 1106,
+  "processedCount": 2955,
+  "failureCount": 1849,
+  "successRate": "37%",
+  "failures": [
+    {
+      "id": "XSPR.L-LSE",
+      "symbol": "XSPR.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSPS.L-LSE",
+      "symbol": "XSPS.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSPU.L-LSE",
+      "symbol": "XSPU.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSPX.L-LSE",
+      "symbol": "XSPX.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSSX.L-LSE",
+      "symbol": "XSSX.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSTC.L-LSE",
+      "symbol": "XSTC.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSTR.L-LSE",
+      "symbol": "XSTR.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSX6.L-LSE",
+      "symbol": "XSX6.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XSXD.L-LSE",
+      "symbol": "XSXD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XT01.L-LSE",
+      "symbol": "XT01.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XT0D.L-LSE",
+      "symbol": "XT0D.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XT2D.L-LSE",
+      "symbol": "XT2D.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUCD.L-LSE",
+      "symbol": "XUCD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUCM.L-LSE",
+      "symbol": "XUCM.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUCS.L-LSE",
+      "symbol": "XUCS.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUEB.L-LSE",
+      "symbol": "XUEB.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUEK.L-LSE",
+      "symbol": "XUEK.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUEM.L-LSE",
+      "symbol": "XUEM.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUEN.L-LSE",
+      "symbol": "XUEN.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUFB.L-LSE",
+      "symbol": "XUFB.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUFN.L-LSE",
+      "symbol": "XUFN.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUHC.L-LSE",
+      "symbol": "XUHC.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUHY.L-LSE",
+      "symbol": "XUHY.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUHY.SW-SIX",
+      "symbol": "XUHY.SW",
+      "exchange": "SIX",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUIN.L-LSE",
+      "symbol": "XUIN.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUKS.L-LSE",
+      "symbol": "XUKS.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUKX.L-LSE",
+      "symbol": "XUKX.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUT3.L-LSE",
+      "symbol": "XUT3.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUTC.L-LSE",
+      "symbol": "XUTC.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XUTD.L-LSE",
+      "symbol": "XUTD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XVTD.L-LSE",
+      "symbol": "XVTD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XWLD.L-LSE",
+      "symbol": "XWLD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XWTS.L-LSE",
+      "symbol": "XWTS.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XX25.L-LSE",
+      "symbol": "XX25.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XX2D.L-LSE",
+      "symbol": "XX2D.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XXSC.L-LSE",
+      "symbol": "XXSC.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XYLD.L-LSE",
+      "symbol": "XYLD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZBD.L-LSE",
+      "symbol": "XZBD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZBU.L-LSE",
+      "symbol": "XZBU.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZE5.L-LSE",
+      "symbol": "XZE5.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZEM.L-LSE",
+      "symbol": "XZEM.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZEU.L-LSE",
+      "symbol": "XZEU.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZEZ.L-LSE",
+      "symbol": "XZEZ.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZMD.L-LSE",
+      "symbol": "XZMD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZMJ.L-LSE",
+      "symbol": "XZMJ.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZMU.L-LSE",
+      "symbol": "XZMU.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZUD.L-LSE",
+      "symbol": "XZUD.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZW0.L-LSE",
+      "symbol": "XZW0.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZWG.L-LSE",
+      "symbol": "XZWG.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "XZWS.L-LSE",
+      "symbol": "XZWS.L",
+      "exchange": "LSE",
+      "reason": "no_yahoo_data"
+    }
+  ]
+}
