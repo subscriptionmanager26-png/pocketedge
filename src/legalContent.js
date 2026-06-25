@@ -93,7 +93,7 @@ export const legalPages = {
       {
         heading: 'Entity information',
         body:
-          'PocketEdge is a product of SRK One9 Finance Services LLP, an Indian limited liability partnership. Registered office: 814/2A, New Shivpuri, Hapur, Ghaziabad, Uttar Pradesh 245101, India.',
+          'PocketEdge is a product of SRK One9 Finance Services LLP, an Indian limited liability partnership.',
       },
       {
         heading: 'Regulatory status',
