@@ -391,7 +391,7 @@ function TopHoldingsList({ holdings, limit = 4, compact = false }) {
       {rows.map((holding) => (
         <MetricRow
           key={holding.symbol || holding.name}
-          label={compact ? holding.name || holding.symbol : holding.symbol || holding.name}
+          label={holding.symbol || holding.name}
           value={formatWeight(holding)}
           compact={compact}
         />
