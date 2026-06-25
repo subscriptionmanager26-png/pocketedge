@@ -1,0 +1,35 @@
+name: Fetch UCITS screener data
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly refresh — Sunday 04:00 UTC
+    - cron: '0 4 * * 0'
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fetch UCITS screener data from Yahoo
+        run: node scripts/fetch-ucits-screener.mjs --delay=180
+
+      - name: Commit updated screener data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/ucits-screener.json data/ucits-screener-manifest.json
+          git diff --staged --quiet || git commit -m "Refresh UCITS screener Yahoo data."
+          git push

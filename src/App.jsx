@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import LandingPage, { LandingSiteHeader } from './LandingPage';
 import DesignLibraryPage from './DesignLibraryPage';
 import LegalPage, { LegalSiteHeader } from './LegalPage';
+import UcitsScreenerPage, { UcitsScreenerSiteHeader } from './UcitsScreenerPage';
 import PublicLeaderboardPage from './PublicLeaderboardPage';
 import AppShell from './app/AppShell';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
@@ -14,6 +15,7 @@ import { migrateLocalProfileToDb } from './app/profileStore';
 import { getChallengeProgress } from './challengeEligibility';
 import { CAMPAIGN_UI_ENABLED } from './campaignFlags';
 import { isLegalRoute } from './legalRoute';
+import { isUcitsScreenerRoute } from './ucitsRoute';
 import { isChallengeDemoRoute, isReferralsDemoRoute, isStep2DemoRoute } from './demoRoute';
 import ReferralsDemoPage from './ReferralsDemoPage';
 import ChallengeDemoPage from './ChallengeDemoPage';
@@ -60,6 +62,7 @@ function resolveRoute(session) {
   if (isReferralsDemoRoute()) return 'referrals-demo';
   if (isDesignRoute()) return 'design';
   if (isLegalRoute()) return 'legal';
+  if (isUcitsScreenerRoute()) return 'ucits';
   if (isLeaderboardRoute()) return CAMPAIGN_UI_ENABLED ? 'leaderboard' : 'landing';
   if (import.meta.env.DEV && isLocalAppRoute()) return 'app';
   if (session) return 'app';
@@ -277,6 +280,14 @@ export default function App() {
     return (
       <PageShell user={user} challengeProgress={challengeProgress} navigation={<LegalSiteHeader />}>
         <LegalPage />
+      </PageShell>
+    );
+  }
+
+  if (route === 'ucits') {
+    return (
+      <PageShell user={user} challengeProgress={challengeProgress} navigation={<UcitsScreenerSiteHeader />}>
+        <UcitsScreenerPage />
       </PageShell>
     );
   }

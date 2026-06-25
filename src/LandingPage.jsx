@@ -12,6 +12,7 @@ import {
   footerDisclaimer,
 } from './mockData';
 import { getLegalUrl } from './legalRoute';
+import { getUcitsScreenerUrl } from './ucitsRoute';
 import { CHALLENGE_DESCRIPTION } from './app/pages/LeaderboardPage';
 import { CHALLENGE_NAME } from './challengeMeta';
 import { CAMPAIGN_UI_ENABLED } from './campaignFlags';
@@ -44,6 +45,9 @@ export function LandingSiteHeader() {
       <nav className="hidden md:flex items-center gap-8">
         <a href="#baskets" className="text-base text-pe-text-secondary hover:text-pe-text transition-colors">
           Baskets
+        </a>
+        <a href={getUcitsScreenerUrl()} className="text-base text-pe-text-secondary hover:text-pe-text transition-colors">
+          UCITS Screener
         </a>
         {CAMPAIGN_UI_ENABLED && (
           <a href="#challenge" className="text-base text-pe-text-secondary hover:text-pe-text transition-colors">
