@@ -8,10 +8,10 @@ const SCREENER_DATA_URL = '/data/ucits-screener.json';
 const PAGE_SIZE = 50;
 
 const DESKTOP_GRID_BASE =
-  'lg:grid lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)_4.5rem_4rem_minmax(0,1.05fr)_minmax(0,1.05fr)_2rem] lg:gap-x-4 lg:items-start';
+  'lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_4.5rem_3.5rem_4.5rem_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
 
 const DESKTOP_GRID_SECTOR =
-  'lg:grid lg:grid-cols-[minmax(0,1.9fr)_minmax(0,0.95fr)_4.5rem_4rem_4rem_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
+  'lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,0.95fr)_4.5rem_3.5rem_4.5rem_4rem_minmax(0,1fr)_minmax(0,1fr)_2rem] lg:gap-x-4 lg:items-start';
 
 function decodeName(name = '') {
   return name.replace(/&amp;/g, '&');
@@ -28,6 +28,12 @@ function getSectorWeight(fund, sectorKey) {
 
 function formatWeight(holding) {
   return holding.weightFmt || (holding.weightPct != null ? `${holding.weightPct}%` : '—');
+}
+
+function formatAum(fund) {
+  if (!fund?.aumFmt && fund?.aum == null) return '—';
+  const amount = fund.aumFmt || String(fund.aum);
+  return `${amount} USD`;
 }
 
 function TopHoldingsList({ holdings, limit = 4, compact = false }) {
@@ -126,6 +132,12 @@ function FundDetailPanel({ fund, highlightSector }) {
               <p className="font-medium text-pe-text">{fund.assetMix.cash}</p>
             </div>
           )}
+          {fund.aumFmt && (
+            <div className="rounded-lg border border-pe-border px-3 py-2">
+              <p className="text-xs text-pe-text-muted">AUM</p>
+              <p className="font-medium text-pe-text">{formatAum(fund)}</p>
+            </div>
+          )}
           {fund.turnover && (
             <div className="rounded-lg border border-pe-border px-3 py-2">
               <p className="text-xs text-pe-text-muted">Turnover</p>
@@ -173,6 +185,7 @@ const FundCard = React.memo(function FundCard({
             <p className="mt-1 text-xs sm:text-sm text-pe-text-muted lg:hidden">
               <span className="font-medium text-pe-text">{fund.symbol}</span>
               {fund.expenseRatio ? ` · TER ${fund.expenseRatio}` : ''}
+              {fund.aumFmt ? ` · AUM ${formatAum(fund)}` : ''}
               {sectorFilter !== 'All' && sectorMatch && (
                 <span className="text-pe-text-secondary">
                   {' '}
@@ -192,6 +205,10 @@ const FundCard = React.memo(function FundCard({
 
           <p className="hidden lg:block text-sm text-pe-text-secondary tabular-nums pt-0.5">
             {fund.expenseRatio || '—'}
+          </p>
+
+          <p className="hidden lg:block text-sm text-pe-text-secondary tabular-nums pt-0.5">
+            {formatAum(fund)}
           </p>
 
           {sectorFilter !== 'All' && (
@@ -502,6 +519,7 @@ export default function UcitsScreenerPage() {
           <span>Tracks</span>
           <span>Ticker</span>
           <span>TER</span>
+          <span>AUM</span>
           {sectorFilter !== 'All' && <span>{sectorFilterLabel}</span>}
           <span>Top holdings</span>
           <span>Top sectors</span>

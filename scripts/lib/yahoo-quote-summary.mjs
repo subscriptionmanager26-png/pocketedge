@@ -35,7 +35,10 @@ async function getYahooAuth() {
   return cachedAuth;
 }
 
-export async function fetchYahooQuoteSummary(symbol, modules = 'topHoldings,fundProfile,quoteType') {
+export async function fetchYahooQuoteSummary(
+  symbol,
+  modules = 'topHoldings,fundProfile,quoteType,summaryDetail,defaultKeyStatistics',
+) {
   if (!symbol) return null;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -112,33 +115,4 @@ export function parseTopHoldings(holdings = []) {
   }));
 }
 
-export function inferTrackedIndex(name = '', longName = '') {
-  const text = `${name} ${longName}`;
-  const patterns = [
-    { re: /nasdaq[- ]?100/i, label: 'NASDAQ-100' },
-    { re: /s&p\s*500|s&p500|core s&p 500/i, label: 'S&P 500' },
-    { re: /msci world/i, label: 'MSCI World' },
-    { re: /msci em(?!\w)/i, label: 'MSCI Emerging Markets' },
-    { re: /msci europe/i, label: 'MSCI Europe' },
-    { re: /msci usa/i, label: 'MSCI USA' },
-    { re: /msci acwi/i, label: 'MSCI ACWI' },
-    { re: /ftse 100/i, label: 'FTSE 100' },
-    { re: /ftse all[- ]world|ftse aw/i, label: 'FTSE All-World' },
-    { re: /euro stoxx 50|stoxx 50/i, label: 'EURO STOXX 50' },
-    { re: /stoxx europe 600/i, label: 'STOXX Europe 600' },
-    { re: /dax/i, label: 'DAX' },
-    { re: /cac 40/i, label: 'CAC 40' },
-    { re: /msci india/i, label: 'MSCI India' },
-    { re: /msci china/i, label: 'MSCI China' },
-    { re: /msci japan/i, label: 'MSCI Japan' },
-    { re: /government bond|govt bond|gilt/i, label: 'Government Bonds' },
-    { re: /corporate bond/i, label: 'Corporate Bonds' },
-    { re: /high yield/i, label: 'High Yield Bonds' },
-    { re: /gold/i, label: 'Gold' },
-  ];
-
-  for (const { re, label } of patterns) {
-    if (re.test(text)) return label;
-  }
-  return null;
-}
+export { inferTrackedIndex } from './ucits-tracked-index.mjs';

@@ -13,7 +13,10 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { applyIsinPeerAumFallback } from './lib/ucits-aum.mjs';
+import { applyUsdAumToFunds, fetchFxRatesToUsd } from './lib/ucits-aum-usd.mjs';
 import { enrichUcits, ucitsRowId } from './lib/ucits-screener-enrich.mjs';
+import { lookupIsinForUcitsRow, loadUcitsIsinIndex } from './lib/ucits-isin-index.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -151,6 +154,16 @@ async function main() {
 
     await sleep(delay);
   }
+
+  const isinIndex = loadUcitsIsinIndex();
+  for (const fund of state.funds) {
+    if (!fund.isin) fund.isin = lookupIsinForUcitsRow(fund, isinIndex);
+  }
+  const peerFilled = applyIsinPeerAumFallback(state.funds);
+  const rates = await fetchFxRatesToUsd();
+  const usdConverted = applyUsdAumToFunds(state.funds, rates);
+  const withAum = state.funds.filter((f) => f.aum != null).length;
+  console.log(`AUM: ${withAum}/${state.funds.length} funds (${peerFilled} ISIN peer, ${usdConverted} converted to USD)`);
 
   saveCheckpoint(state, all.length);
   writeOutput(state, all.length);
