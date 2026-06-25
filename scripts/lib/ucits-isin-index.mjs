@@ -17,17 +17,41 @@ const IBKR_TO_UCITS_EXCHANGE = {
   IBIS: 'XETR',
   GETTEX: 'XETR',
   TGATE: 'XETR',
+  FWB: 'XETR',
+  SWB: 'XETR',
   SBF: 'Euronext',
   EPA: 'Euronext',
   ENEXT: 'Euronext',
   EBS: 'SIX',
   BVME: 'MTA',
+  'BVME.ETF': 'MTA',
   MTAA: 'MTA',
   XAMS: 'AMS',
   XETR: 'XETR',
   XSWX: 'SIX',
-  FWB: 'XETR',
-  SWB: 'XETR',
+  // German venue aliases used in ucits.info
+  IBIS2: 'Munich',
+  MUN: 'Munich',
+  XBER: 'XBER',
+  XDUS: 'XDUS',
+  XHAN: 'XHAN',
+  XHAM: 'XHAM',
+  FSX: 'FSX',
+};
+
+const UCITS_TO_IBKR_EXCHANGES = {
+  LSE: ['LSEETF', 'LSE'],
+  XETR: ['IBIS', 'AEB', 'GETTEX', 'TGATE', 'FWB', 'SWB', 'XETR'],
+  Munich: ['IBIS', 'GETTEX', 'FWB'],
+  FSX: ['IBIS', 'FWB'],
+  XBER: ['IBIS', 'FWB'],
+  XDUS: ['IBIS', 'GETTEX'],
+  XHAN: ['IBIS'],
+  XHAM: ['IBIS'],
+  Euronext: ['SBF', 'EPA', 'ENEXT'],
+  SIX: ['EBS', 'XSWX'],
+  MTA: ['BVME', 'BVME.ETF', 'MTAA'],
+  AMS: ['XAMS'],
 };
 
 function normalizeSymbol(symbol = '') {
@@ -37,6 +61,7 @@ function normalizeSymbol(symbol = '') {
 export function loadUcitsIsinIndex(csvPath = IBKR_CSV) {
   const isinByFundKey = new Map();
   const listingsByIsin = new Map();
+  const isinsBySymbol = new Map();
 
   for (const line of readFileSync(csvPath, 'utf8').split('\n')) {
     if (!line || line.startsWith('conid')) continue;
@@ -48,14 +73,19 @@ export function loadUcitsIsinIndex(csvPath = IBKR_CSV) {
     const isin = cols[7]?.trim();
     if (!isin || isin.length < 10) continue;
 
-    const fundKey = `${normalizeSymbol(symbol)}|${exchangeId}`;
+    const normalized = normalizeSymbol(symbol);
+    const fundKey = `${normalized}|${exchangeId}`;
     if (!isinByFundKey.has(fundKey)) {
       isinByFundKey.set(fundKey, isin);
     }
 
+    const symbolBucket = isinsBySymbol.get(normalized) || new Set();
+    symbolBucket.add(isin);
+    isinsBySymbol.set(normalized, symbolBucket);
+
     const ucitsExchange = IBKR_TO_UCITS_EXCHANGE[exchangeId] || exchangeId;
     const listing = {
-      symbol: normalizeSymbol(symbol),
+      symbol: normalized,
       exchangeId,
       ucitsExchange,
       yahooCandidates: yahooSymbolCandidates(symbol, ucitsExchange),
@@ -69,12 +99,29 @@ export function loadUcitsIsinIndex(csvPath = IBKR_CSV) {
     }
   }
 
-  return { isinByFundKey, listingsByIsin, ibkrToUcitsExchange: IBKR_TO_UCITS_EXCHANGE };
+  const uniqueIsinBySymbol = new Map();
+  for (const [symbol, isins] of isinsBySymbol.entries()) {
+    if (isins.size === 1) uniqueIsinBySymbol.set(symbol, [...isins][0]);
+  }
+
+  return {
+    isinByFundKey,
+    listingsByIsin,
+    uniqueIsinBySymbol,
+    ibkrToUcitsExchange: IBKR_TO_UCITS_EXCHANGE,
+    ucitsToIbkrExchanges: UCITS_TO_IBKR_EXCHANGES,
+  };
 }
 
 export function lookupIsinForUcitsRow(row, index) {
   const symbol = normalizeSymbol(row.symbol);
   const exchange = row.exchange;
+
+  const ibkrExchanges = index.ucitsToIbkrExchanges?.[exchange] || [];
+  for (const ibkrExchange of ibkrExchanges) {
+    const isin = index.isinByFundKey.get(`${symbol}|${ibkrExchange}`);
+    if (isin) return isin;
+  }
 
   for (const [ibkrExchange, ucitsExchange] of Object.entries(index.ibkrToUcitsExchange)) {
     if (ucitsExchange !== exchange) continue;
@@ -87,7 +134,7 @@ export function lookupIsinForUcitsRow(row, index) {
     if (isin) return isin;
   }
 
-  return null;
+  return index.uniqueIsinBySymbol?.get(symbol) || null;
 }
 
 export function yahooCandidatesForIsin(isin, index, { exclude = [] } = {}) {

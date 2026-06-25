@@ -21,7 +21,7 @@ function parseMoneyMillions(text = '') {
   };
 }
 
-function extractFundSizeFromHtml(html) {
+export function extractFundSizeFromHtml(html) {
   const patterns = [
     /data-testid="etf-profile-header_fund-size-value-wrapper"[^>]*>\s*<span>\s*([A-Z]{3}\s*[\d.,]+)\s*<\/span>\s*m/i,
     /data-testid="etf-basics_row_fund-size"[\s\S]*?<div>\s*([A-Z]{3}\s*[\d.,]+)\s*m/i,
