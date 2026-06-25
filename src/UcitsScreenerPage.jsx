@@ -360,6 +360,26 @@ function MobileFilterBar({ activeFilterCount, aumSort, filteredCount, onOpenFilt
   );
 }
 
+/** Label wraps; weight stays fixed on the right. */
+function MetricRow({ label, value, compact = false, labelClassName = 'text-pe-text-secondary' }) {
+  return (
+    <li
+      className={`grid grid-cols-[minmax(0,1fr)_minmax(2.75rem,max-content)] gap-x-2 items-start ${
+        compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
+      }`}
+    >
+      <span
+        className={`min-w-0 break-words [overflow-wrap:anywhere] leading-snug ${labelClassName}`}
+      >
+        {label}
+      </span>
+      <span className="shrink-0 tabular-nums text-pe-text-muted whitespace-nowrap text-right leading-snug self-start">
+        {value}
+      </span>
+    </li>
+  );
+}
+
 function TopHoldingsList({ holdings, limit = 4, compact = false }) {
   const rows = holdings?.slice(0, limit) ?? [];
   if (!rows.length) {
@@ -367,23 +387,15 @@ function TopHoldingsList({ holdings, limit = 4, compact = false }) {
   }
 
   return (
-    <ul className={`min-w-0 ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
-      {rows.map((holding) => {
-        const label = holding.symbol || holding.name;
-        return (
-          <li
-            key={holding.symbol || holding.name}
-            className={`flex items-center justify-between gap-2 min-w-0 ${
-              compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
-            }`}
-          >
-            <span className="min-w-0 flex-1 truncate text-pe-text-secondary" title={label}>
-              {label}
-            </span>
-            <span className="text-pe-text-muted tabular-nums shrink-0">{formatWeight(holding)}</span>
-          </li>
-        );
-      })}
+    <ul className={`min-w-0 ${compact ? 'space-y-2' : 'space-y-1.5'}`}>
+      {rows.map((holding) => (
+        <MetricRow
+          key={holding.symbol || holding.name}
+          label={compact ? holding.name || holding.symbol : holding.symbol || holding.name}
+          value={formatWeight(holding)}
+          compact={compact}
+        />
+      ))}
     </ul>
   );
 }
@@ -395,19 +407,17 @@ function TopSectorsList({ sectors, limit = 4, highlightKey, compact = false }) {
   }
 
   return (
-    <ul className={`min-w-0 ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
+    <ul className={`min-w-0 ${compact ? 'space-y-2' : 'space-y-1.5'}`}>
       {rows.map((sector) => (
-        <li
+        <MetricRow
           key={sector.key}
-          className={`flex items-center justify-between gap-2 min-w-0 ${
-            compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
-          } ${highlightKey === sector.key ? 'text-pe-text font-medium' : 'text-pe-text-secondary'}`}
-        >
-          <span className="min-w-0 flex-1 truncate" title={sector.label}>
-            {sector.label}
-          </span>
-          <span className="tabular-nums shrink-0">{sector.weightPct}%</span>
-        </li>
+          label={sector.label}
+          value={`${sector.weightPct}%`}
+          compact={compact}
+          labelClassName={
+            highlightKey === sector.key ? 'text-pe-text font-medium' : 'text-pe-text-secondary'
+          }
+        />
       ))}
     </ul>
   );
@@ -424,17 +434,15 @@ function FundDetailPanel({ fund, highlightSector }) {
           {fund.topHoldings?.map((holding) => (
             <li
               key={`${fund.id}-hold-${holding.symbol}`}
-              className="flex items-center justify-between gap-3 min-w-0 text-sm"
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 items-start text-sm"
             >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-pe-text truncate" title={holding.name}>
-                  {holding.name}
-                </p>
-                <p className="text-xs text-pe-text-muted truncate" title={holding.symbol || undefined}>
-                  {holding.symbol || '—'}
-                </p>
+              <div className="min-w-0 break-words [overflow-wrap:anywhere]">
+                <p className="font-medium text-pe-text leading-snug">{holding.name}</p>
+                {holding.symbol && (
+                  <p className="text-xs text-pe-text-muted leading-snug mt-0.5">{holding.symbol}</p>
+                )}
               </div>
-              <span className="text-pe-text-secondary shrink-0 tabular-nums">
+              <span className="text-pe-text-secondary shrink-0 tabular-nums whitespace-nowrap text-right leading-snug">
                 {formatWeight(holding)}
               </span>
             </li>
@@ -497,7 +505,7 @@ const FundCard = React.memo(function FundCard({
   const desktopGrid = sectorFilter !== 'All' ? DESKTOP_GRID_SECTOR : DESKTOP_GRID_BASE;
 
   return (
-    <article className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden">
+    <article className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <button
         type="button"
         onClick={onToggle}
@@ -555,14 +563,14 @@ const FundCard = React.memo(function FundCard({
             </p>
           )}
 
-          <div className="hidden lg:block min-w-0 overflow-hidden">
+          <div className="hidden lg:block min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-1.5">
               Holdings
             </p>
             <TopHoldingsList holdings={fund.topHoldings} limit={4} compact />
           </div>
 
-          <div className="hidden lg:block min-w-0 overflow-hidden">
+          <div className="hidden lg:block min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-1.5">
               Sectors
             </p>
@@ -582,15 +590,15 @@ const FundCard = React.memo(function FundCard({
             )}
           </div>
 
-          {/* Mobile: holdings + sectors side by side */}
-          <div className="lg:hidden col-span-full mt-4 grid grid-cols-2 gap-4 border-t border-pe-border pt-4 min-w-0 overflow-hidden">
-            <div className="min-w-0 overflow-hidden">
+          {/* Mobile: holdings + sectors — stack on narrow screens for readable wraps */}
+          <div className="lg:hidden col-span-full mt-4 grid grid-cols-1 min-[420px]:grid-cols-2 gap-4 border-t border-pe-border pt-4 min-w-0">
+            <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-2">
                 Top holdings
               </p>
               <TopHoldingsList holdings={fund.topHoldings} limit={4} compact />
             </div>
-            <div className="min-w-0 overflow-hidden">
+            <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-pe-text-muted mb-2">
                 Top sectors
               </p>
