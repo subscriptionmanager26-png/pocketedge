@@ -49,6 +49,8 @@
     "fetch:basket-prices:dry": "node --env-file=.env scripts/run-basket-price-fetch.mjs --dry-run",
     "fetch:basket-nav": "node --env-file=.env scripts/run-basket-nav-update.mjs",
     "fetch:basket-nav:dry": "node --env-file=.env scripts/run-basket-nav-update.mjs --dry-run",
+    "remediate:basket-conids": "node --env-file=.env scripts/remediate-basket-conids.mjs",
+    "remediate:basket-conids:dry": "node --env-file=.env scripts/remediate-basket-conids.mjs --dry-run",
     "probe:ibkr-preflight-ladder": "node scripts/probe-ibkr-preflight-ladder.mjs",
     "probe:ibkr-preflight-ladder:50": "node scripts/probe-ibkr-preflight-ladder.mjs --sample=50 --batch-size=10",
     "probe:server-ibkr": "node scripts/invoke-server-ibkr-probes.mjs --sample=50",
