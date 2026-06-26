@@ -11,8 +11,19 @@
 
 import { getSupabaseAdminConfig, supabaseRest } from './lib/supabase-admin.mjs';
 import { fetchAllBasketPrices } from './lib/basket-prices.mjs';
-import { detectFetchSlot, pricesMapFromRows } from './lib/nav-engine.mjs';
-import { updateBasketNavs } from './lib/basket-nav-update.mjs';
+import { detectFetchSlot } from './lib/nav-engine.mjs';
+import { attachUsdToPriceRows, fetchFxRatesToUsd } from './lib/fx-rates-usd.mjs';
+import { refreshFxRatesInDb, updateBasketNavs } from './lib/basket-nav-update.mjs';
+
+function pricesUsdMapFromRows(rows) {
+  const map = new Map();
+  for (const row of rows || []) {
+    if (row.conid != null && row.price_usd != null && row.price_usd > 0) {
+      map.set(Number(row.conid), Number(row.price_usd));
+    }
+  }
+  return map;
+}
 
 const slotArg = process.argv.find((a) => a.startsWith('--slot='));
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -31,6 +42,12 @@ async function main() {
   console.log(`Basket price fetch — slot=${FETCH_SLOT} at ${FETCHED_AT}`);
   if (DRY_RUN) console.log('DRY RUN — no database writes');
 
+  if (!DRY_RUN) {
+    console.log('Refreshing FX rates…');
+    await refreshFxRatesInDb(config);
+  }
+  const fxRates = await fetchFxRatesToUsd({ force: !DRY_RUN });
+
   // ── Phase 1: global price fetch ─────────────────────────────────────────
   const conidList = await db.rpc('list_conids_for_price_fetch');
   const conids = (Array.isArray(conidList) ? conidList : []).map(Number).filter(Boolean);
@@ -47,21 +64,24 @@ async function main() {
   }
 
   const { rows: priceRows, ibkrCount, yahooCount, missing } = await fetchAllBasketPrices(conids);
+  const usdPriceRows = attachUsdToPriceRows(priceRows, fxRates);
   console.log(
-    `Phase 1 — prices: ${priceRows.length}/${conids.length} ` +
+    `Phase 1 — prices: ${usdPriceRows.length}/${conids.length} ` +
       `(${ibkrCount} IBKR, ${yahooCount} Yahoo, ${missing} missing)`
   );
 
-  const currentPrices = pricesMapFromRows(priceRows);
+  const currentPrices = pricesUsdMapFromRows(usdPriceRows);
 
   if (!DRY_RUN) {
     const pricesTable = supabaseRest('instrument_prices', config);
     const historyTable = supabaseRest('instrument_price_history', config);
 
     await pricesTable.upsert(
-      priceRows.map((r) => ({
+      usdPriceRows.map((r) => ({
         conid: r.conid,
         price: r.price,
+        price_usd: r.price_usd,
+        fx_rate_to_usd: r.fx_rate_to_usd,
         currency: r.currency,
         source: r.source,
         exchange_id: r.exchange_id ?? null,
@@ -75,9 +95,11 @@ async function main() {
     );
 
     await historyTable.insert(
-      priceRows.map((r) => ({
+      usdPriceRows.map((r) => ({
         conid: r.conid,
         price: r.price,
+        price_usd: r.price_usd,
+        fx_rate_to_usd: r.fx_rate_to_usd,
         currency: r.currency,
         source: r.source,
         exchange_id: r.exchange_id ?? null,

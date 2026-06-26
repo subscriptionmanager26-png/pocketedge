@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Audit all basket versions for missing/non-USD conids and remediate using IBKR universe.
- * Prefers USD listings (then US country, then is_prime).
+ * Prefers primary listings, then USD, then US country.
  *
  * Usage:
  *   node --env-file=.env scripts/remediate-basket-conids.mjs
@@ -39,10 +39,10 @@ function instrumentToConstituent(inst, existing) {
 function rankUsdPreference(a, b) {
   const score = (row) => {
     let s = 0;
+    if (row.is_prime) s += 200;
     if (row.currency === 'USD') s += 100;
     if (row.country === 'US') s += 50;
-    if (row.is_prime) s += 25;
-    if (['NASDAQ', 'NYSE', 'ARCA', 'MEMX', 'BATS', 'AMEX'].includes(row.exchange_id)) s += 10;
+    if (['NASDAQ', 'NYSE', 'ARCA', 'LSEETF', 'LSE', 'MEMX', 'BATS', 'AMEX'].includes(row.exchange_id)) s += 10;
     return s;
   };
   return score(b) - score(a);

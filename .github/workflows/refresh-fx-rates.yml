@@ -1,0 +1,37 @@
+name: Refresh FX rates
+
+# Daily USD conversion rates for multi-currency basket NAV.
+# Also refreshed automatically at the start of universe/basket price fetches.
+
+on:
+  schedule:
+    # Every day 06:00 UTC — before US cash open / overnight NAV windows
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-fx-rates
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Refresh FX rates to USD
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/refresh-fx-rates.mjs

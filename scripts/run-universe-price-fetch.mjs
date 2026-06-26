@@ -11,7 +11,8 @@
 
 import { detectFetchSlot } from './lib/nav-engine.mjs';
 import { getSupabaseAdminConfig, supabaseRest } from './lib/supabase-admin.mjs';
-import { updateBasketNavs } from './lib/basket-nav-update.mjs';
+import { refreshFxRatesInDb, updateBasketNavs } from './lib/basket-nav-update.mjs';
+import { attachUsdToPriceRows, fetchFxRatesToUsd } from './lib/fx-rates-usd.mjs';
 import { IBKR_BATCH_SIZE, processInstrumentChunk } from './lib/universe-price-ladder.mjs';
 
 const slotArg = process.argv.find((a) => a.startsWith('--slot='));
@@ -71,6 +72,12 @@ async function main() {
       `IBKR batch=${IBKR_BATCH_SIZE} | process chunk=${PROCESS_CHUNK}` +
       (DRY_RUN ? ' [dry-run]' : ''),
   );
+
+  if (!DRY_RUN) {
+    console.log('Refreshing FX rates…');
+    await refreshFxRatesInDb(config);
+  }
+  const fxRates = await fetchFxRatesToUsd({ force: !DRY_RUN });
 
   let runId = null;
   if (!DRY_RUN) {
@@ -152,12 +159,15 @@ async function main() {
         const pricesTable = supabaseRest('instrument_prices', config);
         const historyTable = supabaseRest('instrument_price_history', config);
         const ladderTable = supabaseRest('ibkr_fetch_ladder_results', config);
+        const usdPriceRows = attachUsdToPriceRows(result.priceRows, fxRates);
 
         await upsertInBatches(
           pricesTable,
-          result.priceRows.map((r) => ({
+          usdPriceRows.map((r) => ({
             conid: r.conid,
             price: r.price,
+            price_usd: r.price_usd,
+            fx_rate_to_usd: r.fx_rate_to_usd,
             currency: r.currency,
             source: r.source,
             exchange_id: r.exchange_id,
@@ -172,9 +182,11 @@ async function main() {
 
         await insertInBatches(
           historyTable,
-          result.priceRows.map((r) => ({
+          usdPriceRows.map((r) => ({
             conid: r.conid,
             price: r.price,
+            price_usd: r.price_usd,
+            fx_rate_to_usd: r.fx_rate_to_usd,
             currency: r.currency,
             source: r.source,
             exchange_id: r.exchange_id,

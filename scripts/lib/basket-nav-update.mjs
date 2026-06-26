@@ -4,15 +4,53 @@
  */
 
 import { getSupabaseAdminConfig, supabaseRest } from './supabase-admin.mjs';
-import { applyFetchBoundary, pricesMapFromRows } from './nav-engine.mjs';
+import { applyFetchBoundary } from './nav-engine.mjs';
+import {
+  attachUsdToPriceRows,
+  fetchFxRatesToUsd,
+  fxRatesRowsForDb,
+  ratesMapFromDbRows,
+  resolveUsdPrice,
+} from './fx-rates-usd.mjs';
+
+export async function loadFxRatesFromDb(config = getSupabaseAdminConfig()) {
+  const { url, key } = config;
+  const response = await fetch(`${url}/rest/v1/fx_rates_to_usd?select=currency,rate_to_usd`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  if (!response.ok) {
+    console.warn('Could not load FX rates:', await response.text());
+    return { USD: 1 };
+  }
+  return ratesMapFromDbRows(await response.json());
+}
+
+export async function refreshFxRatesInDb(config = getSupabaseAdminConfig()) {
+  const fetchedAt = new Date().toISOString();
+  const rates = await fetchFxRatesToUsd({ force: true });
+  const table = supabaseRest('fx_rates_to_usd', config);
+  await table.upsert(fxRatesRowsForDb(rates, fetchedAt), 'currency');
+  return rates;
+}
+
+function pricesUsdMapFromRows(rows, fxRates) {
+  const map = new Map();
+  for (const row of rows || []) {
+    if (row.conid == null) continue;
+    const usd = resolveUsdPrice(row, fxRates);
+    if (usd != null && usd > 0) map.set(Number(row.conid), usd);
+  }
+  return map;
+}
 
 export async function loadPriorPrices(conids, lastFetchAt, config = getSupabaseAdminConfig()) {
   if (!lastFetchAt || !conids.length) return new Map();
 
+  const fxRates = await loadFxRatesFromDb(config);
   const { url, key } = config;
   const inList = conids.join(',');
   const response = await fetch(
-    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(lastFetchAt)}&select=conid,price`,
+    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(lastFetchAt)}&select=conid,price,price_usd,currency`,
     {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
     }
@@ -22,20 +60,22 @@ export async function loadPriorPrices(conids, lastFetchAt, config = getSupabaseA
     return new Map();
   }
   const rows = await response.json();
-  return pricesMapFromRows(rows);
+  return pricesUsdMapFromRows(rows, fxRates);
 }
 
 export async function loadCurrentPricesFromDb(conids, fetchedAt, config = getSupabaseAdminConfig()) {
   if (!conids.length) return new Map();
 
+  const fxRates = await loadFxRatesFromDb(config);
   const { url, key } = config;
   const inList = conids.join(',');
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
 
   const prices = new Map();
+  const rows = [];
 
   const historyResponse = await fetch(
-    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(fetchedAt)}&select=conid,price`,
+    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(fetchedAt)}&select=conid,price,price_usd,currency`,
     { headers }
   );
   if (!historyResponse.ok) {
@@ -43,30 +83,24 @@ export async function loadCurrentPricesFromDb(conids, fetchedAt, config = getSup
       `Could not load boundary prices (${historyResponse.status}): ${await historyResponse.text()}`
     );
   }
-  for (const row of await historyResponse.json()) {
-    prices.set(Number(row.conid), Number(row.price));
-  }
+  rows.push(...(await historyResponse.json()));
 
-  const missing = conids.filter((conid) => !prices.has(conid));
-  if (!missing.length) return prices;
-
-  const missingList = missing.join(',');
-  const latestResponse = await fetch(
-    `${url}/rest/v1/instrument_prices?conid=in.(${missingList})&select=conid,price`,
-    { headers }
-  );
-  if (!latestResponse.ok) {
-    throw new Error(
-      `Could not load latest prices (${latestResponse.status}): ${await latestResponse.text()}`
+  const missing = conids.filter((conid) => !rows.some((row) => Number(row.conid) === conid));
+  if (missing.length) {
+    const missingList = missing.join(',');
+    const latestResponse = await fetch(
+      `${url}/rest/v1/instrument_prices?conid=in.(${missingList})&select=conid,price,price_usd,currency`,
+      { headers }
     );
-  }
-  for (const row of await latestResponse.json()) {
-    if (row.price != null) {
-      prices.set(Number(row.conid), Number(row.price));
+    if (!latestResponse.ok) {
+      throw new Error(
+        `Could not load latest prices (${latestResponse.status}): ${await latestResponse.text()}`
+      );
     }
+    rows.push(...(await latestResponse.json()));
   }
 
-  return prices;
+  return pricesUsdMapFromRows(rows, fxRates);
 }
 
 export async function listBasketConidsForNav(config = getSupabaseAdminConfig()) {

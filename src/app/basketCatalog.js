@@ -27,7 +27,7 @@ export const stockUniverse = [
 ];
 
 export const IBKR_SYMBOL_NOTE =
-  'Search 80,000+ IBKR-tradable stocks and ETFs worldwide. Pick the listing exchange when multiple matches appear.';
+  'Search 80,000+ IBKR-tradable stocks and ETFs. Primary USD listings are shown first. Only universe instruments can be added.';
 
 const STOCK_SYMBOL_PATTERN = /^[A-Z][A-Z0-9.\-]{0,11}$/;
 

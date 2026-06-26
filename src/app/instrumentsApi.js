@@ -1,5 +1,16 @@
 import { supabase } from '../supabase';
-import { stockUniverse } from './basketCatalog';
+import { isValidStockSymbol, stockUniverse } from './basketCatalog';
+
+/** Shorter prefixes to try when a long ticker query has no hits (min length 3). */
+export function tickerPrefixLengths(length) {
+  if (length <= 3) return [length];
+  const minLen = Math.max(3, length - 2);
+  const lengths = [];
+  for (let len = length; len >= minLen; len -= 1) {
+    lengths.push(len);
+  }
+  return lengths;
+}
 
 function mapInstrumentRow(row) {
   return {
@@ -13,7 +24,7 @@ function mapInstrumentRow(row) {
     localSymbol: row.local_symbol ?? row.symbol,
     instrumentType: row.instrument_type ?? 'STK',
     ucits: Boolean(row.ucits),
-    isPrime: row.is_prime,
+    isPrime: Boolean(row.is_prime),
     isIbkr: true,
   };
 }
@@ -25,44 +36,71 @@ export function formatInstrumentType(type) {
 }
 
 function searchLocalUniverse(query, limit = 20) {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
+  const term = query.trim();
+  if (!term) return { results: [], matchedQuery: term };
 
-  return stockUniverse
-    .filter((s) => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
-    .slice(0, limit)
-    .map((s) => ({
-      symbol: s.symbol,
-      name: s.name,
-      exchange: 'SMART',
-      isIbkr: true,
-      isPrime: true,
-    }));
+  const prefixes = isValidStockSymbol(term)
+    ? tickerPrefixLengths(term.length).map((len) => term.slice(0, len))
+    : [term];
+
+  for (const prefix of prefixes) {
+    const q = prefix.toLowerCase();
+    const results = stockUniverse
+      .filter((s) => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
+      .slice(0, limit)
+      .map((s) => ({
+        symbol: s.symbol,
+        name: s.name,
+        exchange: 'SMART',
+        isIbkr: true,
+        isPrime: true,
+      }));
+
+    if (results.length) {
+      return { results, matchedQuery: prefix };
+    }
+  }
+
+  return { results: [], matchedQuery: term };
+}
+
+async function searchIbkrUniverse(term, limit) {
+  const prefixes = isValidStockSymbol(term)
+    ? tickerPrefixLengths(term.length).map((len) => term.slice(0, len).toUpperCase())
+    : [term];
+
+  for (const prefix of prefixes) {
+    const { data, error } = await supabase.rpc('search_ibkr_instruments', {
+      p_query: prefix,
+      p_limit: limit,
+    });
+
+    if (error) throw error;
+    if (data?.length) {
+      return { results: data.map(mapInstrumentRow), matchedQuery: prefix };
+    }
+  }
+
+  return { results: [], matchedQuery: term };
 }
 
 export async function searchInstruments(query, { limit = 20 } = {}) {
   const term = query.trim();
-  if (!term) return { results: [], source: 'empty' };
+  if (!term) return { results: [], source: 'empty', matchedQuery: '' };
 
   if (!supabase) {
-    return { results: searchLocalUniverse(term, limit), source: 'local' };
+    const { results, matchedQuery } = searchLocalUniverse(term, limit);
+    return { results, source: 'local', matchedQuery };
   }
 
-  const { data, error } = await supabase.rpc('search_ibkr_instruments', {
-    p_query: term,
-    p_limit: limit,
-  });
-
-  if (error) {
+  try {
+    const { results, matchedQuery } = await searchIbkrUniverse(term, limit);
+    return { results, source: 'ibkr', matchedQuery };
+  } catch (error) {
     console.warn('IBKR instrument search failed, using local fallback', error.message);
-    return { results: searchLocalUniverse(term, limit), source: 'local-fallback' };
+    const { results, matchedQuery } = searchLocalUniverse(term, limit);
+    return { results, source: 'local-fallback', matchedQuery };
   }
-
-  if (!data?.length) {
-    return { results: [], source: 'ibkr' };
-  }
-
-  return { results: data.map(mapInstrumentRow), source: 'ibkr' };
 }
 
 export async function listExchanges({ limit = 200 } = {}) {

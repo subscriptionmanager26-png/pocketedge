@@ -59,6 +59,7 @@
     "fetch:basket-prices:dry": "node --env-file=.env scripts/run-basket-price-fetch.mjs --dry-run",
     "fetch:basket-nav": "node --env-file=.env scripts/run-basket-nav-update.mjs",
     "fetch:basket-nav:dry": "node --env-file=.env scripts/run-basket-nav-update.mjs --dry-run",
+    "refresh:fx-rates": "node --env-file=.env scripts/refresh-fx-rates.mjs",
     "remediate:basket-conids": "node --env-file=.env scripts/remediate-basket-conids.mjs",
     "remediate:basket-conids:dry": "node --env-file=.env scripts/remediate-basket-conids.mjs --dry-run",
     "probe:ibkr-preflight-ladder": "node scripts/probe-ibkr-preflight-ladder.mjs",

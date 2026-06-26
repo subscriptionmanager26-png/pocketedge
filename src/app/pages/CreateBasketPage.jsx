@@ -11,9 +11,7 @@ import {
   FileText,
 } from 'lucide-react';
 import {
-  buildCustomStock,
   IBKR_SYMBOL_NOTE,
-  isValidStockSymbol,
   normalizeStockSymbol,
 } from '../basketCatalog';
 import { constituentKey, formatInstrumentType, searchInstruments } from '../instrumentsApi';
@@ -158,6 +156,7 @@ export default function CreateBasketPage({
   const [stockSearchResults, setStockSearchResults] = useState([]);
   const [stockSearchLoading, setStockSearchLoading] = useState(false);
   const [stockSearchSource, setStockSearchSource] = useState('empty');
+  const [stockSearchMatchedQuery, setStockSearchMatchedQuery] = useState('');
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const flowTrackedRef = useRef(false);
@@ -194,17 +193,9 @@ export default function CreateBasketPage({
     );
   }, [filteredStocks, normalizedStockQuery]);
 
-  const canAddCustomSymbol = useMemo(() => {
-    if (!stockQuery.trim() || !isValidStockSymbol(stockQuery)) return false;
-    if (stockSearchLoading) return false;
-    if (filteredStocks.length > 0) return false;
-    if (constituents.some((c) => c.symbol === normalizedStockQuery && !c.exchange)) return false;
-    return true;
-  }, [stockQuery, normalizedStockQuery, constituents, stockSearchLoading, filteredStocks.length]);
-
   const showStockSuggestions =
     stockQuery.trim().length > 0 &&
-    (stockSearchLoading || filteredStocks.length > 0 || canAddCustomSymbol);
+    (stockSearchLoading || filteredStocks.length > 0 || (!stockSearchLoading && stockQuery.trim()));
 
   useEffect(() => {
     const term = stockQuery.trim();
@@ -212,6 +203,7 @@ export default function CreateBasketPage({
       setStockSearchResults([]);
       setStockSearchLoading(false);
       setStockSearchSource('empty');
+      setStockSearchMatchedQuery('');
       return undefined;
     }
 
@@ -219,10 +211,11 @@ export default function CreateBasketPage({
     setStockSearchLoading(true);
 
     const timer = window.setTimeout(async () => {
-      const { results, source } = await searchInstruments(term, { limit: 12 });
+      const { results, source, matchedQuery } = await searchInstruments(term, { limit: 12 });
       if (cancelled) return;
       setStockSearchResults(results);
       setStockSearchSource(source);
+      setStockSearchMatchedQuery(matchedQuery ?? term);
       setStockSearchLoading(false);
     }, 250);
 
@@ -338,11 +331,6 @@ export default function CreateBasketPage({
     setStockSearchResults([]);
   };
 
-  const addCustomSymbol = () => {
-    if (!canAddCustomSymbol) return;
-    addStock(buildCustomStock(stockQuery));
-  };
-
   const handleStockQueryKeyDown = (e) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
@@ -357,7 +345,12 @@ export default function CreateBasketPage({
       return;
     }
 
-    addCustomSymbol();
+    if (filteredStocks.length > 0) {
+      setError('Pick a listing from the suggestions.');
+      return;
+    }
+
+    setError('No match in the IBKR universe. Try a shorter symbol or pick from suggestions.');
   };
 
   const removeStock = (key) => {
@@ -391,6 +384,13 @@ export default function CreateBasketPage({
     if (index === 2) {
       if (constituents.length < 2) {
         setError('Add at least 2 stocks.');
+        return false;
+      }
+      const unpriced = constituents.filter((c) => !c.conid);
+      if (unpriced.length) {
+        setError(
+          `${unpriced.map((c) => c.symbol).join(', ')} ${unpriced.length === 1 ? 'is' : 'are'} not in the IBKR universe. Remove or replace ${unpriced.length === 1 ? 'it' : 'them'}.`
+        );
         return false;
       }
       if (weightingType === 'custom' && Math.abs(weightTotal - 100) > 0.1) {
@@ -756,32 +756,34 @@ export default function CreateBasketPage({
                         >
                           <span className="text-pe-text font-medium">{s.symbol}</span>
                           <span className="text-pe-text-secondary truncate flex-1 text-right">
+                            {s.isPrime && (
+                              <span className="text-emerald-700 font-medium mr-1.5">Primary</span>
+                            )}
                             {s.name}
                             {s.exchange ? ` · ${s.exchange}` : ''}
+                            {s.currency ? ` · ${s.currency}` : ''}
                             {s.instrumentType ? ` · ${formatInstrumentType(s.instrumentType)}` : ''}
                           </span>
                           <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
                         </button>
                       </li>
                     ))}
-                  {!stockSearchLoading && canAddCustomSymbol && (
-                    <li className="border-t border-neutral-100">
-                      <button
-                        type="button"
-                        onClick={addCustomSymbol}
-                        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-neutral-50"
-                      >
-                        <span className="text-pe-text font-medium">{normalizedStockQuery}</span>
-                        <span className="text-pe-text-secondary truncate flex-1 text-right">
-                          Add custom symbol · verify on IBKR
-                        </span>
-                        <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
-                      </button>
+                  {!stockSearchLoading && filteredStocks.length === 0 && (
+                    <li className="px-4 py-2.5 text-sm text-pe-text-secondary">
+                      No matches in the IBKR universe.
                     </li>
                   )}
                 </ul>
               )}
             </div>
+
+            {stockSearchMatchedQuery &&
+              stockQuery.trim().toUpperCase() !== stockSearchMatchedQuery.toUpperCase() &&
+              filteredStocks.length > 0 && (
+                <p className="text-xs text-pe-text-secondary">
+                  Showing matches for <span className="font-medium text-pe-text">{stockSearchMatchedQuery}</span>.
+                </p>
+              )}
 
             <p className="text-xs text-pe-text-secondary leading-relaxed">{IBKR_SYMBOL_NOTE}</p>
             {stockSearchSource === 'local-fallback' && stockQuery.trim() && (
@@ -793,7 +795,7 @@ export default function CreateBasketPage({
 
             {constituents.length === 0 && (
               <p className="text-sm text-pe-text-muted italic py-2">
-                No stocks added yet — pick from suggestions or press Enter to add a custom symbol.
+                No stocks added yet — search and pick from IBKR suggestions.
               </p>
             )}
 
@@ -808,15 +810,13 @@ export default function CreateBasketPage({
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-pe-text">{c.symbol}</div>
                     <div className="text-xs text-pe-text-secondary truncate">
-                      {c.isCustom
-                        ? 'Custom symbol · verify on IBKR'
-                        : [
-                            c.name,
-                            c.exchange,
-                            c.instrumentType ? formatInstrumentType(c.instrumentType) : null,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
+                      {[
+                        c.name,
+                        c.exchange,
+                        c.instrumentType ? formatInstrumentType(c.instrumentType) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'Not in IBKR universe'}
                     </div>
                   </div>
                   {weightingType === 'custom' ? (
