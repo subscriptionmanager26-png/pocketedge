@@ -1,0 +1,25 @@
+{
+  "name": "PocketEdge",
+  "short_name": "PocketEdge",
+  "description": "Discover opportunities. Build smarter portfolios. Grow with a global community on PocketEdge.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
