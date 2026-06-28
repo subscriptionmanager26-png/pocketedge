@@ -2,9 +2,9 @@ name: Universe price fetch
 
 on:
   schedule:
-    # Weekdays — 12:30 AM UTC (us_close) and 12:30 PM UTC (overnight)
-    - cron: '30 0 * * 1-5'
-    - cron: '30 12 * * 1-5'
+    # Daily — 12:30 AM UTC (us_close) and 12:30 PM UTC (overnight)
+    - cron: '30 0 * * *'
+    - cron: '30 12 * * *'
   workflow_dispatch:
     inputs:
       slot:

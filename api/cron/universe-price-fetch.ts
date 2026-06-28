@@ -11,8 +11,8 @@ export const config = {
 };
 
 const CRON_SCHEDULE_SLOTS: Record<string, FetchSlot> = {
-  '5 21 * * 1-5': 'us_close',
-  '5 9 * * 1-5': 'overnight',
+  '5 21 * * *': 'us_close',
+  '5 9 * * *': 'overnight',
 };
 
 function resolveFetchSlot(req: VercelRequest): FetchSlot {

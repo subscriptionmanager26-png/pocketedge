@@ -5,8 +5,8 @@ name: Universe price fetch watchdog
 
 on:
   schedule:
-    - cron: '0 3 * * 1-5'   # check after 00:30 us_close run
-    - cron: '0 15 * * 1-5'  # check after 12:30 overnight run
+    - cron: '0 3 * * *'   # check after 00:30 us_close run
+    - cron: '0 15 * * *'  # check after 12:30 overnight run
   workflow_dispatch:
     inputs:
       slot:
