@@ -7,6 +7,7 @@ import {
   compareFundsByAum,
   formatAumDisplay,
   fundMatchesIndexCategories,
+  fundMatchesMaxTer,
   getIndexCategoryLabel,
 } from './ucitsScreenerUtils';
 
@@ -37,10 +38,17 @@ function formatWeight(holding) {
   return holding.weightFmt || (holding.weightPct != null ? `${holding.weightPct}%` : '—');
 }
 
-function countActiveFilters({ sectorFilter, minAumMillions, indexCategories, exchange }) {
+function countActiveFilters({
+  sectorFilter,
+  minAumMillions,
+  maxTerPercent,
+  indexCategories,
+  exchange,
+}) {
   let count = 0;
   if (sectorFilter !== 'All') count += 1;
   if (Number(minAumMillions) > 0) count += 1;
+  if (Number(maxTerPercent) > 0) count += 1;
   if (indexCategories.length > 0) count += 1;
   if (exchange !== 'All') count += 1;
   return count;
@@ -164,6 +172,8 @@ function ScreenerFilterFields({
   setMinSectorPct,
   minAumMillions,
   setMinAumMillions,
+  maxTerPercent,
+  setMaxTerPercent,
   aumSort,
   setAumSort,
   exchange,
@@ -223,6 +233,23 @@ function ScreenerFilterFields({
             className="pe-input py-2.5 pr-8 w-full"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">M</span>
+        </div>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-pe-text-muted">Max TER</span>
+        <div className="relative">
+          <input
+            type="number"
+            min={0}
+            max={5}
+            step={0.01}
+            value={maxTerPercent}
+            onChange={(e) => setMaxTerPercent(e.target.value)}
+            placeholder="Any"
+            className="pe-input py-2.5 pr-8 w-full"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">%</span>
         </div>
       </label>
 
@@ -640,6 +667,7 @@ export default function UcitsScreenerPage() {
   const [sectorFilter, setSectorFilter] = useState('All');
   const [minSectorPct, setMinSectorPct] = useState(10);
   const [minAumMillions, setMinAumMillions] = useState('');
+  const [maxTerPercent, setMaxTerPercent] = useState('');
   const [indexCategories, setIndexCategories] = useState([]);
   const [aumSort, setAumSort] = useState('none');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -705,6 +733,8 @@ export default function UcitsScreenerPage() {
         if (fund.aum == null || fund.aum < minAumUsd) return false;
       }
 
+      if (!fundMatchesMaxTer(fund, maxTerPercent)) return false;
+
       if (!fundMatchesIndexCategories(fund, indexCategories)) return false;
 
       if (!q) return true;
@@ -725,7 +755,17 @@ export default function UcitsScreenerPage() {
       return [...rows].sort((a, b) => compareFundsByAum(a, b, aumSort));
     }
     return rows;
-  }, [funds, query, exchange, sectorFilter, minSectorPct, minAumMillions, indexCategories, aumSort]);
+  }, [
+    funds,
+    query,
+    exchange,
+    sectorFilter,
+    minSectorPct,
+    minAumMillions,
+    maxTerPercent,
+    indexCategories,
+    aumSort,
+  ]);
 
   const visibleFunds = useMemo(
     () => filtered.slice(0, visibleCount),
@@ -736,7 +776,7 @@ export default function UcitsScreenerPage() {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
     setExpandedId(null);
-  }, [query, exchange, sectorFilter, minSectorPct, minAumMillions, indexCategories, aumSort]);
+  }, [query, exchange, sectorFilter, minSectorPct, minAumMillions, maxTerPercent, indexCategories, aumSort]);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -761,6 +801,7 @@ export default function UcitsScreenerPage() {
   const activeFilterCount = countActiveFilters({
     sectorFilter,
     minAumMillions,
+    maxTerPercent,
     indexCategories,
     exchange,
   });
@@ -769,6 +810,7 @@ export default function UcitsScreenerPage() {
     setSectorFilter('All');
     setMinSectorPct(10);
     setMinAumMillions('');
+    setMaxTerPercent('');
     setIndexCategories([]);
     setExchange('All');
     setAumSort('none');
@@ -782,6 +824,8 @@ export default function UcitsScreenerPage() {
     setMinSectorPct,
     minAumMillions,
     setMinAumMillions,
+    maxTerPercent,
+    setMaxTerPercent,
     aumSort,
     setAumSort,
     exchange,
@@ -855,6 +899,11 @@ export default function UcitsScreenerPage() {
                   ≥{minAumMillions}M AUM
                 </span>
               )}
+              {Number(maxTerPercent) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
+                  ≤{maxTerPercent}% TER
+                </span>
+              )}
               {exchange !== 'All' && (
                 <span className="text-xs px-2 py-1 rounded-full border border-pe-border text-pe-text-secondary">
                   {exchange}
@@ -875,7 +924,7 @@ export default function UcitsScreenerPage() {
         </div>
 
         {/* Desktop filters */}
-        <div className="mt-4 hidden lg:grid grid-cols-6 gap-3">
+        <div className="mt-4 hidden lg:grid lg:grid-cols-4 xl:grid-cols-7 gap-3">
           <ScreenerFilterFields {...filterFieldProps} />
         </div>
 
@@ -891,6 +940,12 @@ export default function UcitsScreenerPage() {
             <>
               {' '}
               · min AUM {minAumMillions}M USD
+            </>
+          )}
+          {Number(maxTerPercent) > 0 && (
+            <>
+              {' '}
+              · max TER {maxTerPercent}%
             </>
           )}
           {indexCategories.length > 0 && (

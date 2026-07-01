@@ -98,6 +98,22 @@ export function fundMatchesIndexCategories(fund, selectedCategoryIds) {
   return selectedCategoryIds.includes(category);
 }
 
+/** Parse TER strings like "0.20%" to a numeric percent (0.2). */
+export function parseTerPercent(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const parsed = parseFloat(String(value).replace('%', '').trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function fundMatchesMaxTer(fund, maxTerPercent) {
+  const max = Number(maxTerPercent);
+  if (!Number.isFinite(max) || max <= 0) return true;
+  const ter = parseTerPercent(fund?.expenseRatio);
+  if (ter == null) return false;
+  return ter <= max;
+}
+
 export function compareFundsByAum(a, b, direction = 'desc') {
   const aAum = a.aum ?? null;
   const bAum = b.aum ?? null;
