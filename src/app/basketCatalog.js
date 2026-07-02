@@ -115,24 +115,41 @@ export function formatPercent(value) {
   return `${sign}${value.toFixed(1)}%`;
 }
 
+/** Total return since inception (NAV starts at 100). */
+export function totalReturnFromNav(nav) {
+  const n = Number(nav);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return ((n / 100) - 1) * 100;
+}
+
 export function getBasketReturn(basket) {
-  if (basket.navSummary?.navStatus === 'error') {
-    return basket.navSummary?.totalReturnPct ?? 0;
+  if (basket.navSummary?.nav != null) {
+    const fromNav = totalReturnFromNav(basket.navSummary.nav);
+    if (fromNav != null) return fromNav;
   }
   if (basket.navSummary?.totalReturnPct != null) {
     return basket.navSummary.totalReturnPct;
   }
-  if (basket.navHistory?.length >= 2) {
-    const first = basket.navHistory[0].nav;
+  if (basket.navSummary?.navStatus === 'error') {
+    return basket.navSummary?.totalReturnPct ?? 0;
+  }
+  if (basket.nav != null) {
+    const fromNav = totalReturnFromNav(basket.nav);
+    if (fromNav != null) return fromNav;
+  }
+  if (basket.totalReturnPct != null) {
+    return Number(basket.totalReturnPct);
+  }
+  if (basket.navHistory?.length >= 1) {
     const last = basket.navHistory[basket.navHistory.length - 1].nav;
-    if (first > 0) return ((last / first) - 1) * 100;
+    const fromNav = totalReturnFromNav(last);
+    if (fromNav != null) return fromNav;
   }
   return basket.stats?.cagr ?? basket.returnPct ?? 0;
 }
 
-export function getBasketReturnLabel(basket) {
-  if (basket.navSummary?.lastFetchAt) return 'Live NAV';
-  return basket.stats?.returnLabel || 'Returns';
+export function getBasketReturnLabel(_basket) {
+  return 'Total return';
 }
 
 const VOLATILITY_RANK = { Low: 1, Medium: 2, High: 3 };

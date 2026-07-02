@@ -8,9 +8,23 @@ export function isDbUserId(userId) {
   return Boolean(userId && UUID_RE.test(userId));
 }
 
+function mapNavFields(row) {
+  if (row?.nav == null && row?.total_return_pct == null && !row?.last_fetch_at) {
+    return null;
+  }
+  return {
+    nav: row.nav != null ? Number(row.nav) : null,
+    totalReturnPct: row.total_return_pct != null ? Number(row.total_return_pct) : null,
+    lastFetchAt: row.last_fetch_at ?? null,
+    lastFetchSlot: row.last_fetch_slot ?? null,
+    navStatus: row.nav_status ?? 'ok',
+  };
+}
+
 function mapDbBasket(row, profile = null) {
   if (!row) return null;
   const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+  const navSummary = mapNavFields(row);
   const constituentCount = Array.isArray(row.constituents) ? row.constituents.length : 0;
   const creatorFromRow =
     row.creator_display_name || row.creator_bio || row.creator_avatar_url
@@ -67,7 +81,11 @@ function mapDbBasket(row, profile = null) {
       ...(meta.stats || {}),
       constituents: meta.stats?.constituents ?? constituentCount,
       minInvestAmount: meta.stats?.minInvestAmount ?? 5000,
+      returnLabel: 'Total return',
     },
+    navSummary,
+    nav: navSummary?.nav ?? null,
+    totalReturnPct: navSummary?.totalReturnPct ?? null,
   };
 }
 

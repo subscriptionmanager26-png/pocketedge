@@ -1,9 +1,10 @@
 import React from 'react';
 import { ChevronRight, Users } from 'lucide-react';
-import { formatPercent } from '../basketCatalog';
+import { formatPercent, getBasketReturn, getBasketReturnLabel } from '../basketCatalog';
 
 export default function BasketCard({ basket, subtitle, onClick, showReturn = true }) {
-  const returnValue = basket.stats?.cagr ?? basket.returnPct ?? 0;
+  const returnValue = getBasketReturn(basket);
+  const returnLabel = getBasketReturnLabel(basket);
 
   return (
     <button
@@ -39,7 +40,7 @@ export default function BasketCard({ basket, subtitle, onClick, showReturn = tru
             {showReturn && (
               <div className="text-right shrink-0">
                 <div className="pe-body-s text-pe-text-muted">
-                  {basket.stats?.returnLabel || 'Returns'}
+                  {returnLabel}
                 </div>
                 <div className="text-base font-bold text-pe-positive tabular-nums mt-0.5">
                   {formatPercent(returnValue)}

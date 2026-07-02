@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { totalReturnFromNav } from './basketCatalog';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -81,9 +82,7 @@ export function missingSymbols(missingConids, constituents) {
 }
 
 export function returnPctFromNavHistory(navHistory) {
-  if (!navHistory?.length || navHistory.length < 2) return null;
-  const first = navHistory[0].nav;
+  if (!navHistory?.length) return null;
   const last = navHistory[navHistory.length - 1].nav;
-  if (!first || first <= 0) return null;
-  return ((last / first) - 1) * 100;
+  return totalReturnFromNav(last);
 }
