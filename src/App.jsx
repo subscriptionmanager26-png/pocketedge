@@ -70,21 +70,34 @@ function resolveRoute(session) {
   return 'landing';
 }
 
+function needsAuthBootstrap() {
+  if (!supabase) return false;
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('code') || params.has('error') || params.has('error_description')) {
+    return true;
+  }
+  // Public routes render immediately without waiting on Supabase session.
+  if (
+    isStep2DemoRoute() ||
+    isChallengeDemoRoute() ||
+    isReferralsDemoRoute() ||
+    isDesignRoute() ||
+    isLegalRoute() ||
+    isUcitsScreenerRoute()
+  ) {
+    return false;
+  }
+  if (isLeaderboardRoute() && CAMPAIGN_UI_ENABLED) return false;
+  return true;
+}
+
 export default function App() {
   const [route, setRoute] = useState(() => resolveRoute(null));
   const [user, setUser] = useState(null);
   const [userBaskets, setUserBaskets] = useState(() => loadUserBaskets());
   const [marketplaceBaskets, setMarketplaceBaskets] = useState([]);
   const [referralStats, setReferralStats] = useState(null);
-  const [bootstrapping, setBootstrapping] = useState(() => {
-    if (!supabase) return false;
-    const params = new URLSearchParams(window.location.search);
-    return (
-      params.has('code') ||
-      params.has('error') ||
-      params.has('error_description')
-    );
-  });
+  const [bootstrapping, setBootstrapping] = useState(needsAuthBootstrap);
 
   const challengeProgress = useMemo(
     () => getChallengeProgress({ user, userBaskets, referralStats }),
@@ -294,11 +307,11 @@ export default function App() {
     );
   }
 
-  if (bootstrapping && route !== 'app') {
+  if (bootstrapping) {
     return (
       <PageShell user={user} challengeProgress={challengeProgress}>
         <div className="min-h-screen flex items-center justify-center bg-pe-canvas">
-          <div className={`w-10 h-10 border-2 rounded-full animate-spin border-pe-border border-t-pe-text`} />
+          <div className="w-10 h-10 border-2 rounded-full animate-spin border-pe-border border-t-pe-text" />
         </div>
       </PageShell>
     );

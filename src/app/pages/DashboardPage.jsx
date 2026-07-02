@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import SearchBasketCard from '../components/SearchBasketCard';
-import { getBasketById, mergeDiscoverBaskets } from '../basketCatalog';
+import { getBasketById, mergeDiscoverBaskets, selectTrendingBaskets } from '../basketCatalog';
 import { navigateApp } from '../appRoute';
 import { loadSubscribedBasketIds, subscribeSubscriptions } from '../subscriptionStore';
 import AppPageLayout from '../components/AppPageLayout';
@@ -28,10 +28,10 @@ export default function DashboardPage({ userBaskets, marketplaceBaskets = [] }) 
     [followedIds, userBaskets, marketplaceBaskets]
   );
 
-  const trendingBaskets = useMemo(() => {
-    const tagged = discoverBaskets.filter((b) => b.badge === 'trending' || b.badge === 'hot');
-    return tagged.length > 0 ? tagged : discoverBaskets.slice(0, 6);
-  }, [discoverBaskets]);
+  const trendingBaskets = useMemo(
+    () => selectTrendingBaskets(discoverBaskets, { limit: 6 }),
+    [discoverBaskets]
+  );
 
   const openBasket = (id) => navigateApp({ tab: 'basket', basketId: id });
 

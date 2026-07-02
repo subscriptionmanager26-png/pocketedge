@@ -163,6 +163,17 @@ export function getBasketVolatilityRank(basket) {
   return VOLATILITY_RANK[getBasketVolatilityLabel(basket)] ?? 2;
 }
 
+/** Top baskets by total return for Trending / discovery highlights. */
+export function selectTrendingBaskets(baskets, { limit = 6 } = {}) {
+  return [...baskets]
+    .sort((a, b) => {
+      const returnDiff = getBasketReturn(b) - getBasketReturn(a);
+      if (returnDiff !== 0) return returnDiff;
+      return getBasketVolatilityRank(a) - getBasketVolatilityRank(b);
+    })
+    .slice(0, limit);
+}
+
 /** Rank baskets by return (desc), tie-break by lower volatility */
 export function buildLeaderboard(baskets) {
   return [...baskets]
