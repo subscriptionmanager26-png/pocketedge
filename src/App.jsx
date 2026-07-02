@@ -8,6 +8,7 @@ import AppShell from './app/AppShell';
 import MarketWhispererBanner from './components/MarketWhispererBanner';
 import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import StickyTopChrome from './components/StickyTopChrome';
+import AppBootstrapLoader from './components/AppBootstrapLoader';
 import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
 import { loadUserBaskets, loadUserBasketsAsync, migrateLocalBasketsToDb } from './app/basketStore';
 import { fetchMarketplaceBaskets } from './app/userDataApi';
@@ -178,81 +179,87 @@ export default function App() {
     }
 
     let mounted = true;
+    let initialBootstrapDone = false;
 
-    const syncSession = async (session) => {
+    const applyLoggedOutState = () => {
+      setUser(null);
+      setUserBaskets(loadUserBaskets());
+      setReferralStats(null);
+    };
+
+    const syncSessionBackground = async (session) => {
       if (!mounted) return { isNewMember: false };
 
       const nextUser = session?.user ?? null;
-      setUser(nextUser);
-
-      if (nextUser) {
-        try {
-          const baskets = await migrateLocalBasketsToDb(nextUser.id);
-          if (mounted) setUserBaskets(baskets);
-        } catch {
-          if (mounted) setUserBaskets([]);
-        }
-
-        try {
-          await migrateLocalProfileToDb(nextUser.id, nextUser);
-        } catch {
-          // Profile sync is best-effort; user can save manually on Account.
-        }
-      } else if (mounted) {
-        setUserBaskets(loadUserBaskets());
+      if (!nextUser) {
+        if (mounted) setReferralStats(null);
+        return { isNewMember: false };
       }
 
-      if (nextUser) {
-        identifyPostHogUser(nextUser);
-        try {
-          const hadReferral = Boolean(sessionStorage.getItem('referral_ref'));
-          const signup = await recordAppSignup();
-          const isNewMember = signup?.status === 'joined';
-          if (isNewMember) {
-            captureSignupRecorded({ referredByCode: hadReferral });
-          }
-          const stats = await getReferralStats();
-          if (mounted) setReferralStats(stats);
-          if (mounted && stats) syncUserReferralTraits(nextUser, stats);
-          return { isNewMember };
-        } catch (err) {
-          captureSignupFailed(err);
-          if (mounted) setReferralStats(null);
-          return { isNewMember: false };
-        }
+      try {
+        const [baskets] = await Promise.all([
+          migrateLocalBasketsToDb(nextUser.id).catch(() => []),
+          migrateLocalProfileToDb(nextUser.id, nextUser).catch(() => {}),
+        ]);
+        if (mounted) setUserBaskets(baskets);
+      } catch {
+        if (mounted) setUserBaskets([]);
       }
 
-      setReferralStats(null);
-      return { isNewMember: false };
+      identifyPostHogUser(nextUser);
+      try {
+        const hadReferral = Boolean(sessionStorage.getItem('referral_ref'));
+        const signup = await recordAppSignup();
+        const isNewMember = signup?.status === 'joined';
+        if (isNewMember) {
+          captureSignupRecorded({ referredByCode: hadReferral });
+        }
+        const stats = await getReferralStats();
+        if (mounted) setReferralStats(stats);
+        if (mounted && stats) syncUserReferralTraits(nextUser, stats);
+        return { isNewMember };
+      } catch (err) {
+        captureSignupFailed(err);
+        if (mounted) setReferralStats(null);
+        return { isNewMember: false };
+      }
     };
 
-    const finishBootstrap = async (session, { trackSignIn = false } = {}) => {
+    const finishBootstrap = (session, { trackSignIn = false } = {}) => {
       if (!mounted) return;
+      if (initialBootstrapDone && !trackSignIn) return;
+
       if (session) cleanOAuthCallbackUrl();
-      const { isNewMember } = await syncSession(session);
-      if (!mounted) return;
-      if (trackSignIn && session?.user) {
-        captureAuthCompleted({ isNewMember });
-      }
+
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+      if (!nextUser) applyLoggedOutState();
       setRoute(resolveRoute(session));
       setBootstrapping(false);
+      initialBootstrapDone = true;
+
+      void syncSessionBackground(session).then(({ isNewMember }) => {
+        if (!mounted) return;
+        if (trackSignIn && session?.user) {
+          captureAuthCompleted({ isNewMember });
+        }
+      });
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-        finishBootstrap(session, { trackSignIn: event === 'SIGNED_IN' });
+      if (event === 'INITIAL_SESSION') {
+        finishBootstrap(session);
+      }
+      if (event === 'SIGNED_IN') {
+        finishBootstrap(session, { trackSignIn: true });
       }
       if (event === 'SIGNED_OUT') {
+        initialBootstrapDone = false;
         resetPostHogUser();
-        syncSession(null);
+        applyLoggedOutState();
         setRoute(resolveRoute(null));
       }
     });
-
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => finishBootstrap(session))
-      .catch(() => finishBootstrap(null));
 
     return () => {
       mounted = false;
@@ -308,13 +315,7 @@ export default function App() {
   }
 
   if (bootstrapping) {
-    return (
-      <PageShell user={user} challengeProgress={challengeProgress}>
-        <div className="min-h-screen flex items-center justify-center bg-pe-canvas">
-          <div className="w-10 h-10 border-2 rounded-full animate-spin border-pe-border border-t-pe-text" />
-        </div>
-      </PageShell>
-    );
+    return <AppBootstrapLoader />;
   }
 
   if (route === 'app') {
