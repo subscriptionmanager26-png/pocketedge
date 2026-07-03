@@ -1,31 +1,57 @@
-export default function App() {
-  return (
-    <div className="min-h-screen bg-pe-canvas text-pe-text">
-      <header className="border-b border-pe-border px-6 py-4">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <p className="text-sm font-medium tracking-wide text-pe-text-secondary">
-            PocketEdge Social
-          </p>
-          <a
-            href="https://www.pocketedge.in"
-            className="text-sm text-pe-text-muted transition hover:text-pe-text"
-          >
-            Back to PocketEdge
-          </a>
-        </div>
-      </header>
+import { useState } from 'react';
+import ComposeModal from './components/ComposeModal';
+import Shell from './components/Shell';
+import FeedPage from './pages/FeedPage';
+import MarketsPage from './pages/MarketsPage';
+import PortfolioPage from './pages/PortfolioPage';
+import ProfilePage from './pages/ProfilePage';
+import SearchPage from './pages/SearchPage';
+import { CURRENT_USER, POSTS } from './data/mockData';
 
-      <main className="mx-auto max-w-3xl px-6 py-16">
-        <p className="text-xs uppercase tracking-[0.2em] text-pe-text-muted">social.pocketedge</p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-          Community investing, coming soon.
-        </h1>
-        <p className="mt-4 max-w-xl text-pe-text-secondary">
-          This is the dedicated social surface for PocketEdge — feeds, profiles, and
-          portfolio conversations. It lives in the same repo as the main app and deploys
-          independently to its own subdomain.
-        </p>
-      </main>
-    </div>
+export default function App() {
+  const [tab, setTab] = useState('feed');
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [posts, setPosts] = useState(POSTS);
+
+  const handlePost = (body) => {
+    const post = {
+      id: `p_local_${Date.now()}`,
+      authorId: CURRENT_USER.id,
+      type: 'text',
+      body,
+      image: null,
+      createdAt: new Date().toISOString(),
+      likes: 0,
+      comments: [],
+      via: { kind: 'person', label: `@${CURRENT_USER.handle}`, reason: 'you posted' },
+      topics: [],
+    };
+    setPosts((prev) => [post, ...prev]);
+    setTab('feed');
+  };
+
+  return (
+    <>
+      <Shell
+        tab={tab}
+        onTabChange={setTab}
+        onProfile={() => setTab('profile')}
+        onCompose={() => setComposeOpen(true)}
+      >
+        {tab === 'feed' && <FeedPage posts={posts} />}
+        {tab === 'search' && <SearchPage />}
+        {tab === 'portfolio' && <PortfolioPage />}
+        {tab === 'markets' && <MarketsPage />}
+        {tab === 'profile' && (
+          <ProfilePage onBack={() => setTab('feed')} posts={posts} />
+        )}
+      </Shell>
+
+      <ComposeModal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        onPost={handlePost}
+      />
+    </>
   );
 }
