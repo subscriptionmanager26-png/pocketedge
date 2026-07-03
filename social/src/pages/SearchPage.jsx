@@ -1,11 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, TrendingUp, Users } from 'lucide-react';
 import Avatar from '../components/Avatar';
-import {
-  PEOPLE,
-  STOCKS,
-  TOPICS,
-} from '../data/mockData';
+import { PEOPLE, STOCKS, TOPICS } from '../data/mockData';
 import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
 
 const RESULT_TABS = [
@@ -15,7 +11,7 @@ const RESULT_TABS = [
 ];
 
 const TRENDING_STOCKS = Object.entries(STOCKS)
-  .map(([ticker, s]) => ({ ticker, ...s, volume: Math.round(s.price * 40 + s.changePct * 100) }))
+  .map(([ticker, s]) => ({ ticker, ...s }))
   .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
   .slice(0, 5);
 
@@ -32,9 +28,7 @@ export default function SearchPage() {
     const ranked = [...PEOPLE].sort((a, b) => b.xirr - a.xirr);
     if (!q) return ranked;
     return ranked.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.handle.toLowerCase().includes(q)
+      (p) => p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)
     );
   }, [q]);
 
@@ -47,34 +41,29 @@ export default function SearchPage() {
     const entries = Object.entries(STOCKS).map(([ticker, s]) => ({ ticker, ...s }));
     if (!q) return entries;
     return entries.filter(
-      (s) =>
-        s.ticker.toLowerCase().includes(q) ||
-        s.name.toLowerCase().includes(q)
+      (s) => s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
     );
   }, [q]);
 
   return (
     <div>
-      <div className="sticky top-[57px] z-30 border-b border-pe-border bg-pe-canvas/95 px-4 py-3 backdrop-blur-xl">
-        <div className="flex items-center gap-2 rounded-xl border border-pe-border bg-pe-surface px-3 py-2.5">
-          <Search className="h-4 w-4 shrink-0 text-pe-text-muted" />
+      <div className="border-b border-pe-border px-4 py-4 md:px-6">
+        <div className="flex items-center gap-2.5 rounded-xl border border-pe-border bg-pe-surface px-3.5 py-3">
+          <Search className="h-4 w-4 shrink-0 text-pe-text-secondary" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="People, topics, stocks"
-            className="w-full bg-transparent text-sm text-pe-text outline-none placeholder:text-pe-text-muted"
+            className="w-full bg-transparent text-[15px] text-pe-text outline-none placeholder:text-pe-text-muted"
           />
         </div>
       </div>
 
       {!q ? (
-        <div className="space-y-8 px-4 py-5">
+        <div className="space-y-8 px-4 py-6 md:px-6">
           <section>
-            <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              <TrendingUp className="h-3.5 w-3.5" />
-              Trending topics
-            </div>
-            <div className="flex flex-wrap gap-2">
+            <SectionLabel icon={TrendingUp}>Trending topics</SectionLabel>
+            <div className="mt-3 flex flex-wrap gap-2">
               {TOPICS.map((topic) => {
                 const followed = followedTopics.has(topic.slug);
                 return (
@@ -89,14 +78,14 @@ export default function SearchPage() {
                         return next;
                       })
                     }
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
                       followed
                         ? 'border-white bg-white text-black'
-                        : 'border-pe-border text-pe-text-secondary hover:border-white/30'
+                        : 'border-pe-border text-pe-text-secondary hover:border-pe-border-strong hover:text-pe-text'
                     }`}
                   >
                     #{topic.name}
-                    <span className="ml-1.5 opacity-60">{topic.postsThisWeek}</span>
+                    <span className="ml-1.5 text-pe-text-muted">{topic.postsThisWeek}</span>
                   </button>
                 );
               })}
@@ -104,11 +93,8 @@ export default function SearchPage() {
           </section>
 
           <section>
-            <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              <Users className="h-3.5 w-3.5" />
-              Suggested people
-            </div>
-            <div className="space-y-1">
+            <SectionLabel icon={Users}>Suggested people</SectionLabel>
+            <div className="mt-2 divide-y divide-pe-border">
               {[...PEOPLE]
                 .sort((a, b) => b.xirr - a.xirr)
                 .slice(0, 4)
@@ -119,10 +105,8 @@ export default function SearchPage() {
           </section>
 
           <section>
-            <div className="mb-3 text-xs font-medium uppercase tracking-wider text-pe-text-muted">
-              Most discussed this week
-            </div>
-            <div className="space-y-1">
+            <SectionLabel>Most discussed this week</SectionLabel>
+            <div className="mt-2 divide-y divide-pe-border">
               {TRENDING_STOCKS.map((stock) => (
                 <StockRow key={stock.ticker} stock={stock} />
               ))}
@@ -137,8 +121,8 @@ export default function SearchPage() {
                 key={t.id}
                 type="button"
                 onClick={() => setResultTab(t.id)}
-                className={`relative flex-1 py-3 text-sm font-medium ${
-                  resultTab === t.id ? 'text-pe-text' : 'text-pe-text-muted'
+                className={`relative flex-1 py-3.5 text-sm font-medium ${
+                  resultTab === t.id ? 'text-pe-text' : 'text-pe-text-secondary hover:text-pe-text'
                 }`}
               >
                 {t.label}
@@ -149,7 +133,7 @@ export default function SearchPage() {
             ))}
           </div>
 
-          <div className="px-4 py-2">
+          <div className="px-4 py-1 md:px-6">
             {resultTab === 'people' &&
               (peopleResults.length ? (
                 peopleResults.map((p) => <PersonRow key={p.id} person={p} />)
@@ -161,20 +145,15 @@ export default function SearchPage() {
                 topicResults.map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between border-b border-pe-border/60 py-3"
+                    className="flex items-center justify-between border-b border-pe-border py-4"
                   >
                     <div>
-                      <p className="text-sm font-semibold">#{t.name}</p>
-                      <p className="text-xs text-pe-text-muted">
+                      <p className="text-[15px] font-semibold text-pe-text">#{t.name}</p>
+                      <p className="mt-0.5 text-sm text-pe-text-secondary">
                         {t.postsThisWeek} posts · {formatCount(t.followers)} followers
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="rounded-full border border-pe-border px-3 py-1 text-xs font-medium hover:bg-white/5"
-                    >
-                      Follow
-                    </button>
+                    <FollowButton />
                   </div>
                 ))
               ) : (
@@ -193,37 +172,45 @@ export default function SearchPage() {
   );
 }
 
+function SectionLabel({ children, icon: Icon }) {
+  return (
+    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-pe-text-secondary">
+      {Icon && <Icon className="h-3.5 w-3.5" />}
+      {children}
+    </div>
+  );
+}
+
 function PersonRow({ person }) {
   return (
-    <div className="flex items-center gap-3 border-b border-pe-border/60 py-3">
+    <div className="flex items-center gap-3 py-3.5">
       <Avatar person={person} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{person.name}</p>
-        <p className="text-xs text-pe-text-muted">@{person.handle}</p>
-        <p className="mt-0.5 text-[11px] text-pe-text-secondary">
-          XIRR {formatPct(person.xirr, { signed: false })} · {formatCount(person.followers)} followers
+        <p className="truncate text-[15px] font-semibold text-pe-text">{person.name}</p>
+        <p className="text-sm text-pe-text-secondary">@{person.handle}</p>
+        <p className="mt-0.5 text-xs text-pe-text-secondary">
+          <span className="font-medium text-pe-positive">
+            XIRR {formatPct(person.xirr, { signed: false })}
+          </span>
+          <span className="text-pe-text-muted"> · </span>
+          {formatCount(person.followers)} followers
         </p>
       </div>
-      <button
-        type="button"
-        className="shrink-0 rounded-full border border-pe-border px-3 py-1 text-xs font-medium hover:bg-white/5"
-      >
-        Follow
-      </button>
+      <FollowButton />
     </div>
   );
 }
 
 function StockRow({ stock }) {
   return (
-    <div className="flex items-center justify-between border-b border-pe-border/60 py-3">
+    <div className="flex items-center justify-between py-3.5">
       <div>
-        <p className="text-sm font-semibold">${stock.ticker}</p>
-        <p className="text-xs text-pe-text-muted">{stock.name}</p>
+        <p className="text-[15px] font-semibold text-pe-text">${stock.ticker}</p>
+        <p className="text-sm text-pe-text-secondary">{stock.name}</p>
       </div>
       <div className="text-right">
-        <p className="text-sm font-medium">{formatPrice(stock.price)}</p>
-        <p className={`text-xs font-medium ${pnlClass(stock.changePct)}`}>
+        <p className="text-[15px] font-semibold text-pe-text">{formatPrice(stock.price)}</p>
+        <p className={`text-sm font-medium ${pnlClass(stock.changePct)}`}>
           {formatPct(stock.changePct)}
         </p>
       </div>
@@ -231,6 +218,19 @@ function StockRow({ stock }) {
   );
 }
 
+function FollowButton() {
+  return (
+    <button
+      type="button"
+      className="shrink-0 rounded-full border border-pe-border-strong px-3.5 py-1.5 text-sm font-medium text-pe-text transition hover:bg-white hover:text-black"
+    >
+      Follow
+    </button>
+  );
+}
+
 function Empty() {
-  return <p className="py-12 text-center text-sm text-pe-text-muted">No results</p>;
+  return (
+    <p className="py-14 text-center text-sm text-pe-text-secondary">No results</p>
+  );
 }

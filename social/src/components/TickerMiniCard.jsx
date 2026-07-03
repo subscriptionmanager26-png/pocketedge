@@ -10,12 +10,12 @@ export default function TickerMiniCard({ ticker, position, onClose }) {
   return (
     <span
       role="dialog"
-      className="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-pe-border bg-pe-elevated p-3 shadow-2xl shadow-black/50"
+      className="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-pe-border-strong bg-pe-elevated p-3.5 shadow-card"
     >
       <span className="mb-2 flex items-start justify-between gap-2">
         <span>
           <span className="block text-sm font-semibold text-pe-text">${ticker}</span>
-          <span className="block text-xs text-pe-text-muted">{stock?.name ?? ticker}</span>
+          <span className="block text-xs text-pe-text-secondary">{stock?.name ?? ticker}</span>
         </span>
         <button
           type="button"
@@ -27,44 +27,50 @@ export default function TickerMiniCard({ ticker, position, onClose }) {
         </button>
       </span>
 
-      <span className="mb-2 flex items-baseline gap-2">
-        <span className="text-base font-semibold">{formatPrice(stock?.price)}</span>
-        <span className={`text-xs font-medium ${pnlClass(stock?.changePct ?? 0)}`}>
+      <span className="mb-2.5 flex items-baseline gap-2">
+        <span className="text-base font-semibold text-pe-text">{formatPrice(stock?.price)}</span>
+        <span className={`text-xs font-semibold ${pnlClass(stock?.changePct ?? 0)}`}>
           {formatPct(stock?.changePct ?? 0)}
         </span>
       </span>
 
-      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${styles.chip}`}>
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${styles.chip}`}
+      >
         <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
         {styles.label}
       </span>
 
       {position.status === 'holds' && (
-        <span className="mt-2 block space-y-1 text-xs text-pe-text-secondary">
+        <span className="mt-2.5 block space-y-1.5 text-xs text-pe-text-secondary">
           <span className="flex justify-between">
             <span>Qty</span>
-            <span className="text-pe-text">{position.qty}</span>
+            <span className="font-medium text-pe-text">{position.qty}</span>
           </span>
           <span className="flex justify-between">
             <span>Avg</span>
-            <span className="text-pe-text">{formatPrice(position.avg)}</span>
+            <span className="font-medium text-pe-text">{formatPrice(position.avg)}</span>
           </span>
           <span className="flex justify-between">
             <span>P&L</span>
-            <span className={pnlClass(position.pnlPct)}>{formatPct(position.pnlPct)}</span>
+            <span className={`font-semibold ${pnlClass(position.pnlPct)}`}>
+              {formatPct(position.pnlPct)}
+            </span>
           </span>
         </span>
       )}
 
       {position.status === 'exited' && (
-        <span className="mt-2 block space-y-1 text-xs text-pe-text-secondary">
+        <span className="mt-2.5 block space-y-1.5 text-xs text-pe-text-secondary">
           <span className="flex justify-between">
             <span>Exit</span>
-            <span className="text-pe-text">{formatPrice(position.exitPrice)}</span>
+            <span className="font-medium text-pe-text">{formatPrice(position.exitPrice)}</span>
           </span>
           <span className="flex justify-between">
             <span>Realized</span>
-            <span className={pnlClass(position.pnlPct)}>{formatPct(position.pnlPct)}</span>
+            <span className={`font-semibold ${pnlClass(position.pnlPct)}`}>
+              {formatPct(position.pnlPct)}
+            </span>
           </span>
         </span>
       )}

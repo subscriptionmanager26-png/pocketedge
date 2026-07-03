@@ -10,6 +10,7 @@ import { CURRENT_USER, POSTS } from './data/mockData';
 
 export default function App() {
   const [tab, setTab] = useState('feed');
+  const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
   const [posts, setPosts] = useState(POSTS);
 
@@ -30,15 +31,22 @@ export default function App() {
     setTab('feed');
   };
 
+  const toggleFeedMode = () => {
+    setFeedMode((mode) => (mode === 'forYou' ? 'following' : 'forYou'));
+    setTab('feed');
+  };
+
   return (
     <>
       <Shell
         tab={tab}
+        feedMode={feedMode}
         onTabChange={setTab}
+        onFeedModeToggle={toggleFeedMode}
         onProfile={() => setTab('profile')}
         onCompose={() => setComposeOpen(true)}
       >
-        {tab === 'feed' && <FeedPage posts={posts} />}
+        {tab === 'feed' && <FeedPage posts={posts} feedMode={feedMode} />}
         {tab === 'search' && <SearchPage />}
         {tab === 'portfolio' && <PortfolioPage />}
         {tab === 'markets' && <MarketsPage />}

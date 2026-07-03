@@ -1,9 +1,9 @@
 const PALETTE = [
-  'from-emerald-500/30 to-emerald-700/40',
-  'from-sky-500/30 to-sky-700/40',
-  'from-violet-500/30 to-violet-700/40',
-  'from-amber-500/30 to-amber-700/40',
-  'from-rose-500/30 to-rose-700/40',
+  'from-emerald-500/40 to-emerald-800/50',
+  'from-sky-500/40 to-sky-800/50',
+  'from-violet-500/40 to-violet-800/50',
+  'from-amber-500/40 to-amber-800/50',
+  'from-rose-500/40 to-rose-800/50',
 ];
 
 export default function Avatar({ person, size = 'md', onClick, className = '' }) {
@@ -19,7 +19,7 @@ export default function Avatar({ person, size = 'md', onClick, className = '' })
     <Tag
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-semibold text-white ring-1 ring-white/10 ${sizes[size]} ${PALETTE[idx]} ${onClick ? 'cursor-pointer transition hover:ring-white/30' : ''} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-semibold text-white ring-1 ring-white/15 ${sizes[size]} ${PALETTE[idx]} ${onClick ? 'cursor-pointer transition hover:ring-white/35' : ''} ${className}`}
       aria-label={person?.name}
     >
       {person?.avatar ?? person?.name?.[0] ?? '?'}

@@ -3,23 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --pe-canvas: #000000;
-  --pe-surface: #0a0a0a;
-  --pe-elevated: #111111;
-  --pe-text: #ffffff;
-  --pe-text-secondary: #a0a0a0;
-  --pe-text-muted: #6b7280;
-  --pe-border: #1a1a1a;
+  --pe-canvas: #09090b;
+  --pe-surface: #121214;
+  --pe-elevated: #1a1a1e;
+  --pe-text: #f4f4f5;
+  --pe-text-secondary: #c8c8ce;
+  --pe-text-muted: #9a9aa3;
+  --pe-border: #2c2c32;
+  --pe-border-strong: #3f3f48;
   --pe-accent: #ffffff;
-  --pe-positive: #10b981;
-  --pe-negative: #f43f5e;
-  --pe-warning: #f59e0b;
-  --pe-ticker: #60a5fa;
+  --pe-positive: #34d399;
+  --pe-negative: #fb7185;
+  --pe-warning: #fbbf24;
+  --pe-ticker: #7dd3fc;
+  --pe-sidebar: #0c0c0e;
   color-scheme: dark;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 html,
@@ -32,7 +35,21 @@ body {
   margin: 0;
   background: var(--pe-canvas);
   color: var(--pe-text);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .scrollbar-none {

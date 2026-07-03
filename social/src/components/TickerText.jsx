@@ -10,7 +10,7 @@ export default function TickerText({ text, authorId, className = '' }) {
   const parts = text.split(PARTS_RE);
 
   return (
-    <p className={`whitespace-pre-wrap text-[15px] leading-relaxed text-pe-text ${className}`}>
+    <p className={`whitespace-pre-wrap text-[15px] leading-7 text-pe-text ${className}`}>
       {parts.map((part, i) => {
         if (!part.startsWith('$') || part.length < 3) {
           return <span key={i}>{part}</span>;
@@ -25,7 +25,7 @@ export default function TickerText({ text, authorId, className = '' }) {
             <button
               type="button"
               onClick={() => setActive(isOpen ? null : ticker)}
-              className={`font-medium underline decoration-dotted decoration-2 underline-offset-[5px] transition hover:opacity-90 ${styles.underline}`}
+              className={`font-semibold underline decoration-dotted decoration-2 underline-offset-[6px] transition hover:opacity-90 ${styles.underline}`}
             >
               {part}
             </button>
