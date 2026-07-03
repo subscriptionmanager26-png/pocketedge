@@ -22,13 +22,17 @@ Runs on **http://localhost:5174** (main app uses 5173).
 
 ## Deploy to Vercel
 
-1. In Vercel, create a **new project** linked to the same GitHub repo (`subscriptionmanager26-png/pocketedge`).
-2. Set **Root Directory** to `social`.
-3. Framework preset: **Vite** (build/output are already in `social/vercel.json`).
-4. Add domain **`social.pocketedge.in`** (or `social.pocketedge` if you use that zone).
-5. Copy env vars from the main project as needed (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, etc.) when social features need auth/data.
+**Live:** https://social.pocketedge.in
 
-The main app at repo root continues to deploy from `/` unchanged.
+Vercel project: `social-pocketedge` (root directory `social`, same GitHub repo as main app).
+
+Manual deploy from this directory:
+
+```bash
+npm exec --package=vercel@54.20.0 -- vercel deploy --prod --yes
+```
+
+Pushes to `main` also auto-deploy via the linked GitHub repo.
 
 ## Sharing code with main app
 
