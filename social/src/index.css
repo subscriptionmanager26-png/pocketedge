@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pe-canvas: #000000;
+  --pe-surface: #0a0a0a;
+  --pe-text: #ffffff;
+  --pe-text-secondary: #a0a0a0;
+  --pe-text-muted: #6b7280;
+  --pe-border: #1a1a1a;
+  --pe-accent: #ffffff;
+}
+
+body {
+  margin: 0;
+  background: var(--pe-canvas);
+  color: var(--pe-text);
+}

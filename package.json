@@ -3,8 +3,12 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "workspaces": [
+    "social"
+  ],
   "scripts": {
     "dev": "vite",
+    "dev:social": "npm run dev --workspace=social-pocketedge",
     "build": "vite build",
     "preview": "vite preview",
     "auth:push": "bash scripts/push-auth-config.sh",
