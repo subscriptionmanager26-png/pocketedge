@@ -9,9 +9,11 @@ import {
   SOCIAL_DESIGN_URL,
   SOCIAL_LIVE_URL,
 } from './socialDesignTokens';
+import SocialScenariosSection from './components/socialDesign/SocialScenariosSection';
 
 const SECTIONS = [
   { id: 'intro', label: 'Overview' },
+  { id: 'scenarios', label: 'User scenarios' },
   { id: 'colors', label: 'Colors' },
   { id: 'type', label: 'Typography' },
   { id: 'layout', label: 'Layout' },
@@ -234,6 +236,8 @@ export default function SocialDesignGuidePage() {
               </div>
             </Section>
 
+            <SocialScenariosSection />
+
             <Section id="colors" title="Color tokens" lead="Use pe-* classes everywhere — no ad-hoc hex in components.">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {SOCIAL_COLORS.map((c) => (
@@ -390,10 +394,19 @@ export default function SocialDesignGuidePage() {
                     <a href="/social-design-guide.md" className="font-semibold text-pe-link hover:underline">
                       /social-design-guide.md
                     </a>{' '}
-                    — downloadable guide
+                    — design tokens & patterns
                   </li>
                   <li>
-                    <Code>social/DESIGN.md</Code> — source in the monorepo
+                    <a href="/social-user-scenarios.md" className="font-semibold text-pe-link hover:underline">
+                      /social-user-scenarios.md
+                    </a>{' '}
+                    — user scenarios matrix
+                  </li>
+                  <li>
+                    <Code>social/DESIGN.md</Code> — design rules
+                  </li>
+                  <li>
+                    <Code>social/USER_SCENARIOS.md</Code> — scenario source
                   </li>
                   <li>
                     <Code>.cursor/rules/social-design.mdc</Code> — Cursor agent rule

@@ -3,6 +3,7 @@
 Living reference for the social product at [social.pocketedge.in](https://social.pocketedge.in).
 
 **Visual guide:** [design.pocketedge.in](https://design.pocketedge.in)  
+**User scenarios:** [design.pocketedge.in/#scenarios](https://design.pocketedge.in/#scenarios) · `social/USER_SCENARIOS.md`  
 **Cursor rule:** `.cursor/rules/social-design.mdc`
 
 ---
