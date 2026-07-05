@@ -9,80 +9,192 @@ import { getPerson } from '../data/mockData';
 import { formatCount, formatPct, timeAgo } from '../lib/format';
 import { extractTickers } from '../lib/tickers';
 
-export default function PostCard({ post }) {
+/** Feed cards truncate long bodies; full text + comments only on the open post. */
+const FEED_PREVIEW_CHARS = 200;
+
+function previewBody(body) {
+  const text = body.replace(/\n+/g, ' ').trim();
+  if (text.length <= FEED_PREVIEW_CHARS) {
+    return { text: body, truncated: false };
+  }
+  const slice = text.slice(0, FEED_PREVIEW_CHARS);
+  const cut = slice.lastIndexOf(' ');
+  return {
+    text: `${slice.slice(0, cut > 120 ? cut : FEED_PREVIEW_CHARS).trimEnd()}…`,
+    truncated: true,
+  };
+}
+
+export default function PostCard({
+  post,
+  variant = 'feed',
+  onOpenProfile,
+  onOpenPost,
+}) {
+  const isDetail = variant === 'detail';
   const person = getPerson(post.authorId);
+  const displayBody = isDetail ? post.body : previewBody(post.body).text;
+  const truncated = !isDetail && previewBody(post.body).truncated;
   const tickers = extractTickers(post.body);
   if (post.trade?.ticker && !tickers.includes(post.trade.ticker)) {
     tickers.unshift(post.trade.ticker);
   }
   const [liked, setLiked] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [activeTicker, setActiveTicker] = useState(null);
   const likes = post.likes + (liked ? 1 : 0);
+  const commentCount = post.comments?.length ?? 0;
+
+  const openAuthor = () => onOpenProfile?.(post.authorId);
+  const openPost = () => onOpenPost?.(post.id);
+  const stopBubble = (event) => event.stopPropagation();
 
   return (
-    <article className="px-4 py-5 md:px-6">
-      <div className="flex gap-3.5">
-        <Avatar person={person} />
+    <article className="border-b border-pe-border px-4 py-5 md:py-6">
+      {post.via && (
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.04em] text-pe-accent">
+          {post.via.label}
+          <span className="font-medium normal-case tracking-normal text-pe-text-muted">
+            {' '}
+            · {post.via.reason}
+          </span>
+        </p>
+      )}
+
+      <div className="flex gap-3">
+        <Avatar
+          person={person}
+          onClick={(event) => {
+            event?.stopPropagation?.();
+            openAuthor();
+          }}
+        />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-[15px] font-semibold text-pe-text">{person.name}</span>
-            <span className="text-sm text-pe-text-secondary">@{person.handle}</span>
+          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+            <button
+              type="button"
+              onClick={(event) => {
+                stopBubble(event);
+                openAuthor();
+              }}
+              className="text-[15px] font-semibold leading-5 text-pe-text hover:underline"
+            >
+              {person.name}
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                stopBubble(event);
+                openAuthor();
+              }}
+              className="text-[13px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
+            >
+              @{person.handle}
+            </button>
             <span className="text-pe-text-muted">·</span>
-            <span className="text-sm text-pe-text-muted">{timeAgo(post.createdAt)}</span>
+            <span className="text-[13px] leading-5 text-pe-text-muted">
+              {timeAgo(post.createdAt)}
+            </span>
           </div>
 
-          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-pe-text-secondary">
-            <span className="font-medium text-pe-positive">
+          <div className="mt-0.5 flex flex-wrap gap-x-2 text-[12px] text-pe-text-secondary">
+            <span className="font-semibold text-pe-positive">
               XIRR {formatPct(person.xirr, { signed: false })}
             </span>
-            <span className="text-pe-text-muted">·</span>
+            <span>·</span>
             <span>{formatCount(person.followers)} followers</span>
           </div>
 
-          {post.via && (
-            <p className="mt-2.5 inline-flex max-w-full items-center rounded-md bg-pe-surface px-2 py-1 text-xs text-pe-text-secondary">
-              via <span className="mx-1 font-semibold text-pe-text">{post.via.label}</span>
-              <span className="text-pe-text-muted">· {post.via.reason}</span>
-            </p>
-          )}
-
-          <div className="mt-3">
-            <TickerText text={post.body} authorId={post.authorId} />
+          <div
+            className={`mt-3 ${!isDetail ? 'cursor-pointer' : ''}`}
+            onClick={!isDetail ? openPost : undefined}
+            onKeyDown={
+              !isDetail
+                ? (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openPost();
+                    }
+                  }
+                : undefined
+            }
+            role={!isDetail ? 'button' : undefined}
+            tabIndex={!isDetail ? 0 : undefined}
+          >
+            <TickerText
+              text={displayBody}
+              authorId={post.authorId}
+              activeTicker={activeTicker}
+              onActiveTickerChange={setActiveTicker}
+            />
+            {truncated && (
+              <span className="mt-1 inline-block text-[14px] font-semibold text-pe-link">
+                See more
+              </span>
+            )}
           </div>
 
-          {post.trade && <TradePill trade={post.trade} />}
+          {post.trade && (
+            <div onClick={stopBubble} onKeyDown={stopBubble} role="presentation">
+              <TradePill trade={post.trade} />
+            </div>
+          )}
 
           {post.image && (
-            <div className="mt-3.5 overflow-hidden rounded-2xl border border-pe-border">
+            <button
+              type="button"
+              onClick={(event) => {
+                stopBubble(event);
+                if (!isDetail) openPost();
+              }}
+              className={`mt-3.5 block w-full overflow-hidden rounded-lg text-left ${isDetail ? '' : 'cursor-pointer'}`}
+            >
               <img
                 src={post.image}
                 alt=""
                 className="aspect-[16/10] w-full object-cover"
                 loading="lazy"
               />
-            </div>
+            </button>
           )}
 
           {tickers.length > 0 && (
-            <DisclosureStrip tickers={tickers} authorId={post.authorId} />
+            <div onClick={stopBubble} onKeyDown={stopBubble} role="presentation">
+              <DisclosureStrip
+                tickers={tickers}
+                authorId={post.authorId}
+                activeTicker={activeTicker}
+                onActiveTickerChange={setActiveTicker}
+              />
+            </div>
           )}
 
-          <div className="mt-4 flex items-center gap-6 text-pe-text-secondary">
+          <div
+            className="mt-4 flex items-center gap-6 text-pe-text-secondary"
+            onClick={stopBubble}
+            onKeyDown={stopBubble}
+            role="presentation"
+          >
             <button
               type="button"
               onClick={() => setLiked((v) => !v)}
-              className={`inline-flex items-center gap-1.5 text-sm transition hover:text-pe-negative ${liked ? 'text-pe-negative' : ''}`}
+              className={`inline-flex items-center gap-1.5 text-sm transition hover:text-pe-accent ${liked ? 'text-pe-accent' : ''}`}
             >
               <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
               {formatCount(likes)}
             </button>
             <button
               type="button"
-              onClick={() => setShowComments((v) => !v)}
-              className="inline-flex items-center gap-1.5 text-sm transition hover:text-pe-text"
+              onClick={(event) => {
+                stopBubble(event);
+                if (!isDetail) openPost();
+              }}
+              className={`inline-flex items-center gap-1.5 text-sm transition ${
+                isDetail ? 'text-pe-text' : 'hover:text-pe-text'
+              }`}
+              aria-label={isDetail ? `${commentCount} comments` : 'Open post to view comments'}
             >
               <MessageCircle className="h-4 w-4" />
-              {post.comments.length}
+              {commentCount}
             </button>
             <button
               type="button"
@@ -91,16 +203,23 @@ export default function PostCard({ post }) {
               <Share2 className="h-4 w-4" />
             </button>
           </div>
-
-          {showComments && post.comments.length > 0 && (
-            <div className="mt-4 space-y-1 rounded-xl border border-pe-border bg-pe-surface/70 px-3">
-              {post.comments.map((c) => (
-                <CommentRow key={c.id} comment={c} />
-              ))}
-            </div>
-          )}
         </div>
       </div>
+
+      {isDetail && (
+        <div className="mt-5 border-t border-pe-border pt-1">
+          <p className="py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+            Comments · {commentCount}
+          </p>
+          {commentCount === 0 ? (
+            <p className="pb-4 text-sm text-pe-text-secondary">No comments yet.</p>
+          ) : (
+            post.comments.map((c) => (
+              <CommentRow key={c.id} comment={c} onOpenProfile={onOpenProfile} />
+            ))
+          )}
+        </div>
+      )}
     </article>
   );
 }

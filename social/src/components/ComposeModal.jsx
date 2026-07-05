@@ -15,13 +15,13 @@ export default function ComposeModal({ open, onClose, onPost }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4">
-      <div className="w-full max-w-lg rounded-t-2xl border border-pe-border-strong bg-pe-elevated shadow-card sm:rounded-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-0 sm:items-center sm:p-4">
+      <div className="w-full max-w-lg rounded-t-2xl border border-pe-border bg-pe-canvas sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-pe-border px-4 py-3.5">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-pe-text-secondary hover:bg-white/5 hover:text-pe-text"
+            className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface hover:text-pe-text"
           >
             <X className="h-5 w-5" />
           </button>
@@ -30,7 +30,7 @@ export default function ComposeModal({ open, onClose, onPost }) {
             type="button"
             onClick={submit}
             disabled={!body.trim()}
-            className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-black disabled:opacity-40"
+            className="rounded-md bg-pe-accent px-4 py-1.5 text-sm font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40"
           >
             Post
           </button>
@@ -42,7 +42,7 @@ export default function ComposeModal({ open, onClose, onPost }) {
             onChange={(e) => setBody(e.target.value)}
             placeholder="Share a thesis… use $TICKER for disclosure"
             rows={6}
-            className="w-full resize-none bg-transparent text-[15px] leading-7 text-pe-text outline-none placeholder:text-pe-text-muted"
+            className="w-full resize-none bg-transparent font-serif text-[17px] leading-[1.65] text-pe-ink outline-none placeholder:font-sans placeholder:text-[15px] placeholder:text-pe-text-muted"
           />
           <div className="mt-3 flex items-center justify-between text-sm text-pe-text-secondary">
             <button

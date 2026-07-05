@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Search, TrendingUp, Users } from 'lucide-react';
+import { TrendingUp, Users } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import { PEOPLE, STOCKS, TOPICS } from '../data/mockData';
 import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
 
@@ -15,7 +16,7 @@ const TRENDING_STOCKS = Object.entries(STOCKS)
   .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
   .slice(0, 5);
 
-export default function SearchPage() {
+export default function SearchPage({ onOpenProfile }) {
   const [query, setQuery] = useState('');
   const [resultTab, setResultTab] = useState('people');
   const [followedTopics, setFollowedTopics] = useState(
@@ -47,20 +48,18 @@ export default function SearchPage() {
 
   return (
     <div>
-      <div className="border-b border-pe-border px-4 py-4 md:px-6">
-        <div className="flex items-center gap-2.5 rounded-xl border border-pe-border bg-pe-surface px-3.5 py-3">
-          <Search className="h-4 w-4 shrink-0 text-pe-text-secondary" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="People, topics, stocks"
-            className="w-full bg-transparent text-[15px] text-pe-text outline-none placeholder:text-pe-text-muted"
-          />
-        </div>
-      </div>
+      {/* Primary control: search bar (replaces redundant page title on desktop) */}
+      <PageHeader>
+        <PageHeaderSearch
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search people, topics, stocks"
+          autoFocus
+        />
+      </PageHeader>
 
       {!q ? (
-        <div className="space-y-8 px-4 py-6 md:px-6">
+        <div className="space-y-8 px-4 py-6">
           <section>
             <SectionLabel icon={TrendingUp}>Trending topics</SectionLabel>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -78,14 +77,16 @@ export default function SearchPage() {
                         return next;
                       })
                     }
-                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
+                    className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${
                       followed
-                        ? 'border-white bg-white text-black'
-                        : 'border-pe-border text-pe-text-secondary hover:border-pe-border-strong hover:text-pe-text'
+                        ? 'border-pe-accent bg-pe-accent-wash text-pe-accent'
+                        : 'border-pe-border-strong text-pe-text-secondary hover:border-pe-text-muted hover:text-pe-text'
                     }`}
                   >
                     #{topic.name}
-                    <span className="ml-1.5 text-pe-text-muted">{topic.postsThisWeek}</span>
+                    <span className="ml-1.5 font-medium text-pe-text-muted">
+                      {topic.postsThisWeek}
+                    </span>
                   </button>
                 );
               })}
@@ -94,19 +95,23 @@ export default function SearchPage() {
 
           <section>
             <SectionLabel icon={Users}>Suggested people</SectionLabel>
-            <div className="mt-2 divide-y divide-pe-border">
+            <div className="mt-1 divide-y divide-pe-border">
               {[...PEOPLE]
                 .sort((a, b) => b.xirr - a.xirr)
                 .slice(0, 4)
                 .map((person) => (
-                  <PersonRow key={person.id} person={person} />
+                  <PersonRow
+                    key={person.id}
+                    person={person}
+                    onOpenProfile={onOpenProfile}
+                  />
                 ))}
             </div>
           </section>
 
           <section>
             <SectionLabel>Most discussed this week</SectionLabel>
-            <div className="mt-2 divide-y divide-pe-border">
+            <div className="mt-1 divide-y divide-pe-border">
               {TRENDING_STOCKS.map((stock) => (
                 <StockRow key={stock.ticker} stock={stock} />
               ))}
@@ -121,22 +126,24 @@ export default function SearchPage() {
                 key={t.id}
                 type="button"
                 onClick={() => setResultTab(t.id)}
-                className={`relative flex-1 py-3.5 text-sm font-medium ${
-                  resultTab === t.id ? 'text-pe-text' : 'text-pe-text-secondary hover:text-pe-text'
+                className={`relative flex-1 py-3.5 text-sm font-semibold ${
+                  resultTab === t.id ? 'text-pe-text' : 'text-pe-text-muted hover:text-pe-text'
                 }`}
               >
                 {t.label}
                 {resultTab === t.id && (
-                  <span className="absolute inset-x-8 bottom-0 h-0.5 rounded-full bg-white" />
+                  <span className="absolute inset-x-8 bottom-0 h-0.5 rounded-full bg-pe-accent" />
                 )}
               </button>
             ))}
           </div>
 
-          <div className="px-4 py-1 md:px-6">
+          <div className="px-4 py-1">
             {resultTab === 'people' &&
               (peopleResults.length ? (
-                peopleResults.map((p) => <PersonRow key={p.id} person={p} />)
+                peopleResults.map((p) => (
+                  <PersonRow key={p.id} person={p} onOpenProfile={onOpenProfile} />
+                ))
               ) : (
                 <Empty />
               ))}
@@ -174,28 +181,33 @@ export default function SearchPage() {
 
 function SectionLabel({ children, icon: Icon }) {
   return (
-    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-pe-text-secondary">
+    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
       {Icon && <Icon className="h-3.5 w-3.5" />}
       {children}
     </div>
   );
 }
 
-function PersonRow({ person }) {
+function PersonRow({ person, onOpenProfile }) {
   return (
     <div className="flex items-center gap-3 py-3.5">
-      <Avatar person={person} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold text-pe-text">{person.name}</p>
-        <p className="text-sm text-pe-text-secondary">@{person.handle}</p>
+      <Avatar person={person} onClick={() => onOpenProfile?.(person.id)} />
+      <button
+        type="button"
+        onClick={() => onOpenProfile?.(person.id)}
+        className="min-w-0 flex-1 text-left"
+      >
+        <p className="truncate text-[15px] font-semibold text-pe-text hover:underline">
+          {person.name}
+        </p>
+        <p className="text-sm text-pe-text-muted">@{person.handle}</p>
         <p className="mt-0.5 text-xs text-pe-text-secondary">
-          <span className="font-medium text-pe-positive">
+          <span className="font-semibold text-pe-positive">
             XIRR {formatPct(person.xirr, { signed: false })}
           </span>
-          <span className="text-pe-text-muted"> · </span>
-          {formatCount(person.followers)} followers
+          <span> · {formatCount(person.followers)} followers</span>
         </p>
-      </div>
+      </button>
       <FollowButton />
     </div>
   );
@@ -206,11 +218,11 @@ function StockRow({ stock }) {
     <div className="flex items-center justify-between py-3.5">
       <div>
         <p className="text-[15px] font-semibold text-pe-text">${stock.ticker}</p>
-        <p className="text-sm text-pe-text-secondary">{stock.name}</p>
+        <p className="text-sm text-pe-text-muted">{stock.name}</p>
       </div>
       <div className="text-right">
         <p className="text-[15px] font-semibold text-pe-text">{formatPrice(stock.price)}</p>
-        <p className={`text-sm font-medium ${pnlClass(stock.changePct)}`}>
+        <p className={`text-sm font-semibold ${pnlClass(stock.changePct)}`}>
           {formatPct(stock.changePct)}
         </p>
       </div>
@@ -222,7 +234,7 @@ function FollowButton() {
   return (
     <button
       type="button"
-      className="shrink-0 rounded-full border border-pe-border-strong px-3.5 py-1.5 text-sm font-medium text-pe-text transition hover:bg-white hover:text-black"
+      className="shrink-0 rounded-md bg-pe-accent px-3.5 py-1.5 text-sm font-bold text-white transition hover:bg-pe-accent-pressed"
     >
       Follow
     </button>
@@ -230,7 +242,5 @@ function FollowButton() {
 }
 
 function Empty() {
-  return (
-    <p className="py-14 text-center text-sm text-pe-text-secondary">No results</p>
-  );
+  return <p className="py-14 text-center text-sm text-pe-text-secondary">No results</p>;
 }

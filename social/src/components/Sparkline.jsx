@@ -17,7 +17,7 @@ export default function Sparkline({ data = [], positive = true, className = 'h-8
     <svg viewBox={`0 0 ${w} ${h}`} className={className} aria-hidden>
       <polyline
         fill="none"
-        stroke={positive ? '#34d399' : '#fb7185'}
+        stroke={positive ? '#1a8917' : '#d93025'}
         strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"

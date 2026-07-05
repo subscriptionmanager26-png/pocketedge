@@ -5,14 +5,14 @@ export default function TradePill({ trade }) {
   const isBuy = trade.action === 'buy';
   return (
     <div
-      className={`mt-3.5 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3.5 py-2.5 text-sm ${
+      className={`mt-3.5 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border px-3.5 py-2.5 text-sm ${
         isBuy
-          ? 'border-pe-positive/30 bg-pe-positive/10'
-          : 'border-pe-negative/30 bg-pe-negative/10'
+          ? 'border-pe-positive/20 bg-pe-positive/5'
+          : 'border-pe-negative/20 bg-pe-negative/5'
       }`}
     >
       <span
-        className={`inline-flex items-center gap-1 font-semibold uppercase tracking-wide ${
+        className={`inline-flex items-center gap-1 font-bold uppercase tracking-wide ${
           isBuy ? 'text-pe-positive' : 'text-pe-negative'
         }`}
       >

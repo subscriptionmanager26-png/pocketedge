@@ -5,6 +5,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['"Source Serif 4"', 'Georgia', 'Times New Roman', 'serif'],
       },
       colors: {
         pe: {
@@ -18,17 +19,20 @@ export default {
           border: 'var(--pe-border)',
           'border-strong': 'var(--pe-border-strong)',
           accent: 'var(--pe-accent)',
+          'accent-pressed': 'var(--pe-accent-pressed)',
+          'accent-wash': 'var(--pe-accent-wash)',
+          'accent-border': 'var(--pe-accent-border)',
+          link: 'var(--pe-link)',
           positive: 'var(--pe-positive)',
           negative: 'var(--pe-negative)',
           warning: 'var(--pe-warning)',
           ticker: 'var(--pe-ticker)',
+          ink: 'var(--pe-ink)',
         },
       },
       maxWidth: {
+        // Substack centers the feed column; ~640px reads well beside a 232px nav.
         feed: '40rem',
-      },
-      boxShadow: {
-        card: '0 1px 0 rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.35)',
       },
     },
   },

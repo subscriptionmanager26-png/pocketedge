@@ -13,30 +13,30 @@ export function statusStyles(status) {
     case 'holds':
       return {
         underline: 'decoration-pe-positive text-pe-positive',
-        chip: 'border-pe-positive/35 bg-pe-positive/12 text-pe-positive',
+        chip: 'border-pe-positive/25 bg-pe-positive/8 text-pe-positive',
         label: 'Holds',
         dot: 'bg-pe-positive',
       };
     case 'exited':
       return {
         underline: 'decoration-pe-negative text-pe-negative',
-        chip: 'border-pe-negative/35 bg-pe-negative/12 text-pe-negative',
+        chip: 'border-pe-negative/25 bg-pe-negative/8 text-pe-negative',
         label: 'Exited',
         dot: 'bg-pe-negative',
       };
     case 'watchlist':
       return {
         underline: 'decoration-pe-warning text-pe-warning',
-        chip: 'border-pe-warning/35 bg-pe-warning/12 text-pe-warning',
+        chip: 'border-pe-warning/25 bg-pe-warning/8 text-pe-warning',
         label: 'Watchlist',
         dot: 'bg-pe-warning',
       };
     default:
       return {
-        underline: 'decoration-pe-ticker text-pe-ticker',
-        chip: 'border-pe-ticker/35 bg-pe-ticker/12 text-pe-ticker',
+        underline: 'decoration-pe-link text-pe-link',
+        chip: 'border-pe-link/20 bg-pe-link/8 text-pe-link',
         label: 'No position',
-        dot: 'bg-pe-ticker',
+        dot: 'bg-pe-link',
       };
   }
 }

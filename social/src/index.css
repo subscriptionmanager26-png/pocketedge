@@ -3,21 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --pe-canvas: #09090b;
-  --pe-surface: #121214;
-  --pe-elevated: #1a1a1e;
-  --pe-text: #f4f4f5;
-  --pe-text-secondary: #c8c8ce;
-  --pe-text-muted: #9a9aa3;
-  --pe-border: #2c2c32;
-  --pe-border-strong: #3f3f48;
-  --pe-accent: #ffffff;
-  --pe-positive: #34d399;
-  --pe-negative: #fb7185;
-  --pe-warning: #fbbf24;
-  --pe-ticker: #7dd3fc;
-  --pe-sidebar: #0c0c0e;
-  color-scheme: dark;
+  /* Substack-inspired editorial tokens */
+  --pe-canvas: #ffffff;
+  --pe-surface: #f7f6f4;
+  --pe-elevated: #ffffff;
+  --pe-sidebar: #ffffff;
+  --pe-text: #1a1a1a;
+  --pe-text-secondary: #6b6b6b;
+  --pe-text-muted: #8a8a8a;
+  --pe-border: #ececec;
+  --pe-border-strong: #e7e5e1;
+  --pe-accent: #ff6719;
+  --pe-accent-pressed: #e5560e;
+  --pe-accent-wash: #fff7f2;
+  --pe-accent-border: #ffd9c2;
+  --pe-link: #4a6fe3;
+  --pe-positive: #1a8917;
+  --pe-negative: #d93025;
+  --pe-warning: #c47b0a;
+  --pe-ticker: #4a6fe3;
+  --pe-ink: #1f1f1f;
+  color-scheme: light;
 }
 
 * {
@@ -49,7 +55,11 @@ textarea {
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 103, 25, 0.16);
+}
+
+.font-serif {
+  font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
 }
 
 .scrollbar-none {

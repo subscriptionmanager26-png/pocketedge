@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import PostCard from '../components/PostCard';
 import { FOLLOWING_IDS, POSTS, TOPICS } from '../data/mockData';
 
-export default function FeedPage({ posts, feedMode = 'forYou' }) {
+export default function FeedPage({
+  posts,
+  feedMode = 'forYou',
+  onOpenProfile,
+  onOpenPost,
+}) {
   const followedTopics = useMemo(
     () => new Set(TOPICS.filter((t) => t.followed).map((t) => t.slug)),
     []
@@ -23,7 +28,7 @@ export default function FeedPage({ posts, feedMode = 'forYou' }) {
   if (feedPosts.length === 0) {
     return (
       <div className="px-6 py-20 text-center">
-        <p className="text-base font-medium text-pe-text">Nothing here yet</p>
+        <p className="font-serif text-xl font-bold text-pe-text">Nothing here yet</p>
         <p className="mt-2 text-sm leading-relaxed text-pe-text-secondary">
           Follow people or topics to fill your Following feed.
         </p>
@@ -32,9 +37,15 @@ export default function FeedPage({ posts, feedMode = 'forYou' }) {
   }
 
   return (
-    <div className="divide-y divide-pe-border">
+    <div>
       {feedPosts.map((post) => (
-        <PostCard key={post.id} post={post} />
+        <PostCard
+          key={post.id}
+          post={post}
+          variant="feed"
+          onOpenProfile={onOpenProfile}
+          onOpenPost={onOpenPost}
+        />
       ))}
     </div>
   );
