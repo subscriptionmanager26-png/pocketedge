@@ -493,7 +493,7 @@
   },
   {
     "symbol": "AGGG.L",
-    "name": "iShares Core Global Aggregate Bond UCITS ETF",
+    "name": "iShares Core Global Aggregate Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -943,13 +943,13 @@
   },
   {
     "symbol": "BBM3.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - BetaBuilders US Treasury Bond 0-3 Months UCITS ETF",
+    "name": "BetaBuilders US Treasury Bond 0-3 Months UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "BBRT.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - BetaBuilders US Treasury Bond UCITS ETF",
+    "name": "BetaBuilders US Treasury Bond UCITS ETF Accum USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -1621,7 +1621,7 @@
   },
   {
     "symbol": "CESG.L",
-    "name": "First Trust Global Capital Strength ESG Leaders UCITS ETF",
+    "name": "First Trust Global Capital Strength ESG Leaders UCITS ETF Accum A USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -1663,7 +1663,7 @@
   },
   {
     "symbol": "CG1.L",
-    "name": "Amundi ETF DAX UCITS ETF DR",
+    "name": "Amundi ETF DAX UCITS ETF (DR) FCP",
     "exchange": "LSE",
     "domicile": "FR"
   },
@@ -1687,7 +1687,7 @@
   },
   {
     "symbol": "CHIN.L",
-    "name": "KraneShares ICBCUBS S&amp;P China 500 UCITS ETF",
+    "name": "KraneShares ICBCCS S&amp;P China 500 Index UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -1789,7 +1789,7 @@
   },
   {
     "symbol": "CJPU.L",
-    "name": "iShares MSCI Japan UCITS ETF",
+    "name": "iShares - iShares MSCI Japan ETF USD Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -1807,7 +1807,7 @@
   },
   {
     "symbol": "CLMP.L",
-    "name": "Guinness Sustainable Energy UCITS ETF \u2013 Acc",
+    "name": "Guinness Sustainable Energy UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -1921,7 +1921,7 @@
   },
   {
     "symbol": "CNDX.L",
-    "name": "iShares NASDAQ 100 UCITS ETF",
+    "name": "iShares NASDAQ 100 UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -1975,7 +1975,7 @@
   },
   {
     "symbol": "CNYB.L",
-    "name": "iShares China CNY Bond UCITS ETF",
+    "name": "iShares China CNY Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -2053,7 +2053,7 @@
   },
   {
     "symbol": "CP9G.L",
-    "name": "Amundi MSCI Pacific Ex Japan SRI Climate Paris Aligned UCITS ETF DR - USD (C)",
+    "name": "Amundi MSCI Pacific Ex Japan SRI Climate Paris Aligned - UCITS ETF DR - USD (C)",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -2617,7 +2617,7 @@
   },
   {
     "symbol": "DES2.L",
-    "name": "L&amp;G DAX Daily 2x Short UCITS ETF",
+    "name": "L&amp;G DAX Daily 2x Short UCITS ETF EUR",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -2671,7 +2671,7 @@
   },
   {
     "symbol": "DGRA.L",
-    "name": "WisdomTree US Quality Dividend Growth UCITS ETF - USD Acc",
+    "name": "WisdomTree US Quality Dividend Growth UCITS ETF USD Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -2683,7 +2683,7 @@
   },
   {
     "symbol": "DGRG.L",
-    "name": "WisdomTree US Quality Dividend Growth UCITS ETF - USD Acc",
+    "name": "WisdomTree US Quality Dividend Growth UCITS ETF USD Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -2833,7 +2833,7 @@
   },
   {
     "symbol": "DMAD.L",
-    "name": "Global X - Disruptive Materials UCITS ETF",
+    "name": "Global X Disruptive Materials Ucits ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -2977,7 +2977,7 @@
   },
   {
     "symbol": "DXJ.L",
-    "name": "WisdomTree Japan Equity UCITS ETF - USD Hedged",
+    "name": "WisdomTree Japan Equity UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3241,7 +3241,7 @@
   },
   {
     "symbol": "EEDM.L",
-    "name": "iShares MSCI EM CTB Enhanced ESG UCITS ETF",
+    "name": "iShares MSCI EM CTB Enhanced ESG UCITS ETF USD Inc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3373,7 +3373,7 @@
   },
   {
     "symbol": "EGRG.L",
-    "name": "WisdomTree Eurozone Quality Dividend Growth UCITS ETF - EUR Acc",
+    "name": "WisdomTree Eurozone Quality Dividend Growth UCITS ETF EUR Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3451,7 +3451,7 @@
   },
   {
     "symbol": "EHYG.L",
-    "name": "iShares \u20ac High Yield Corp Bond ESG SRI UCITS ETF",
+    "name": "iShares \u20ac High Yield Corp Bond ESG SRI UCITS ETF GBP Hedged (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3649,7 +3649,7 @@
   },
   {
     "symbol": "EMAD.L",
-    "name": "State Street SPDR MSCI EM Asia UCITS ETF",
+    "name": "State Street SPDR MSCI EM Asia UCITS ETF Accum USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3661,7 +3661,7 @@
   },
   {
     "symbol": "EMAS.L",
-    "name": "State Street SPDR MSCI EM Asia UCITS ETF",
+    "name": "State Street SPDR MSCI EM Asia UCITS ETF Accum USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3847,7 +3847,7 @@
   },
   {
     "symbol": "EMLI.L",
-    "name": "PIMCO Advantage Emerging Markets Local Bond UCITS ETF",
+    "name": "PIMCO Advantage Emerging Markets Local Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -3889,7 +3889,7 @@
   },
   {
     "symbol": "EMQP.L",
-    "name": "EMQQ Emerging Markets Internet UCITS ETF \u2013 Acc",
+    "name": "EMQQ Emerging Markets Internet UCITS ETF - Accumulating",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4015,7 +4015,7 @@
   },
   {
     "symbol": "ENCO.L",
-    "name": "L&amp;G Multi-Strategy Enhanced Commodities UCITS ETF",
+    "name": "Legal &amp; General UCITS ETF Plc - Mlt Strgy Enhnc Comm UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4069,7 +4069,7 @@
   },
   {
     "symbol": "EQGB.L",
-    "name": "Invesco EQQQ Nasdaq-100 UCITS ETF",
+    "name": "Invesco EQQQ Nasdaq-100 UCITS ETF GBP Hdg Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4159,7 +4159,7 @@
   },
   {
     "symbol": "ERNU.L",
-    "name": "iShares $ Ultrashort Bond UCITS ETF",
+    "name": "iShares USD Ultrashort Bond UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4255,7 +4255,7 @@
   },
   {
     "symbol": "ESGJ.L",
-    "name": "Invesco MSCI Japan Universal Screened UCITS ETF",
+    "name": "Invesco MSCI Japan Universal Screened UCITS ETF Accum Shs USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4315,7 +4315,7 @@
   },
   {
     "symbol": "ESIE.L",
-    "name": "iShares MSCI Europe Energy Sector UCITS ETF",
+    "name": "iShares MSCI Europe SRI UCITS ETF EUR (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4369,7 +4369,7 @@
   },
   {
     "symbol": "ESJS.L",
-    "name": "Invesco MSCI Japan Universal Screened UCITS ETF",
+    "name": "Invesco MSCI Japan Universal Screened UCITS ETF Accum Shs USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -4945,7 +4945,7 @@
   },
   {
     "symbol": "FEMI.L",
-    "name": "Fidelity Emerging Markets Quality Income UCITS ETF ACC-USD",
+    "name": "Fidelity Emerging Markets Limited",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5017,7 +5017,7 @@
   },
   {
     "symbol": "FEUR.L",
-    "name": "Fidelity Europe Equity Research Enhanced UCITS ETF ACC-EUR",
+    "name": "Fidelity Europe Equity Research Enhanced UCITS ETF Accum Shs EUR",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5059,7 +5059,7 @@
   },
   {
     "symbol": "FGLS.L",
-    "name": "Fidelity Global Equity Research Enhanced UCITS ETF ACC-USD",
+    "name": "Fidelity Global Equity Research Enhanced UCITS ETF Accum Shs USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5107,7 +5107,7 @@
   },
   {
     "symbol": "FJPS.L",
-    "name": "Fidelity Japan Equity Research Enhanced UCITS ETF ACC-JPY",
+    "name": "Fidelity Japan Equity Research Enhanced UCITS ETF Accum Shs JPY",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5485,7 +5485,7 @@
   },
   {
     "symbol": "FTCS.L",
-    "name": "First Trust Capital Strength UCITS ETF",
+    "name": "First Trust Capital Strength UCITS ETF Accum A USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5575,7 +5575,7 @@
   },
   {
     "symbol": "FVUB.L",
-    "name": "Franklin FTSE Brazil UCITS ETF",
+    "name": "Franklin FTSE Brazil UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5689,7 +5689,7 @@
   },
   {
     "symbol": "GCLX.L",
-    "name": "Invesco Global Clean Energy UCITS ETF",
+    "name": "Invesco Global Clean Energy UCITS ETF AccumUSD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5707,7 +5707,7 @@
   },
   {
     "symbol": "GCVG.L",
-    "name": "State Street SPDR FTSE Global Convertible Bond GBP Hdg UCITS ETF (Dist)",
+    "name": "State Street SPDR FTSE Global Convertible Bond GBP Hdg UCITS ETF (Inc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5941,7 +5941,7 @@
   },
   {
     "symbol": "GLAG.L",
-    "name": "State Street SPDR Bloomberg Global Aggregate Bond UCITS ETF (Dist)",
+    "name": "State Street SPDR Bloomberg Global Aggregate Bond UCITS ETF USD unhedged",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -5965,7 +5965,7 @@
   },
   {
     "symbol": "GLDV.L",
-    "name": "State Street SPDR S&amp;P Global Dividend Aristocrats UCITS ETF (Dist)",
+    "name": "State Street SPDR S&amp;P Global Dividend Aristocrats UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6055,7 +6055,7 @@
   },
   {
     "symbol": "GOLB.L",
-    "name": "Market Access NYSE Arca Gold BUGS Index UCITS ETF",
+    "name": "Market Access NYSE Arca Gold Bugs Index UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -6085,7 +6085,7 @@
   },
   {
     "symbol": "GOVP.L",
-    "name": "iShares $ Treasury Bond UCITS ETF",
+    "name": "iShares plc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6117,6 +6117,12 @@
     "symbol": "GQWD",
     "name": "Goldman Sachs Alpha Enhanced World Equity Active UCITS ETF",
     "exchange": "Munich",
+    "domicile": "IE"
+  },
+  {
+    "symbol": "GRDU.L",
+    "name": "First Trust NASDAQ Clean Edge Smart Grid Infrastructure Index Fund",
+    "exchange": "LSE",
     "domicile": "IE"
   },
   {
@@ -6301,7 +6307,7 @@
   },
   {
     "symbol": "HEDS.L",
-    "name": "WisdomTree Europe Equity UCITS ETF - USD Hedged Acc",
+    "name": "WisdomTree Europe Equity UCITS ETF USD Hedged Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6451,7 +6457,7 @@
   },
   {
     "symbol": "HMJP.L",
-    "name": "HSBC MSCI Japan UCITS ETF",
+    "name": "HSBC MSCI JAPAN UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6613,7 +6619,7 @@
   },
   {
     "symbol": "HSPD.L",
-    "name": "HSBC S&amp;P 500 UCITS ETF",
+    "name": "HSBC S&amp;P 500 UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6775,7 +6781,7 @@
   },
   {
     "symbol": "HYGB.L",
-    "name": "VanEck Emerging Markets High Yield Bond UCITS ETF",
+    "name": "VanEck UCITS ETFs Plc - Emerging Mkts. High Yld. Bd.",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6811,7 +6817,7 @@
   },
   {
     "symbol": "HYLD.L",
-    "name": "iShares Global High Yield Corp Bond UCITS ETF",
+    "name": "iShares Global High Yield Corp Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -6979,7 +6985,7 @@
   },
   {
     "symbol": "IBGS.L",
-    "name": "iShares \u20ac Govt Bond 1-3yr UCITS ETF",
+    "name": "iShares \u20ac Govt Bond 1-3yr UCITS ETF EUR (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7177,7 +7183,7 @@
   },
   {
     "symbol": "IDTM.L",
-    "name": "iShares $ Treasury Bond 7-10yr UCITS ETF",
+    "name": "iShares $ Treasury Bond 7-10yr UCITS ETF USD (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7267,7 +7273,7 @@
   },
   {
     "symbol": "IECH.SW",
-    "name": "iShares Core \u20ac Corp Bond UCITS ETF",
+    "name": "iShares Core \u20ac Corp Bond UCITS ETF CHF Hedged (Acc)",
     "exchange": "SIX",
     "domicile": "IE"
   },
@@ -7381,7 +7387,7 @@
   },
   {
     "symbol": "IEUC.SW",
-    "name": "iShares Core MSCI Europe UCITS ETF",
+    "name": "iShares Core MSCI Europe UCITS ETF CHF Hedged (Acc)",
     "exchange": "SIX",
     "domicile": "IE"
   },
@@ -7423,7 +7429,7 @@
   },
   {
     "symbol": "IFSD.L",
-    "name": "iShares STOXX Europe Equity Multifactor UCITS ETF",
+    "name": "iShares Edge MSCI Europe Multifactor UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7567,7 +7573,7 @@
   },
   {
     "symbol": "IGSU.L",
-    "name": "iShares Dow Jones Global Leaders Screened UCITS ETF",
+    "name": "iShares Dow Jones Global Leaders Screened UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7603,7 +7609,7 @@
   },
   {
     "symbol": "IHHG.L",
-    "name": "iShares $ High Yield Corp Bond UCITS ETF",
+    "name": "iShares $ High Yield Corp Bond UCITS ETF GBP Hedged (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7615,7 +7621,7 @@
   },
   {
     "symbol": "IHYE.L",
-    "name": "iShares $ High Yield Corp Bond UCITS ETF",
+    "name": "iShares $ High Yield Corp Bond UCITS ETF EUR Hedged (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7711,7 +7717,7 @@
   },
   {
     "symbol": "IMBA.L",
-    "name": "iShares US Mortgage Backed Securities UCITS ETF",
+    "name": "iShares US Mortgage Backed Securities UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7807,7 +7813,7 @@
   },
   {
     "symbol": "INFR.L",
-    "name": "iShares Global Infrastructure UCITS ETF",
+    "name": "iShares Global Infrastructure UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7885,7 +7891,7 @@
   },
   {
     "symbol": "IPXJ.L",
-    "name": "iShares MSCI Pacific ex-Japan UCITS ETF",
+    "name": "iShares MSCI Pacific ex-Japan UCITS ETF (Dist) USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -7915,7 +7921,7 @@
   },
   {
     "symbol": "IRSA.L",
-    "name": "iShares MSCI South Africa UCITS ETF",
+    "name": "iShares MSCI South Africa UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -8137,13 +8143,13 @@
   },
   {
     "symbol": "ISX5.L",
-    "name": "iShares Core EURO STOXX 50 UCITS ETF",
+    "name": "iShares - iShares Core EURO STOXX 50 ETF EUR Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "ISXF.L",
-    "name": "iShares \u00a3 Corp Bond ex-Financials UCITS ETF",
+    "name": "iShares GBP Corp Bond ex-Financials UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -8185,7 +8191,7 @@
   },
   {
     "symbol": "ITPS.L",
-    "name": "iShares $ TIPS UCITS ETF",
+    "name": "iShares USD TIPS UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -8197,7 +8203,7 @@
   },
   {
     "symbol": "IU0C.SW",
-    "name": "iShares $ Corp Bond 0-3Yr ESG SRI UCITS ETF",
+    "name": "iShares $ Corp Bond 0-3yr ESG SRI UCITS ETF CHF Hedged Acc",
     "exchange": "SIX",
     "domicile": "IE"
   },
@@ -8527,7 +8533,7 @@
   },
   {
     "symbol": "IWMO.L",
-    "name": "iShares Edge MSCI World Momentum Factor UCITS ETF",
+    "name": "iShares Edge MSCI World Momentum Factor UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -8785,7 +8791,7 @@
   },
   {
     "symbol": "JHYU.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - Global High Yield Corporate Bond Multi-Factor Active UCITS ETF",
+    "name": "JPMorgan ETFs (IE) ICAV - Glb. High Yd. Corp. Bond Multi-Fac.",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -8905,7 +8911,7 @@
   },
   {
     "symbol": "JPLG.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - Global Equity Multi-Factor UCITS ETF",
+    "name": "JPM Global Equity Multi-Factor UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -8953,7 +8959,7 @@
   },
   {
     "symbol": "JPST.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - USD Ultra-Short Income Active UCITS ETF",
+    "name": "JPM USD Ultra-Short Income Active UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9013,7 +9019,7 @@
   },
   {
     "symbol": "JRDM.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - Global Emerging Markets Research Enhanced Index Equity Active UCITS ETF",
+    "name": "JPMorgan ETFs (IE) ICAV - Glb. EM REI Eq. Ind. Active",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9037,13 +9043,13 @@
   },
   {
     "symbol": "JREE.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - Europe Research Enhanced Index Equity Active UCITS ETF",
+    "name": "JPMorgan ETFs (Ireland) ICAV - UK Research Enhanced Index Equity (ESG) UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "JREG.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - Global Research Enhanced Index Equity Active UCITS ETF",
+    "name": "JPMorgan ETFs IE ICAV - Global REI Equity Active UCITS",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9073,7 +9079,7 @@
   },
   {
     "symbol": "JREU.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - US Research Enhanced Index Equity Active UCITS ETF",
+    "name": "US Research Enhanced Index Equity Active UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9109,7 +9115,7 @@
   },
   {
     "symbol": "JRUD.L",
-    "name": "JPMorgan ETFs (Ireland) ICAV - US Research Enhanced Index Equity Active UCITS ETF",
+    "name": "JPMorgan ETFs (Ireland) ICAV - US Research Enhanced Index Equity Active UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9295,7 +9301,7 @@
   },
   {
     "symbol": "LCJG.L",
-    "name": "Amundi Core MSCI Japan UCITS ETF GBP Hedged Acc",
+    "name": "Multi Units Luxembourg SICAV - Amundi Core MSCI Japan UCITS ETF GBP Hedged Acc C",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -9493,7 +9499,7 @@
   },
   {
     "symbol": "LIFE.L",
-    "name": "Rize Environmental Impact 100 UCITS ETF",
+    "name": "Rize Environmental Impact 100 UCITS ETF AccumUSD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9523,7 +9529,7 @@
   },
   {
     "symbol": "LQDA.L",
-    "name": "iShares $ Corp Bond UCITS ETF",
+    "name": "iShares USD Corp Bond UCITS ETF Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9559,7 +9565,7 @@
   },
   {
     "symbol": "LQGH.L",
-    "name": "iShares $ Corp Bond UCITS ETF",
+    "name": "iShares $ Corp Bond UCITS ETF GBP Hedged (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9577,7 +9583,7 @@
   },
   {
     "symbol": "LTAM.L",
-    "name": "iShares MSCI EM Latin America UCITS ETF",
+    "name": "iShares MSCI EM Latin America UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9667,7 +9673,7 @@
   },
   {
     "symbol": "M9SV.L",
-    "name": "Market Access Stoxx China A Minimum Variance Index UCITS ETF",
+    "name": "Market Access STOXX China A Minimum Variance Index UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -9739,7 +9745,7 @@
   },
   {
     "symbol": "MCHS.L",
-    "name": "Invesco MSCI China All Shares Stock Connect UCITS ETF",
+    "name": "Invesco MSCI China All Shares Connect UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -9948,6 +9954,12 @@
     "domicile": "IE"
   },
   {
+    "symbol": "MOTU.L",
+    "name": "VanEck Morningstar Wide Moat ETF",
+    "exchange": "LSE",
+    "domicile": "IE"
+  },
+  {
     "symbol": "MPAB",
     "name": "iShares MSCI EMU Paris-Aligned Climate UCITS ETF EUR (Dist)",
     "exchange": "Euronext",
@@ -10051,7 +10063,7 @@
   },
   {
     "symbol": "MUNS.L",
-    "name": "Invesco US Municipal Bond UCITS ETF",
+    "name": "Invesco US Municipal Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -10111,13 +10123,13 @@
   },
   {
     "symbol": "MVEW.L",
-    "name": "iShares Edge MSCI World Minimum Volatility Advanced UCITS ETF",
+    "name": "iShares Edge MSCI World Minimum Volatility Advanced UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "MVOL.L",
-    "name": "iShares Edge MSCI World Minimum Volatility UCITS ETF",
+    "name": "iShares Edge MSCI World Minimum Volatility UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -10249,7 +10261,7 @@
   },
   {
     "symbol": "NASL.L",
-    "name": "Amundi Core Nasdaq-100 Swap UCITS ETF Acc",
+    "name": "Multi Units Lu - Amundi Core Nasdaq-100 Swap",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -10285,7 +10297,7 @@
   },
   {
     "symbol": "NRJC.L",
-    "name": "Amundi MSCI New Energy UCITS ETF Acc",
+    "name": "Multi Units France - Amundi MSCI New Energy ESG Screened UCITS",
     "exchange": "LSE",
     "domicile": "FR"
   },
@@ -10465,7 +10477,7 @@
   },
   {
     "symbol": "PAVG.L",
-    "name": "Global X - U.S. Infrastructure Development UCITS ETF",
+    "name": "Global X U.S. Infrastructure Development UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -10483,7 +10495,7 @@
   },
   {
     "symbol": "PCOM.L",
-    "name": "WisdomTree Broad Commodities UCITS ETF - USD Acc",
+    "name": "WisdomTree Broad Commodities UCITS ETF AccumUSD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -10699,7 +10711,7 @@
   },
   {
     "symbol": "PSRF.L",
-    "name": "Invesco FTSE RAFI US 1000 UCITS ETF",
+    "name": "Invesco RAFI US Fundamental Value UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -10891,7 +10903,7 @@
   },
   {
     "symbol": "QYLD.L",
-    "name": "Global X - Nasdaq 100 Covered Call UCITS ETF",
+    "name": "Global X Nasdaq 100 Covered Call UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11011,19 +11023,19 @@
   },
   {
     "symbol": "RIOU.L",
-    "name": "Amundi MSCI Brazil UCITS ETF Acc",
+    "name": "Amundi MSCI Brazil ETF Acc- Capitalisation",
     "exchange": "LSE",
     "domicile": "LU"
   },
   {
     "symbol": "RISE.L",
-    "name": "iShares Fallen Angels High Yield Corp Bond UCITS ETF",
+    "name": "iShares Fallen Angels High Yield Corp Bond UCITS ETF USD (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "RIUG.L",
-    "name": "L&amp;G US ESG Paris Aligned UCITS ETF",
+    "name": "L&amp;G US ESG Paris Aligned UCITS ETF Accum USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11167,7 +11179,7 @@
   },
   {
     "symbol": "S5SD.L",
-    "name": "UBS (Irl) ETF Public Limited Company - S&amp;P 500 ESG UCITS ETF",
+    "name": "UBS S&amp;P 500 Scored &amp; Screened UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11227,13 +11239,13 @@
   },
   {
     "symbol": "SAEM.L",
-    "name": "iShares MSCI EM IMI Screened UCITS ETF",
+    "name": "iShares MSCI EM IMI Screened UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "SAEU.L",
-    "name": "iShares MSCI Europe Screened UCITS ETF",
+    "name": "iShares MSCI Europe Screened UCITS ETF EUR (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11245,7 +11257,7 @@
   },
   {
     "symbol": "SAJP.L",
-    "name": "iShares MSCI Japan Screened UCITS ETF",
+    "name": "iShares - iShares MSCI Japan Screened UCITS ETF AccumUnhedged USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11365,7 +11377,7 @@
   },
   {
     "symbol": "SDHG.L",
-    "name": "iShares $ Short Duration High Yield Corp Bond UCITS ETF",
+    "name": "iShares USD Short Duration High Yield Corp Bond UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11389,7 +11401,7 @@
   },
   {
     "symbol": "SDIP.L",
-    "name": "Global X - SuperDividend UCITS ETF",
+    "name": "Global X Superdividend UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11425,7 +11437,7 @@
   },
   {
     "symbol": "SE15.L",
-    "name": "iShares \u20ac Corp Bond 1-5yr UCITS ETF",
+    "name": "iShares \u20ac Corp Bond 1-5yr UCITS ETF EUR (Dist)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11497,13 +11509,13 @@
   },
   {
     "symbol": "SEMH.L",
-    "name": "State Street SPDR ICE BofA 0-5 Year EM USD Government Bond UCITS ETF (Dist)",
+    "name": "SSgA SPDR ETFs EUROPE II PLC - State Street SPDR ICE BofA 0-5 Year EM USD Government Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "SEMI.AS",
-    "name": "iShares MSCI Global Semiconductors UCITS ETF",
+    "name": "iShares MSCI Global Semiconductors UCITS ETF USD Acc",
     "exchange": "AMS",
     "domicile": "IE"
   },
@@ -11689,7 +11701,7 @@
   },
   {
     "symbol": "SMBS.L",
-    "name": "iShares US Mortgage Backed Securities UCITS ETF",
+    "name": "iShares US Mortgage Backed Securities UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11833,7 +11845,7 @@
   },
   {
     "symbol": "SPES.L",
-    "name": "Invesco S&amp;P 500 Equal Weight UCITS ETF",
+    "name": "Invesco S&amp;P 500 Equal Weight Index ETF Inc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11887,7 +11899,7 @@
   },
   {
     "symbol": "SPGP.L",
-    "name": "iShares Gold Producers UCITS ETF",
+    "name": "iShares Gold Producers UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11917,7 +11929,7 @@
   },
   {
     "symbol": "SPOG.L",
-    "name": "iShares Oil &amp; Gas Exploration &amp; Production UCITS ETF",
+    "name": "iShares Oil &amp; Gas Exploration &amp; Production UCITS ETF USD (Acc)",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -11989,7 +12001,7 @@
   },
   {
     "symbol": "SPX5.L",
-    "name": "State Street SPDR S&amp;P 500 UCITS ETF (Dist)",
+    "name": "State Street SPDR S&amp;P 500 UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12037,7 +12049,7 @@
   },
   {
     "symbol": "SPY5.L",
-    "name": "State Street SPDR S&amp;P 500 UCITS ETF (Dist)",
+    "name": "State Street SPDR S&amp;P 500 UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12121,7 +12133,7 @@
   },
   {
     "symbol": "SRUG.L",
-    "name": "UBS MSCI USA Socially Responsible UCITS ETF hGBP dis",
+    "name": "UBS MSCI USA Socially Responsible UCITS ETF Hedged GBP",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12163,13 +12175,13 @@
   },
   {
     "symbol": "STHS.L",
-    "name": "PIMCO US Short-Term High Yield Corporate Bond UCITS ETF",
+    "name": "PIMCO US Short-Term High Yield Corporate Bond UCITS ETF Hedged GBP",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "STHY.L",
-    "name": "PIMCO US Short-Term High Yield Corporate Bond UCITS ETF",
+    "name": "PIMCO US Short-Term High Yield Corporate Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12265,7 +12277,7 @@
   },
   {
     "symbol": "SUOG.L",
-    "name": "iShares \u20ac Corp Bond ESG SRI UCITS ETF",
+    "name": "iShares - iShares Euro Corp Bond ESG SRI UCITS ETF Hedged GBP",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12409,7 +12421,7 @@
   },
   {
     "symbol": "SXLV.L",
-    "name": "State Street SPDR S&amp;P U.S. Health Care Select Sector UCITS ETF (Acc)",
+    "name": "State Street SPDR S&amp;P U.S. Health Care Select Sector UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12577,7 +12589,7 @@
   },
   {
     "symbol": "TAHY.L",
-    "name": "Tabula Haitong Asia ex-Japan High Yield Corp USD Bond ESG UCITS ETF",
+    "name": "Janus Henderson Haitong Asia ex-Japan High Yield Corp USD Bond Screened Core UCITS ETF Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12925,7 +12937,7 @@
   },
   {
     "symbol": "TSY3.L",
-    "name": "State Street SPDR Bloomberg 1-3 Year U.S. Treasury Bond UCITS ETF (Dist)",
+    "name": "SSgA SPDR ETFs Europe I Plc - Blmb. 1-3 Yr. US Trea. ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -12997,7 +13009,7 @@
   },
   {
     "symbol": "UB02.L",
-    "name": "UBS Core MSCI Japan UCITS ETF JPY dis",
+    "name": "UBS Core MSCI Japan UCITS ETF JPY dis Distribution",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -13429,7 +13441,7 @@
   },
   {
     "symbol": "UHYC.L",
-    "name": "Amundi USD High Yield Corporate Bond ESG UCITS ETF Acc",
+    "name": "Lyxor Index Fund - ESG USD High Yield DR UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -13579,7 +13591,7 @@
   },
   {
     "symbol": "URND.L",
-    "name": "Global X - Uranium UCITS ETF",
+    "name": "Global X Uranium UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -13675,13 +13687,13 @@
   },
   {
     "symbol": "USDG.L",
-    "name": "L&amp;G USD Corporate Bond Screened UCITS ETF",
+    "name": "L&amp;G USD Corporate Bond Screened UCITS ETF USD Distributing",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "USDV.L",
-    "name": "State Street SPDR S&amp;P U.S. Dividend Aristocrats UCITS ETF (Dist)",
+    "name": "State Street SPDR S&amp;P US Dividend Aristocrats UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -13699,7 +13711,7 @@
   },
   {
     "symbol": "USHY.L",
-    "name": "Amundi USD High Yield Corporate Bond ESG UCITS ETF Dist",
+    "name": "Amundi USD High Yield Corporate Bond ESG Dist- Distribution",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -13789,7 +13801,7 @@
   },
   {
     "symbol": "UVAL.L",
-    "name": "State Street SPDR MSCI USA Value UCITS ETF",
+    "name": "State Street SPDR MSCI USA Value UCITS ETF USD Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -13975,7 +13987,7 @@
   },
   {
     "symbol": "VCPA.L",
-    "name": "Vanguard USD Corporate Bond UCITS ETF (USD) Accumulating",
+    "name": "Vanguard USD Corporate Bond UCITS ETF USD Accumulation",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14047,7 +14059,7 @@
   },
   {
     "symbol": "VDST.L",
-    "name": "Vanguard U.S. Treasury 0-1 Year Bond UCITS ETF (USD) Accumulating",
+    "name": "Vanguard U.S. Treasury 0-1 Year Bond UCITS ETF USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14131,13 +14143,13 @@
   },
   {
     "symbol": "VERE.L",
-    "name": "Vanguard FTSE Developed Europe ex UK UCITS ETF (EUR) Accumulating",
+    "name": "Vanguard FTSE Developed Europe ex UK UCITS ETF AccumEUR",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "VERG.L",
-    "name": "FTSE Developed Europe ex UK UCITS ETF",
+    "name": "Vanguard FTSE Developed Europe ex UK UCITS ETF Accuimulation",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14209,7 +14221,7 @@
   },
   {
     "symbol": "VFEG.L",
-    "name": "FTSE Emerging Markets UCITS ETF",
+    "name": "Vanguard FTSE Emerging Markets UCITS ETF AccumUSD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14251,19 +14263,19 @@
   },
   {
     "symbol": "VGVA.L",
-    "name": "Vanguard U.K. Gilt UCITS ETF (GBP) Accumulating",
+    "name": "Vanguard U.K. Gilt UCITS ETF GBP Accumulation",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "VHVE.L",
-    "name": "Vanguard FTSE Developed World UCITS ETF (USD) Accumulating",
+    "name": "Vanguard FTSE Developed World UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "VHVG.L",
-    "name": "Vanguard FTSE Developed World UCITS ETF (USD) Accumulating",
+    "name": "Vanguard FTSE Developed World UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14275,7 +14287,7 @@
   },
   {
     "symbol": "VHYD.L",
-    "name": "Vanguard FTSE All-World High Dividend Yield UCITS ETF (USD) Distributing",
+    "name": "Vanguard FTSE All-World High Dividend Yield UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14323,7 +14335,7 @@
   },
   {
     "symbol": "VJPB.L",
-    "name": "Vanguard FTSE Japan UCITS ETF (USD) Accumulating",
+    "name": "Vanguard FTSE Japan UCITS ETF Accum Shs USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14347,7 +14359,7 @@
   },
   {
     "symbol": "VJPU.L",
-    "name": "Vanguard FTSE Japan UCITS ETF USD Hedged Accumulating",
+    "name": "Vanguard Funds PLC - Vanguard FTSE Japan UCITS ETF AccumHedged USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14461,13 +14473,13 @@
   },
   {
     "symbol": "VUKE.L",
-    "name": "Vanguard FTSE 100 UCITS ETF (GBP) Distributing",
+    "name": "Vanguard FTSE 100 UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "VUKG.L",
-    "name": "Vanguard FTSE 100 UCITS ETF (GBP) Accumulating",
+    "name": "Vanguard FTSE 100 UCITS ETF GBP Accumulation",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14611,7 +14623,7 @@
   },
   {
     "symbol": "WCLD.L",
-    "name": "WisdomTree Cloud Computing UCITS ETF - USD Acc",
+    "name": "WisdomTree Cloud Computing UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14629,7 +14641,7 @@
   },
   {
     "symbol": "WCOD.L",
-    "name": "State Street SPDR MSCI World Consumer Discretionary UCITS ETF",
+    "name": "State Street SPDR MSCI World Consumer Discretionary UCITS ETF USD Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -14713,8 +14725,8 @@
   },
   {
     "symbol": "WELD",
-    "name": "Amundi S&amp;P World Utilities Screened UCITS ETF Acc",
-    "exchange": "XDUS",
+    "name": "Tema U.S. Manufacturing &amp; Reshoring ETF",
+    "exchange": "AMEX",
     "domicile": "IE"
   },
   {
@@ -15085,7 +15097,7 @@
   },
   {
     "symbol": "WTEC.L",
-    "name": "State Street SPDR MSCI World Technology UCITS ETF",
+    "name": "State Street SPDR MSCI World Technology UCITS ETF USD Acc",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -15109,7 +15121,7 @@
   },
   {
     "symbol": "WUTI.L",
-    "name": "State Street SPDR MSCI World Utilities UCITS ETF",
+    "name": "State Street SPDR MSCI World Utilities UCITS ETF Accum Ptg USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -15205,7 +15217,7 @@
   },
   {
     "symbol": "XASX.L",
-    "name": "Xtrackers MSCI UK ESG UCITS ETF 1D",
+    "name": "Xtrackers MSCI UK ESG UCITS ETF (DR) 1D- Distribution",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -15223,7 +15235,7 @@
   },
   {
     "symbol": "XAXJ.L",
-    "name": "Xtrackers MSCI AC Asia ex Japan ESG Swap UCITS ETF 1C",
+    "name": "Xtrackers MSCI AC Asia ex Japan UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -15277,7 +15289,7 @@
   },
   {
     "symbol": "XBAK.L",
-    "name": "Xtrackers MSCI Pakistan Swap UCITS ETF 1C",
+    "name": "Xtrackers - MSCI Pakistan Swap UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -15331,7 +15343,7 @@
   },
   {
     "symbol": "XCHA.L",
-    "name": "Xtrackers CSI300 Swap UCITS ETF 1C",
+    "name": "Xtrackers CSI300 Swap UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -15355,7 +15367,7 @@
   },
   {
     "symbol": "XCO2.L",
-    "name": "Amundi Global Aggregate Proceeds Bond 1-10Y UCITS ETF Acc",
+    "name": "Amundi Global Aggregate Proceeds Bond 1-10Y UCITS ETF Acc Capitalisation",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -15643,7 +15655,7 @@
   },
   {
     "symbol": "XDEW.L",
-    "name": "Xtrackers S&amp;P 500 Equal Weight UCITS ETF 1C",
+    "name": "Xtrackers II",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -15757,7 +15769,7 @@
   },
   {
     "symbol": "XDPC.SW",
-    "name": "Xtrackers S&amp;P 500 UCITS ETF 3C CHF Hedged",
+    "name": "Xtrackers S&amp;P 500 UCITS ETF",
     "exchange": "SIX",
     "domicile": "IE"
   },
@@ -15769,13 +15781,13 @@
   },
   {
     "symbol": "XDPG.L",
-    "name": "Xtrackers S&amp;P 500 UCITS ETF 2C GBP Hedged",
+    "name": "Xtrackers S&amp;P 500 UCITS ETF 2C - GBP Hedged",
     "exchange": "LSE",
     "domicile": "IE"
   },
   {
     "symbol": "XDPU.L",
-    "name": "Xtrackers S&amp;P 500 UCITS ETF 4C",
+    "name": "Xtrackers S&amp;P 500 UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -15835,7 +15847,7 @@
   },
   {
     "symbol": "XDWD.L",
-    "name": "Xtrackers MSCI World UCITS ETF 1C",
+    "name": "Xtrackers MSCI World UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -16027,7 +16039,7 @@
   },
   {
     "symbol": "XESJ.L",
-    "name": "Xtrackers MSCI Japan ESG UCITS ETF 1C",
+    "name": "Xtrackers MSCI Japan ESG UCITS ETF Accum Shs -1C- USD",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -16177,7 +16189,7 @@
   },
   {
     "symbol": "XGIG.L",
-    "name": "Xtrackers II Global Inflation-Linked Bond UCITS ETF 3D GBP Hedged",
+    "name": "Xtrackers II Global Inflation-Linked Bond UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -16459,7 +16471,7 @@
   },
   {
     "symbol": "XMBR.L",
-    "name": "Xtrackers MSCI Brazil UCITS ETF 1C",
+    "name": "Xtrackers MSCI Brazil UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -16639,7 +16651,7 @@
   },
   {
     "symbol": "XMUJ.L",
-    "name": "Xtrackers MSCI Japan UCITS ETF 2D USD Hedged",
+    "name": "Xtrackers MSCI Japan UCITS ETF 1C",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -16831,7 +16843,7 @@
   },
   {
     "symbol": "XRSG.L",
-    "name": "Xtrackers Russell 2000 UCITS ETF 1C",
+    "name": "Xtrackers Russell 2000 UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -16873,7 +16885,7 @@
   },
   {
     "symbol": "XS5G.L",
-    "name": "Xtrackers S&amp;P 500 Swap UCITS ETF 7C GBP Hedged",
+    "name": "Xtrackers S&amp;P 500 Swap UCITS ETF",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -17395,7 +17407,7 @@
   },
   {
     "symbol": "XYLD.L",
-    "name": "Xtrackers USD Corporate Bond Short Duration SRI PAB UCITS ETF 1D",
+    "name": "Xtrackers ESG USD Corporate Bond Short Duration UCITS ETF",
     "exchange": "LSE",
     "domicile": "IE"
   },
@@ -17569,7 +17581,7 @@
   },
   {
     "symbol": "XZUD.L",
-    "name": "Xtrackers II ESG Global Government Bond UCITS ETF",
+    "name": "Xtrackers II ESG Global Government Bond UCITS ETF 3D USD Hedged",
     "exchange": "LSE",
     "domicile": "LU"
   },
@@ -17611,7 +17623,7 @@
   },
   {
     "symbol": "XZWS.L",
-    "name": "Xtrackers II ESG Global Government Bond UCITS ETF",
+    "name": "Xtrackers II ESG Global Government Bond UCITS ETF 2D GBP Hedged",
     "exchange": "LSE",
     "domicile": "LU"
   },

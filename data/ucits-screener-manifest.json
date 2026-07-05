@@ -1,23 +1,11 @@
 {
-  "generatedAt": "2026-06-25T11:48:23.492Z",
-  "universeSize": 2955,
+  "generatedAt": "2026-07-05T11:37:26.022Z",
+  "universeSize": 2957,
   "enrichedCount": 2891,
-  "processedCount": 2955,
-  "failureCount": 128,
+  "processedCount": 2957,
+  "failureCount": 66,
   "successRate": "98%",
   "failures": [
-    {
-      "id": "EONS-MTA",
-      "symbol": "EONS",
-      "exchange": "MTA",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "ESNB-XDUS",
-      "symbol": "ESNB",
-      "exchange": "XDUS",
-      "reason": "no_yahoo_data"
-    },
     {
       "id": "EUAI-XDUS",
       "symbol": "EUAI",
@@ -286,6 +274,18 @@
       "id": "VLDS-XDUS",
       "symbol": "VLDS",
       "exchange": "XDUS",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "WDEF-AMEX",
+      "symbol": "WDEF",
+      "exchange": "AMEX",
+      "reason": "no_yahoo_data"
+    },
+    {
+      "id": "WELD-AMEX",
+      "symbol": "WELD",
+      "exchange": "AMEX",
       "reason": "no_yahoo_data"
     },
     {
