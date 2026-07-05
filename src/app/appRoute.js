@@ -1,14 +1,11 @@
 import { CAMPAIGN_UI_ENABLED } from '../campaignFlags';
+export { isDesignRoute, isMainDesignRoute, isSocialDesignRoute } from '../designRoute';
 
 const APP_TABS = ['dashboard', 'search', 'leaderboard', 'create', 'account', 'basket'];
 
 function normalizeAppTab(tab) {
   if (tab === 'leaderboard' && !CAMPAIGN_UI_ENABLED) return 'dashboard';
   return tab;
-}
-
-export function isDesignRoute() {
-  return new URLSearchParams(window.location.search).get('design') === '1';
 }
 
 /** Dev-only: force app shell without signing in */

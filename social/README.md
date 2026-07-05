@@ -24,6 +24,8 @@ Runs on **http://localhost:5174** (main app uses 5173).
 
 **Live:** https://social.pocketedge.in
 
+**Design guide:** https://design.pocketedge.in · rules in [`DESIGN.md`](./DESIGN.md)
+
 Vercel project: `social-pocketedge` (root directory `social`, same GitHub repo as main app).
 
 Manual deploy from this directory:

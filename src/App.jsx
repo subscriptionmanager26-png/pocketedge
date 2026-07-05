@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import LandingPage, { LandingSiteHeader } from './LandingPage';
 import DesignLibraryPage from './DesignLibraryPage';
+import SocialDesignGuidePage from './SocialDesignGuidePage';
 import LegalPage, { LegalSiteHeader } from './LegalPage';
 import UcitsScreenerPage, { UcitsScreenerSiteHeader } from './UcitsScreenerPage';
 import PublicLeaderboardPage from './PublicLeaderboardPage';
@@ -9,7 +10,7 @@ import MarketWhispererBanner from './components/MarketWhispererBanner';
 import ChallengeProgressBanner from './components/ChallengeProgressBanner';
 import StickyTopChrome from './components/StickyTopChrome';
 import AppBootstrapLoader from './components/AppBootstrapLoader';
-import { isDesignRoute, isLocalAppRoute, isAppShellRoute } from './app/appRoute';
+import { isDesignRoute, isLocalAppRoute, isAppShellRoute, isSocialDesignRoute } from './app/appRoute';
 import { loadUserBaskets, loadUserBasketsAsync, migrateLocalBasketsToDb } from './app/basketStore';
 import { fetchMarketplaceBaskets } from './app/userDataApi';
 import { migrateLocalProfileToDb } from './app/profileStore';
@@ -295,6 +296,7 @@ export default function App() {
   }
 
   if (route === 'design') {
+    if (isSocialDesignRoute()) return <SocialDesignGuidePage />;
     return <DesignLibraryPage />;
   }
 
