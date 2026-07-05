@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { yahooSymbolCandidates } from './ucits-yahoo-symbol.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const IBKR_CSV = join(__dirname, '../../data/ibkr-instruments.csv');
+const IBKR_CSV = join(__dirname, '../../data/ibkr-etf-instruments.csv');
 
 const IBKR_TO_UCITS_EXCHANGE = {
   LSEETF: 'LSE',
