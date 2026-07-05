@@ -147,10 +147,7 @@ export default function CreateBasketPage({
   const [constituents, setConstituents] = useState(
     editBasket?.constituents?.length
       ? editBasket.constituents.map((c) => ({ ...c }))
-      : [
-          { symbol: 'AAPL', name: 'Apple', weight: 50, segment: 'Largecap' },
-          { symbol: 'MSFT', name: 'Microsoft', weight: 50, segment: 'Largecap' },
-        ]
+      : []
   );
   const [stockQuery, setStockQuery] = useState('');
   const [stockSearchResults, setStockSearchResults] = useState([]);
