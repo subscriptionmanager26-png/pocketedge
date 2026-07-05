@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
+import WatchlistModal from '../components/WatchlistModal';
 import {
   HoldingsSummary,
   NewsFeed,
@@ -11,31 +12,30 @@ import {
 } from '../components/ActivityFeed';
 import { MY_PORTFOLIO, STOCKS } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-
-const PERIODS = ['1D', '1W', '1M', '1Y'];
-const CONTENT_TABS = [
-  { id: 'summary', label: 'Summary' },
-  { id: 'news', label: 'News' },
-  { id: 'trades', label: 'Trades' },
-  { id: 'posts', label: 'Posts' },
-];
+import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 
 export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost }) {
   const [listId, setListId] = useState('holdings');
   const [period, setPeriod] = useState('1D');
   const [contentTab, setContentTab] = useState('summary');
+  const [watchlistOpen, setWatchlistOpen] = useState(false);
+  const [watchlistTick, setWatchlistTick] = useState(0);
+
+  useEffect(() => subscribeWatchlists(() => setWatchlistTick((n) => n + 1)), []);
+
+  const watchlists = useMemo(() => getWatchlists(), [watchlistTick]);
 
   const lists = useMemo(
     () => [
       { id: 'holdings', name: 'Holdings', kind: 'portfolio' },
-      ...MY_PORTFOLIO.watchlists.map((w) => ({
+      ...watchlists.map((w) => ({
         id: w.id,
         name: w.name,
         kind: 'watchlist',
         tickers: w.tickers,
       })),
     ],
-    []
+    [watchlists]
   );
 
   const activeList = lists.find((l) => l.id === listId) ?? lists[0];
@@ -113,6 +113,7 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
           trailing={
             <button
               type="button"
+              onClick={() => setWatchlistOpen(true)}
               className="inline-flex h-full shrink-0 items-center gap-1 pr-2 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
             >
               <Plus className="h-4 w-4" />
@@ -230,9 +231,27 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
       {contentTab === 'posts' && (
         <PostsFeed items={activity.posts} onOpenProfile={onOpenProfile} onOpenPost={onOpenPost} />
       )}
+
+      <WatchlistModal
+        open={watchlistOpen}
+        onClose={() => setWatchlistOpen(false)}
+        onSave={(payload) => {
+          const created = addWatchlist(payload);
+          setListId(created.id);
+          setContentTab('summary');
+        }}
+      />
     </div>
   );
 }
+
+const PERIODS = ['1D', '1W', '1M', '1Y'];
+const CONTENT_TABS = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'news', label: 'News' },
+  { id: 'trades', label: 'Trades' },
+  { id: 'posts', label: 'Posts' },
+];
 
 const DIST_COLORS = ['#ff6719', '#1a8917', '#4a6fe3', '#c47b0a', '#6b6b6b', '#d93025'];
 

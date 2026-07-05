@@ -3,6 +3,11 @@ import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
 import ActivityPage from './pages/ActivityPage';
 import FeedPage from './pages/FeedPage';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import OnboardingFlow from './pages/onboarding/OnboardingFlow';
+import SettingsPage from './pages/SettingsPage';
 import MarketsPage from './pages/MarketsPage';
 import PortfolioPage from './pages/PortfolioPage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -15,9 +20,18 @@ import {
   markAllActivityRead,
   subscribeActivity,
 } from './lib/activityStore';
+import { clearSocialGraph } from './lib/socialGraphStore';
+import {
+  clearSession,
+  resolveAuthView,
+  saveSession,
+  isOnboardingComplete,
+} from './lib/sessionStore';
+import { clearWatchlists } from './lib/watchlistStore';
 import { CURRENT_USER, POSTS, getPerson } from './data/mockData';
 
 export default function App() {
+  const [authView, setAuthView] = useState(() => resolveAuthView());
   const [tab, setTab] = useState('feed');
   const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
@@ -29,23 +43,27 @@ export default function App() {
   const [profileReturnTab, setProfileReturnTab] = useState('feed');
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [activityTick, setActivityTick] = useState(0);
+  const [graphTick, setGraphTick] = useState(0);
 
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
 
-  const activityItems = useMemo(() => getActivityFeed(), [activityTick, posts]);
+  const activityItems = useMemo(
+    () => getActivityFeed(),
+    [activityTick, posts, graphTick]
+  );
   const activityUnread = getUnreadActivityCount(activityItems);
 
   useEffect(() => {
     if (tab === 'activity') markAllActivityRead(activityItems);
   }, [tab, activityItems]);
 
-  const handlePost = (body) => {
+  const handlePost = ({ body, image }) => {
     const post = {
       id: `p_local_${Date.now()}`,
       authorId: CURRENT_USER.id,
-      type: 'text',
-      body,
-      image: null,
+      type: image ? 'image' : 'text',
+      body: body || '',
+      image: image ?? null,
       createdAt: new Date().toISOString(),
       likes: 0,
       comments: [],
@@ -55,6 +73,21 @@ export default function App() {
     setPosts((prev) => [post, ...prev]);
     setSelectedPostId(null);
     setTab('feed');
+  };
+
+  const handleAddComment = (postId, text) => {
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const comment = {
+          id: `c_${Date.now()}`,
+          authorId: CURRENT_USER.id,
+          body: text,
+          createdAt: new Date().toISOString(),
+        };
+        return { ...p, comments: [...(p.comments ?? []), comment] };
+      })
+    );
   };
 
   const setFeedModeAndStay = (mode) => {
@@ -81,7 +114,7 @@ export default function App() {
     if (userId === CURRENT_USER.id) {
       setProfileUserId(CURRENT_USER.id);
       setProfileMode('own');
-      setProfileReturnTab(tab === 'profile' ? profileReturnTab : tab);
+      setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
       setTab('profile');
       return;
     }
@@ -103,16 +136,41 @@ export default function App() {
     }
   };
 
+  const handleLogin = ({ email }) => {
+    saveSession({ userId: CURRENT_USER.id, email, isNew: false });
+    setAuthView(isOnboardingComplete() ? 'app' : 'onboarding');
+  };
+
+  const handleSignup = ({ email }) => {
+    saveSession({ userId: CURRENT_USER.id, email, isNew: true });
+    setAuthView('onboarding');
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    clearSocialGraph();
+    clearWatchlists();
+    setAuthView('landing');
+    setTab('feed');
+    setPosts(POSTS);
+  };
+
   const pageTitleOverride =
-    selectedPostId && tab === 'feed'
-      ? 'Post'
-      : tab === 'activity'
-        ? 'Activity'
-        : tab === 'profile' && profileMode === 'public'
-          ? getPerson(profileUserId).name
-          : undefined;
+    authView === 'app' && tab === 'settings'
+      ? 'Settings'
+      : authView === 'app' && selectedPostId && tab === 'feed'
+        ? 'Post'
+        : authView === 'app' && tab === 'activity'
+          ? 'Activity'
+          : authView === 'app' && tab === 'profile' && profileMode === 'public'
+            ? getPerson(profileUserId).name
+            : undefined;
 
   const mobileBack = useMemo(() => {
+    if (authView !== 'app') return null;
+    if (tab === 'settings') {
+      return { label: 'Profile', onBack: () => setTab('profile') };
+    }
     if (selectedPostId && tab === 'feed') {
       return { label: 'Back', onBack: () => setSelectedPostId(null) };
     }
@@ -133,6 +191,7 @@ export default function App() {
     }
     return null;
   }, [
+    authView,
     selectedPostId,
     tab,
     selectedTicker,
@@ -142,10 +201,43 @@ export default function App() {
     profilePortfolioId,
   ]);
 
+  if (authView === 'landing') {
+    return (
+      <LandingPage
+        onGetStarted={() => setAuthView('signup')}
+        onSignIn={() => setAuthView('login')}
+      />
+    );
+  }
+
+  if (authView === 'login') {
+    return (
+      <LoginPage
+        onBack={() => setAuthView('landing')}
+        onLogin={handleLogin}
+        onGoSignup={() => setAuthView('signup')}
+      />
+    );
+  }
+
+  if (authView === 'signup') {
+    return (
+      <SignupPage
+        onBack={() => setAuthView('landing')}
+        onSignup={handleSignup}
+        onGoLogin={() => setAuthView('login')}
+      />
+    );
+  }
+
+  if (authView === 'onboarding') {
+    return <OnboardingFlow onComplete={() => setAuthView('app')} />;
+  }
+
   return (
     <>
       <Shell
-        tab={tab}
+        tab={tab === 'settings' ? 'profile' : tab}
         feedMode={feedMode}
         pageTitleOverride={pageTitleOverride}
         mobileBack={mobileBack}
@@ -156,7 +248,7 @@ export default function App() {
           setSelectedPostId(null);
           setProfileMode('own');
           setProfileUserId(CURRENT_USER.id);
-          setProfileReturnTab(tab);
+          setProfileReturnTab(tab === 'settings' ? 'feed' : tab);
           setTab('profile');
         }}
         onCompose={() => setComposeOpen(true)}
@@ -168,16 +260,25 @@ export default function App() {
               posts={posts}
               onBack={() => setSelectedPostId(null)}
               onOpenProfile={openProfile}
+              onAddComment={(text) => handleAddComment(selectedPostId, text)}
             />
           ) : (
             <FeedPage
               posts={posts}
               feedMode={feedMode}
+              graphTick={graphTick}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
             />
           ))}
-        {tab === 'search' && <SearchPage onOpenProfile={openProfile} />}
+        {tab === 'search' && (
+          <SearchPage
+            onOpenProfile={openProfile}
+            onSelectStock={openStock}
+            onGraphChange={() => setGraphTick((n) => n + 1)}
+          />
+        )}
         {tab === 'activity' && (
           <ActivityPage
             items={activityItems}
@@ -220,6 +321,7 @@ export default function App() {
             onSelectPortfolio={setProfilePortfolioId}
             onClearPortfolio={() => setProfilePortfolioId(null)}
             onBack={() => setTab(profileReturnTab || 'feed')}
+            onOpenSettings={() => setTab('settings')}
             onOpenPublicPreview={() => {
               setProfileUserId(CURRENT_USER.id);
               setProfileMode('public');
@@ -230,15 +332,13 @@ export default function App() {
             }}
             onOpenProfile={openProfile}
             onOpenPost={openPost}
+            onGraphChange={() => setGraphTick((n) => n + 1)}
           />
         )}
+        {tab === 'settings' && <SettingsPage onBack={() => setTab('profile')} onLogout={handleLogout} />}
       </Shell>
 
-      <ComposeModal
-        open={composeOpen}
-        onClose={() => setComposeOpen(false)}
-        onPost={handlePost}
-      />
+      <ComposeModal open={composeOpen} onClose={() => setComposeOpen(false)} onPost={handlePost} />
     </>
   );
 }

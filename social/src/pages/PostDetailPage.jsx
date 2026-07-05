@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
+import CommentComposer from '../components/CommentComposer';
 import { POSTS } from '../data/mockData';
 
 export default function PostDetailPage({
@@ -8,12 +9,13 @@ export default function PostDetailPage({
   posts,
   onBack,
   onOpenProfile,
+  onAddComment,
 }) {
   const post = (posts ?? POSTS).find((p) => p.id === postId);
 
   if (!post) {
     return (
-      <div className="px-6 py-16 text-center">
+      <div className="px-4 py-16 text-center">
         <p className="font-serif text-lg font-bold text-pe-text">Post not found</p>
         <button
           type="button"
@@ -39,11 +41,9 @@ export default function PostDetailPage({
         </button>
       </PageHeader>
 
-      <PostCard
-        post={post}
-        variant="detail"
-        onOpenProfile={onOpenProfile}
-      />
+      <PostCard post={post} variant="detail" onOpenProfile={onOpenProfile} />
+
+      {onAddComment && <CommentComposer onSubmit={onAddComment} />}
     </div>
   );
 }

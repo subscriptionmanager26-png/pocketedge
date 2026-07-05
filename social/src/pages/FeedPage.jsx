@@ -1,33 +1,33 @@
 import { useMemo } from 'react';
 import PostCard from '../components/PostCard';
-import { FOLLOWING_IDS, POSTS, TOPICS } from '../data/mockData';
+import { POSTS } from '../data/mockData';
+import { getFollowedTopicSlugs, getFollowingIds } from '../lib/socialGraphStore';
 
 export default function FeedPage({
   posts,
   feedMode = 'forYou',
+  graphTick,
   onOpenProfile,
   onOpenPost,
 }) {
-  const followedTopics = useMemo(
-    () => new Set(TOPICS.filter((t) => t.followed).map((t) => t.slug)),
-    []
-  );
+  const followingIds = useMemo(() => getFollowingIds(), [graphTick]);
+  const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
 
   const feedPosts = useMemo(() => {
     const list = posts ?? POSTS;
     if (feedMode === 'following') {
       return list.filter(
         (p) =>
-          FOLLOWING_IDS.has(p.authorId) ||
+          followingIds.has(p.authorId) ||
           p.topics?.some((t) => followedTopics.has(t))
       );
     }
     return list;
-  }, [feedMode, posts, followedTopics]);
+  }, [feedMode, posts, followingIds, followedTopics]);
 
   if (feedPosts.length === 0) {
     return (
-      <div className="px-6 py-20 text-center">
+      <div className="px-4 py-20 text-center">
         <p className="font-serif text-xl font-bold text-pe-text">Nothing here yet</p>
         <p className="mt-2 text-sm leading-relaxed text-pe-text-secondary">
           Follow people or topics to fill your Following feed.

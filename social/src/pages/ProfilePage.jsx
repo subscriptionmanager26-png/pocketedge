@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Pencil, Plus, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Settings, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -16,6 +16,7 @@ import {
   getUserTrades,
   recalcHolding,
 } from '../data/mockData';
+import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
 import { formatInr, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 
 const PROFILE_TABS = [
@@ -42,10 +43,12 @@ export default function ProfilePage({
   onSelectPortfolio,
   onClearPortfolio,
   onBack,
+  onOpenSettings,
   onOpenPublicPreview,
   onExitPublicPreview,
   onOpenProfile,
   onOpenPost,
+  onGraphChange,
 }) {
   const isOwn = mode === 'own';
   const person = isOwn ? CURRENT_USER : getPerson(userId);
@@ -65,7 +68,13 @@ export default function ProfilePage({
   const [bio, setBio] = useState(CURRENT_USER.bio ?? '');
   const [location, setLocation] = useState(CURRENT_USER.location ?? '');
   const [focus, setFocus] = useState(CURRENT_USER.focus ?? '');
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowingState] = useState(false);
+
+  useEffect(() => {
+    if (!isOwn && !isMePublic) {
+      setFollowingState(isFollowing(person.id));
+    }
+  }, [person.id, isOwn, isMePublic]);
 
   const authorPosts = (posts ?? POSTS).filter((p) => p.authorId === person.id);
   const tabs = PROFILE_TABS;
@@ -77,7 +86,6 @@ export default function ProfilePage({
 
   useEffect(() => {
     setTab('posts');
-    setFollowing(false);
     setAboutEditing(false);
     onClearPortfolio?.();
   }, [userId, mode]);
@@ -163,12 +171,29 @@ export default function ProfilePage({
         name={canEdit ? name : undefined}
         bio={canEdit ? bio : undefined}
         following={following}
-        onToggleFollow={() => setFollowing((v) => !v)}
+        onToggleFollow={() => {
+          const next = toggleFollow(person.id);
+          setFollowingState(next);
+          onGraphChange?.();
+        }}
         showFollowButton={!isOwn && !isMePublic}
         showViewToggle={showViewToggle}
         isPublicPreview={isMePublic}
         onToggleView={isMePublic ? onExitPublicPreview : onOpenPublicPreview}
       />
+
+      {isOwn && !isMePublic && (
+        <div className="border-b border-pe-border px-4 py-2">
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </button>
+        </div>
+      )}
 
       <PageHeader>
         <UnderlineTabs

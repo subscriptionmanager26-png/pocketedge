@@ -20,6 +20,8 @@ npm run dev
 
 Runs on **http://localhost:5174** (main app uses 5173).
 
+**Auth:** First visit shows the marketing landing page. Sign up → 5-step onboarding → feed. Use `?skipAuth=1` to bypass auth during development.
+
 ## Deploy to Vercel
 
 **Live:** https://social.pocketedge.in

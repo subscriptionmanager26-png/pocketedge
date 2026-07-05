@@ -3,6 +3,13 @@ import { TrendingUp, Users } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import { PEOPLE, STOCKS, TOPICS } from '../data/mockData';
+import {
+  getFollowedTopicSlugs,
+  isFollowing,
+  isTopicFollowed,
+  toggleFollow,
+  toggleTopicFollow,
+} from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
 
 const RESULT_TABS = [
@@ -16,14 +23,18 @@ const TRENDING_STOCKS = Object.entries(STOCKS)
   .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
   .slice(0, 5);
 
-export default function SearchPage({ onOpenProfile }) {
+export default function SearchPage({ onOpenProfile, onSelectStock, onGraphChange }) {
   const [query, setQuery] = useState('');
   const [resultTab, setResultTab] = useState('people');
-  const [followedTopics, setFollowedTopics] = useState(
-    () => new Set(TOPICS.filter((t) => t.followed).map((t) => t.slug))
-  );
+  const [graphTick, setGraphTick] = useState(0);
+
+  const bumpGraph = () => {
+    setGraphTick((n) => n + 1);
+    onGraphChange?.();
+  };
 
   const q = query.trim().toLowerCase();
+  const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
 
   const peopleResults = useMemo(() => {
     const ranked = [...PEOPLE].sort((a, b) => b.xirr - a.xirr);
@@ -48,7 +59,6 @@ export default function SearchPage({ onOpenProfile }) {
 
   return (
     <div>
-      {/* Primary control: search bar (replaces redundant page title on desktop) */}
       <PageHeader>
         <PageHeaderSearch
           value={query}
@@ -69,14 +79,10 @@ export default function SearchPage({ onOpenProfile }) {
                   <button
                     key={topic.id}
                     type="button"
-                    onClick={() =>
-                      setFollowedTopics((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(topic.slug)) next.delete(topic.slug);
-                        else next.add(topic.slug);
-                        return next;
-                      })
-                    }
+                    onClick={() => {
+                      toggleTopicFollow(topic.slug);
+                      bumpGraph();
+                    }}
                     className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${
                       followed
                         ? 'border-pe-accent bg-pe-accent-wash text-pe-accent'
@@ -103,7 +109,9 @@ export default function SearchPage({ onOpenProfile }) {
                   <PersonRow
                     key={person.id}
                     person={person}
+                    graphTick={graphTick}
                     onOpenProfile={onOpenProfile}
+                    onFollowChange={bumpGraph}
                   />
                 ))}
             </div>
@@ -113,7 +121,7 @@ export default function SearchPage({ onOpenProfile }) {
             <SectionLabel>Most discussed this week</SectionLabel>
             <div className="mt-1 divide-y divide-pe-border">
               {TRENDING_STOCKS.map((stock) => (
-                <StockRow key={stock.ticker} stock={stock} />
+                <StockRow key={stock.ticker} stock={stock} onSelectStock={onSelectStock} />
               ))}
             </div>
           </section>
@@ -142,7 +150,13 @@ export default function SearchPage({ onOpenProfile }) {
             {resultTab === 'people' &&
               (peopleResults.length ? (
                 peopleResults.map((p) => (
-                  <PersonRow key={p.id} person={p} onOpenProfile={onOpenProfile} />
+                  <PersonRow
+                    key={p.id}
+                    person={p}
+                    graphTick={graphTick}
+                    onOpenProfile={onOpenProfile}
+                    onFollowChange={bumpGraph}
+                  />
                 ))
               ) : (
                 <Empty />
@@ -160,7 +174,13 @@ export default function SearchPage({ onOpenProfile }) {
                         {t.postsThisWeek} posts · {formatCount(t.followers)} followers
                       </p>
                     </div>
-                    <FollowButton />
+                    <FollowButton
+                      following={isTopicFollowed(t.slug)}
+                      onToggle={() => {
+                        toggleTopicFollow(t.slug);
+                        bumpGraph();
+                      }}
+                    />
                   </div>
                 ))
               ) : (
@@ -168,7 +188,9 @@ export default function SearchPage({ onOpenProfile }) {
               ))}
             {resultTab === 'stocks' &&
               (stockResults.length ? (
-                stockResults.map((s) => <StockRow key={s.ticker} stock={s} />)
+                stockResults.map((s) => (
+                  <StockRow key={s.ticker} stock={s} onSelectStock={onSelectStock} />
+                ))
               ) : (
                 <Empty />
               ))}
@@ -188,7 +210,8 @@ function SectionLabel({ children, icon: Icon }) {
   );
 }
 
-function PersonRow({ person, onOpenProfile }) {
+function PersonRow({ person, graphTick, onOpenProfile, onFollowChange }) {
+  const following = isFollowing(person.id);
   return (
     <div className="flex items-center gap-3 py-3.5">
       <Avatar person={person} onClick={() => onOpenProfile?.(person.id)} />
@@ -208,14 +231,24 @@ function PersonRow({ person, onOpenProfile }) {
           <span> · {formatCount(person.followers)} followers</span>
         </p>
       </button>
-      <FollowButton />
+      <FollowButton
+        following={following}
+        onToggle={() => {
+          toggleFollow(person.id);
+          onFollowChange?.();
+        }}
+      />
     </div>
   );
 }
 
-function StockRow({ stock }) {
+function StockRow({ stock, onSelectStock }) {
   return (
-    <div className="flex items-center justify-between py-3.5">
+    <button
+      type="button"
+      onClick={() => onSelectStock?.(stock.ticker)}
+      className="flex w-full items-center justify-between py-3.5 text-left hover:bg-pe-surface/50"
+    >
       <div>
         <p className="text-[15px] font-semibold text-pe-text">${stock.ticker}</p>
         <p className="text-sm text-pe-text-muted">{stock.name}</p>
@@ -226,17 +259,22 @@ function StockRow({ stock }) {
           {formatPct(stock.changePct)}
         </p>
       </div>
-    </div>
+    </button>
   );
 }
 
-function FollowButton() {
+function FollowButton({ following, onToggle }) {
   return (
     <button
       type="button"
-      className="shrink-0 rounded-md bg-pe-accent px-3.5 py-1.5 text-sm font-bold text-white transition hover:bg-pe-accent-pressed"
+      onClick={onToggle}
+      className={`shrink-0 rounded-md px-3.5 py-1.5 text-sm font-bold transition ${
+        following
+          ? 'border border-pe-border-strong bg-pe-canvas text-pe-text hover:bg-pe-surface'
+          : 'bg-pe-accent text-white hover:bg-pe-accent-pressed'
+      }`}
     >
-      Follow
+      {following ? 'Following' : 'Follow'}
     </button>
   );
 }

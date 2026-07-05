@@ -1,5 +1,8 @@
 import {
-  FOLLOWING_IDS,
+  getFollowedTopicSlugs,
+  getFollowingIds,
+} from './socialGraphStore';
+import {
   MY_PORTFOLIO,
   PORTFOLIO_CHANGES,
   PORTFOLIO_UPDATES,
@@ -23,9 +26,9 @@ function getPortfolioTickers() {
   return [...new Set(MY_PORTFOLIO.holdings.map((h) => h.ticker))];
 }
 
-function followingPostItems() {
+function followingPostItems(followingIds) {
   return POSTS.filter(
-    (post) => FOLLOWING_IDS.has(post.authorId) && !(post.type === 'trade' && post.trade)
+    (post) => followingIds.has(post.authorId) && !(post.type === 'trade' && post.trade)
   ).map((post) => {
     const person = getPerson(post.authorId);
     return {
@@ -42,9 +45,9 @@ function followingPostItems() {
   });
 }
 
-function followingTradeItems() {
+function followingTradeItems(followingIds) {
   const items = [];
-  for (const userId of FOLLOWING_IDS) {
+  for (const userId of followingIds) {
     for (const trade of USER_TRADES[userId] ?? []) {
       const person = getPerson(userId);
       items.push({
@@ -63,8 +66,8 @@ function followingTradeItems() {
   return items;
 }
 
-function followingPortfolioChangeItems() {
-  return PORTFOLIO_CHANGES.filter((change) => FOLLOWING_IDS.has(change.userId)).map((change) => {
+function followingPortfolioChangeItems(followingIds) {
+  return PORTFOLIO_CHANGES.filter((change) => followingIds.has(change.userId)).map((change) => {
     const person = getPerson(change.userId);
     return {
       id: `following_portfolio_${change.id}`,
@@ -129,10 +132,11 @@ function portfolioStockItems() {
 
 /** Activity from followed people + community moves on portfolio stocks. */
 export function getActivityFeed() {
+  const followingIds = getFollowingIds();
   const items = [
-    ...followingPostItems(),
-    ...followingTradeItems(),
-    ...followingPortfolioChangeItems(),
+    ...followingPostItems(followingIds),
+    ...followingTradeItems(followingIds),
+    ...followingPortfolioChangeItems(followingIds),
     ...portfolioStockItems(),
   ];
 
@@ -147,3 +151,6 @@ export function getActivityFeed() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
+
+// re-export for tests — topic slugs unused here but kept for future filtering
+export { getFollowedTopicSlugs };
