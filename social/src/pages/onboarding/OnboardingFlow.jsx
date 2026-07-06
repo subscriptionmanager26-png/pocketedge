@@ -7,8 +7,11 @@ import {
 } from '../../data/mockData';
 import { setFollowedTopicSlugs, setFollowingIds } from '../../lib/socialGraphStore';
 import { setOnboardingComplete } from '../../lib/sessionStore';
+import { addReview } from '../../lib/reviewStore';
+import { pickRandomCategory } from '../../data/fundData';
+import FundReviewStep from './FundReviewStep';
 
-const STEPS = ['welcome', 'profile', 'follow', 'topics', 'portfolio', 'disclosure'];
+const STEPS = ['welcome', 'profile', 'follow', 'topics', 'portfolio', 'fundReview', 'disclosure'];
 
 const inputClass =
   'w-full rounded-lg border border-pe-border-strong bg-pe-canvas px-3 py-2.5 text-[15px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
@@ -22,6 +25,10 @@ export default function OnboardingFlow({ onComplete }) {
   const [topicSlugs, setTopicSlugs] = useState(() => new Set());
   const [portfolioName, setPortfolioName] = useState('');
   const [portfolioThesis, setPortfolioThesis] = useState('');
+  const [assignedCategory] = useState(() => pickRandomCategory());
+  const [fundId, setFundId] = useState('');
+  const [fundRating, setFundRating] = useState(0);
+  const [fundReviewLine, setFundReviewLine] = useState('');
   const [agreed, setAgreed] = useState(false);
 
   const step = STEPS[stepIndex];
@@ -34,9 +41,10 @@ export default function OnboardingFlow({ onComplete }) {
     if (step === 'profile') return displayName.trim().length >= 2 && /^[a-z0-9_]{3,20}$/.test(handle.trim());
     if (step === 'follow') return followIds.size >= 3;
     if (step === 'topics') return topicSlugs.size >= 1;
+    if (step === 'fundReview') return Boolean(fundId) && fundRating >= 1;
     if (step === 'disclosure') return agreed;
     return true;
-  }, [step, displayName, handle, followIds.size, topicSlugs.size, agreed]);
+  }, [step, displayName, handle, followIds.size, topicSlugs.size, fundId, fundRating, agreed]);
 
   const next = () => {
     if (step === 'portfolio') {
@@ -53,6 +61,9 @@ export default function OnboardingFlow({ onComplete }) {
           holdings: [],
         });
       }
+    }
+    if (step === 'fundReview') {
+      addReview({ fundId, rating: fundRating, body: fundReviewLine });
     }
     if (step === 'disclosure') {
       CURRENT_USER.name = displayName.trim();
@@ -215,6 +226,18 @@ export default function OnboardingFlow({ onComplete }) {
               />
             </div>
           </>
+        )}
+
+        {step === 'fundReview' && (
+          <FundReviewStep
+            category={assignedCategory}
+            selectedFundId={fundId}
+            onSelectFund={setFundId}
+            rating={fundRating}
+            onRating={setFundRating}
+            reviewLine={fundReviewLine}
+            onReviewLine={setFundReviewLine}
+          />
         )}
 
         {step === 'disclosure' && (

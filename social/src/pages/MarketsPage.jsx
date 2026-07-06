@@ -9,9 +9,14 @@ import {
   collectActivity,
 } from '../components/ActivityFeed';
 import Sparkline from '../components/Sparkline';
+import { FUNDS } from '../data/fundData';
 import { STOCKS } from '../data/mockData';
+import { getReviewsForFund } from '../lib/reviewStore';
+import { StarDisplay } from '../components/StarRating';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
 
+const ALL_STOCKS = Object.entries(STOCKS).map(([ticker, s]) => ({ ticker, ...s }));
+const ALL_FUNDS = Object.values(FUNDS);
 const CONTENT_TABS = [
   { id: 'summary', label: 'Summary' },
   { id: 'news', label: 'News' },
@@ -25,11 +30,10 @@ const MARKET_FILTERS = [
   { id: 'losers', label: 'Losers' },
 ];
 
-const ALL_STOCKS = Object.entries(STOCKS).map(([ticker, s]) => ({ ticker, ...s }));
-
 export default function MarketsPage({
   selectedTicker,
   onSelectStock,
+  onSelectFund,
   onClearStock,
   onOpenProfile,
   onOpenPost,
@@ -138,6 +142,42 @@ export default function MarketsPage({
             )}
           </div>
         </section>
+
+        {!q && (
+          <section>
+            <SectionLabel>Mutual funds · reviewed by community</SectionLabel>
+            <div className="mt-2 divide-y divide-pe-border">
+              {ALL_FUNDS.slice(0, 6).map((fund) => {
+                const reviews = getReviewsForFund(fund.id);
+                const avg =
+                  reviews.length > 0
+                    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+                    : 0;
+                return (
+                  <button
+                    key={fund.id}
+                    type="button"
+                    onClick={() => onSelectFund?.(fund.id)}
+                    className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <p className="text-[15px] font-semibold text-pe-text">{fund.name}</p>
+                      <p className="text-sm text-pe-text-muted">
+                        {fund.category} · {reviews.length} reviews
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      {avg > 0 && <StarDisplay rating={Math.round(avg)} size="sm" />}
+                      <p className="mt-0.5 text-xs font-semibold text-pe-positive">
+                        3Y {formatPct(fund.return3Y, { signed: false })}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

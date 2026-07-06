@@ -9,6 +9,8 @@ import SignupPage from './pages/SignupPage';
 import OnboardingFlow from './pages/onboarding/OnboardingFlow';
 import SettingsPage from './pages/SettingsPage';
 import MarketsPage from './pages/MarketsPage';
+import InvestmentPage from './pages/InvestmentPage';
+import FundReviewModal from './components/FundReviewModal';
 import PortfolioPage from './pages/PortfolioPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ProfilePage from './pages/ProfilePage';
@@ -28,7 +30,9 @@ import {
   isOnboardingComplete,
 } from './lib/sessionStore';
 import { clearWatchlists } from './lib/watchlistStore';
+import { clearReviewStore } from './lib/reviewStore';
 import { CURRENT_USER, POSTS, getPerson } from './data/mockData';
+import { getFund } from './data/fundData';
 
 export default function App() {
   const [authView, setAuthView] = useState(() => resolveAuthView());
@@ -37,6 +41,8 @@ export default function App() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [posts, setPosts] = useState(POSTS);
   const [selectedTicker, setSelectedTicker] = useState(null);
+  const [selectedFundId, setSelectedFundId] = useState(null);
+  const [fundReviewOpen, setFundReviewOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [profileMode, setProfileMode] = useState('own');
   const [profileUserId, setProfileUserId] = useState(CURRENT_USER.id);
@@ -98,6 +104,14 @@ export default function App() {
 
   const openStock = (ticker) => {
     setSelectedTicker(ticker);
+    setSelectedFundId(null);
+    setSelectedPostId(null);
+    setTab('markets');
+  };
+
+  const openFund = (fundId) => {
+    setSelectedFundId(fundId);
+    setSelectedTicker(null);
     setSelectedPostId(null);
     setTab('markets');
   };
@@ -128,7 +142,10 @@ export default function App() {
     setTab(next);
     setSelectedPostId(null);
     setProfilePortfolioId(null);
-    if (next !== 'markets') setSelectedTicker(null);
+    if (next !== 'markets') {
+      setSelectedTicker(null);
+      setSelectedFundId(null);
+    }
     if (next === 'profile') {
       setProfileMode('own');
       setProfileUserId(CURRENT_USER.id);
@@ -150,6 +167,7 @@ export default function App() {
     clearSession();
     clearSocialGraph();
     clearWatchlists();
+    clearReviewStore();
     setAuthView('landing');
     setTab('feed');
     setPosts(POSTS);
@@ -164,6 +182,8 @@ export default function App() {
           ? 'Activity'
           : authView === 'app' && tab === 'profile' && profileMode === 'public'
             ? getPerson(profileUserId).name
+          : authView === 'app' && tab === 'markets' && selectedFundId
+            ? getFund(selectedFundId)?.name ?? 'Fund'
             : undefined;
 
   const mobileBack = useMemo(() => {
@@ -173,6 +193,9 @@ export default function App() {
     }
     if (selectedPostId && tab === 'feed') {
       return { label: 'Back', onBack: () => setSelectedPostId(null) };
+    }
+    if (tab === 'markets' && selectedFundId) {
+      return { label: 'Markets', onBack: () => setSelectedFundId(null) };
     }
     if (tab === 'markets' && selectedTicker) {
       return { label: 'Markets', onBack: () => setSelectedTicker(null) };
@@ -195,6 +218,7 @@ export default function App() {
     selectedPostId,
     tab,
     selectedTicker,
+    selectedFundId,
     profileMode,
     profileUserId,
     profileReturnTab,
@@ -303,15 +327,25 @@ export default function App() {
             onOpenPost={openPost}
           />
         )}
-        {tab === 'markets' && (
-          <MarketsPage
-            selectedTicker={selectedTicker}
-            onSelectStock={openStock}
-            onClearStock={() => setSelectedTicker(null)}
-            onOpenProfile={openProfile}
-            onOpenPost={openPost}
-          />
-        )}
+        {tab === 'markets' &&
+          (selectedFundId ? (
+            <InvestmentPage
+              fundId={selectedFundId}
+              onBack={() => setSelectedFundId(null)}
+              onOpenProfile={openProfile}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
+              onPromptReview={() => setFundReviewOpen(true)}
+            />
+          ) : (
+            <MarketsPage
+              selectedTicker={selectedTicker}
+              onSelectStock={openStock}
+              onSelectFund={openFund}
+              onClearStock={() => setSelectedTicker(null)}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+            />
+          ))}
         {tab === 'profile' && (
           <ProfilePage
             mode={profileMode}
@@ -339,6 +373,12 @@ export default function App() {
       </Shell>
 
       <ComposeModal open={composeOpen} onClose={() => setComposeOpen(false)} onPost={handlePost} />
+
+      <FundReviewModal
+        open={fundReviewOpen}
+        onClose={() => setFundReviewOpen(false)}
+        onSubmitted={() => setFundReviewOpen(false)}
+      />
     </>
   );
 }
