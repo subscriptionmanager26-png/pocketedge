@@ -1,11 +1,11 @@
-/** Canonical site origin for OAuth redirects (set VITE_SITE_URL in production). */
+/** Canonical origin for social.pocketedge OAuth redirects. */
 export const SOCIAL_PRODUCTION_ORIGIN = 'https://social.pocketedge.in';
 
-export function getSiteOrigin() {
-  const configured = import.meta.env.VITE_SITE_URL?.replace(/\/$/, '');
+export function getSocialOrigin() {
+  const configured = import.meta.env.VITE_SOCIAL_SITE_URL?.replace(/\/$/, '');
   if (configured) return configured;
   if (typeof window !== 'undefined') return window.location.origin;
-  return '';
+  return SOCIAL_PRODUCTION_ORIGIN;
 }
 
 export function isSocialOrigin(originOrUrl) {
@@ -14,6 +14,7 @@ export function isSocialOrigin(originOrUrl) {
       typeof originOrUrl === 'string' && /^https?:\/\//i.test(originOrUrl)
         ? new URL(originOrUrl).origin
         : originOrUrl;
+    if (origin === getSocialOrigin()) return true;
     if (origin === SOCIAL_PRODUCTION_ORIGIN) return true;
     if (import.meta.env.DEV && origin === 'http://localhost:5175') return true;
     return false;
@@ -22,22 +23,11 @@ export function isSocialOrigin(originOrUrl) {
   }
 }
 
-export function toAbsoluteUrl(pathOrUrl) {
-  if (!pathOrUrl) return getSiteOrigin();
-  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  return new URL(pathOrUrl, `${getSiteOrigin()}/`).toString();
-}
-
-export function isSameSiteUrl(urlString) {
+export function isAllowedAuthRedirect(urlString) {
   if (!urlString || typeof window === 'undefined') return false;
   try {
     const target = new URL(urlString, window.location.origin);
-    const site = new URL(getSiteOrigin());
-    return (
-      target.origin === window.location.origin ||
-      target.origin === site.origin ||
-      isSocialOrigin(target.origin)
-    );
+    return target.origin === window.location.origin || isSocialOrigin(target.origin);
   } catch {
     return false;
   }

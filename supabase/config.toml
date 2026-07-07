@@ -165,12 +165,18 @@ additional_redirect_urls = [
   "https://www.pocketedge.in/**",
   "https://pocketedge.in",
   "https://pocketedge.in/**",
+  "https://social.pocketedge.in",
+  "https://social.pocketedge.in/**",
   "https://pocketedge-rho.vercel.app",
   "https://pocketedge-rho.vercel.app/**",
   "http://localhost:5174",
   "http://localhost:5174/**",
   "http://127.0.0.1:5174",
   "http://127.0.0.1:5174/**",
+  "http://localhost:5175",
+  "http://localhost:5175/**",
+  "http://127.0.0.1:5175",
+  "http://127.0.0.1:5175/**",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600

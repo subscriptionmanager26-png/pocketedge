@@ -22,6 +22,8 @@ Runs on **http://localhost:5175** (main app uses 5173).
 
 **Auth:** First visit shows the marketing landing page. Sign up → 5-step onboarding → feed. Use `?skipAuth=1` to bypass auth during development.
 
+Google sign-in from this app returns to **social.pocketedge.in** (not the main site). Ensure Supabase **Redirect URLs** include `https://social.pocketedge.in/**` and `http://localhost:5175/**` (`npm run auth:push` from repo root).
+
 ## Deploy to Vercel
 
 **Live:** https://social.pocketedge.in

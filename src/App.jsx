@@ -29,6 +29,7 @@ import {
   captureReferralFromUrl,
   recordAppSignup,
   getReferralStats,
+  redirectToStoredAuthOrigin,
 } from './supabase';
 import { identifyPostHogUser, resetPostHogUser } from './posthog';
 import {
@@ -229,6 +230,10 @@ export default function App() {
     const finishBootstrap = (session, { trackSignIn = false } = {}) => {
       if (!mounted) return;
       if (initialBootstrapDone && !trackSignIn) return;
+
+      if (session && redirectToStoredAuthOrigin()) {
+        return;
+      }
 
       if (session) cleanOAuthCallbackUrl();
 

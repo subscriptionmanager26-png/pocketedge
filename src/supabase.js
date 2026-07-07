@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { isAppShellRoute, isLocalAppRoute } from './app/appRoute';
-import { createSharedAuthStorage } from './authStorage';
-import { getSiteOrigin, isSameSiteUrl, toAbsoluteUrl } from './siteUrl';
+import {
+  clearPostAuthRedirect,
+  createSharedAuthStorage,
+  getPostAuthRedirect,
+  setPostAuthRedirect,
+} from './authStorage';
+import { getSiteOrigin, isSameSiteUrl, isSocialOrigin, toAbsoluteUrl } from './siteUrl';
 
 const REFERRAL_REF_KEY = 'referral_ref';
 
@@ -103,6 +108,25 @@ export function cleanOAuthCallbackUrl() {
   window.history.replaceState({}, '', url.pathname);
 }
 
+/** If OAuth landed on the main site but login started on social, send the user back. */
+export function redirectToStoredAuthOrigin() {
+  const stored = getPostAuthRedirect();
+  if (!stored || !isSameSiteUrl(stored)) return false;
+
+  try {
+    const target = new URL(stored, window.location.origin);
+    if (target.origin === window.location.origin) return false;
+    if (!isSocialOrigin(target.origin)) return false;
+
+    clearPostAuthRedirect();
+    sessionStorage.removeItem('post_auth_redirect');
+    window.location.replace(target.toString());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function signInWithGoogle({ afterAuthPath } = {}) {
   if (!supabase) throw new Error('Supabase is not configured');
 
@@ -117,6 +141,11 @@ export async function signInWithGoogle({ afterAuthPath } = {}) {
     } else if (!isLeaderboardRoute()) {
       sessionStorage.setItem('post_auth_redirect', getHomeRedirectUrl());
     }
+  }
+
+  const storedRedirect = sessionStorage.getItem('post_auth_redirect');
+  if (storedRedirect && isSameSiteUrl(storedRedirect)) {
+    setPostAuthRedirect(storedRedirect);
   }
 
   const { error } = await supabase.auth.signInWithOAuth({
@@ -169,4 +198,5 @@ export async function signOut() {
   await supabase.auth.signOut();
   sessionStorage.removeItem(REFERRAL_REF_KEY);
   sessionStorage.removeItem('post_auth_redirect');
+  clearPostAuthRedirect();
 }

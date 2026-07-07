@@ -1,6 +1,8 @@
 /** Shared auth storage across pocketedge.in subdomains (social + main). */
 
 const COOKIE_PREFIX = 'pe_sb_';
+const POST_AUTH_REDIRECT_COOKIE = 'pe_post_auth_redirect';
+const POST_AUTH_REDIRECT_MAX_AGE_SEC = 30 * 60;
 
 function sharedCookieDomain() {
   if (typeof window === 'undefined') return null;
@@ -17,9 +19,10 @@ function readCookie(name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function writeCookie(name, value, maxAgeDays = 30) {
+function writeCookie(name, value, { maxAgeDays = 30, maxAgeSec } = {}) {
   const domain = sharedCookieDomain();
-  let cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeDays * 86400}; SameSite=Lax`;
+  const maxAge = maxAgeSec ?? maxAgeDays * 86400;
+  let cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
   if (domain) cookie += `; domain=${domain}`;
   if (window.location.protocol === 'https:') cookie += '; Secure';
   document.cookie = cookie;
@@ -30,6 +33,19 @@ function deleteCookie(name) {
   let cookie = `${name}=; path=/; max-age=0`;
   if (domain) cookie += `; domain=${domain}`;
   document.cookie = cookie;
+}
+
+/** Cross-subdomain post-auth destination (survives OAuth landing on www.pocketedge.in). */
+export function setPostAuthRedirect(url) {
+  writeCookie(POST_AUTH_REDIRECT_COOKIE, url, { maxAgeSec: POST_AUTH_REDIRECT_MAX_AGE_SEC });
+}
+
+export function getPostAuthRedirect() {
+  return readCookie(POST_AUTH_REDIRECT_COOKIE);
+}
+
+export function clearPostAuthRedirect() {
+  deleteCookie(POST_AUTH_REDIRECT_COOKIE);
 }
 
 export function createSharedAuthStorage() {
