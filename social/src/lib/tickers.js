@@ -1,11 +1,25 @@
-const TICKER_RE = /\$([A-Z][A-Z0-9]{1,11})\b/g;
+/** Stock ticker parsing and display — mentions use @TICKER (uppercase). */
+
+const STOCK_MENTION_RE = /@([A-Z][A-Z0-9]{1,11})\b/g;
+const LEGACY_CASH_TAG_RE = /\$([A-Z][A-Z0-9]{1,11})\b/g;
+
+export function formatTicker(ticker) {
+  return ticker ?? '';
+}
 
 export function extractTickers(text = '') {
   const found = new Set();
-  for (const match of text.matchAll(TICKER_RE)) {
+  for (const match of text.matchAll(STOCK_MENTION_RE)) {
+    found.add(match[1]);
+  }
+  for (const match of text.matchAll(LEGACY_CASH_TAG_RE)) {
     found.add(match[1]);
   }
   return [...found];
+}
+
+export function bodyMentionsTicker(body = '', ticker) {
+  return body.includes(`@${ticker}`) || body.includes(`$${ticker}`);
 }
 
 export function statusStyles(status) {

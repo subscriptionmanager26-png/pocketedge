@@ -8,7 +8,7 @@ import {
   getPosition,
 } from '../data/mockData';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
-import { statusStyles } from '../lib/tickers';
+import { formatTicker, statusStyles } from '../lib/tickers';
 
 function TickerCardContent({ ticker, authorId, onClose }) {
   const stock = STOCKS[ticker];
@@ -16,13 +16,12 @@ function TickerCardContent({ ticker, authorId, onClose }) {
   const styles = statusStyles(position.status);
   const weightPct = getPortfolioWeightPct(authorId, ticker);
   const author = getPerson(authorId);
-  const return3M = stock?.return3M ?? 0;
 
   return (
     <>
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="text-[15px] font-semibold text-pe-text">${ticker}</p>
+          <p className="text-[15px] font-semibold text-pe-text">{formatTicker(ticker)}</p>
           <p className="text-[13px] text-pe-text-secondary">{stock?.name ?? ticker}</p>
         </div>
         <button
@@ -35,40 +34,26 @@ function TickerCardContent({ ticker, authorId, onClose }) {
         </button>
       </div>
 
-      <div className="mb-3 flex items-baseline gap-2">
+      <div className="mb-3">
         <p className="text-lg font-semibold text-pe-text">{formatPrice(stock?.price)}</p>
-        <p className={`text-[13px] font-semibold ${pnlClass(stock?.changePct ?? 0)}`}>
-          {formatPct(stock?.changePct ?? 0)} today
-        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-2.5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            3M return
-          </p>
-          <p className={`mt-1 text-[17px] font-semibold ${pnlClass(return3M)}`}>
-            {formatPct(return3M)}
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-2.5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            Portfolio
-          </p>
-          <p className="mt-1 text-[17px] font-semibold text-pe-text">
-            {weightPct != null ? `${weightPct.toFixed(1)}%` : '—'}
-          </p>
-          <p className="mt-0.5 text-[11px] text-pe-text-secondary">
-            {weightPct != null
-              ? `of @${author.handle}'s book`
-              : position.status === 'watchlist'
-                ? 'On watchlist'
-                : position.status === 'exited'
-                  ? 'Exited'
-                  : 'No position'}
-          </p>
-        </div>
+      <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-2.5">
+        <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          Portfolio
+        </p>
+        <p className="mt-1 text-[17px] font-semibold text-pe-text">
+          {weightPct != null ? `${weightPct.toFixed(1)}%` : '—'}
+        </p>
+        <p className="mt-0.5 text-[11px] text-pe-text-secondary">
+          {weightPct != null
+            ? `of @${author.handle}'s book`
+            : position.status === 'watchlist'
+              ? 'On watchlist'
+              : position.status === 'exited'
+                ? 'Exited'
+                : 'No position'}
+        </p>
       </div>
 
       <div

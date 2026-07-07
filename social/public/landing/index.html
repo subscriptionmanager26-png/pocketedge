@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PocketEdge — See what real investors own and say</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="#" class="brand">
+        <img src="assets/logo.png" class="brand-logo" alt="PocketEdge logo" />
+        <span class="brand-name">PocketEdge</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#">Portfolios</a>
+        <a href="#">Community</a>
+        <a href="#">About</a>
+        <a href="#">Get Started</a>
+      </nav>
+      <button class="hamburger" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <span class="drawer-title">Menu</span>
+      <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+        <span></span><span></span>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="#">Portfolios</a>
+      <a href="#">Community</a>
+      <a href="#">About</a>
+      <a href="#">Get Started</a>
+    </nav>
+  </aside>
+
+  <!-- Mobile layout -->
+  <div class="layout-mobile">
+    <div class="page">
+      <main class="hero">
+        <h1 class="headline">
+          <span class="headline-dark">Before you invest..</span>
+          <span class="headline-accent">See what real investors own and say</span>
+          <svg class="underline" viewBox="0 0 160 12" fill="none" aria-hidden="true">
+            <path d="M2 8C40 3 120 3 158 6" stroke="#F4511E" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </h1>
+
+        <div class="hero-body">
+          <ul class="features">
+            <li class="feature">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="#F4511E" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <div class="feature-text">
+                <strong>Real insights</strong>
+                <p>from investors with skin in the game</p>
+              </div>
+            </li>
+            <li class="feature">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="#F4511E" stroke-width="1.6"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round"/><circle cx="17" cy="9" r="2.3" stroke="#F4511E" stroke-width="1.6"/><path d="M16 14c2.5 0 4.5 1.8 4.5 4.5" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </span>
+              <div class="feature-text">
+                <strong>Trusted community</strong>
+                <p>reviews, discussions &amp; real portfolios</p>
+              </div>
+            </li>
+            <li class="feature">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 16l5-5 3 3 6-6" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h4v4" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <div class="feature-text">
+                <strong>See what works</strong>
+                <p>track top rated funds &amp; picks</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="hero-phone">
+            <img src="assets/phone-display.png" alt="PocketEdge app showing top rated funds and investor reviews" class="phone-img" />
+          </div>
+        </div>
+      </main>
+
+      <footer class="cta-wrap">
+        <a href="#" class="cta">
+          <span>Get Started</span>
+          <span class="cta-arrow" aria-hidden="true">→</span>
+        </a>
+        <p class="cta-sub">Join investors sharing <span class="accent">real insights</span></p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Desktop layout -->
+  <div class="layout-desktop">
+    <div class="desktop-page">
+      <div class="desktop-hero">
+        <div class="desktop-content">
+          <h1 class="headline">
+            <span class="headline-dark">Before you invest..</span>
+            <span class="headline-accent">See what real investors own and say</span>
+            <svg class="underline" viewBox="0 0 160 12" fill="none" aria-hidden="true">
+              <path d="M2 8C40 3 120 3 158 6" stroke="#F4511E" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </h1>
+
+          <ul class="features features--desktop">
+            <li class="feature feature--row">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="#F4511E" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <div class="feature-text">
+                <strong>Real insights</strong>
+                <p>from investors with skin in the game</p>
+              </div>
+            </li>
+            <li class="feature feature--row">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="#F4511E" stroke-width="1.6"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round"/><circle cx="17" cy="9" r="2.3" stroke="#F4511E" stroke-width="1.6"/><path d="M16 14c2.5 0 4.5 1.8 4.5 4.5" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </span>
+              <div class="feature-text">
+                <strong>Trusted community</strong>
+                <p>reviews, discussions &amp; real portfolios</p>
+              </div>
+            </li>
+            <li class="feature feature--row">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 16l5-5 3 3 6-6" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h4v4" stroke="#F4511E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <div class="feature-text">
+                <strong>See what works</strong>
+                <p>track top rated funds &amp; picks</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="cta-wrap cta-wrap--desktop">
+            <a href="#" class="cta cta--desktop">
+              <span>Get Started</span>
+              <span class="cta-arrow" aria-hidden="true">→</span>
+            </a>
+            <p class="cta-sub">Join investors sharing <span class="accent">real insights</span></p>
+          </div>
+        </div>
+
+        <div class="desktop-visuals">
+          <img src="assets/feed-card.png" alt="PocketEdge social feed showing investor portfolio updates" class="visual-feed" />
+          <img src="assets/iphone-fund-reviews.png" alt="PocketEdge app showing HDFC Flexi Cap Fund reviews on iPhone" class="visual-phone" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('menuBtn');
+    const drawer = document.getElementById('drawer');
+    const overlay = document.getElementById('drawerOverlay');
+    const closeBtn = document.getElementById('drawerClose');
+
+    function openDrawer() {
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+      btn.classList.add('is-open');
+      btn.setAttribute('aria-expanded', 'true');
+      drawer.setAttribute('aria-hidden', 'false');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('drawer-open');
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      overlay.classList.remove('open');
+      btn.classList.remove('is-open');
+      btn.setAttribute('aria-expanded', 'false');
+      drawer.setAttribute('aria-hidden', 'true');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('drawer-open');
+    }
+
+    btn.addEventListener('click', () => {
+      drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+    });
+    overlay.addEventListener('click', closeDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+  </script>
+</body>
+</html>

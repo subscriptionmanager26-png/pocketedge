@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { MessageCircle, Share2, ThumbsDown, ThumbsUp } from 'lucide-react';
 import Avatar from './Avatar';
 import { StarDisplay } from './StarRating';
-import { getPerson } from '../data/mockData';
+import { formatTicker } from '../lib/tickers';
+import { getPerson, STOCKS } from '../data/mockData';
 import { getFund } from '../data/fundData';
 import { getUserVote, incrementReviewShare, voteReview } from '../lib/reviewStore';
 import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
@@ -22,7 +23,11 @@ export default function ReviewCard({
   const [following, setFollowing] = useState(() => isFollowing(review.authorId));
 
   const person = getPerson(review.authorId);
-  const fund = getFund(review.fundId);
+  const fund = review.fundId ? getFund(review.fundId) : null;
+  const stock = review.stockTicker ? STOCKS[review.stockTicker] : null;
+  const assetLabel = stock
+    ? `${formatTicker(review.stockTicker)} · ${stock.name}`
+    : fund?.name;
   const userVote = getUserVote(review.id);
   void voteTick;
 
@@ -41,8 +46,10 @@ export default function ReviewCard({
 
   const handleShare = async () => {
     if (locked) return;
-    const url = `${window.location.origin}?fund=${review.fundId}&review=${review.id}`;
-    const text = `${person.name} rated ${fund?.name ?? 'a fund'} ${review.rating}★${review.body ? `: ${review.body}` : ''}`;
+    const url = review.stockTicker
+      ? `${window.location.origin}?stock=${review.stockTicker}&review=${review.id}`
+      : `${window.location.origin}?fund=${review.fundId}&review=${review.id}`;
+    const text = `${person.name} rated ${assetLabel ?? 'an investment'} ${review.rating}★${review.body ? `: ${review.body}` : ''}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Fund review on PocketEdge', text, url });
@@ -110,8 +117,8 @@ export default function ReviewCard({
             </p>
           ) : null}
 
-          {fund && (
-            <p className="mt-1.5 text-xs font-semibold text-pe-link">{fund.name}</p>
+          {assetLabel && (
+            <p className="mt-1.5 text-xs font-semibold text-pe-link">{assetLabel}</p>
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-4 text-pe-text-secondary">

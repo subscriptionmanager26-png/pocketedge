@@ -194,7 +194,7 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
                   className="h-2 w-2 rounded-full"
                   style={{ backgroundColor: DIST_COLORS[i % DIST_COLORS.length] }}
                 />
-                ${d.ticker} {d.weight.toFixed(0)}%
+                {formatTicker(d.ticker)} {d.weight.toFixed(0)}%
               </span>
             ))}
           </div>

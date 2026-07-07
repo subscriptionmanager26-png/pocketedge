@@ -10,7 +10,8 @@ import {
   toggleFollow,
   toggleTopicFollow,
 } from '../lib/socialGraphStore';
-import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatCount, formatPct, pnlClass } from '../lib/format';
+import { formatTicker } from '../lib/tickers';
 
 const RESULT_TABS = [
   { id: 'people', label: 'People' },
@@ -247,17 +248,11 @@ function StockRow({ stock, onSelectStock }) {
     <button
       type="button"
       onClick={() => onSelectStock?.(stock.ticker)}
-      className="flex w-full items-center justify-between py-3.5 text-left hover:bg-pe-surface/50"
+      className="flex w-full items-center py-3.5 text-left transition hover:bg-pe-surface/50"
     >
       <div>
-        <p className="text-[15px] font-semibold text-pe-text">${stock.ticker}</p>
+        <p className="text-[15px] font-semibold text-pe-text">{formatTicker(stock.ticker)}</p>
         <p className="text-sm text-pe-text-muted">{stock.name}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-[15px] font-semibold text-pe-text">{formatPrice(stock.price)}</p>
-        <p className={`text-sm font-semibold ${pnlClass(stock.changePct)}`}>
-          {formatPct(stock.changePct)}
-        </p>
       </div>
     </button>
   );

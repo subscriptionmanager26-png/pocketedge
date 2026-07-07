@@ -8,6 +8,7 @@ import {
   LineChart,
   Pencil,
   Search,
+  Settings,
   User,
   Wallet,
 } from 'lucide-react';
@@ -22,11 +23,12 @@ const DESKTOP_TABS = [
   { id: 'activity', label: 'Activity', icon: Bell },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
   { id: 'markets', label: 'Markets', icon: LineChart },
-  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-/** Profile is top-right avatar on mobile — not in the bottom nav. */
-const MOBILE_TABS = DESKTOP_TABS.filter((t) => t.id !== 'profile');
+/** Activity is top-right on mobile — not in the bottom nav. */
+const MOBILE_TABS = DESKTOP_TABS.filter((t) => t.id !== 'settings' && t.id !== 'activity')
+  .concat([{ id: 'profile', label: 'Profile', icon: User }]);
 
 const FEED_OPTIONS = [
   { id: 'forYou', label: 'For You' },
@@ -53,6 +55,8 @@ export default function Shell({
   onTabChange,
   onFeedModeChange,
   onProfile,
+  onSettings,
+  onGoHome,
   onCompose,
   children,
 }) {
@@ -104,16 +108,22 @@ export default function Shell({
 
   const goTab = (id) => {
     if (id === 'profile') onProfile?.();
+    else if (id === 'settings') onSettings?.();
     else onTabChange(id);
   };
 
   return (
-    <div className="min-h-dvh bg-pe-canvas text-pe-text md:flex">
-      <aside className="hidden md:flex md:w-[232px] md:shrink-0 md:flex-col md:border-r md:border-pe-border md:p-2">
+    <div className="min-h-dvh bg-pe-canvas text-pe-text md:flex md:h-dvh md:overflow-hidden">
+      <aside className="hidden md:flex md:h-full md:w-[232px] md:shrink-0 md:flex-col md:overflow-y-auto md:overscroll-y-contain md:border-r md:border-pe-border md:p-2">
         <div className="flex h-16 items-start p-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md">
+          <button
+            type="button"
+            onClick={onGoHome}
+            className="flex h-12 w-12 items-center justify-center rounded-md transition hover:bg-pe-surface"
+            aria-label="Go to home feed"
+          >
             <LogoMark />
-          </div>
+          </button>
         </div>
 
         <nav className="flex flex-1 flex-col gap-2 p-2">
@@ -126,7 +136,7 @@ export default function Shell({
                 onClick={() => goTab(id)}
                 className={`flex min-h-12 items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
                   active
-                    ? 'font-semibold text-pe-text'
+                    ? 'font-semibold text-pe-accent'
                     : 'font-medium text-pe-text-secondary'
                 }`}
               >
@@ -134,9 +144,7 @@ export default function Shell({
                   <span className="relative">
                     <Icon
                       className="h-6 w-6"
-                      strokeWidth={active ? 1.8 : 2}
-                      fill={active && id !== 'activity' ? 'currentColor' : 'none'}
-                      stroke={active && id !== 'activity' ? 'none' : 'currentColor'}
+                      strokeWidth={2}
                     />
                     {id === 'activity' && activityUnread > 0 && (
                       <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
@@ -155,7 +163,11 @@ export default function Shell({
           <button
             type="button"
             onClick={onProfile}
-            className="flex min-h-12 w-full items-center gap-1 rounded-md text-left transition hover:bg-pe-surface"
+            className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
+              tab === 'profile'
+                ? 'font-semibold text-pe-accent'
+                : 'font-medium text-pe-text-secondary'
+            }`}
           >
             <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
               <Avatar person={CURRENT_USER} size="sm" />
@@ -172,7 +184,7 @@ export default function Shell({
         </div>
       </aside>
 
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain">
         <div className="flex min-h-0 min-w-0 flex-1 md:px-5">
           <div className="flex min-h-0 min-w-0 flex-1 justify-center md:mr-[420px]">
             <div className="flex min-h-0 w-full min-w-0 max-w-feed flex-col">
@@ -180,18 +192,7 @@ export default function Shell({
               <header className="sticky top-0 z-40 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md md:hidden">
                 <div className="flex h-[56px] items-center justify-between px-4">
                   <div className="min-w-0" ref={mobileMenuRef}>
-                    {mobileBack ? (
-                      <button
-                        type="button"
-                        onClick={mobileBack.onBack}
-                        className="inline-flex h-12 max-w-[calc(100vw-5rem)] items-center gap-1.5 text-pe-text-secondary"
-                      >
-                        <ArrowLeft className="h-5 w-5 shrink-0" />
-                        <span className="truncate text-[15px] font-semibold text-pe-text">
-                          {mobileBack.label}
-                        </span>
-                      </button>
-                    ) : showFeedSelector ? (
+                    {showFeedSelector ? (
                       <div className="relative">
                         <button
                           type="button"
@@ -218,10 +219,26 @@ export default function Shell({
                           />
                         )}
                       </div>
+                    ) : mobileBack ? (
+                      <button
+                        type="button"
+                        onClick={mobileBack.onBack}
+                        className="inline-flex h-12 max-w-[calc(100vw-5rem)] items-center gap-1.5 text-pe-text-secondary"
+                      >
+                        <ArrowLeft className="h-5 w-5 shrink-0" />
+                        <span className="truncate text-[15px] font-semibold text-pe-text">
+                          {mobileBack.label}
+                        </span>
+                      </button>
                     ) : (
-                      <span className="flex h-12 w-12 items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={onGoHome}
+                        className="flex h-12 w-12 items-center justify-center rounded-md transition hover:bg-pe-surface"
+                        aria-label="Go to home feed"
+                      >
                         <LogoMark />
-                      </span>
+                      </button>
                     )}
                   </div>
 
@@ -243,7 +260,18 @@ export default function Shell({
                         </span>
                       )}
                     </button>
-                    <Avatar person={CURRENT_USER} size="sm" onClick={onProfile} />
+                    <button
+                      type="button"
+                      onClick={onSettings}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-pe-surface ${
+                        tab === 'settings'
+                          ? 'text-pe-accent'
+                          : 'text-pe-text-secondary hover:text-pe-text'
+                      }`}
+                      aria-label="Settings"
+                    >
+                      <Settings className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </header>
@@ -311,15 +339,9 @@ export default function Shell({
                 }`}
               >
                 <Icon
-                  className="h-6 w-6"
-                  fill={active && id !== 'activity' ? 'currentColor' : 'none'}
+                  className={`h-6 w-6 ${active ? 'text-pe-accent' : 'text-pe-text-muted'}`}
                   strokeWidth={2}
                 />
-                {id === 'activity' && activityUnread > 0 && (
-                  <span className="absolute right-3 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-pe-accent px-1 text-[9px] font-bold text-white">
-                    {activityUnread > 9 ? '9+' : activityUnread}
-                  </span>
-                )}
                 {label}
               </button>
             );

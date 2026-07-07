@@ -1,5 +1,4 @@
-import { ArrowLeft, ChevronRight } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
+import { ChevronRight } from 'lucide-react';
 
 const ROWS = [
   { id: 'notifications', label: 'Notifications' },
@@ -8,20 +7,9 @@ const ROWS = [
   { id: 'legal', label: 'Terms & privacy' },
 ];
 
-export default function SettingsPage({ onBack, onLogout }) {
+export default function SettingsPage({ onLogout }) {
   return (
     <div>
-      <PageHeader desktopOnly>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-      </PageHeader>
-
       <div className="border-b border-pe-border px-4 py-5">
         <h1 className="font-serif text-2xl font-bold text-pe-text">Settings</h1>
       </div>

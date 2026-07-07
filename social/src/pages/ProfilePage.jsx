@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Settings, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Pencil, Plus, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -18,6 +18,7 @@ import {
 } from '../data/mockData';
 import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
 import { formatInr, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { formatTicker } from '../lib/tickers';
 
 const PROFILE_TABS = [
   { id: 'posts', label: 'Posts' },
@@ -43,7 +44,6 @@ export default function ProfilePage({
   onSelectPortfolio,
   onClearPortfolio,
   onBack,
-  onOpenSettings,
   onOpenPublicPreview,
   onExitPublicPreview,
   onOpenProfile,
@@ -181,19 +181,6 @@ export default function ProfilePage({
         isPublicPreview={isMePublic}
         onToggleView={isMePublic ? onExitPublicPreview : onOpenPublicPreview}
       />
-
-      {isOwn && !isMePublic && (
-        <div className="border-b border-pe-border px-4 py-2">
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </button>
-        </div>
-      )}
 
       <PageHeader>
         <UnderlineTabs
@@ -439,13 +426,13 @@ function PortfoliosListPanel({
   const portfolios = getUserPortfolios(userId);
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 pb-5">
       {!portfolios.length ? (
         <p className="py-10 text-center text-sm text-pe-text-secondary">
           {canEdit ? 'No portfolios yet.' : 'No portfolios published yet.'}
         </p>
       ) : (
-        <div className="divide-y divide-pe-border border-y border-pe-border">
+        <div className="divide-y divide-pe-border border-b border-pe-border">
           {portfolios.map((portfolio) => (
             <button
               key={portfolio.id}
@@ -507,7 +494,7 @@ function TradesPanel({ userId, tradesVersion }) {
               <span className={`font-bold uppercase ${isBuy ? 'text-pe-positive' : 'text-pe-negative'}`}>
                 {trade.action}
               </span>{' '}
-              <span className="font-semibold">${trade.ticker}</span>{' '}
+              <span className="font-semibold">{formatTicker(trade.ticker)}</span>{' '}
               <span className="text-pe-text-secondary">
                 {trade.qty} @ {formatPrice(trade.price)}
               </span>
@@ -741,7 +728,7 @@ function PortfolioDetailView({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-[15px] font-semibold text-pe-text">${h.ticker}</p>
+                      <p className="text-[15px] font-semibold text-pe-text">{formatTicker(h.ticker)}</p>
                       <p className="text-sm text-pe-text-muted">{stock?.name}</p>
                     </div>
                     <button
@@ -817,7 +804,7 @@ function PortfolioDetailView({
               return (
                 <div key={h.ticker} className="flex items-center justify-between py-3.5">
                   <div>
-                    <p className="text-[15px] font-semibold text-pe-text">${h.ticker}</p>
+                    <p className="text-[15px] font-semibold text-pe-text">{formatTicker(h.ticker)}</p>
                     <p className="text-sm text-pe-text-muted">{stock?.name}</p>
                     <p className="mt-0.5 text-xs text-pe-text-secondary">
                       {h.qty} shares · avg {formatPrice(h.avg)}

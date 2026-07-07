@@ -59,7 +59,7 @@ export default function ComposeModal({ open, onClose, onPost }) {
             autoFocus
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Share a thesis… use $TICKER for disclosure"
+            placeholder="Share a thesis… use @TICKER for disclosure"
             rows={6}
             className="w-full resize-none bg-transparent font-serif text-[17px] leading-[1.65] text-pe-ink outline-none placeholder:font-sans placeholder:text-[15px] placeholder:text-pe-text-muted"
           />

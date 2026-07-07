@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { getPosition } from '../data/mockData';
-import { statusStyles } from '../lib/tickers';
+import { formatTicker, statusStyles } from '../lib/tickers';
 import TickerMiniCard from './TickerMiniCard';
 
-const PARTS_RE = /(\$[A-Z][A-Z0-9]{1,11})\b/g;
+const MENTION_PARTS_RE = /(@[A-Z][A-Z0-9]{1,11}\b|\$[A-Z][A-Z0-9]{1,11}\b)/g;
+
+function mentionTicker(part) {
+  if (part.startsWith('@')) return part.slice(1);
+  if (part.startsWith('$')) return part.slice(1);
+  return null;
+}
 
 export default function TickerText({
   text,
@@ -15,17 +21,17 @@ export default function TickerText({
   const [localActive, setLocalActive] = useState(null);
   const active = activeTicker !== undefined ? activeTicker : localActive;
   const setActive = onActiveTickerChange ?? setLocalActive;
-  const parts = text.split(PARTS_RE);
+  const parts = text.split(MENTION_PARTS_RE);
 
   return (
     <p
       className={`font-serif text-[16px] font-normal leading-[1.55] text-pe-ink ${className}`}
     >
       {parts.map((part, i) => {
-        if (!part.startsWith('$') || part.length < 3) {
+        const ticker = mentionTicker(part);
+        if (!ticker) {
           return <span key={i}>{part}</span>;
         }
-        const ticker = part.slice(1);
         const position = getPosition(authorId, ticker);
         const styles = statusStyles(position.status);
         const isOpen = active === ticker;
@@ -40,7 +46,7 @@ export default function TickerText({
               }}
               className={`font-semibold underline decoration-dotted decoration-2 underline-offset-[5px] transition hover:opacity-80 ${styles.underline}`}
             >
-              {part}
+              {formatTicker(ticker)}
             </button>
             {isOpen && (
               <TickerMiniCard

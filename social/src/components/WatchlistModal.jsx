@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { STOCKS } from '../data/mockData';
+import { formatTicker } from '../lib/tickers';
 
 export default function WatchlistModal({ open, onClose, onSave }) {
   const [name, setName] = useState('');
@@ -69,7 +70,7 @@ export default function WatchlistModal({ open, onClose, onSave }) {
             <div className="flex flex-wrap gap-2">
               {tickers.map((t) => (
                 <span key={t} className="rounded-full bg-pe-accent-wash px-2.5 py-1 text-xs font-semibold text-pe-accent">
-                  ${t}
+                  {formatTicker(t)}
                 </span>
               ))}
             </div>

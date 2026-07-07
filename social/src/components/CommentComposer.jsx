@@ -19,7 +19,7 @@ export default function CommentComposer({ onSubmit }) {
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Add a comment… use $TICKER for disclosure"
+          placeholder="Add a comment… use @TICKER for disclosure"
           rows={2}
           className="min-h-[44px] flex-1 resize-none rounded-lg border border-pe-border bg-pe-surface px-3 py-2 text-[15px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent"
         />

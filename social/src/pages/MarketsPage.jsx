@@ -1,28 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
-import {
-  NewsFeed,
-  PostsFeed,
-  TradesFeed,
-  collectActivity,
-} from '../components/ActivityFeed';
-import Sparkline from '../components/Sparkline';
 import { FUNDS } from '../data/fundData';
 import { STOCKS } from '../data/mockData';
-import { getReviewsForFund } from '../lib/reviewStore';
-import { StarDisplay } from '../components/StarRating';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatTicker } from '../lib/tickers';
 
 const ALL_STOCKS = Object.entries(STOCKS).map(([ticker, s]) => ({ ticker, ...s }));
 const ALL_FUNDS = Object.values(FUNDS);
-const CONTENT_TABS = [
-  { id: 'summary', label: 'Summary' },
-  { id: 'news', label: 'News' },
-  { id: 'trades', label: 'Trades' },
-  { id: 'posts', label: 'Posts' },
-];
 
 const MARKET_FILTERS = [
   { id: 'movers', label: 'Movers' },
@@ -31,26 +16,11 @@ const MARKET_FILTERS = [
 ];
 
 export default function MarketsPage({
-  selectedTicker,
   onSelectStock,
   onSelectFund,
-  onClearStock,
-  onOpenProfile,
-  onOpenPost,
 }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('movers');
-
-  if (selectedTicker && STOCKS[selectedTicker]) {
-    return (
-      <StockDetail
-        ticker={selectedTicker}
-        onBack={onClearStock}
-        onOpenProfile={onOpenProfile}
-        onOpenPost={onOpenPost}
-      />
-    );
-  }
 
   const q = query.trim().toLowerCase();
 
@@ -74,7 +44,6 @@ export default function MarketsPage({
 
   return (
     <div>
-      {/* Primary control: find a stock + market lens */}
       <PageHeader
         footer={
           <PageHeaderRow>
@@ -86,12 +55,7 @@ export default function MarketsPage({
           </PageHeaderRow>
         }
       >
-        <UnderlineTabs
-          embedded
-          tabs={MARKET_FILTERS}
-          active={filter}
-          onChange={setFilter}
-        />
+        <UnderlineTabs embedded tabs={MARKET_FILTERS} active={filter} onChange={setFilter} />
       </PageHeader>
 
       <div className="space-y-8 px-4 py-6">
@@ -109,51 +73,39 @@ export default function MarketsPage({
 
         <section>
           <SectionLabel>
-            {q ? 'Results' : filter === 'gainers' ? 'Gainers' : filter === 'losers' ? 'Losers' : 'Top movers'}
+            {q ? 'Stocks' : filter === 'gainers' ? 'Gainers' : filter === 'losers' ? 'Losers' : 'Top movers'}
           </SectionLabel>
           <div className="mt-2 divide-y divide-pe-border">
             {stocks.length === 0 ? (
               <p className="py-10 text-center text-sm text-pe-text-secondary">No stocks found</p>
             ) : (
               stocks.map((stock) => (
-                <button
-                  key={stock.ticker}
-                  type="button"
-                  onClick={() => onSelectStock?.(stock.ticker)}
-                  className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface"
-                >
-                  <div>
-                    <p className="text-[15px] font-semibold text-pe-text">${stock.ticker}</p>
-                    <p className="text-sm text-pe-text-muted">{stock.name}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Sparkline data={stock.spark} positive={stock.changePct >= 0} />
-                    <div className="min-w-[4.75rem] text-right">
+                  <button
+                    key={stock.ticker}
+                    type="button"
+                    onClick={() => onSelectStock?.(stock.ticker)}
+                    className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <p className="text-[15px] font-semibold text-pe-text">{formatTicker(stock.ticker)}</p>
+                      <p className="text-sm text-pe-text-muted">{stock.name}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
                       <p className="text-[15px] font-semibold text-pe-text">
                         {formatPrice(stock.price)}
                       </p>
-                      <p className={`text-sm font-semibold ${pnlClass(stock.changePct)}`}>
-                        {formatPct(stock.changePct)}
-                      </p>
                     </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                ))
             )}
           </div>
         </section>
 
         {!q && (
           <section>
-            <SectionLabel>Mutual funds · reviewed by community</SectionLabel>
+            <SectionLabel>Mutual funds</SectionLabel>
             <div className="mt-2 divide-y divide-pe-border">
-              {ALL_FUNDS.slice(0, 6).map((fund) => {
-                const reviews = getReviewsForFund(fund.id);
-                const avg =
-                  reviews.length > 0
-                    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
-                    : 0;
-                return (
+              {ALL_FUNDS.slice(0, 6).map((fund) => (
                   <button
                     key={fund.id}
                     type="button"
@@ -162,107 +114,14 @@ export default function MarketsPage({
                   >
                     <div className="min-w-0 pr-3">
                       <p className="text-[15px] font-semibold text-pe-text">{fund.name}</p>
-                      <p className="text-sm text-pe-text-muted">
-                        {fund.category} · {reviews.length} reviews
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      {avg > 0 && <StarDisplay rating={Math.round(avg)} size="sm" />}
-                      <p className="mt-0.5 text-xs font-semibold text-pe-positive">
-                        3Y {formatPct(fund.return3Y, { signed: false })}
-                      </p>
+                      <p className="text-sm text-pe-text-muted">{fund.category}</p>
                     </div>
                   </button>
-                );
-              })}
+                ))}
             </div>
           </section>
         )}
       </div>
-    </div>
-  );
-}
-
-function StockDetail({ ticker, onBack, onOpenProfile, onOpenPost }) {
-  const [contentTab, setContentTab] = useState('summary');
-  const stock = STOCKS[ticker];
-  const activity = useMemo(() => collectActivity([ticker]), [ticker]);
-
-  return (
-    <div>
-      <PageHeader desktopOnly>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Markets
-        </button>
-      </PageHeader>
-
-      <div className="border-b border-pe-border px-4 py-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">
-          ${ticker}
-        </p>
-        <h2 className="mt-0.5 font-serif text-2xl font-bold text-pe-text">{stock.name}</h2>
-
-        <div className="mt-3 flex items-end justify-between gap-4">
-          <div>
-            <p className="font-serif text-3xl font-bold text-pe-text">
-              {formatPrice(stock.price)}
-            </p>
-            <p className={`mt-1 text-[15px] font-semibold ${pnlClass(stock.changePct)}`}>
-              {formatPct(stock.changePct)} today
-            </p>
-          </div>
-          <Sparkline data={stock.spark} positive={stock.changePct >= 0} className="h-12 w-28" />
-        </div>
-      </div>
-
-      <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
-
-      {contentTab === 'summary' && (
-        <div className="space-y-4 px-4 py-5">
-          <div className="grid grid-cols-2 gap-3">
-            <SummaryTile label="Last" value={formatPrice(stock.price)} />
-            <SummaryTile
-              label="Day change"
-              value={formatPct(stock.changePct)}
-              tone={stock.changePct}
-            />
-            <SummaryTile label="Week range" value="Demo" />
-            <SummaryTile
-              label="Mentions (wk)"
-              value={String(activity.posts.length + activity.news.length)}
-            />
-          </div>
-          <p className="text-sm leading-6 text-pe-text-secondary">
-            Community activity for ${ticker} is aggregated below — news, trades, and posts
-            from members who mention this name. Position disclosure appears on every take.
-          </p>
-        </div>
-      )}
-      {contentTab === 'news' && <NewsFeed items={activity.news} />}
-      {contentTab === 'trades' && (
-        <TradesFeed items={activity.trades} onOpenProfile={onOpenProfile} />
-      )}
-      {contentTab === 'posts' && (
-        <PostsFeed items={activity.posts} onOpenProfile={onOpenProfile} onOpenPost={onOpenPost} />
-      )}
-    </div>
-  );
-}
-
-function SummaryTile({ label, value, tone }) {
-  return (
-    <div className="rounded-[10px] border border-pe-border bg-pe-surface px-3 py-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-        {label}
-      </p>
-      <p className={`mt-1.5 text-[15px] font-semibold ${tone != null ? pnlClass(tone) : 'text-pe-text'}`}>
-        {value}
-      </p>
     </div>
   );
 }

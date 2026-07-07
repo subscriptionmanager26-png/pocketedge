@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { isAppShellRoute, isLocalAppRoute } from './app/appRoute';
+import { createSharedAuthStorage } from './authStorage';
 import { getSiteOrigin, isSameSiteUrl, toAbsoluteUrl } from './siteUrl';
 
 const REFERRAL_REF_KEY = 'referral_ref';
@@ -14,6 +15,7 @@ export const supabase =
           detectSessionInUrl: true,
           persistSession: true,
           flowType: 'pkce',
+          storage: createSharedAuthStorage(),
         },
       })
     : null;

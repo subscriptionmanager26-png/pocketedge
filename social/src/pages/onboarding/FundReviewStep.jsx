@@ -17,52 +17,57 @@ export default function FundReviewStep({
 
   return (
     <>
-      <p className="mt-4 font-serif text-2xl font-bold text-pe-text">Recommend a fund</p>
-      <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        To unlock community reviews, share your take on one <strong>{category}</strong> fund.
-        Your rating helps build our investor content database.
+      <h1 className="mt-3 font-serif text-3xl font-bold leading-tight text-pe-text md:text-4xl">
+        Recommend a fund
+      </h1>
+      <p className="mt-3 text-[15px] leading-relaxed text-pe-text-secondary">
+        Share your take on one <span className="font-semibold text-pe-text">{category}</span> fund to
+        unlock community reviews.
       </p>
 
-      <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">
-        Pick a {category} fund
+      <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        Pick a fund
       </p>
-      <div className="mt-3 space-y-2">
-        {categoryFunds.map((fund) => (
-          <button
-            key={fund.id}
-            type="button"
-            onClick={() => onSelectFund(fund.id)}
-            className={`w-full rounded-lg border px-3 py-3 text-left transition ${
-              selectedFundId === fund.id
-                ? 'border-pe-accent bg-pe-accent-wash'
-                : 'border-pe-border hover:border-pe-border-strong'
-            }`}
-          >
-            <p className="text-[15px] font-semibold text-pe-text">{fund.name}</p>
-            <p className="text-sm text-pe-text-muted">{fund.amc}</p>
-          </button>
-        ))}
+      <div className="mt-3 divide-y divide-pe-border rounded-lg border border-pe-border">
+        {categoryFunds.map((fund) => {
+          const selected = selectedFundId === fund.id;
+          return (
+            <button
+              key={fund.id}
+              type="button"
+              onClick={() => onSelectFund(fund.id)}
+              className={`w-full px-4 py-3.5 text-left transition first:rounded-t-lg last:rounded-b-lg ${
+                selected ? 'bg-pe-accent-wash' : 'hover:bg-pe-surface'
+              }`}
+            >
+              <p className="text-[15px] font-semibold text-pe-text">{fund.name}</p>
+              <p className="text-sm text-pe-text-muted">{fund.amc}</p>
+            </button>
+          );
+        })}
       </div>
 
-      <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">Your rating</p>
-      <div className="mt-2">
+      <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        Your rating
+      </p>
+      <div className="mt-3">
         <StarRating value={rating} onChange={onRating} />
       </div>
 
-      <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">
-        One-line review (optional)
+      <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        One-line review <span className="font-medium normal-case tracking-normal text-pe-text-muted">(optional)</span>
       </p>
       <input
         value={reviewLine}
         onChange={(e) => onReviewLine(e.target.value)}
         placeholder="I like this fund because…"
         maxLength={160}
-        className={`${inputClass} mt-2`}
+        className={`${inputClass} mt-3`}
       />
-      <p className="mt-1 text-xs text-pe-text-muted">{reviewLine.length}/160</p>
+      <p className="mt-1.5 text-xs text-pe-text-muted">{reviewLine.length}/160</p>
 
-      <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-sm text-pe-text-secondary">
-        🔓 Submit to unlock community reviews and join fund discussions.
+      <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-[15px] text-pe-text-secondary">
+        Submitting unlocks full community reviews and fund discussions.
       </div>
     </>
   );

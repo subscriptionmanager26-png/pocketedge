@@ -7,6 +7,7 @@ import {
   getPerson,
 } from '../data/mockData';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 
 /** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
 export function collectActivity(tickers) {
@@ -24,7 +25,7 @@ export function collectActivity(tickers) {
 
   // Also pull feed posts that mention these tickers
   for (const post of POSTS) {
-    const mentioned = tickers.some((t) => post.body.includes(`$${t}`) || post.trade?.ticker === t);
+    const mentioned = tickers.some((t) => bodyMentionsTicker(post.body, t) || post.trade?.ticker === t);
     if (!mentioned) continue;
     if (posts.some((p) => p.postId === post.id || p.id === post.id)) continue;
     posts.push({
@@ -34,7 +35,7 @@ export function collectActivity(tickers) {
       authorId: post.authorId,
       snippet: post.body.slice(0, 120) + (post.body.length > 120 ? '…' : ''),
       time: 'recent',
-      ticker: tickers.find((t) => post.body.includes(`$${t}`) || post.trade?.ticker === t),
+      ticker: tickers.find((t) => bodyMentionsTicker(post.body, t) || post.trade?.ticker === t),
     });
   }
 
@@ -51,7 +52,7 @@ export function NewsFeed({ items }) {
           <div className="min-w-0">
             {item.ticker && (
               <p className="text-[11px] font-bold uppercase tracking-[0.04em] text-pe-accent">
-                ${item.ticker}
+                {formatTicker(item.ticker)}
               </p>
             )}
             <p className="font-serif text-[15px] leading-6 text-pe-text">{item.title}</p>
@@ -94,7 +95,7 @@ export function TradesFeed({ items, onOpenProfile }) {
                 <span className={`font-bold uppercase ${isBuy ? 'text-pe-positive' : 'text-pe-negative'}`}>
                   {item.type}
                 </span>{' '}
-                <span className="font-semibold">${item.ticker}</span>{' '}
+                <span className="font-semibold">{formatTicker(item.ticker)}</span>{' '}
                 <span className="text-pe-text-secondary">
                   {item.qty} @ {formatPrice(item.price)}
                 </span>
@@ -139,7 +140,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
                 <span className="text-sm font-semibold text-pe-text">{person.name}</span>
                 <span className="text-sm text-pe-text-muted">@{person.handle}</span>
                 {item.ticker && (
-                  <span className="text-[11px] font-bold uppercase text-pe-accent">${item.ticker}</span>
+                  <span className="text-[11px] font-bold uppercase text-pe-accent">{formatTicker(item.ticker)}</span>
                 )}
               </div>
               <p className="mt-1 font-serif text-[15px] leading-6 text-pe-ink">{item.snippet}</p>
@@ -167,7 +168,7 @@ export function HoldingsSummary({ holdings, onSelectStock }) {
             className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-pe-surface"
           >
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-pe-text">${h.ticker}</p>
+              <p className="text-[15px] font-semibold text-pe-text">{formatTicker(h.ticker)}</p>
               <p className="text-sm text-pe-text-muted">{stock?.name}</p>
               {isWatch ? (
                 <p className="mt-0.5 text-xs font-semibold text-pe-warning">On watchlist</p>

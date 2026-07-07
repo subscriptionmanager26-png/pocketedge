@@ -3,13 +3,12 @@ import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
 import ActivityPage from './pages/ActivityPage';
 import FeedPage from './pages/FeedPage';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
+import HomePage from './pages/HomePage';
 import OnboardingFlow from './pages/onboarding/OnboardingFlow';
 import SettingsPage from './pages/SettingsPage';
 import MarketsPage from './pages/MarketsPage';
 import InvestmentPage from './pages/InvestmentPage';
+import StockInvestmentPage from './pages/StockInvestmentPage';
 import FundReviewModal from './components/FundReviewModal';
 import PortfolioPage from './pages/PortfolioPage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -25,17 +24,18 @@ import {
 import { clearSocialGraph } from './lib/socialGraphStore';
 import {
   clearSession,
-  resolveAuthView,
-  saveSession,
-  isOnboardingComplete,
+  resolveAuthViewForUser,
+  skipAuthForDev,
 } from './lib/sessionStore';
+import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supabase';
 import { clearWatchlists } from './lib/watchlistStore';
 import { clearReviewStore } from './lib/reviewStore';
-import { CURRENT_USER, POSTS, getPerson } from './data/mockData';
+import { CURRENT_USER, POSTS, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
 
 export default function App() {
-  const [authView, setAuthView] = useState(() => resolveAuthView());
+  const [authView, setAuthView] = useState('bootstrapping');
+  const [authUser, setAuthUser] = useState(null);
   const [tab, setTab] = useState('feed');
   const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
@@ -47,11 +47,45 @@ export default function App() {
   const [profileMode, setProfileMode] = useState('own');
   const [profileUserId, setProfileUserId] = useState(CURRENT_USER.id);
   const [profileReturnTab, setProfileReturnTab] = useState('feed');
+  const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
+  const [fundReviewPrefill, setFundReviewPrefill] = useState(null);
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
 
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    if (skipAuthForDev()) {
+      setAuthUser({ id: 'u_me', email: 'demo@pocketedge.in' });
+      setAuthView('app');
+      return undefined;
+    }
+
+    if (!supabase) {
+      setAuthView('landing');
+      return undefined;
+    }
+
+    cleanOAuthCallbackUrl();
+
+    const syncAuth = (session) => {
+      const user = session?.user ?? null;
+      setAuthUser(user);
+      setAuthView(resolveAuthViewForUser(user));
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => syncAuth(session));
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      cleanOAuthCallbackUrl();
+      syncAuth(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const activityItems = useMemo(
     () => getActivityFeed(),
@@ -121,6 +155,20 @@ export default function App() {
     setTab('feed');
   };
 
+  const openSettings = () => {
+    setSelectedPostId(null);
+    setSettingsReturnTab(tab === 'settings' ? settingsReturnTab : tab);
+    setTab('settings');
+  };
+
+  const goHome = () => {
+    setSelectedPostId(null);
+    setSelectedTicker(null);
+    setSelectedFundId(null);
+    setProfilePortfolioId(null);
+    setTab('feed');
+  };
+
   const openProfile = (userId) => {
     if (!userId) return;
     setSelectedPostId(null);
@@ -153,21 +201,13 @@ export default function App() {
     }
   };
 
-  const handleLogin = ({ email }) => {
-    saveSession({ userId: CURRENT_USER.id, email, isNew: false });
-    setAuthView(isOnboardingComplete() ? 'app' : 'onboarding');
-  };
-
-  const handleSignup = ({ email }) => {
-    saveSession({ userId: CURRENT_USER.id, email, isNew: true });
-    setAuthView('onboarding');
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOutFromSupabase();
     clearSession();
     clearSocialGraph();
     clearWatchlists();
     clearReviewStore();
+    setAuthUser(null);
     setAuthView('landing');
     setTab('feed');
     setPosts(POSTS);
@@ -184,13 +224,12 @@ export default function App() {
             ? getPerson(profileUserId).name
           : authView === 'app' && tab === 'markets' && selectedFundId
             ? getFund(selectedFundId)?.name ?? 'Fund'
+            : authView === 'app' && tab === 'markets' && selectedTicker
+              ? STOCKS[selectedTicker]?.name ?? selectedTicker
             : undefined;
 
   const mobileBack = useMemo(() => {
     if (authView !== 'app') return null;
-    if (tab === 'settings') {
-      return { label: 'Profile', onBack: () => setTab('profile') };
-    }
     if (selectedPostId && tab === 'feed') {
       return { label: 'Back', onBack: () => setSelectedPostId(null) };
     }
@@ -225,43 +264,31 @@ export default function App() {
     profilePortfolioId,
   ]);
 
+  if (authView === 'bootstrapping') {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-pe-canvas text-sm text-pe-text-secondary">
+        Loading…
+      </div>
+    );
+  }
+
   if (authView === 'landing') {
-    return (
-      <LandingPage
-        onGetStarted={() => setAuthView('signup')}
-        onSignIn={() => setAuthView('login')}
-      />
-    );
-  }
-
-  if (authView === 'login') {
-    return (
-      <LoginPage
-        onBack={() => setAuthView('landing')}
-        onLogin={handleLogin}
-        onGoSignup={() => setAuthView('signup')}
-      />
-    );
-  }
-
-  if (authView === 'signup') {
-    return (
-      <SignupPage
-        onBack={() => setAuthView('landing')}
-        onSignup={handleSignup}
-        onGoLogin={() => setAuthView('login')}
-      />
-    );
+    return <HomePage />;
   }
 
   if (authView === 'onboarding') {
-    return <OnboardingFlow onComplete={() => setAuthView('app')} />;
+    return (
+      <OnboardingFlow
+        userId={authUser?.id}
+        onComplete={() => setAuthView('app')}
+      />
+    );
   }
 
   return (
     <>
       <Shell
-        tab={tab === 'settings' ? 'profile' : tab}
+        tab={tab}
         feedMode={feedMode}
         pageTitleOverride={pageTitleOverride}
         mobileBack={mobileBack}
@@ -272,9 +299,11 @@ export default function App() {
           setSelectedPostId(null);
           setProfileMode('own');
           setProfileUserId(CURRENT_USER.id);
-          setProfileReturnTab(tab === 'settings' ? 'feed' : tab);
+          setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
           setTab('profile');
         }}
+        onSettings={openSettings}
+        onGoHome={goHome}
         onCompose={() => setComposeOpen(true)}
       >
         {tab === 'feed' &&
@@ -334,16 +363,26 @@ export default function App() {
               onBack={() => setSelectedFundId(null)}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}
-              onPromptReview={() => setFundReviewOpen(true)}
+              onPromptReview={() => {
+                setFundReviewPrefill(selectedFundId);
+                setFundReviewOpen(true);
+              }}
+            />
+          ) : selectedTicker ? (
+            <StockInvestmentPage
+              ticker={selectedTicker}
+              onBack={() => setSelectedTicker(null)}
+              onOpenProfile={openProfile}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
+              onPromptReview={() => {
+                setFundReviewPrefill(null);
+                setFundReviewOpen(true);
+              }}
             />
           ) : (
             <MarketsPage
-              selectedTicker={selectedTicker}
               onSelectStock={openStock}
               onSelectFund={openFund}
-              onClearStock={() => setSelectedTicker(null)}
-              onOpenProfile={openProfile}
-              onOpenPost={openPost}
             />
           ))}
         {tab === 'profile' && (
@@ -355,7 +394,6 @@ export default function App() {
             onSelectPortfolio={setProfilePortfolioId}
             onClearPortfolio={() => setProfilePortfolioId(null)}
             onBack={() => setTab(profileReturnTab || 'feed')}
-            onOpenSettings={() => setTab('settings')}
             onOpenPublicPreview={() => {
               setProfileUserId(CURRENT_USER.id);
               setProfileMode('public');
@@ -369,15 +407,24 @@ export default function App() {
             onGraphChange={() => setGraphTick((n) => n + 1)}
           />
         )}
-        {tab === 'settings' && <SettingsPage onBack={() => setTab('profile')} onLogout={handleLogout} />}
+        {tab === 'settings' && (
+          <SettingsPage onLogout={handleLogout} />
+        )}
       </Shell>
 
       <ComposeModal open={composeOpen} onClose={() => setComposeOpen(false)} onPost={handlePost} />
 
       <FundReviewModal
         open={fundReviewOpen}
-        onClose={() => setFundReviewOpen(false)}
-        onSubmitted={() => setFundReviewOpen(false)}
+        prefillFundId={fundReviewPrefill}
+        onClose={() => {
+          setFundReviewOpen(false);
+          setFundReviewPrefill(null);
+        }}
+        onSubmitted={() => {
+          setFundReviewOpen(false);
+          setFundReviewPrefill(null);
+        }}
       />
     </>
   );

@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatTicker } from '../lib/tickers';
 
 export default function TradePill({ trade }) {
   const isBuy = trade.action === 'buy';
@@ -19,7 +20,7 @@ export default function TradePill({ trade }) {
         {isBuy ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
         {trade.action}
       </span>
-      <span className="font-semibold text-pe-text">${trade.ticker}</span>
+      <span className="font-semibold text-pe-text">{formatTicker(trade.ticker)}</span>
       <span className="text-pe-text-secondary">
         {trade.qty} @ {formatPrice(trade.price)}
       </span>

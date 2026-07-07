@@ -12,6 +12,7 @@ import { getPerson } from '../data/mockData';
 import { getActivityFeed } from '../lib/activityFeed';
 import { isActivityRead, markActivityRead } from '../lib/activityStore';
 import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { formatTicker } from '../lib/tickers';
 
 const TYPE_ICONS = {
   post: FileText,
@@ -156,7 +157,7 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
             ) : (
               <ArrowDownRight className="h-4 w-4 text-pe-negative" />
             )}
-            <span className="font-semibold text-pe-text">${item.ticker}</span>
+            <span className="font-semibold text-pe-text">{formatTicker(item.ticker)}</span>
             {trade.qty != null && trade.price != null && (
               <span className="text-pe-text-secondary">
                 {trade.qty} @ {formatPrice(trade.price)}
@@ -172,7 +173,7 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
 
         {item.ticker && item.category === 'portfolio_stock' && (
           <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.04em] text-pe-accent">
-            ${item.ticker} in your portfolio
+            {formatTicker(item.ticker)} in your portfolio
           </p>
         )}
       </div>

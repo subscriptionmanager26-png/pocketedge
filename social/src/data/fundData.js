@@ -194,6 +194,9 @@ export const SEED_FUND_REVIEWS = [
   },
 ];
 
+/** Funds on the current user's watchlist (demo). */
+export const MY_FUND_WATCHLIST = ['fund_motilal_mid'];
+
 export const FUND_HOLDERS = {
   fund_parag_flexi: ['u1', 'u2', 'u5', 'u_me'],
   fund_ppfas_flexi: ['u4'],

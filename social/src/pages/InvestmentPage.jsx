@@ -1,32 +1,36 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import AssetReviewComposer from '../components/AssetReviewComposer';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
-import { StarDisplay } from '../components/StarRating';
 import {
-  averageRating,
+  BlurredSection,
+  DiscussionsBlurPreview,
+  DiscussionsList,
+  HoldersBlurPreview,
+  INVESTMENT_TABS,
+  NewsBlurPreview,
+  REVIEW_LOCK,
+  ReviewsBlurPreview,
+  TRACK_FUND_LOCK,
+} from '../components/InvestmentSections';
+import {
   getFund,
   getFundHolders,
   getFundNews,
 } from '../data/fundData';
-import { getPerson } from '../data/mockData';
+import { getPerson, CURRENT_USER } from '../data/mockData';
+import { hasFundAccess } from '../lib/assetAccess';
+import { getFundDiscussions } from '../lib/assetDiscussions';
 import {
   addReviewComment,
-  getDiscussionsForFund,
   getReviewsForFund,
+  getUserReviewForFund,
   hasCommunityReviewsAccess,
   subscribeReviews,
 } from '../lib/reviewStore';
-import { formatPct } from '../lib/format';
-
-const INVESTMENT_TABS = [
-  { id: 'reviews', label: '⭐ Reviews' },
-  { id: 'discussions', label: '💬 Discussions' },
-  { id: 'holders', label: '👥 Holders' },
-  { id: 'news', label: '📰 News' },
-];
 
 export default function InvestmentPage({
   fundId,
@@ -42,11 +46,23 @@ export default function InvestmentPage({
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
 
   const unlocked = hasCommunityReviewsAccess();
+  const hasAccess = hasFundAccess(fundId);
   const reviews = useMemo(() => getReviewsForFund(fundId), [fundId, reviewTick]);
-  const discussions = useMemo(() => getDiscussionsForFund(fundId), [fundId, reviewTick]);
+  const communityReviews = useMemo(
+    () => reviews.filter((r) => r.authorId !== CURRENT_USER.id),
+    [reviews]
+  );
+  const userReview = useMemo(
+    () => getUserReviewForFund(fundId),
+    [fundId, reviewTick]
+  );
+  const discussions = useMemo(() => getFundDiscussions(fundId), [fundId]);
   const holders = getFundHolders(fundId);
   const news = getFundNews(fundId);
-  const avg = averageRating(fundId, reviews);
+
+  const reviewsLocked = !unlocked;
+  const discussionsLocked = !unlocked || !hasAccess;
+  const holdersLocked = !hasAccess;
 
   if (!fund) {
     return (
@@ -76,131 +92,123 @@ export default function InvestmentPage({
         <p className="text-[11px] font-bold uppercase tracking-widest text-pe-accent">{fund.category}</p>
         <h1 className="mt-1 font-serif text-2xl font-bold text-pe-text">{fund.name}</h1>
         <p className="mt-0.5 text-sm text-pe-text-muted">{fund.amc}</p>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-pe-text-secondary">
-          <span>1Y {formatPct(fund.return1Y, { signed: false })}</span>
-          <span>3Y {formatPct(fund.return3Y, { signed: false })}</span>
-          <span>{fund.aum} AUM</span>
-        </div>
-        {avg && (
-          <div className="mt-3 flex items-center gap-2">
-            <StarDisplay rating={Math.round(Number(avg))} />
-            <span className="text-sm font-semibold text-pe-text">{avg} · {reviews.length} reviews</span>
-          </div>
-        )}
+        <p className="mt-3 text-sm text-pe-text-secondary">{fund.aum} AUM</p>
       </section>
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
       {tab === 'reviews' && (
-        <div>
-          {!unlocked && (
-            <div className="border-b border-pe-accent-border bg-pe-accent-wash px-4 py-4">
-              <div className="flex gap-3">
-                <Lock className="h-5 w-5 shrink-0 text-pe-accent" />
-                <div>
-                  <p className="text-[15px] font-semibold text-pe-text">Unlock community reviews</p>
-                  <p className="mt-1 text-sm text-pe-text-secondary">
-                    Recommend one fund with a star rating to read what other investors think.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onPromptReview}
-                    className="mt-3 rounded-md bg-pe-accent px-4 py-2 text-sm font-bold text-white hover:bg-pe-accent-pressed"
-                  >
-                    Write a review
-                  </button>
-                </div>
-              </div>
-            </div>
+        <>
+          {unlocked && userReview && (
+            <AssetReviewComposer
+              assetType="fund"
+              fundId={fundId}
+              assetLabel={fund.name}
+              onSubmitted={() => setReviewTick((n) => n + 1)}
+            />
           )}
-          {reviews.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No reviews yet.</p>
-          ) : (
-            reviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                locked={!unlocked && review.authorId !== 'u_me'}
-                onAddComment={handleAddComment}
-                onOpenProfile={onOpenProfile}
-                onGraphChange={onGraphChange}
-                onReviewChange={() => setReviewTick((n) => n + 1)}
+          <BlurredSection
+            locked={reviewsLocked}
+            lock={REVIEW_LOCK}
+            onCta={onPromptReview}
+            preview={<ReviewsBlurPreview onOpenProfile={onOpenProfile} />}
+          >
+            {unlocked && !userReview ? (
+              <AssetReviewComposer
+                assetType="fund"
+                fundId={fundId}
+                assetLabel={fund.name}
+                onSubmitted={() => setReviewTick((n) => n + 1)}
               />
-            ))
-          )}
-        </div>
+            ) : communityReviews.length === 0 ? (
+              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+                {userReview ? 'No other community reviews yet.' : 'No community reviews yet.'}
+              </p>
+            ) : (
+              communityReviews.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  locked={reviewsLocked && review.authorId !== 'u_me'}
+                  onAddComment={handleAddComment}
+                  onOpenProfile={onOpenProfile}
+                  onGraphChange={onGraphChange}
+                  onReviewChange={() => setReviewTick((n) => n + 1)}
+                />
+              ))
+            )}
+          </BlurredSection>
+        </>
       )}
 
       {tab === 'discussions' && (
-        <div className="px-4 py-2">
-          {!unlocked ? (
-            <p className="py-12 text-center text-sm text-pe-text-secondary">
-              Contribute a fund review to join discussions.
-            </p>
-          ) : discussions.length === 0 ? (
-            <p className="py-12 text-center text-sm text-pe-text-secondary">
-              Discussions grow from reviews — agree, disagree, or reply to get started.
-            </p>
-          ) : (
-            discussions.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setTab('reviews')}
-                className="block w-full border-b border-pe-border py-4 text-left hover:bg-pe-surface/50"
-              >
-                <p className="text-[15px] font-semibold text-pe-text">{d.title}</p>
-                <p className="mt-1 line-clamp-2 text-sm text-pe-text-secondary">{d.preview}</p>
-                <p className="mt-2 text-xs font-semibold text-pe-accent">
-                  {d.commentCount} {d.commentCount === 1 ? 'reply' : 'replies'}
-                </p>
-              </button>
-            ))
-          )}
-        </div>
+        <BlurredSection
+          locked={discussionsLocked}
+          lock={!unlocked ? REVIEW_LOCK : TRACK_FUND_LOCK}
+          onCta={!unlocked ? onPromptReview : undefined}
+          preview={<DiscussionsBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage="No discussions yet — posts about this fund will show up here."
+          />
+        </BlurredSection>
       )}
 
       {tab === 'holders' && (
-        <div className="divide-y divide-pe-border">
-          {holders.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No disclosed holders yet.</p>
-          ) : (
-            holders.map((userId) => {
-              const person = getPerson(userId);
-              return (
-                <button
-                  key={userId}
-                  type="button"
-                  onClick={() => onOpenProfile?.(userId)}
-                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-pe-surface/50"
-                >
-                  <Avatar person={person} />
-                  <div>
-                    <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
-                    <p className="text-sm text-pe-text-muted">@{person.handle} · holds in portfolio</p>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_FUND_LOCK}
+          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <div className="divide-y divide-pe-border">
+            {holders.length === 0 ? (
+              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No disclosed holders yet.</p>
+            ) : (
+              holders.map((userId) => {
+                const person = getPerson(userId);
+                return (
+                  <button
+                    key={userId}
+                    type="button"
+                    onClick={() => onOpenProfile?.(userId)}
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-pe-surface/50"
+                  >
+                    <Avatar person={person} />
+                    <div>
+                      <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
+                      <p className="text-sm text-pe-text-muted">@{person.handle} · holds in portfolio</p>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </BlurredSection>
       )}
 
       {tab === 'news' && (
-        <div className="divide-y divide-pe-border">
-          {news.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-          ) : (
-            news.map((item) => (
-              <div key={item.id} className="px-4 py-4">
-                <p className="text-[15px] font-semibold leading-snug text-pe-text">{item.title}</p>
-                <p className="mt-1 text-sm text-pe-text-muted">
-                  {item.source} · {item.time}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_FUND_LOCK}
+          preview={<NewsBlurPreview />}
+        >
+          <div className="divide-y divide-pe-border">
+            {news.length === 0 ? (
+              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+            ) : (
+              news.map((item) => (
+                <div key={item.id} className="px-4 py-4">
+                  <p className="text-[15px] font-semibold leading-snug text-pe-text">{item.title}</p>
+                  <p className="mt-1 text-sm text-pe-text-muted">
+                    {item.source} · {item.time}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </BlurredSection>
       )}
     </div>
   );

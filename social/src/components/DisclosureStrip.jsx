@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getPosition } from '../data/mockData';
-import { statusStyles } from '../lib/tickers';
+import { statusStyles, formatTicker } from '../lib/tickers';
 import TickerMiniCard from './TickerMiniCard';
 
 export default function DisclosureStrip({
@@ -33,7 +33,7 @@ export default function DisclosureStrip({
               className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition hover:opacity-90 ${styles.chip}`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
-              ${ticker}
+              {formatTicker(ticker)}
               <span className="font-medium opacity-80">· {styles.label}</span>
             </button>
             {isOpen && (

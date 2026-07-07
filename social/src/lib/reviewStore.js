@@ -1,13 +1,21 @@
-/** Fund reviews, votes, comments, and community-access unlock (Phase 1–3). */
+/** Fund & stock reviews, votes, comments, community-access unlock. */
 
 import { CURRENT_USER } from '../data/mockData';
 import { SEED_FUND_REVIEWS } from '../data/fundData';
+import { SEED_STOCK_REVIEWS } from '../data/stockData';
 import { skipAuthForDev } from './sessionStore';
 
 const STORE_KEY = 'pe_social_fund_reviews';
 const UNLOCK_KEY = 'pe_social_community_reviews_unlocked';
 
 const listeners = new Set();
+
+function seedReviews() {
+  return [
+    ...SEED_FUND_REVIEWS.map((r) => ({ ...r, comments: r.comments ?? [] })),
+    ...SEED_STOCK_REVIEWS.map((r) => ({ ...r, comments: r.comments ?? [] })),
+  ];
+}
 
 function emit() {
   listeners.forEach((fn) => fn());
@@ -26,10 +34,7 @@ function readStore() {
   } catch {
     /* fall through */
   }
-  return {
-    reviews: SEED_FUND_REVIEWS.map((r) => ({ ...r, comments: r.comments ?? [] })),
-    votes: {},
-  };
+  return { reviews: seedReviews(), votes: {} };
 }
 
 function writeStore(data) {
@@ -54,25 +59,56 @@ export function unlockCommunityReviews() {
   emit();
 }
 
-export function getAllReviews() {
-  return readStore().reviews;
-}
-
 export function getReviewsForFund(fundId) {
   return readStore()
     .reviews.filter((r) => r.fundId === fundId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export function getReviewById(reviewId) {
-  return readStore().reviews.find((r) => r.id === reviewId) ?? null;
+export function getReviewsForStock(ticker) {
+  return readStore()
+    .reviews.filter((r) => r.stockTicker === ticker)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export function addReview({ fundId, rating, body = '' }) {
+export function getUserReviewForFund(fundId) {
+  return readStore().reviews.find(
+    (r) => r.authorId === CURRENT_USER.id && r.fundId === fundId
+  ) ?? null;
+}
+
+export function getUserReviewForStock(ticker) {
+  return readStore().reviews.find(
+    (r) => r.authorId === CURRENT_USER.id && r.stockTicker === ticker
+  ) ?? null;
+}
+
+/** One review per user per asset — creates or updates. */
+export function upsertReview({ fundId, stockTicker, rating, body = '' }) {
   const store = readStore();
+  const existingIdx = store.reviews.findIndex(
+    (r) =>
+      r.authorId === CURRENT_USER.id &&
+      ((fundId && r.fundId === fundId) || (stockTicker && r.stockTicker === stockTicker))
+  );
+
+  if (existingIdx >= 0) {
+    const existing = store.reviews[existingIdx];
+    store.reviews[existingIdx] = {
+      ...existing,
+      rating,
+      body: body.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    writeStore(store);
+    unlockCommunityReviews();
+    return store.reviews[existingIdx];
+  }
+
   const review = {
     id: `rev_${Date.now()}`,
-    fundId,
+    ...(fundId ? { fundId } : {}),
+    ...(stockTicker ? { stockTicker } : {}),
     authorId: CURRENT_USER.id,
     rating,
     body: body.trim(),
@@ -86,6 +122,24 @@ export function addReview({ fundId, rating, body = '' }) {
   writeStore(store);
   unlockCommunityReviews();
   return review;
+}
+
+export function addReview({ fundId, stockTicker, rating, body = '' }) {
+  return upsertReview({ fundId, stockTicker, rating, body });
+}
+
+export function updateReview(reviewId, { rating, body }) {
+  const store = readStore();
+  const idx = store.reviews.findIndex((r) => r.id === reviewId);
+  if (idx < 0) return null;
+  store.reviews[idx] = {
+    ...store.reviews[idx],
+    ...(rating != null ? { rating } : {}),
+    ...(body != null ? { body: body.trim() } : {}),
+    updatedAt: new Date().toISOString(),
+  };
+  writeStore(store);
+  return store.reviews[idx];
 }
 
 export function voteReview(reviewId, vote) {
@@ -137,15 +191,12 @@ export function incrementReviewShare(reviewId) {
   writeStore(store);
 }
 
-export function getDiscussionsForFund(fundId) {
-  const reviews = getReviewsForFund(fundId);
+function discussionsFromReviews(reviews) {
   const threads = [];
-
   for (const review of reviews) {
     if ((review.comments ?? []).length > 0) {
       threads.push({
         id: `disc_rev_${review.id}`,
-        kind: 'review',
         reviewId: review.id,
         title: `${review.rating}★ review sparking debate`,
         preview: review.comments[0]?.body ?? '',
@@ -154,10 +205,17 @@ export function getDiscussionsForFund(fundId) {
       });
     }
   }
-
   return threads.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+}
+
+export function getDiscussionsForFund(fundId) {
+  return discussionsFromReviews(getReviewsForFund(fundId));
+}
+
+export function getDiscussionsForStock(ticker) {
+  return discussionsFromReviews(getReviewsForStock(ticker));
 }
 
 export function clearReviewStore() {

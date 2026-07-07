@@ -10,6 +10,7 @@ import {
   USER_TRADES,
   getPerson,
 } from '../data/mockData';
+import { formatTicker } from './tickers';
 
 function relativeToIso(time = '') {
   const now = Date.now();
@@ -57,7 +58,7 @@ function followingTradeItems(followingIds) {
         authorId: userId,
         ticker: trade.ticker,
         createdAt: trade.createdAt,
-        title: `${person.name} ${trade.action === 'buy' ? 'bought' : 'sold'} $${trade.ticker}`,
+        title: `${person.name} ${trade.action === 'buy' ? 'bought' : 'sold'} ${formatTicker(trade.ticker)}`,
         body: `${trade.qty} shares @ portfolio “${trade.portfolioName}”`,
         meta: { trade, portfolioId: trade.portfolioId },
       });
@@ -105,7 +106,7 @@ function portfolioStockItems() {
           authorId,
           ticker,
           createdAt,
-          title: `@${person.handle} on $${ticker}`,
+          title: `@${person.handle} on ${formatTicker(ticker)}`,
           body: update.snippet,
           meta: { postId: update.postId, ticker },
         });
@@ -119,7 +120,7 @@ function portfolioStockItems() {
           authorId,
           ticker,
           createdAt,
-          title: `@${person.handle} ${update.type === 'buy' ? 'bought' : 'sold'} $${ticker}`,
+          title: `@${person.handle} ${update.type === 'buy' ? 'bought' : 'sold'} ${formatTicker(ticker)}`,
           body: `${update.qty} shares — significant community activity in a stock you hold`,
           meta: { trade: update, ticker },
         });
