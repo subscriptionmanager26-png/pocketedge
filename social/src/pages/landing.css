@@ -7,6 +7,10 @@
   --ink: #1a1a1a;
   --muted: #6b6560;
   --line: #ece4dc;
+  --landing-visible-height: 100dvh;
+  --landing-browser-bottom: 0px;
+  --landing-nav-height: 61px;
+  --landing-cta-height: 128px;
 
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -218,15 +222,39 @@
   margin-top: 2px;
 }
 
-/* ---------- Page ---------- */
+/* ---------- Page (mobile) ---------- */
+@media (max-width: 1023px) {
+  .pe-site-landing {
+    display: flex;
+    flex-direction: column;
+    height: var(--landing-visible-height);
+    max-height: var(--landing-visible-height);
+    overflow: hidden;
+  }
+
+  .pe-site-landing .navbar {
+    flex-shrink: 0;
+  }
+}
+
+.pe-site-landing .layout-mobile {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .pe-site-landing .page {
   position: relative;
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
-  min-height: calc(100dvh - 61px);
-  padding: 22px 26px 30px;
-  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  padding: 22px 26px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
 }
@@ -294,7 +322,13 @@
 .pe-site-landing .hero-body {
   position: relative;
   margin-top: 14px;
-  min-height: 430px;
+  min-height: min(
+    430px,
+    calc(
+      var(--landing-visible-height) - var(--landing-nav-height) - var(--landing-cta-height) -
+        env(safe-area-inset-bottom, 0px) - var(--landing-browser-bottom) - 168px
+    )
+  );
 }
 
 .pe-site-landing .features {
@@ -361,10 +395,21 @@
 }
 
 /* ---------- CTA ---------- */
+.pe-site-landing .mobile-cta-dock {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px 26px calc(10px + env(safe-area-inset-bottom, 0px) + var(--landing-browser-bottom));
+  background: linear-gradient(180deg, rgba(252, 247, 243, 0) 0%, var(--bg) 28%);
+  border-top: 1px solid var(--line);
+  z-index: 20;
+}
+
 .pe-site-landing .cta-wrap {
   text-align: center;
-  margin-top: auto;
-  padding-top: 22px;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .pe-site-landing .cta {
@@ -430,7 +475,12 @@
 
 @media (max-width: 380px) {
   .pe-site-landing .page {
-    padding: 18px 18px 26px;
+    padding: 18px 18px 10px;
+  }
+
+  .pe-site-landing .mobile-cta-dock {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
   .pe-site-landing .headline {

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { signInWithGoogle } from '../lib/supabase';
+import { useLandingViewport } from './useLandingViewport';
 import './landing.css';
 
 const ASSETS = '/landing/assets';
@@ -126,9 +127,12 @@ function CtaBlock({ desktop = false, loading, error, onGetStarted }) {
 }
 
 export default function HomePage() {
+  const landingRef = useRef(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useLandingViewport(landingRef);
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
@@ -154,7 +158,7 @@ export default function HomePage() {
   }, [closeDrawer]);
 
   return (
-    <div className={`pe-site-landing${drawerOpen ? ' is-drawer-open' : ''}`}>
+    <div ref={landingRef} className={`pe-site-landing${drawerOpen ? ' is-drawer-open' : ''}`}>
       <header className="navbar">
         <div className="nav-inner">
           <button type="button" className="brand" aria-label="PocketEdge home">
@@ -232,11 +236,11 @@ export default function HomePage() {
               </div>
             </div>
           </main>
-
-          <footer>
-            <CtaBlock loading={loading} error={error} onGetStarted={handleGetStarted} />
-          </footer>
         </div>
+
+        <footer className="mobile-cta-dock">
+          <CtaBlock loading={loading} error={error} onGetStarted={handleGetStarted} />
+        </footer>
       </div>
 
       <div className="layout-desktop">

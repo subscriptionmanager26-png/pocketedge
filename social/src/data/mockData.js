@@ -168,6 +168,16 @@ export const TOPICS = [
 
 export const FOLLOWING_IDS = new Set(['u1', 'u2', 'u4']);
 
+/** Who each user follows — `u_me` is overridden at runtime by socialGraphStore. */
+export const USER_FOLLOWING_SEED = {
+  u_me: ['u1', 'u2', 'u4'],
+  u1: ['u2', 'u4', 'u_me'],
+  u2: ['u1', 'u3', 'u_me'],
+  u3: ['u1', 'u5'],
+  u4: ['u1', 'u2', 'u_me'],
+  u5: ['u2', 'u4'],
+};
+
 export const MY_PORTFOLIO = {
   totalValue: 4_82_450,
   invested: 4_12_800,

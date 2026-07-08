@@ -3,6 +3,7 @@ import { ArrowLeft, Check, ChevronRight, Pencil, Plus, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
+import FollowListView from '../components/FollowListView';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
   CURRENT_USER,
@@ -16,7 +17,7 @@ import {
   getUserTrades,
   recalcHolding,
 } from '../data/mockData';
-import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
+import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatInr, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
@@ -69,6 +70,10 @@ export default function ProfilePage({
   const [location, setLocation] = useState(CURRENT_USER.location ?? '');
   const [focus, setFocus] = useState(CURRENT_USER.focus ?? '');
   const [following, setFollowingState] = useState(false);
+  const [followListMode, setFollowListMode] = useState(null);
+  const [graphTick, setGraphTick] = useState(0);
+
+  useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
 
   useEffect(() => {
     if (!isOwn && !isMePublic) {
@@ -87,6 +92,7 @@ export default function ProfilePage({
   useEffect(() => {
     setTab('posts');
     setAboutEditing(false);
+    setFollowListMode(null);
     onClearPortfolio?.();
   }, [userId, mode]);
 
@@ -131,8 +137,30 @@ export default function ProfilePage({
   const handleTabChange = (next) => {
     setTab(next);
     setAboutEditing(false);
+    setFollowListMode(null);
     onClearPortfolio?.();
   };
+
+  const followCounts = useMemo(() => {
+    void graphTick;
+    return getFollowCounts(person.id);
+  }, [person.id, graphTick]);
+
+  if (followListMode) {
+    return (
+      <FollowListView
+        userId={person.id}
+        mode={followListMode}
+        graphTick={graphTick}
+        onBack={() => setFollowListMode(null)}
+        onOpenProfile={onOpenProfile}
+        onGraphChange={() => {
+          setGraphTick((n) => n + 1);
+          onGraphChange?.();
+        }}
+      />
+    );
+  }
 
   if (selectedPortfolio) {
     return (
@@ -171,6 +199,10 @@ export default function ProfilePage({
         name={canEdit ? name : undefined}
         bio={canEdit ? bio : undefined}
         following={following}
+        followerCount={followCounts.followers}
+        followingCount={followCounts.following}
+        onOpenFollowers={() => setFollowListMode('followers')}
+        onOpenFollowing={() => setFollowListMode('following')}
         onToggleFollow={() => {
           const next = toggleFollow(person.id);
           setFollowingState(next);

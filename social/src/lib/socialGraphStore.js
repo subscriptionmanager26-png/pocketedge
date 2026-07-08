@@ -1,7 +1,10 @@
+import { CURRENT_USER, PEOPLE, USER_FOLLOWING_SEED } from '../data/mockData';
+
 const FOLLOWING_KEY = 'pe_social_following';
 const TOPICS_KEY = 'pe_social_topics';
 
-const DEFAULT_FOLLOWING = ['u1', 'u2', 'u4'];
+const DEFAULT_FOLLOWING = USER_FOLLOWING_SEED.u_me;
+const ALL_USER_IDS = [CURRENT_USER.id, ...PEOPLE.map((p) => p.id)];
 const DEFAULT_TOPICS = ['Banking', 'ITServices', 'Macro'];
 
 const listeners = new Set();
@@ -73,4 +76,27 @@ export function clearSocialGraph() {
   localStorage.removeItem(FOLLOWING_KEY);
   localStorage.removeItem(TOPICS_KEY);
   emit();
+}
+
+function followingMap() {
+  const map = { ...USER_FOLLOWING_SEED };
+  map[CURRENT_USER.id] = [...getFollowingIds()];
+  return map;
+}
+
+export function getFollowingForUser(userId) {
+  if (userId === CURRENT_USER.id) return [...getFollowingIds()];
+  return [...(USER_FOLLOWING_SEED[userId] ?? [])];
+}
+
+export function getFollowersForUser(userId) {
+  const map = followingMap();
+  return ALL_USER_IDS.filter((id) => id !== userId && (map[id] ?? []).includes(userId));
+}
+
+export function getFollowCounts(userId) {
+  return {
+    followers: getFollowersForUser(userId).length,
+    following: getFollowingForUser(userId).length,
+  };
 }

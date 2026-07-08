@@ -7,7 +7,11 @@ export default function ProfileHero({
   name,
   bio,
   following,
+  followerCount,
+  followingCount,
   onToggleFollow,
+  onOpenFollowers,
+  onOpenFollowing,
   showFollowButton = false,
   showViewToggle = false,
   isPublicPreview = false,
@@ -16,6 +20,8 @@ export default function ProfileHero({
   const displayName = name ?? person.name;
   const displayBio = bio ?? person.bio;
   const assetsInfluenced = person.assetsInfluenced ?? 0;
+  const followers = followerCount ?? person.followers;
+  const followingTotal = followingCount ?? person.following;
 
   return (
     <section className="border-b border-pe-border px-4 py-5">
@@ -72,8 +78,16 @@ export default function ProfileHero({
           ) : null}
 
           <dl className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            <Stat label="Followers" value={formatCount(person.followers)} />
-            <Stat label="Following" value={formatCount(person.following)} />
+            <Stat
+              label="Followers"
+              value={formatCount(followers)}
+              onClick={onOpenFollowers}
+            />
+            <Stat
+              label="Following"
+              value={formatCount(followingTotal)}
+              onClick={onOpenFollowing}
+            />
             <Stat label="Assets influenced" value={formatInr(assetsInfluenced, { compact: true })} />
           </dl>
         </div>
@@ -82,11 +96,25 @@ export default function ProfileHero({
   );
 }
 
-function Stat({ label, value }) {
-  return (
-    <div className="flex items-baseline gap-1.5">
+function Stat({ label, value, onClick }) {
+  const inner = (
+    <>
       <dt className="font-semibold text-pe-text">{value}</dt>
       <dd className="text-pe-text-muted">{label}</dd>
-    </div>
+    </>
+  );
+
+  if (!onClick) {
+    return <div className="flex items-baseline gap-1.5">{inner}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-baseline gap-1.5 rounded-md transition hover:text-pe-accent"
+    >
+      {inner}
+    </button>
   );
 }

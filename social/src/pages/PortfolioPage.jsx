@@ -12,6 +12,7 @@ import {
 } from '../components/ActivityFeed';
 import { MY_PORTFOLIO, STOCKS } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
+import { formatTicker } from '../lib/tickers';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 
 export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost }) {
