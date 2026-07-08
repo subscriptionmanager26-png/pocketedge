@@ -91,10 +91,8 @@ export default function StockInvestmentPage({
       </PageHeader>
 
       <section className="border-b border-pe-border px-4 py-5">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-pe-accent">
-          {formatTicker(ticker)}
-        </p>
-        <h1 className="mt-1 font-serif text-2xl font-bold text-pe-text">{stock.name}</h1>
+        <h1 className="font-serif text-2xl font-bold text-pe-text">{stock.name}</h1>
+        <p className="mt-0.5 text-sm text-pe-text-muted">{formatTicker(ticker)}</p>
         <p className="mt-3 font-serif text-3xl font-bold text-pe-text">{formatPrice(stock.price)}</p>
       </section>
 
@@ -156,7 +154,7 @@ export default function StockInvestmentPage({
           <DiscussionsList
             posts={discussions}
             onOpenProfile={onOpenProfile}
-            emptyMessage="No discussions yet — posts mentioning this stock will show up here."
+            emptyMessage="No posts yet — posts mentioning this stock will show up here."
           />
         </BlurredSection>
       )}

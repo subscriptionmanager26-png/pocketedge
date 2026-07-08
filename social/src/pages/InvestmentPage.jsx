@@ -89,9 +89,9 @@ export default function InvestmentPage({
       </PageHeader>
 
       <section className="border-b border-pe-border px-4 py-5">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-pe-accent">{fund.category}</p>
-        <h1 className="mt-1 font-serif text-2xl font-bold text-pe-text">{fund.name}</h1>
+        <h1 className="font-serif text-2xl font-bold text-pe-text">{fund.name}</h1>
         <p className="mt-0.5 text-sm text-pe-text-muted">{fund.amc}</p>
+        <p className="mt-1 text-xs font-semibold text-pe-text-secondary">{fund.category}</p>
         <p className="mt-3 text-sm text-pe-text-secondary">{fund.aum} AUM</p>
       </section>
 
@@ -151,7 +151,7 @@ export default function InvestmentPage({
           <DiscussionsList
             posts={discussions}
             onOpenProfile={onOpenProfile}
-            emptyMessage="No discussions yet — posts about this fund will show up here."
+            emptyMessage="No posts yet — posts about this fund will show up here."
           />
         </BlurredSection>
       )}

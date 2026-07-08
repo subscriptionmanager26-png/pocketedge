@@ -71,6 +71,12 @@ export function getReviewsForStock(ticker) {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
+export function getReviewsByAuthor(userId) {
+  return readStore()
+    .reviews.filter((r) => r.authorId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
 export function getUserReviewForFund(fundId) {
   return readStore().reviews.find(
     (r) => r.authorId === CURRENT_USER.id && r.fundId === fundId

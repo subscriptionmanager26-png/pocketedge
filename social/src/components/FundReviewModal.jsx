@@ -49,7 +49,7 @@ export default function FundReviewModal({ open, prefillFundId, onClose, onSubmit
           {prefillFund ? (
             <>
               <p className="mt-4 text-[15px] leading-relaxed text-pe-text-secondary">
-                Rate this fund to unlock community reviews and discussions across PocketEdge.
+                Rate this fund to unlock community reviews and posts across PocketEdge.
               </p>
               <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">Your rating</p>
               <div className="mt-2">

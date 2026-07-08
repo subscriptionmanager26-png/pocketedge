@@ -42,8 +42,7 @@ export default function FollowListView({
       </PageHeader>
 
       <div className="border-b border-pe-border px-4 py-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">{title}</p>
-        <h2 className="mt-0.5 font-serif text-2xl font-bold text-pe-text">@{person.handle}</h2>
+        <h2 className="font-serif text-2xl font-bold text-pe-text">@{person.handle}</h2>
         <p className="mt-1 text-sm text-pe-text-secondary">
           {formatCount(people.length)} {title.toLowerCase()}
         </p>

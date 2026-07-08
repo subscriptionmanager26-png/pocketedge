@@ -10,7 +10,7 @@ import {
 
 export const INVESTMENT_TABS = [
   { id: 'reviews', label: 'Reviews' },
-  { id: 'discussions', label: 'Discussions' },
+  { id: 'discussions', label: 'Posts' },
   { id: 'holders', label: 'Holders' },
   { id: 'news', label: 'News' },
 ];
@@ -33,7 +33,7 @@ export const TRACK_STOCK_NEWS_LOCK = {
 
 export const TRACK_FUND_LOCK = {
   title: 'Unlock fund community data',
-  detail: 'Add this fund to your holdings or watchlist to view holders, news, and discussions.',
+  detail: 'Add this fund to your holdings or watchlist to view holders, news, and posts.',
 };
 
 /** Locked: message banner first, then shared preview content blurred underneath. */

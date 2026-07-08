@@ -172,7 +172,7 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
         )}
 
         {item.ticker && item.category === 'portfolio_stock' && (
-          <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.04em] text-pe-accent">
+          <p className="mt-2 text-xs font-semibold text-pe-text-secondary">
             {formatTicker(item.ticker)} in your portfolio
           </p>
         )}

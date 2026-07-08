@@ -51,9 +51,9 @@ export default function PostCard({
   return (
     <article className="border-b border-pe-border px-4 py-5 md:py-6">
       {post.via && (
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.04em] text-pe-accent">
-          {post.via.label}
-          <span className="font-medium normal-case tracking-normal text-pe-text-muted">
+        <p className="mb-2 text-[13px] text-pe-text-muted">
+          <span className="font-semibold text-pe-text">{post.via.label}</span>
+          <span>
             {' '}
             · {post.via.reason}
           </span>

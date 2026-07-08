@@ -267,23 +267,27 @@ export const USER_PORTFOLIOS = {
   u_me: [
     {
       id: 'pf_main',
+      kind: 'live',
       name: 'Main portfolio',
       objective: 'Core long-term holdings across banks and energy.',
       thesis: 'Quality franchises with pricing power and steady compounding.',
       totalValue: 4_82_450,
       invested: 4_12_800,
       totalPnlPct: 16.87,
+      return1M: 2.4,
       xirr: 24.6,
       holdings: MY_PORTFOLIO.holdings,
     },
     {
       id: 'pf_dividend',
+      kind: 'live',
       name: 'Dividend income',
       objective: 'Banks and steady compounders for yield.',
       thesis: 'High dividend yield with sustainable payout ratios.',
       totalValue: 1_89_200,
       invested: 1_72_400,
       totalPnlPct: 9.7,
+      return1M: 1.1,
       xirr: 18.2,
       holdings: [
         MY_PORTFOLIO.holdings.find((h) => h.ticker === 'HDFCBANK'),
@@ -292,32 +296,58 @@ export const USER_PORTFOLIOS = {
     },
     {
       id: 'pf_tactical',
+      kind: 'live',
       name: 'Tactical trades',
       objective: 'Higher-beta ideas with shorter holding periods.',
       thesis: 'Cyclical recovery plays with clear catalysts.',
       totalValue: 70_336,
       invested: 57_600,
       totalPnlPct: 22.1,
+      return1M: 4.8,
       xirr: 31.4,
       holdings: [MY_PORTFOLIO.holdings.find((h) => h.ticker === 'TATAMOTORS')].filter(Boolean),
+    },
+    {
+      id: 'wl_tech',
+      kind: 'watchlist',
+      name: 'Tech picks',
+      objective: 'Track IT names before adding to live portfolios.',
+      thesis: 'Quality IT services names with improving demand visibility.',
+      tickers: ['TCS', 'INFY', 'WIPRO'],
+      return1M: -0.9,
+      holdings: [],
+    },
+    {
+      id: 'wl_smallcaps',
+      kind: 'watchlist',
+      name: 'Smallcaps',
+      objective: 'Monitor high-volatility opportunities.',
+      thesis: 'Wait for cleaner setups and momentum confirmation.',
+      tickers: ['IRCTC', 'TATAMOTORS'],
+      return1M: 3.2,
+      holdings: [],
     },
   ],
   u1: [
     {
       id: 'pf_banks',
+      kind: 'live',
       name: 'Banking book',
       description: 'Private banks and financials.',
       totalValue: 3_24_000,
       totalPnlPct: 14.2,
+      return1M: 1.8,
       xirr: 31.2,
       holdings: buildHoldingsFromPositions('u1', ['HDFCBANK', 'ICICIBANK']),
     },
     {
       id: 'pf_compounders',
+      kind: 'live',
       name: 'Compounders',
       description: 'Quality names held for the long run.',
       totalValue: 1_12_000,
       totalPnlPct: 11.8,
+      return1M: 2.1,
       xirr: 26.4,
       holdings: buildHoldingsFromPositions('u1', ['RELIANCE']),
     },
@@ -325,10 +355,12 @@ export const USER_PORTFOLIOS = {
   u2: [
     {
       id: 'pf_it',
+      kind: 'live',
       name: 'IT portfolio',
       description: 'Large-cap IT services.',
       totalValue: 2_68_000,
       totalPnlPct: 12.5,
+      return1M: 0.6,
       xirr: 28.4,
       holdings: buildHoldingsFromPositions('u2', ['TCS', 'INFY']),
     },
@@ -336,10 +368,12 @@ export const USER_PORTFOLIOS = {
   u3: [
     {
       id: 'pf_smallcap',
+      kind: 'live',
       name: 'Smallcap sleeve',
       description: 'Higher-risk growth and special situations.',
       totalValue: 1_95_000,
       totalPnlPct: 18.6,
+      return1M: 5.2,
       xirr: 19.8,
       holdings: buildHoldingsFromPositions('u3', ['TATAMOTORS', 'RELIANCE']),
     },
@@ -347,10 +381,12 @@ export const USER_PORTFOLIOS = {
   u4: [
     {
       id: 'pf_energy',
+      kind: 'live',
       name: 'Energy & infra',
       description: 'Macro-aware energy exposure.',
       totalValue: 2_41_000,
       totalPnlPct: 10.4,
+      return1M: 1.4,
       xirr: 26.1,
       holdings: buildHoldingsFromPositions('u4', ['RELIANCE', 'ONGC']),
     },
@@ -358,10 +394,12 @@ export const USER_PORTFOLIOS = {
   u5: [
     {
       id: 'pf_index',
+      kind: 'live',
       name: 'Index core',
       description: 'Passive core with minimal turnover.',
       totalValue: 1_29_100,
       totalPnlPct: 7.5,
+      return1M: 0.9,
       xirr: 22.3,
       holdings: buildHoldingsFromPositions('u5', ['NIFTYBEES']),
     },
@@ -940,13 +978,51 @@ export function applyPortfolioHoldingsUpdate(userId, portfolioId, nextHoldings, 
 }
 
 /** All portfolios a user has published (respects privacy for visitors). */
+function estimateReturns(portfolio) {
+  const base1M =
+    typeof portfolio.return1M === 'number'
+      ? portfolio.return1M
+      : (() => {
+          const tickers =
+            portfolio.tickers ??
+            (portfolio.holdings ?? []).map((h) => h?.ticker).filter(Boolean);
+          if (!tickers.length) return 0;
+          const avg =
+            tickers.reduce((sum, ticker) => sum + (STOCKS[ticker]?.changePct ?? 0), 0) /
+            tickers.length;
+          return Number((avg * 8).toFixed(1));
+        })();
+
+  const fromData = portfolio.returns ?? {};
+  return {
+    '1D': fromData['1D'] ?? Number((base1M / 20).toFixed(1)),
+    '1W': fromData['1W'] ?? Number((base1M / 4).toFixed(1)),
+    '1M': fromData['1M'] ?? base1M,
+    '1Y': fromData['1Y'] ?? Number((base1M * 8).toFixed(1)),
+  };
+}
+
+export function getPortfolioReturn(portfolio, period = '1M') {
+  const returns = portfolio?.returns ?? estimateReturns(portfolio ?? {});
+  return returns[period] ?? returns['1M'] ?? 0;
+}
+
 export function getUserPortfolios(userId) {
-  return (USER_PORTFOLIOS[userId] ?? []).map((portfolio) => ({
-    ...portfolio,
-    objective: portfolio.objective ?? portfolio.description ?? '',
-    thesis: portfolio.thesis ?? portfolio.description ?? '',
-    holdingsCount: portfolio.holdings.length,
-  }));
+  return (USER_PORTFOLIOS[userId] ?? []).map((portfolio) => {
+    const returns = estimateReturns(portfolio);
+    return {
+      ...portfolio,
+      kind: portfolio.kind ?? 'live',
+      objective: portfolio.objective ?? portfolio.description ?? '',
+      thesis: portfolio.thesis ?? portfolio.description ?? '',
+      tickers:
+        portfolio.tickers ??
+        (portfolio.holdings ?? []).map((h) => h?.ticker).filter(Boolean),
+      holdingsCount: (portfolio.holdings ?? []).length,
+      return1M: returns['1M'],
+      returns,
+    };
+  });
 }
 
 export function getUserPortfolio(userId, portfolioId) {

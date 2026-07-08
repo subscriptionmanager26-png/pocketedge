@@ -73,11 +73,7 @@ export default function ProfileHero({
           </div>
           <p className="mt-0.5 text-[15px] text-pe-text-muted">@{person.handle}</p>
 
-          {displayBio ? (
-            <p className="mt-3 font-serif text-[15px] leading-6 text-pe-ink">{displayBio}</p>
-          ) : null}
-
-          <dl className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <dl className="mt-4 flex gap-6">
             <Stat
               label="Followers"
               value={formatCount(followers)}
@@ -88,8 +84,12 @@ export default function ProfileHero({
               value={formatCount(followingTotal)}
               onClick={onOpenFollowing}
             />
-            <Stat label="Assets influenced" value={formatInr(assetsInfluenced, { compact: true })} />
+            <Stat label="Influencing" value={formatInr(assetsInfluenced, { compact: true })} />
           </dl>
+
+          {displayBio ? (
+            <p className="mt-4 font-serif text-[15px] leading-6 text-pe-ink">{displayBio}</p>
+          ) : null}
         </div>
       </div>
     </section>
@@ -99,20 +99,20 @@ export default function ProfileHero({
 function Stat({ label, value, onClick }) {
   const inner = (
     <>
-      <dt className="font-semibold text-pe-text">{value}</dt>
-      <dd className="text-pe-text-muted">{label}</dd>
+      <dt className="text-center text-[15px] font-bold leading-none text-pe-text">{value}</dt>
+      <dd className="mt-1 text-center text-xs font-medium text-pe-text-muted">{label}</dd>
     </>
   );
 
   if (!onClick) {
-    return <div className="flex items-baseline gap-1.5">{inner}</div>;
+    return <div className="min-w-0 text-center">{inner}</div>;
   }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex items-baseline gap-1.5 rounded-md transition hover:text-pe-accent"
+      className="min-w-0 text-center transition hover:opacity-80"
     >
       {inner}
     </button>

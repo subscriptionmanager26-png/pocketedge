@@ -6,7 +6,7 @@ import {
   STOCKS,
   getPerson,
 } from '../data/mockData';
-import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatInr, formatPct, formatPrice, pnlClass } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 
 /** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
@@ -51,7 +51,7 @@ export function NewsFeed({ items }) {
           <Newspaper className="mt-0.5 h-4 w-4 shrink-0 text-pe-link" />
           <div className="min-w-0">
             {item.ticker && (
-              <p className="text-[11px] font-bold uppercase tracking-[0.04em] text-pe-accent">
+              <p className="text-xs font-semibold text-pe-text-secondary">
                 {formatTicker(item.ticker)}
               </p>
             )}
@@ -140,7 +140,9 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
                 <span className="text-sm font-semibold text-pe-text">{person.name}</span>
                 <span className="text-sm text-pe-text-muted">@{person.handle}</span>
                 {item.ticker && (
-                  <span className="text-[11px] font-bold uppercase text-pe-accent">{formatTicker(item.ticker)}</span>
+                  <span className="text-xs font-semibold text-pe-text-secondary">
+                    {formatTicker(item.ticker)}
+                  </span>
                 )}
               </div>
               <p className="mt-1 font-serif text-[15px] leading-6 text-pe-ink">{item.snippet}</p>
@@ -155,39 +157,60 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
 
 export function HoldingsSummary({ holdings, onSelectStock }) {
   if (!holdings.length) return <Empty label="No positions in this list." />;
+
   return (
     <div className="divide-y divide-pe-border">
       {holdings.map((h) => {
-        const stock = STOCKS[h.ticker];
+        const isOverall = h.overall;
+        const stock = isOverall ? null : STOCKS[h.ticker];
         const isWatch = h.watchlistOnly;
+        const price = stock?.price ?? h.price ?? 0;
+        const invested = isOverall
+          ? h.invested ?? 0
+          : !isWatch
+            ? (h.qty ?? 0) * (h.avg ?? price)
+            : null;
+        const changePct = h.pnlPct ?? stock?.changePct ?? 0;
+        const weightLabel =
+          typeof h.weight === 'number' ? `${h.weight.toFixed(1)}% of holdings` : null;
+
         return (
           <button
-            key={h.ticker}
+            key={isOverall ? 'overall' : h.ticker}
             type="button"
-            onClick={() => onSelectStock?.(h.ticker)}
-            className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-pe-surface"
+            onClick={() => {
+              if (!isOverall) onSelectStock?.(h.ticker);
+            }}
+            className={`grid w-full grid-cols-[minmax(0,1.4fr)_0.8fr] gap-x-3 gap-y-0.5 px-4 py-4 text-left transition ${
+              isOverall ? 'cursor-default' : 'hover:bg-pe-surface'
+            }`}
           >
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-pe-text">{formatTicker(h.ticker)}</p>
-              <p className="text-sm text-pe-text-muted">{stock?.name}</p>
-              {isWatch ? (
-                <p className="mt-0.5 text-xs font-semibold text-pe-warning">On watchlist</p>
-              ) : (
-                <p className="mt-0.5 text-sm text-pe-text-secondary">
-                  {h.qty} shares · avg {formatPrice(h.avg)}
+            {!isWatch && weightLabel ? (
+              <>
+                <p className="text-xs font-semibold text-pe-text-secondary">
+                  {isOverall ? weightLabel : `${h.qty} units · ${weightLabel}`}
                 </p>
-              )}
-            </div>
-            <div className="min-w-[4.5rem] text-right">
-              <p className="text-[15px] font-semibold text-pe-text">
-                {formatPrice(stock?.price ?? h.price)}
-              </p>
-              <p
-                className={`text-sm font-semibold ${pnlClass(h.pnlPct ?? stock?.changePct ?? 0)}`}
-              >
-                {formatPct(h.pnlPct ?? stock?.changePct ?? 0)}
-              </p>
-            </div>
+                {invested != null ? (
+                  <p className="text-right text-xs font-semibold text-pe-text-secondary">
+                    Invested {formatInr(invested, { compact: true })}
+                  </p>
+                ) : (
+                  <span />
+                )}
+              </>
+            ) : null}
+
+            <p className="text-[15px] font-semibold text-pe-text">
+              {isOverall ? 'Overall' : formatTicker(h.ticker)}
+            </p>
+            <p className={`text-right text-[15px] font-bold ${pnlClass(changePct)}`}>
+              {formatPct(changePct)}
+            </p>
+
+            <p className="truncate text-sm font-normal text-pe-text-muted">
+              {isOverall ? 'Portfolio return' : stock?.name}
+            </p>
+            <span />
           </button>
         );
       })}
