@@ -16,6 +16,12 @@ import Avatar from './Avatar';
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
 import { CURRENT_USER } from '../data/mockData';
+import {
+  getScrollPosition,
+  readScrollTop,
+  saveScrollPosition,
+  writeScrollTop,
+} from '../lib/scrollRestore';
 
 const DESKTOP_TABS = [
   { id: 'feed', label: 'Feed', icon: Home },
@@ -52,6 +58,9 @@ export default function Shell({
   pageTitleOverride,
   mobileBack,
   activityUnread = 0,
+  routeKey = 'feed',
+  scrollAction = 'reset',
+  onScrollActionConsumed,
   onTabChange,
   onFeedModeChange,
   onProfile,
@@ -67,6 +76,8 @@ export default function Shell({
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
   const desktopMenuRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const prevRouteKeyRef = useRef(routeKey);
 
   useEffect(() => {
     if (!mobileMenuOpen && !desktopMenuOpen) return undefined;
@@ -99,6 +110,25 @@ export default function Shell({
     setMobileMenuOpen(false);
     setDesktopMenuOpen(false);
   }, [tab]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    const prevKey = prevRouteKeyRef.current;
+    if (prevKey === routeKey) return;
+
+    if (prevKey) {
+      saveScrollPosition(prevKey, readScrollTop(container));
+    }
+
+    const restore = scrollAction === 'back' ? getScrollPosition(routeKey) : 0;
+
+    requestAnimationFrame(() => {
+      writeScrollTop(container, restore);
+      onScrollActionConsumed?.();
+    });
+
+    prevRouteKeyRef.current = routeKey;
+  }, [routeKey, scrollAction, onScrollActionConsumed]);
 
   const selectFeedMode = (mode) => {
     onFeedModeChange?.(mode);
@@ -157,6 +187,14 @@ export default function Shell({
               </button>
             );
           })}
+
+          <button
+            type="button"
+            onClick={onCompose}
+            className="mt-2 flex min-h-12 w-full items-center justify-center rounded-full bg-pe-accent px-4 text-center text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed active:scale-[0.99]"
+          >
+            Post
+          </button>
         </nav>
 
         <div className="p-2">
@@ -184,7 +222,10 @@ export default function Shell({
         </div>
       </aside>
 
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain">
+      <div
+        ref={scrollContainerRef}
+        className="flex min-h-dvh min-w-0 flex-1 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain"
+      >
         <div className="flex min-h-0 min-w-0 flex-1 md:px-5">
           <div className="flex min-h-0 min-w-0 flex-1 justify-center md:mr-[420px]">
             <div className="flex min-h-0 w-full min-w-0 max-w-feed flex-col">
@@ -318,7 +359,7 @@ export default function Shell({
         <button
           type="button"
           onClick={onCompose}
-          className="fixed bottom-[72px] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white transition hover:bg-pe-accent-pressed active:scale-95 md:bottom-8 md:right-8"
+          className="fixed bottom-[72px] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white transition hover:bg-pe-accent-pressed active:scale-95 md:hidden"
           aria-label="Compose post"
         >
           <Pencil className="h-5 w-5" />

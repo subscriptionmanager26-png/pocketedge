@@ -77,7 +77,7 @@ const FEATURES = [
 function Headline({ className = '' }) {
   return (
     <h1
-      className={`pe-landing-headline font-serif font-bold leading-[1.08] tracking-tight text-pe-text ${className}`}
+      className={`pe-landing-headline font-sans font-bold leading-[1.08] tracking-tight text-pe-text ${className}`}
     >
       <span className="block text-[2rem] md:text-5xl lg:text-[3.25rem]">Before you invest..</span>
       <span className="mt-1 block text-[2rem] text-pe-accent md:text-5xl lg:text-[3.25rem]">
@@ -168,9 +168,6 @@ function CtaBlock({ compact = false, loading, error, onGetStarted }) {
         <span>{loading ? 'Redirecting to Google…' : 'Get Started'}</span>
         {!loading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
       </button>
-      <p className="mt-3 text-sm text-pe-text-secondary">
-        Join investors sharing <span className="font-semibold text-pe-accent">real insights</span>
-      </p>
       {error ? <p className="mt-2 text-sm text-pe-negative">{error}</p> : null}
     </div>
   );

@@ -5,8 +5,9 @@ import CommentRow from './CommentRow';
 import DisclosureStrip from './DisclosureStrip';
 import TickerText from './TickerText';
 import TradePill from './TradePill';
+import { PortfolioSharePreview } from './ComposeModal';
 import { getPerson } from '../data/mockData';
-import { formatCount, formatPct, timeAgo } from '../lib/format';
+import { formatCount, timeAgo } from '../lib/format';
 import { extractTickers } from '../lib/tickers';
 
 /** Feed cards truncate long bodies; full text + comments only on the open post. */
@@ -38,6 +39,9 @@ export default function PostCard({
   const tickers = extractTickers(post.body);
   if (post.trade?.ticker && !tickers.includes(post.trade.ticker)) {
     tickers.unshift(post.trade.ticker);
+  }
+  for (const ticker of post.portfolioShare?.tickers ?? []) {
+    if (!tickers.includes(ticker)) tickers.push(ticker);
   }
   const [liked, setLiked] = useState(false);
   const [activeTicker, setActiveTicker] = useState(null);
@@ -136,6 +140,17 @@ export default function PostCard({
           {post.trade && (
             <div onClick={stopBubble} onKeyDown={stopBubble} role="presentation">
               <TradePill trade={post.trade} />
+            </div>
+          )}
+
+          {post.portfolioShare && (
+            <div
+              className="mt-3.5"
+              onClick={stopBubble}
+              onKeyDown={stopBubble}
+              role="presentation"
+            >
+              <PortfolioSharePreview share={post.portfolioShare} />
             </div>
           )}
 

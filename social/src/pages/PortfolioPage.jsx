@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Share2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -15,10 +15,15 @@ import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 
-export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost }) {
+export default function PortfolioPage({
+  onSelectStock,
+  onOpenProfile,
+  onOpenPost,
+  onSharePortfolio,
+}) {
   const [listId, setListId] = useState(null);
   const [period, setPeriod] = useState('1D');
-  const [contentTab, setContentTab] = useState('summary');
+  const [contentTab, setContentTab] = useState('performance');
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [watchlistTick, setWatchlistTick] = useState(0);
 
@@ -153,17 +158,29 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
           active={listId}
           onChange={(id) => {
             setListId(id);
-            setContentTab('summary');
+            setContentTab('performance');
           }}
           trailing={
-            <button
-              type="button"
-              onClick={() => setWatchlistOpen(true)}
-              className="inline-flex h-full shrink-0 items-center gap-1 pr-2 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
-            >
-              <Plus className="h-4 w-4" />
-              New list
-            </button>
+            <div className="flex h-full shrink-0 items-center gap-1 pr-2">
+              {isPortfolio ? (
+                <button
+                  type="button"
+                  onClick={() => onSharePortfolio?.(activeList)}
+                  className="inline-flex h-full items-center gap-1 text-[15px] font-semibold text-pe-accent hover:text-pe-accent-pressed"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setWatchlistOpen(true)}
+                className="inline-flex h-full items-center gap-1 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
+              >
+                <Plus className="h-4 w-4" />
+                New list
+              </button>
+            </div>
           }
         />
       </PageHeader>
@@ -268,7 +285,7 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
       {/* Portfolio-level content tabs */}
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
 
-      {contentTab === 'summary' && (
+      {contentTab === 'performance' && (
         <HoldingsSummary
           holdings={overallRow ? [overallRow, ...holdingsRows] : holdingsRows}
           onSelectStock={onSelectStock}
@@ -288,7 +305,7 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
         onSave={(payload) => {
           const created = addWatchlist(payload);
           setListId(created.id);
-          setContentTab('summary');
+          setContentTab('performance');
         }}
       />
     </div>
@@ -297,7 +314,7 @@ export default function PortfolioPage({ onSelectStock, onOpenProfile, onOpenPost
 
 const PERIODS = ['1D', '1W', '1M', '1Y'];
 const CONTENT_TABS = [
-  { id: 'summary', label: 'Summary' },
+  { id: 'performance', label: 'Performance' },
   { id: 'news', label: 'News' },
   { id: 'trades', label: 'Trades' },
   { id: 'posts', label: 'Posts' },

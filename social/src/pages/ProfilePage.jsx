@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Pencil, Plus, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -721,8 +721,8 @@ function PortfolioDetailView({
   const [name, setName] = useState(portfolio.name);
   const [objective, setObjective] = useState(portfolio.objective ?? '');
   const [thesis, setThesis] = useState(portfolio.thesis ?? '');
-  const [editHoldings, setEditHoldings] = useState([]);
-  const [addTicker, setAddTicker] = useState('');
+  const [editRows, setEditRows] = useState([]);
+  const [tickerSuggestionsFor, setTickerSuggestionsFor] = useState(null);
 
   useEffect(() => {
     setName(portfolio.name);
@@ -731,20 +731,55 @@ function PortfolioDetailView({
     setEditing(false);
   }, [portfolio.id, portfolio.name, portfolio.objective, portfolio.thesis]);
 
+  const makeBlankRow = () => ({
+    id: `draft_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    ticker: '',
+    invested: '',
+    qty: '',
+  });
+
+  const holdingToRow = (h) => ({
+    id: `hold_${h.ticker}`,
+    ticker: h.ticker,
+    invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
+    qty: String(h.qty ?? ''),
+  });
+
+  const isRowComplete = (row) => {
+    const ticker = row.ticker.trim().toUpperCase();
+    const qty = Number(row.qty);
+    const invested = Number(row.invested);
+    return Boolean(ticker && STOCKS[ticker] && qty > 0 && invested >= 0 && row.invested !== '');
+  };
+
   const startEditing = () => {
-    setEditHoldings(portfolio.holdings.map((h) => ({ ...h })));
-    setAddTicker('');
+    const rows = (portfolio.holdings ?? []).map(holdingToRow);
+    setEditRows([...rows, makeBlankRow()]);
+    setTickerSuggestionsFor(null);
     setEditing(true);
   };
 
   const saveEdits = () => {
-    applyPortfolioHoldingsUpdate(userId, portfolio.id, editHoldings, {
+    const completeByTicker = new Map();
+    for (const row of editRows) {
+      if (!isRowComplete(row)) continue;
+      const ticker = row.ticker.trim().toUpperCase();
+      const qty = Number(row.qty) || 0;
+      const invested = Number(row.invested) || 0;
+      const avg = qty > 0 ? invested / qty : 0;
+      const price = STOCKS[ticker]?.price ?? 0;
+      completeByTicker.set(ticker, recalcHolding({ ticker, qty, avg, price }));
+    }
+
+    applyPortfolioHoldingsUpdate(userId, portfolio.id, [...completeByTicker.values()], {
       name: name.trim() || portfolio.name,
       objective: objective.trim(),
       thesis: thesis.trim(),
     });
     onPortfolioUpdated?.();
     setEditing(false);
+    setEditRows([]);
+    setTickerSuggestionsFor(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
@@ -753,35 +788,49 @@ function PortfolioDetailView({
     setName(portfolio.name);
     setObjective(portfolio.objective ?? '');
     setThesis(portfolio.thesis ?? '');
-    setEditHoldings([]);
-    setAddTicker('');
+    setEditRows([]);
+    setTickerSuggestionsFor(null);
     setEditing(false);
   };
 
-  const updateHolding = (ticker, patch) => {
-    setEditHoldings((prev) =>
-      prev.map((h) => (h.ticker === ticker ? recalcHolding({ ...h, ...patch }) : h))
+  const updateRow = (rowId, patch) => {
+    setEditRows((prev) =>
+      prev.map((row) => (row.id === rowId ? { ...row, ...patch } : row))
     );
   };
 
-  const removeHolding = (ticker) => {
-    setEditHoldings((prev) => prev.filter((h) => h.ticker !== ticker));
+  const removeRow = (rowId) => {
+    setEditRows((prev) => {
+      const next = prev.filter((row) => row.id !== rowId);
+      return next.length ? next : [makeBlankRow()];
+    });
+    setTickerSuggestionsFor((current) => (current === rowId ? null : current));
   };
 
-  const addHolding = () => {
-    const ticker = addTicker.trim().toUpperCase();
-    if (!ticker || !STOCKS[ticker] || editHoldings.some((h) => h.ticker === ticker)) return;
-    const price = STOCKS[ticker].price ?? 0;
-    setEditHoldings((prev) => [
-      ...prev,
-      recalcHolding({ ticker, qty: 1, avg: price, price }),
-    ]);
-    setAddTicker('');
+  const addBlankRow = () => {
+    setEditRows((prev) => [...prev, makeBlankRow()]);
   };
 
-  const availableTickers = Object.keys(STOCKS).filter(
-    (t) => !editHoldings.some((h) => h.ticker === t)
-  );
+  const tickerMatches = (query, excludeRowId) => {
+    const q = query.trim().toUpperCase();
+    if (!q) return [];
+    const used = new Set(
+      editRows
+        .filter((row) => row.id !== excludeRowId)
+        .map((row) => row.ticker.trim().toUpperCase())
+        .filter(Boolean)
+    );
+    return Object.keys(STOCKS)
+      .filter((ticker) => {
+        if (used.has(ticker)) return false;
+        const name = (STOCKS[ticker]?.name ?? '').toUpperCase();
+        return ticker.includes(q) || name.includes(q);
+      })
+      .slice(0, 6);
+  };
+
+  const compactInputClass =
+    'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[14px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
 
   return (
     <div>
@@ -906,79 +955,111 @@ function PortfolioDetailView({
             Holdings
           </p>
           <p className="mt-1 text-sm text-pe-text-secondary">
-            Add, update, or remove stocks. Changes are logged in Trades automatically.
+            Search a ticker, enter total investment and quantity. Incomplete last rows are ignored on save.
           </p>
 
-          <div className="mt-4 space-y-3">
-            {editHoldings.map((h) => {
-              const stock = STOCKS[h.ticker];
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center gap-2 px-0.5">
+              <p className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Ticker
+              </p>
+              <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Total Investment
+              </p>
+              <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Qty
+              </p>
+              <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+            </div>
+
+            {editRows.map((row) => {
+              const suggestions =
+                tickerSuggestionsFor === row.id ? tickerMatches(row.ticker, row.id) : [];
               return (
-                <div
-                  key={h.ticker}
-                  className="rounded-[10px] border border-pe-border px-3.5 py-3"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-[15px] font-semibold text-pe-text">{formatTicker(h.ticker)}</p>
-                      <p className="text-sm text-pe-text-muted">{stock?.name}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeHolding(h.ticker)}
-                      className="text-sm font-semibold text-pe-negative hover:underline"
-                    >
-                      Remove
-                    </button>
+                <div key={row.id} className="flex items-start gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <input
+                      type="text"
+                      value={row.ticker}
+                      onChange={(e) => {
+                        updateRow(row.id, { ticker: e.target.value.toUpperCase() });
+                        setTickerSuggestionsFor(row.id);
+                      }}
+                      onFocus={() => setTickerSuggestionsFor(row.id)}
+                      onBlur={() => {
+                        window.setTimeout(() => {
+                          setTickerSuggestionsFor((current) =>
+                            current === row.id ? null : current
+                          );
+                        }, 120);
+                      }}
+                      placeholder="Search ticker"
+                      aria-label="Ticker"
+                      autoComplete="off"
+                      className={compactInputClass}
+                    />
+                    {suggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 z-20 mt-1 overflow-hidden rounded-md border border-pe-border-strong bg-pe-canvas shadow-lg">
+                        {suggestions.map((ticker) => (
+                          <button
+                            key={ticker}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              updateRow(row.id, { ticker });
+                              setTickerSuggestionsFor(null);
+                            }}
+                            className="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left hover:bg-pe-surface"
+                          >
+                            <span className="text-[14px] font-semibold text-pe-text">
+                              {formatTicker(ticker)}
+                            </span>
+                            <span className="truncate text-[12px] text-pe-text-muted">
+                              {STOCKS[ticker]?.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <Field label="Quantity">
-                      <input
-                        type="number"
-                        min="1"
-                        value={h.qty}
-                        onChange={(e) =>
-                          updateHolding(h.ticker, { qty: Number(e.target.value) || 0 })
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Avg cost">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={h.avg}
-                        onChange={(e) =>
-                          updateHolding(h.ticker, { avg: Number(e.target.value) || 0 })
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
-                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.invested}
+                    onChange={(e) => updateRow(row.id, { invested: e.target.value })}
+                    placeholder="0"
+                    aria-label="Total Investment"
+                    className={`${compactInputClass} w-[8.75rem] shrink-0 text-right tabular-nums`}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={row.qty}
+                    onChange={(e) => updateRow(row.id, { qty: e.target.value })}
+                    placeholder="0"
+                    aria-label="Quantity"
+                    className={`${compactInputClass} w-[5.25rem] shrink-0 text-right tabular-nums`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRow(row.id)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
+                    aria-label="Delete holding row"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               );
             })}
-          </div>
 
-          <div className="mt-4 flex gap-2">
-            <select
-              value={addTicker}
-              onChange={(e) => setAddTicker(e.target.value)}
-              className={`${inputClass} min-w-0 flex-1`}
-            >
-              <option value="">Add a stock…</option>
-              {availableTickers.map((t) => (
-                <option key={t} value={t}>
-                  {t} — {STOCKS[t]?.name}
-                </option>
-              ))}
-            </select>
             <button
               type="button"
-              onClick={addHolding}
-              disabled={!addTicker}
-              className="shrink-0 rounded-md bg-pe-accent px-4 py-2 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-40"
+              onClick={addBlankRow}
+              className="mt-1 inline-flex h-9 items-center gap-1 rounded-md px-2 text-sm font-semibold text-pe-accent transition hover:bg-pe-accent-wash"
             >
+              <Plus className="h-4 w-4" />
               Add
             </button>
           </div>

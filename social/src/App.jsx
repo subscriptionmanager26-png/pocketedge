@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
 import ActivityPage from './pages/ActivityPage';
@@ -30,6 +30,7 @@ import {
 import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supabase';
 import { clearWatchlists } from './lib/watchlistStore';
 import { clearReviewStore } from './lib/reviewStore';
+import { buildPortfolioShare } from './lib/portfolioShare';
 import { CURRENT_USER, POSTS, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
 
@@ -39,6 +40,7 @@ export default function App() {
   const [tab, setTab] = useState('feed');
   const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composePortfolioShare, setComposePortfolioShare] = useState(null);
   const [posts, setPosts] = useState(POSTS);
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedFundId, setSelectedFundId] = useState(null);
@@ -52,6 +54,33 @@ export default function App() {
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
+  const [scrollAction, setScrollAction] = useState('reset');
+
+  const resetScroll = useCallback(() => setScrollAction('reset'), []);
+  const backScroll = useCallback(() => setScrollAction('back'), []);
+  const consumeScrollAction = useCallback(() => setScrollAction('reset'), []);
+
+  const routeKey = useMemo(() => {
+    if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
+    if (tab === 'markets' && selectedFundId) return `fund:${selectedFundId}`;
+    if (tab === 'markets' && selectedTicker) return `stock:${selectedTicker}`;
+    if (tab === 'profile' && profilePortfolioId) {
+      return `profile:${profileUserId}:portfolio:${profilePortfolioId}`;
+    }
+    if (tab === 'profile' && profileMode === 'public' && profileUserId !== CURRENT_USER.id) {
+      return `profile:${profileUserId}:public`;
+    }
+    if (tab === 'profile') return `profile:${profileUserId}`;
+    return tab;
+  }, [
+    tab,
+    selectedPostId,
+    selectedFundId,
+    selectedTicker,
+    profilePortfolioId,
+    profileMode,
+    profileUserId,
+  ]);
 
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
 
@@ -97,22 +126,40 @@ export default function App() {
     if (tab === 'activity') markAllActivityRead(activityItems);
   }, [tab, activityItems]);
 
-  const handlePost = ({ body, image }) => {
+  const handlePost = ({ body, image, portfolioShare }) => {
     const post = {
       id: `p_local_${Date.now()}`,
       authorId: CURRENT_USER.id,
-      type: image ? 'image' : 'text',
+      type: portfolioShare ? 'portfolio' : image ? 'image' : 'text',
       body: body || '',
       image: image ?? null,
+      portfolioShare: portfolioShare ?? null,
       createdAt: new Date().toISOString(),
       likes: 0,
       comments: [],
-      via: { kind: 'person', label: `@${CURRENT_USER.handle}`, reason: 'you posted' },
+      via: {
+        kind: 'person',
+        label: `@${CURRENT_USER.handle}`,
+        reason: portfolioShare ? 'shared a portfolio' : 'you posted',
+      },
       topics: [],
     };
     setPosts((prev) => [post, ...prev]);
     setSelectedPostId(null);
+    setComposePortfolioShare(null);
     setTab('feed');
+  };
+
+  const openCompose = () => {
+    setComposePortfolioShare(null);
+    setComposeOpen(true);
+  };
+
+  const sharePortfolioAsPost = (portfolio) => {
+    const share = buildPortfolioShare(portfolio, '1M');
+    if (!share) return;
+    setComposePortfolioShare(share);
+    setComposeOpen(true);
   };
 
   const handleAddComment = (postId, text) => {
@@ -131,12 +178,14 @@ export default function App() {
   };
 
   const setFeedModeAndStay = (mode) => {
+    resetScroll();
     setFeedMode(mode);
     setSelectedPostId(null);
     setTab('feed');
   };
 
   const openStock = (ticker) => {
+    resetScroll();
     setSelectedTicker(ticker);
     setSelectedFundId(null);
     setSelectedPostId(null);
@@ -144,6 +193,7 @@ export default function App() {
   };
 
   const openFund = (fundId) => {
+    resetScroll();
     setSelectedFundId(fundId);
     setSelectedTicker(null);
     setSelectedPostId(null);
@@ -151,17 +201,20 @@ export default function App() {
   };
 
   const openPost = (postId) => {
+    resetScroll();
     setSelectedPostId(postId);
     setTab('feed');
   };
 
   const openSettings = () => {
+    resetScroll();
     setSelectedPostId(null);
     setSettingsReturnTab(tab === 'settings' ? settingsReturnTab : tab);
     setTab('settings');
   };
 
   const goHome = () => {
+    resetScroll();
     setSelectedPostId(null);
     setSelectedTicker(null);
     setSelectedFundId(null);
@@ -171,6 +224,7 @@ export default function App() {
 
   const openProfile = (userId) => {
     if (!userId) return;
+    resetScroll();
     setSelectedPostId(null);
     setProfilePortfolioId(null);
     if (userId === CURRENT_USER.id) {
@@ -187,6 +241,7 @@ export default function App() {
   };
 
   const handleTabChange = (next) => {
+    resetScroll();
     setTab(next);
     setSelectedPostId(null);
     setProfilePortfolioId(null);
@@ -231,16 +286,16 @@ export default function App() {
   const mobileBack = useMemo(() => {
     if (authView !== 'app') return null;
     if (selectedPostId && tab === 'feed') {
-      return { label: 'Back', onBack: () => setSelectedPostId(null) };
+      return { label: 'Back', onBack: () => { backScroll(); setSelectedPostId(null); } };
     }
     if (tab === 'markets' && selectedFundId) {
-      return { label: 'Markets', onBack: () => setSelectedFundId(null) };
+      return { label: 'Markets', onBack: () => { backScroll(); setSelectedFundId(null); } };
     }
     if (tab === 'markets' && selectedTicker) {
-      return { label: 'Markets', onBack: () => setSelectedTicker(null) };
+      return { label: 'Markets', onBack: () => { backScroll(); setSelectedTicker(null); } };
     }
     if (tab === 'profile' && profilePortfolioId) {
-      return { label: 'Portfolios', onBack: () => setProfilePortfolioId(null) };
+      return { label: 'Portfolios', onBack: () => { backScroll(); setProfilePortfolioId(null); } };
     }
     if (tab === 'profile' && profileMode === 'public') {
       if (profileUserId === CURRENT_USER.id) {
@@ -248,7 +303,10 @@ export default function App() {
       }
       return {
         label: 'Back',
-        onBack: () => setTab(profileReturnTab || 'feed'),
+        onBack: () => {
+          backScroll();
+          setTab(profileReturnTab || 'feed');
+        },
       };
     }
     return null;
@@ -262,6 +320,7 @@ export default function App() {
     profileUserId,
     profileReturnTab,
     profilePortfolioId,
+    backScroll,
   ]);
 
   if (authView === 'bootstrapping') {
@@ -293,9 +352,13 @@ export default function App() {
         pageTitleOverride={pageTitleOverride}
         mobileBack={mobileBack}
         activityUnread={activityUnread}
+        routeKey={routeKey}
+        scrollAction={scrollAction}
+        onScrollActionConsumed={consumeScrollAction}
         onTabChange={handleTabChange}
         onFeedModeChange={setFeedModeAndStay}
         onProfile={() => {
+          resetScroll();
           setSelectedPostId(null);
           setProfileMode('own');
           setProfileUserId(CURRENT_USER.id);
@@ -304,14 +367,17 @@ export default function App() {
         }}
         onSettings={openSettings}
         onGoHome={goHome}
-        onCompose={() => setComposeOpen(true)}
+        onCompose={openCompose}
       >
         {tab === 'feed' &&
           (selectedPostId ? (
             <PostDetailPage
               postId={selectedPostId}
               posts={posts}
-              onBack={() => setSelectedPostId(null)}
+              onBack={() => {
+                backScroll();
+                setSelectedPostId(null);
+              }}
               onOpenProfile={openProfile}
               onAddComment={(text) => handleAddComment(selectedPostId, text)}
             />
@@ -354,13 +420,17 @@ export default function App() {
             onSelectStock={openStock}
             onOpenProfile={openProfile}
             onOpenPost={openPost}
+            onSharePortfolio={sharePortfolioAsPost}
           />
         )}
         {tab === 'markets' &&
           (selectedFundId ? (
             <InvestmentPage
               fundId={selectedFundId}
-              onBack={() => setSelectedFundId(null)}
+              onBack={() => {
+                backScroll();
+                setSelectedFundId(null);
+              }}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onPromptReview={() => {
@@ -371,7 +441,10 @@ export default function App() {
           ) : selectedTicker ? (
             <StockInvestmentPage
               ticker={selectedTicker}
-              onBack={() => setSelectedTicker(null)}
+              onBack={() => {
+                backScroll();
+                setSelectedTicker(null);
+              }}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onPromptReview={() => {
@@ -391,9 +464,18 @@ export default function App() {
             userId={profileUserId}
             posts={posts}
             selectedPortfolioId={profilePortfolioId}
-            onSelectPortfolio={setProfilePortfolioId}
-            onClearPortfolio={() => setProfilePortfolioId(null)}
-            onBack={() => setTab(profileReturnTab || 'feed')}
+            onSelectPortfolio={(id) => {
+              resetScroll();
+              setProfilePortfolioId(id);
+            }}
+            onClearPortfolio={() => {
+              backScroll();
+              setProfilePortfolioId(null);
+            }}
+            onBack={() => {
+              backScroll();
+              setTab(profileReturnTab || 'feed');
+            }}
             onOpenPublicPreview={() => {
               setProfileUserId(CURRENT_USER.id);
               setProfileMode('public');
@@ -412,7 +494,15 @@ export default function App() {
         )}
       </Shell>
 
-      <ComposeModal open={composeOpen} onClose={() => setComposeOpen(false)} onPost={handlePost} />
+      <ComposeModal
+        open={composeOpen}
+        portfolioShare={composePortfolioShare}
+        onClose={() => {
+          setComposeOpen(false);
+          setComposePortfolioShare(null);
+        }}
+        onPost={handlePost}
+      />
 
       <FundReviewModal
         open={fundReviewOpen}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageCircle, Share2, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { MessageCircle, Share2, ThumbsUp } from 'lucide-react';
 import Avatar from './Avatar';
 import { StarDisplay } from './StarRating';
 import { formatTicker } from '../lib/tickers';
@@ -131,16 +131,6 @@ export default function ReviewCard({
             >
               <ThumbsUp className={`h-4 w-4 ${userVote === 'agree' ? 'fill-current' : ''}`} />
               Agree {review.agreeCount > 0 && `· ${review.agreeCount}`}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleVote('disagree')}
-              className={`inline-flex items-center gap-1.5 text-sm font-semibold transition ${
-                userVote === 'disagree' ? 'text-pe-negative' : 'hover:text-pe-text'
-              }`}
-            >
-              <ThumbsDown className={`h-4 w-4 ${userVote === 'disagree' ? 'fill-current' : ''}`} />
-              Disagree {review.disagreeCount > 0 && `· ${review.disagreeCount}`}
             </button>
             <button
               type="button"

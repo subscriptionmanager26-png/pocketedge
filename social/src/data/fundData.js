@@ -12,6 +12,7 @@ export const FUNDS = {
     return3Y: 23.1,
     risk: 'Very High',
     aum: '₹8,200 Cr',
+    nav: 68.42,
   },
   fund_parag_flexi: {
     id: 'fund_parag_flexi',
@@ -22,6 +23,7 @@ export const FUNDS = {
     return3Y: 25.6,
     risk: 'Very High',
     aum: '₹1,12,000 Cr',
+    nav: 82.15,
   },
   fund_hdfc_flexi: {
     id: 'fund_hdfc_flexi',
@@ -32,6 +34,7 @@ export const FUNDS = {
     return3Y: 20.8,
     risk: 'Very High',
     aum: '₹54,000 Cr',
+    nav: 1248.6,
   },
   fund_motilal_mid: {
     id: 'fund_motilal_mid',
@@ -42,6 +45,7 @@ export const FUNDS = {
     return3Y: 31.2,
     risk: 'Very High',
     aum: '₹32,000 Cr',
+    nav: 98.74,
   },
   fund_axis_mid: {
     id: 'fund_axis_mid',
@@ -52,6 +56,7 @@ export const FUNDS = {
     return3Y: 26.4,
     risk: 'Very High',
     aum: '₹28,500 Cr',
+    nav: 36.28,
   },
   fund_kotak_mid: {
     id: 'fund_kotak_mid',
@@ -62,6 +67,7 @@ export const FUNDS = {
     return3Y: 24.0,
     risk: 'Very High',
     aum: '₹41,000 Cr',
+    nav: 112.9,
   },
   fund_nippon_small: {
     id: 'fund_nippon_small',
@@ -72,6 +78,7 @@ export const FUNDS = {
     return3Y: 35.8,
     risk: 'Very High',
     aum: '₹48,000 Cr',
+    nav: 156.35,
   },
   fund_sbi_small: {
     id: 'fund_sbi_small',
@@ -82,6 +89,7 @@ export const FUNDS = {
     return3Y: 33.1,
     risk: 'Very High',
     aum: '₹36,000 Cr',
+    nav: 189.2,
   },
   fund_quant_small: {
     id: 'fund_quant_small',
@@ -92,6 +100,7 @@ export const FUNDS = {
     return3Y: 42.5,
     risk: 'Very High',
     aum: '₹9,800 Cr',
+    nav: 245.8,
   },
 };
 

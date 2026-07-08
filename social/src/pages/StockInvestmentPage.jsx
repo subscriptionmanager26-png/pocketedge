@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetReviewComposer from '../components/AssetReviewComposer';
+import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import ReviewCard from '../components/ReviewCard';
@@ -21,6 +22,7 @@ import { getStock, getStockHolders, getStockNews } from '../data/stockData';
 import { AUTHOR_POSITIONS, CURRENT_USER, getPerson } from '../data/mockData';
 import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions } from '../lib/assetDiscussions';
+import { getStockAssetType } from '../lib/assetTypes';
 import {
   addReviewComment,
   getReviewsForStock,
@@ -90,11 +92,12 @@ export default function StockInvestmentPage({
         </button>
       </PageHeader>
 
-      <section className="border-b border-pe-border px-4 py-5">
-        <h1 className="font-serif text-2xl font-bold text-pe-text">{stock.name}</h1>
-        <p className="mt-0.5 text-sm text-pe-text-muted">{formatTicker(ticker)}</p>
-        <p className="mt-3 font-serif text-3xl font-bold text-pe-text">{formatPrice(stock.price)}</p>
-      </section>
+      <AssetProductHeader
+        name={stock.name}
+        ticker={formatTicker(ticker)}
+        type={getStockAssetType(ticker, stock)}
+        price={formatPrice(stock.price)}
+      />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 

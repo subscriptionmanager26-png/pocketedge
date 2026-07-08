@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetReviewComposer from '../components/AssetReviewComposer';
+import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import ReviewCard from '../components/ReviewCard';
@@ -24,6 +25,8 @@ import {
 import { getPerson, CURRENT_USER } from '../data/mockData';
 import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions } from '../lib/assetDiscussions';
+import { getFundAssetType } from '../lib/assetTypes';
+import { formatPrice } from '../lib/format';
 import {
   addReviewComment,
   getReviewsForFund,
@@ -88,12 +91,11 @@ export default function InvestmentPage({
         </button>
       </PageHeader>
 
-      <section className="border-b border-pe-border px-4 py-5">
-        <h1 className="font-serif text-2xl font-bold text-pe-text">{fund.name}</h1>
-        <p className="mt-0.5 text-sm text-pe-text-muted">{fund.amc}</p>
-        <p className="mt-1 text-xs font-semibold text-pe-text-secondary">{fund.category}</p>
-        <p className="mt-3 text-sm text-pe-text-secondary">{fund.aum} AUM</p>
-      </section>
+      <AssetProductHeader
+        name={fund.name}
+        type={getFundAssetType()}
+        price={fund.nav != null ? formatPrice(fund.nav) : null}
+      />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
