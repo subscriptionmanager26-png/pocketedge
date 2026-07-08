@@ -17,10 +17,10 @@ export default function FundReviewStep({
 
   return (
     <>
-      <h1 className="mt-3 font-serif text-3xl font-bold leading-tight text-pe-text md:text-4xl">
+      <h2 className="font-serif text-2xl font-bold leading-tight text-pe-text md:text-3xl">
         Recommend a fund
-      </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-pe-text-secondary">
+      </h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
         Share your take on one <span className="font-semibold text-pe-text">{category}</span> fund to
         unlock community reviews.
       </p>

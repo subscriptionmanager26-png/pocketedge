@@ -4,11 +4,13 @@ const MOBILE_MEDIA = '(max-width: 1023px)';
 
 function measureLandingInsets(root) {
   const vv = window.visualViewport;
-  const nav = root.querySelector('.navbar');
-  const cta = root.querySelector('.mobile-cta-dock');
+  const nav = root.querySelector('.pe-landing-nav');
+  const cta = root.querySelector('.pe-landing-cta-dock');
+  const headline = root.querySelector('.pe-landing-headline');
 
   const navHeight = nav?.offsetHeight ?? 61;
   const ctaHeight = cta?.offsetHeight ?? 128;
+  const headlineBlock = (headline?.offsetHeight ?? 120) + 36;
   const visibleHeight = vv?.height ?? window.innerHeight;
 
   let browserBottom = 0;
@@ -16,16 +18,29 @@ function measureLandingInsets(root) {
     browserBottom = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
   }
 
-  return { visibleHeight, browserBottom, navHeight, ctaHeight };
+  return { visibleHeight, browserBottom, navHeight, ctaHeight, headlineBlock };
 }
 
 function applyLandingViewport(root) {
-  const { visibleHeight, browserBottom, navHeight, ctaHeight } = measureLandingInsets(root);
+  const { visibleHeight, browserBottom, navHeight, ctaHeight, headlineBlock } =
+    measureLandingInsets(root);
 
   root.style.setProperty('--landing-visible-height', `${visibleHeight}px`);
   root.style.setProperty('--landing-browser-bottom', `${browserBottom}px`);
   root.style.setProperty('--landing-nav-height', `${navHeight}px`);
   root.style.setProperty('--landing-cta-height', `${ctaHeight}px`);
+  root.style.setProperty('--landing-content-offset', `${headlineBlock}px`);
+
+  const heroMin = Math.max(
+    200,
+    visibleHeight -
+      navHeight -
+      ctaHeight -
+      headlineBlock -
+      browserBottom -
+      16
+  );
+  root.style.setProperty('--landing-hero-min', `${heroMin}px`);
 }
 
 /** Keeps the mobile landing CTA above browser chrome and the home indicator. */
@@ -43,16 +58,20 @@ export function useLandingViewport(rootRef) {
         root.style.removeProperty('--landing-browser-bottom');
         root.style.removeProperty('--landing-nav-height');
         root.style.removeProperty('--landing-cta-height');
+        root.style.removeProperty('--landing-content-offset');
+        root.style.removeProperty('--landing-hero-min');
         return;
       }
 
       applyLandingViewport(root);
 
-      const cta = root.querySelector('.mobile-cta-dock');
-      if (cta && !resizeObserver) {
+      const cta = root.querySelector('.pe-landing-cta-dock');
+      const headline = root.querySelector('.pe-landing-headline');
+      if (!resizeObserver) {
         resizeObserver = new ResizeObserver(() => applyLandingViewport(root));
-        resizeObserver.observe(cta);
       }
+      if (cta) resizeObserver.observe(cta);
+      if (headline) resizeObserver.observe(headline);
     };
 
     const onViewportChange = () => {

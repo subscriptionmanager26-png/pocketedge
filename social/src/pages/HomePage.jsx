@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import AuthLayoutHeader from '../components/AuthLayoutHeader';
 import { signInWithGoogle } from '../lib/supabase';
 import { useLandingViewport } from './useLandingViewport';
-import './landing.css';
 
 const ASSETS = '/landing/assets';
 
@@ -10,16 +11,16 @@ const FEATURES = [
     title: 'Real insights',
     body: 'from investors with skin in the game',
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-pe-accent" aria-hidden="true">
         <path
           d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"
-          stroke="#F4511E"
+          stroke="currentColor"
           strokeWidth="1.6"
           strokeLinejoin="round"
         />
         <path
           d="M9 12l2 2 4-4"
-          stroke="#F4511E"
+          stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -31,18 +32,18 @@ const FEATURES = [
     title: 'Trusted community',
     body: 'reviews, discussions & real portfolios',
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="9" cy="8" r="3" stroke="#F4511E" strokeWidth="1.6" />
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-pe-accent" aria-hidden="true">
+        <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
         <path
           d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"
-          stroke="#F4511E"
+          stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
         />
-        <circle cx="17" cy="9" r="2.3" stroke="#F4511E" strokeWidth="1.6" />
+        <circle cx="17" cy="9" r="2.3" stroke="currentColor" strokeWidth="1.6" />
         <path
           d="M16 14c2.5 0 4.5 1.8 4.5 4.5"
-          stroke="#F4511E"
+          stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
         />
@@ -53,17 +54,17 @@ const FEATURES = [
     title: 'See what works',
     body: 'track top rated funds & picks',
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-pe-accent" aria-hidden="true">
         <path
           d="M4 16l5-5 3 3 6-6"
-          stroke="#F4511E"
+          stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="M15 8h4v4"
-          stroke="#F4511E"
+          stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -73,15 +74,19 @@ const FEATURES = [
   },
 ];
 
-function Headline() {
+function Headline({ className = '' }) {
   return (
-    <h1 className="headline">
-      <span className="headline-dark">Before you invest..</span>
-      <span className="headline-accent">See what real investors own and say</span>
-      <svg className="underline" viewBox="0 0 160 12" fill="none" aria-hidden="true">
+    <h1
+      className={`pe-landing-headline font-serif font-bold leading-[1.08] tracking-tight text-pe-text ${className}`}
+    >
+      <span className="block text-[2rem] md:text-5xl lg:text-[3.25rem]">Before you invest..</span>
+      <span className="mt-1 block text-[2rem] text-pe-accent md:text-5xl lg:text-[3.25rem]">
+        See what real investors own and say
+      </span>
+      <svg className="mt-2 h-2.5 w-28 md:w-32" viewBox="0 0 160 12" fill="none" aria-hidden="true">
         <path
           d="M2 8C40 3 120 3 158 6"
-          stroke="#F4511E"
+          stroke="var(--pe-accent)"
           strokeWidth="4"
           strokeLinecap="round"
         />
@@ -90,15 +95,38 @@ function Headline() {
   );
 }
 
-function FeatureList({ desktop = false }) {
+function FeatureList({ row = false, mobile = false }) {
+  if (mobile) {
+    return (
+      <ul className="m-0 flex flex-col gap-2.5 p-0">
+        {FEATURES.map((feature) => (
+          <li key={feature.title} className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pe-accent-wash">
+              <span className="scale-90">{feature.icon}</span>
+            </span>
+            <div className="min-w-0 leading-tight">
+              <p className="text-sm font-semibold text-pe-text">{feature.title}</p>
+              <p className="text-xs text-pe-text-secondary">{feature.body}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
-    <ul className={`features${desktop ? ' features--desktop' : ''}`}>
+    <ul className={`m-0 list-none p-0 ${row ? 'mt-8 flex flex-col gap-5' : 'flex flex-col gap-6'}`}>
       {FEATURES.map((feature) => (
-        <li key={feature.title} className={`feature${desktop ? ' feature--row' : ''}`}>
-          <span className="feature-icon">{feature.icon}</span>
-          <div className="feature-text">
-            <strong>{feature.title}</strong>
-            <p>{feature.body}</p>
+        <li
+          key={feature.title}
+          className={row ? 'flex items-start gap-3.5' : 'flex flex-col gap-2'}
+        >
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pe-accent-wash">
+            {feature.icon}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-pe-text">{feature.title}</p>
+            <p className="mt-0.5 text-sm leading-relaxed text-pe-text-secondary">{feature.body}</p>
           </div>
         </li>
       ))}
@@ -106,22 +134,44 @@ function FeatureList({ desktop = false }) {
   );
 }
 
-function CtaBlock({ desktop = false, loading, error, onGetStarted }) {
+function MobileVisuals() {
   return (
-    <div className={`cta-wrap${desktop ? ' cta-wrap--desktop' : ''}`}>
+    <div className="relative mt-8 h-[28rem] w-full">
+      <img
+        src={`${ASSETS}/feed-card.png`}
+        alt=""
+        aria-hidden="true"
+        className="absolute left-0 top-4 h-[20rem] w-auto object-contain object-left-top drop-shadow-sm"
+      />
+      <img
+        src={`${ASSETS}/iphone-fund-reviews.png`}
+        alt="PocketEdge app showing HDFC Flexi Cap Fund reviews on iPhone"
+        className="absolute bottom-0 right-0 h-[28rem] w-auto object-contain object-bottom-right drop-shadow-[0_16px_32px_rgba(0,0,0,0.2)]"
+      />
+    </div>
+  );
+}
+
+function CtaBlock({ compact = false, loading, error, onGetStarted }) {
+  return (
+    <div className={compact ? '' : 'text-center lg:text-left'}>
       <button
         type="button"
-        className={`cta${desktop ? ' cta--desktop' : ''}`}
         onClick={onGetStarted}
         disabled={loading}
+        className={`inline-flex items-center justify-center gap-2 rounded-md bg-pe-accent font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-60 ${
+          compact
+            ? 'w-full py-3 text-[15px]'
+            : 'w-full py-3 text-[15px] lg:w-auto lg:px-8'
+        }`}
       >
         <span>{loading ? 'Redirecting to Google…' : 'Get Started'}</span>
-        {!loading && <span className="cta-arrow" aria-hidden="true">→</span>}
+        {!loading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
       </button>
-      <p className="cta-sub">
-        Join investors sharing <span className="accent">real insights</span>
+      <p className="mt-3 text-sm text-pe-text-secondary">
+        Join investors sharing <span className="font-semibold text-pe-accent">real insights</span>
       </p>
-      {error && <p className="cta-error">{error}</p>}
+      {error ? <p className="mt-2 text-sm text-pe-negative">{error}</p> : null}
     </div>
   );
 }
@@ -135,7 +185,6 @@ export default function HomePage() {
   useLandingViewport(landingRef);
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
-  const openDrawer = useCallback(() => setDrawerOpen(true), []);
 
   const handleGetStarted = async () => {
     try {
@@ -157,118 +206,68 @@ export default function HomePage() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [closeDrawer]);
 
+  useEffect(() => {
+    document.body.classList.toggle('overflow-hidden', drawerOpen);
+    return () => document.body.classList.remove('overflow-hidden');
+  }, [drawerOpen]);
+
   return (
-    <div ref={landingRef} className={`pe-site-landing${drawerOpen ? ' is-drawer-open' : ''}`}>
-      <header className="navbar">
-        <div className="nav-inner">
-          <button type="button" className="brand" aria-label="PocketEdge home">
-            <img src={`${ASSETS}/logo.png`} className="brand-logo" alt="" />
-            <span className="brand-name">PocketEdge</span>
-          </button>
-
-          <nav className="nav-links" aria-label="Main navigation">
-            <button type="button">Portfolios</button>
-            <button type="button">Community</button>
-            <button type="button">About</button>
-            <button type="button" onClick={handleGetStarted} disabled={loading}>
-              Get Started
-            </button>
-          </nav>
-
-          <button
-            type="button"
-            className={`hamburger${drawerOpen ? ' is-open' : ''}`}
-            aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={drawerOpen}
-            aria-controls="landing-drawer"
-            onClick={() => (drawerOpen ? closeDrawer() : openDrawer())}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-        </div>
-      </header>
-
-      <button
-        type="button"
-        className={`drawer-overlay${drawerOpen ? ' open' : ''}`}
-        aria-hidden={!drawerOpen}
-        aria-label="Close menu"
-        onClick={closeDrawer}
+    <div
+      ref={landingRef}
+      className={`pe-landing flex min-h-dvh flex-col bg-pe-canvas text-pe-text${
+        drawerOpen ? ' overflow-hidden' : ''
+      }`}
+    >
+      <AuthLayoutHeader
+        showMarketingNav
+        drawerOpen={drawerOpen}
+        onToggleDrawer={() => setDrawerOpen((open) => !open)}
+        onCloseDrawer={closeDrawer}
+        onGetStarted={handleGetStarted}
+        loading={loading}
       />
 
-      <aside
-        id="landing-drawer"
-        className={`drawer${drawerOpen ? ' open' : ''}`}
-        aria-hidden={!drawerOpen}
-      >
-        <div className="drawer-header">
-          <span className="drawer-title">Menu</span>
-          <button type="button" className="drawer-close" aria-label="Close menu" onClick={closeDrawer}>
-            <span />
-            <span />
-          </button>
-        </div>
-        <nav className="drawer-nav">
-          <button type="button">Portfolios</button>
-          <button type="button">Community</button>
-          <button type="button">About</button>
-          <button type="button" onClick={handleGetStarted} disabled={loading}>
-            Get Started
-          </button>
-        </nav>
-      </aside>
-
-      <div className="layout-mobile">
-        <div className="page">
-          <main className="hero">
+      {/* Mobile */}
+      <div className="pe-landing-mobile flex min-h-0 flex-1 flex-col lg:hidden">
+        <div className="pe-landing-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="mx-auto max-w-feed px-4 pb-4 pt-5">
             <Headline />
-
-            <div className="hero-body">
-              <FeatureList />
-              <div className="hero-phone">
-                <img
-                  src={`${ASSETS}/phone-display.png`}
-                  alt="PocketEdge app showing top rated funds and investor reviews"
-                  className="phone-img"
-                />
-              </div>
+            <div className="mt-4">
+              <FeatureList mobile />
             </div>
-          </main>
+            <MobileVisuals />
+          </div>
         </div>
 
-        <footer className="mobile-cta-dock">
-          <CtaBlock loading={loading} error={error} onGetStarted={handleGetStarted} />
+        <footer className="pe-landing-cta-dock shrink-0 border-t border-pe-border bg-pe-canvas px-4 pt-3">
+          <div className="mx-auto max-w-feed">
+            <CtaBlock compact loading={loading} error={error} onGetStarted={handleGetStarted} />
+          </div>
         </footer>
       </div>
 
-      <div className="layout-desktop">
-        <div className="desktop-page">
-          <div className="desktop-hero">
-            <div className="desktop-content">
-              <Headline />
-              <FeatureList desktop />
-              <CtaBlock
-                desktop
-                loading={loading}
-                error={error}
-                onGetStarted={handleGetStarted}
-              />
+      {/* Desktop */}
+      <div className="hidden flex-1 lg:block">
+        <div className="mx-auto grid h-full max-w-6xl grid-cols-2 items-center gap-10 px-8 py-10 xl:gap-16">
+          <div className="min-w-0">
+            <Headline />
+            <FeatureList row />
+            <div className="mt-10">
+              <CtaBlock loading={loading} error={error} onGetStarted={handleGetStarted} />
             </div>
+          </div>
 
-            <div className="desktop-visuals">
-              <img
-                src={`${ASSETS}/feed-card.png`}
-                alt="PocketEdge social feed showing investor portfolio updates"
-                className="visual-feed"
-              />
-              <img
-                src={`${ASSETS}/iphone-fund-reviews.png`}
-                alt="PocketEdge app showing HDFC Flexi Cap Fund reviews on iPhone"
-                className="visual-phone"
-              />
-            </div>
+          <div className="relative h-[min(78vh,720px)] min-h-[480px]">
+            <img
+              src={`${ASSETS}/feed-card.png`}
+              alt="PocketEdge social feed showing investor portfolio updates"
+              className="absolute left-0 top-0 h-full max-w-[58%] object-contain object-left-top drop-shadow-sm"
+            />
+            <img
+              src={`${ASSETS}/iphone-fund-reviews.png`}
+              alt="PocketEdge app showing HDFC Flexi Cap Fund reviews on iPhone"
+              className="absolute bottom-0 right-0 h-[92%] max-w-[72%] object-contain object-bottom-right drop-shadow-lg"
+            />
           </div>
         </div>
       </div>

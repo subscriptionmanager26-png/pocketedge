@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import AuthLayoutHeader from '../../components/AuthLayoutHeader';
 import { pickRandomCategory } from '../../data/fundData';
 import { addReview } from '../../lib/reviewStore';
 import { setOnboardingComplete } from '../../lib/sessionStore';
@@ -21,34 +23,51 @@ export default function OnboardingFlow({ userId, onComplete }) {
   };
 
   return (
-    <div className="min-h-dvh bg-pe-canvas">
-      <div className="mx-auto max-w-feed px-4 py-8 md:py-12">
-        <p className="text-xs font-bold uppercase tracking-widest text-pe-accent">Welcome</p>
+    <div className="flex min-h-dvh flex-col bg-pe-canvas text-pe-text">
+      <AuthLayoutHeader badge="Setup" />
 
-        <FundReviewStep
-          category={assignedCategory}
-          selectedFundId={fundId}
-          onSelectFund={setFundId}
-          rating={fundRating}
-          onRating={setFundRating}
-          reviewLine={fundReviewLine}
-          onReviewLine={setFundReviewLine}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-feed px-4 py-6 md:py-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">
+            Welcome
+          </p>
+          <p className="mt-2 font-serif text-2xl font-bold text-pe-text md:text-3xl">
+            One review to join the community
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
+            Share a quick fund rating so you can read what other investors own and say.
+          </p>
 
-        <div className="mt-10 border-t border-pe-border pt-8">
+          <div className="mt-8 border-t border-pe-border pt-8">
+            <FundReviewStep
+              category={assignedCategory}
+              selectedFundId={fundId}
+              onSelectFund={setFundId}
+              rating={fundRating}
+              onRating={setFundRating}
+              reviewLine={fundReviewLine}
+              onReviewLine={setFundReviewLine}
+            />
+          </div>
+        </div>
+      </div>
+
+      <footer className="shrink-0 border-t border-pe-border bg-pe-canvas px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-feed">
           <button
             type="button"
             onClick={submit}
             disabled={!canSubmit}
-            className="w-full rounded-md bg-pe-accent py-3 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-pe-accent py-3 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40"
           >
-            Submit review & enter feed
+            <span>Submit review & enter feed</span>
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
           <p className="mt-3 text-center text-[13px] text-pe-text-muted">
             One quick rating unlocks community reviews on funds and stocks.
           </p>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

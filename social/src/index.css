@@ -61,6 +61,21 @@ textarea {
   font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
 }
 
+/* Marketing landing — mobile viewport fit for pinned CTA */
+@media (max-width: 1023px) {
+  .pe-landing {
+    height: var(--landing-visible-height, 100dvh);
+    max-height: var(--landing-visible-height, 100dvh);
+    overflow: hidden;
+  }
+
+  .pe-landing-cta-dock {
+    padding-bottom: calc(
+      0.75rem + env(safe-area-inset-bottom, 0px) + var(--landing-browser-bottom, 0px)
+    );
+  }
+}
+
 /* —— Parent landing parity (.pe-redesign-hero-*) —— */
 
 .pe-landing-hero-ui {
