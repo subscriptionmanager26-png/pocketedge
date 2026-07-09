@@ -487,6 +487,7 @@ export default function App() {
             onOpenProfile={openProfile}
             onOpenPost={openPost}
             onGraphChange={() => setGraphTick((n) => n + 1)}
+            onSharePortfolio={sharePortfolioAsPost}
           />
         )}
         {tab === 'settings' && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -67,6 +67,7 @@ export default function ProfilePage({
   onOpenProfile,
   onOpenPost,
   onGraphChange,
+  onSharePortfolio,
 }) {
   const isOwn = mode === 'own';
   const person = isOwn ? CURRENT_USER : getPerson(userId);
@@ -210,6 +211,7 @@ export default function ProfilePage({
           bumpTrades();
         }}
         onBack={onClearPortfolio}
+        onSharePortfolio={canEdit ? onSharePortfolio : undefined}
       />
     );
   }
@@ -311,6 +313,7 @@ export default function ProfilePage({
           onReturnPeriodChange={handleReturnPeriodChange}
           onSelectPortfolio={onSelectPortfolio}
           onAddPortfolio={handleAddPortfolio}
+          onSharePortfolio={canEdit ? onSharePortfolio : undefined}
         />
       )}
 
@@ -528,6 +531,7 @@ function PortfoliosListPanel({
   onReturnPeriodChange,
   onSelectPortfolio,
   onAddPortfolio,
+  onSharePortfolio,
 }) {
   void portfolioVersion;
   const [addOpen, setAddOpen] = useState(false);
@@ -566,39 +570,54 @@ function PortfoliosListPanel({
           {portfolios.map((portfolio) => {
             const isWatchlist = portfolio.kind === 'watchlist';
             const ret = getPortfolioReturn(portfolio, returnPeriod);
+            const canShare = canEdit && !isWatchlist && onSharePortfolio;
             return (
-              <button
+              <div
                 key={portfolio.id}
-                type="button"
-                onClick={() => onSelectPortfolio?.(portfolio.id)}
-                className="flex w-full items-center justify-between gap-4 py-4 text-left transition hover:bg-pe-surface"
+                className="flex items-center gap-2 py-4"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <p className="text-[15px] font-semibold text-pe-text">{portfolio.name}</p>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        isWatchlist
-                          ? 'bg-pe-surface text-pe-text-secondary'
-                          : 'bg-pe-accent-wash text-pe-accent'
-                      }`}
-                    >
-                      {isWatchlist ? 'Watchlist' : 'Live'}
-                    </span>
+                <button
+                  type="button"
+                  onClick={() => onSelectPortfolio?.(portfolio.id)}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left transition hover:bg-pe-surface"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="text-[15px] font-semibold text-pe-text">{portfolio.name}</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          isWatchlist
+                            ? 'bg-pe-surface text-pe-text-secondary'
+                            : 'bg-pe-accent-wash text-pe-accent'
+                        }`}
+                      >
+                        {isWatchlist ? 'Watchlist' : 'Live'}
+                      </span>
+                    </div>
+                    {portfolio.thesis ? (
+                      <p className="mt-1 font-serif text-sm leading-6 text-pe-text-secondary">
+                        {portfolio.thesis}
+                      </p>
+                    ) : null}
                   </div>
-                  {portfolio.thesis ? (
-                    <p className="mt-1 font-serif text-sm leading-6 text-pe-text-secondary">
-                      {portfolio.thesis}
+                  <div className="flex shrink-0 items-center gap-3">
+                    <p className={`w-16 text-right text-[15px] font-bold ${pnlClass(ret)}`}>
+                      {formatPct(ret)}
                     </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <p className={`w-16 text-right text-[15px] font-bold ${pnlClass(ret)}`}>
-                    {formatPct(ret)}
-                  </p>
-                  <ChevronRight className="h-4 w-4 text-pe-text-muted" />
-                </div>
-              </button>
+                    <ChevronRight className="h-4 w-4 text-pe-text-muted" />
+                  </div>
+                </button>
+                {canShare ? (
+                  <button
+                    type="button"
+                    onClick={() => onSharePortfolio(portfolio)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-pe-accent transition hover:bg-pe-accent-wash"
+                    aria-label={`Share ${portfolio.name}`}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
             );
           })}
         </div>
@@ -715,6 +734,7 @@ function PortfolioDetailView({
   onReturnPeriodChange,
   onPortfolioUpdated,
   onBack,
+  onSharePortfolio,
 }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -911,14 +931,26 @@ function PortfolioDetailView({
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </button>
+                <>
+                  {portfolio.kind !== 'watchlist' && onSharePortfolio ? (
+                    <button
+                      type="button"
+                      onClick={() => onSharePortfolio(portfolio)}
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-accent hover:bg-pe-accent-wash"
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
+                      Share
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={startEditing}
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
+                </>
               )}
             </div>
           )}

@@ -162,16 +162,6 @@ export default function PortfolioPage({
           }}
           trailing={
             <div className="flex h-full shrink-0 items-center gap-1 pr-2">
-              {isPortfolio ? (
-                <button
-                  type="button"
-                  onClick={() => onSharePortfolio?.(activeList)}
-                  className="inline-flex h-full items-center gap-1 text-[15px] font-semibold text-pe-accent hover:text-pe-accent-pressed"
-                >
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </button>
-              ) : null}
               <button
                 type="button"
                 onClick={() => setWatchlistOpen(true)}
@@ -184,6 +174,19 @@ export default function PortfolioPage({
           }
         />
       </PageHeader>
+
+      {isPortfolio ? (
+        <div className="border-b border-pe-border px-4 py-3">
+          <button
+            type="button"
+            onClick={() => onSharePortfolio?.(activeList)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-pe-accent bg-pe-accent-wash px-4 py-2.5 text-[15px] font-semibold text-pe-accent transition hover:bg-pe-accent hover:text-white"
+          >
+            <Share2 className="h-4 w-4" />
+            Share portfolio to feed
+          </button>
+        </div>
+      ) : null}
 
       {/* Metrics for selected list */}
       <section className="border-b border-pe-border px-4 py-5">
