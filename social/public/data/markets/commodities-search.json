@@ -1,325 +1,266 @@
 {
   "syncedAt": "2026-07-09T19:04:18.541Z",
-  "asOn": "/Date(1783602126740)/",
   "items": [
     {
-      "id": "ALUMINI",
+      "id": "ALUMINI-RAIPUR",
       "name": "ALUMINI",
       "symbol": "ALUMINI",
       "unit": "1 KGS",
       "location": "RAIPUR",
       "spotPrice": 340.5,
-      "change": 0.19,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 0.19
     },
     {
-      "id": "ALUMINIUM",
+      "id": "ALUMINIUM-RAIPUR",
       "name": "ALUMINIUM",
       "symbol": "ALUMINIUM",
       "unit": "1 KGS",
       "location": "RAIPUR",
       "spotPrice": 340.5,
-      "change": 0.19,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 0.19
     },
     {
-      "id": "CARDAMOM",
+      "id": "CARDAMOM-VANDANMEDU",
       "name": "CARDAMOM",
       "symbol": "CARDAMOM",
       "unit": "1 KGS",
       "location": "VANDANMEDU",
       "spotPrice": 3206,
-      "change": 1.2,
-      "date": "09 Jul 2026",
-      "time": "18:27"
+      "change": 1.2
     },
     {
-      "id": "COPPER",
+      "id": "COPPER-THANE",
       "name": "COPPER",
       "symbol": "COPPER",
       "unit": "1 KGS",
       "location": "THANE",
       "spotPrice": 1289.15,
-      "change": 1.4,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 1.4
     },
     {
-      "id": "COTTON",
+      "id": "COTTON-RAJKOT",
       "name": "COTTON",
       "symbol": "COTTON",
       "unit": "1 BALES",
       "location": "RAJKOT",
       "spotPrice": 30790,
-      "change": 0.1,
-      "date": "09 Jul 2026",
-      "time": "17:45"
+      "change": 0.1
     },
     {
-      "id": "COTTONOIL",
+      "id": "COTTONOIL-KADI",
       "name": "COTTONOIL",
       "symbol": "COTTONOIL",
       "unit": "10 KGS",
       "location": "KADI",
       "spotPrice": 1513,
-      "change": 0.2,
-      "date": "09 Jul 2026",
-      "time": "17:45"
+      "change": 0.2
     },
     {
-      "id": "CPO",
+      "id": "CPO-KANDLA",
       "name": "CPO",
       "symbol": "CPO",
       "unit": "10 KGS",
       "location": "KANDLA",
       "spotPrice": 1361.5,
-      "change": -0.17,
-      "date": "09 Jul 2026",
-      "time": "17:45"
+      "change": -0.17
     },
     {
-      "id": "CRUDEOIL",
+      "id": "CRUDEOIL-NA",
       "name": "CRUDEOIL",
       "symbol": "CRUDEOIL",
       "unit": "1 BBL",
       "location": "NA",
       "spotPrice": 7001,
-      "change": 4.27,
-      "date": "09 Jul 2026",
-      "time": "09:14"
+      "change": 4.27
     },
     {
-      "id": "CRUDEOILM",
+      "id": "CRUDEOILM-NA",
       "name": "CRUDEOILM",
       "symbol": "CRUDEOILM",
       "unit": "1 BBL",
       "location": "NA",
       "spotPrice": 7001,
-      "change": 4.27,
-      "date": "09 Jul 2026",
-      "time": "09:14"
+      "change": 4.27
     },
     {
-      "id": "ELECDMBL",
+      "id": "ELECDMBL-NA",
       "name": "ELECDMBL",
       "symbol": "ELECDMBL",
       "unit": "1 MWH",
       "location": "NA",
       "spotPrice": 4235.6,
-      "change": 36.19,
-      "date": "09 Jul 2026",
-      "time": "18:27"
+      "change": 36.19
     },
     {
-      "id": "GOLD",
+      "id": "GOLD-AHMEDABAD",
       "name": "GOLD",
       "symbol": "GOLD",
       "unit": "10 GRMS",
       "location": "AHMEDABAD",
       "spotPrice": 143206,
-      "change": 0.01,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": 0.01
     },
     {
-      "id": "GOLDGUINEA",
+      "id": "GOLDGUINEA-AHMEDABAD",
       "name": "GOLDGUINEA",
       "symbol": "GOLDGUINEA",
       "unit": "8 GRMS",
       "location": "AHMEDABAD",
       "spotPrice": 115025,
-      "change": 0.01,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": 0.01
     },
     {
-      "id": "GOLDM",
+      "id": "GOLDM-AHMEDABAD",
       "name": "GOLDM",
       "symbol": "GOLDM",
       "unit": "10 GRMS",
       "location": "AHMEDABAD",
       "spotPrice": 143206,
-      "change": 0.01,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": 0.01
     },
     {
-      "id": "GOLDPETAL",
+      "id": "GOLDPETAL-MUMBAI",
       "name": "GOLDPETAL",
       "symbol": "GOLDPETAL",
       "unit": "1 GRMS",
       "location": "MUMBAI",
       "spotPrice": 14331,
-      "change": -0.2,
-      "date": "09 Jul 2026",
-      "time": "17:45"
+      "change": -0.2
     },
     {
-      "id": "GOLDTEN",
+      "id": "GOLDTEN-AHMEDABAD",
       "name": "GOLDTEN",
       "symbol": "GOLDTEN",
       "unit": "10 GRMS",
       "location": "AHMEDABAD",
       "spotPrice": 143782,
-      "change": 0.01,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": 0.01
     },
     {
-      "id": "KAPAS",
+      "id": "KAPAS-RAJKOT",
       "name": "KAPAS",
       "symbol": "KAPAS",
       "unit": "20 KGS",
       "location": "RAJKOT",
       "spotPrice": 1819,
-      "change": 0,
-      "date": "09 Jul 2026",
-      "time": "17:45"
+      "change": 0
     },
     {
-      "id": "LEAD",
+      "id": "LEAD-CHENNAI",
       "name": "LEAD",
       "symbol": "LEAD",
       "unit": "1 KGS",
       "location": "CHENNAI",
       "spotPrice": 206.05,
-      "change": 1,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 1
     },
     {
-      "id": "LEADMINI",
+      "id": "LEADMINI-CHENNAI",
       "name": "LEADMINI",
       "symbol": "LEADMINI",
       "unit": "1 KGS",
       "location": "CHENNAI",
       "spotPrice": 206.05,
-      "change": 1,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 1
     },
     {
-      "id": "MENTHAOIL",
+      "id": "MENTHAOIL-BARABANKI*",
       "name": "MENTHAOIL",
       "symbol": "MENTHAOIL",
       "unit": "1 KGS",
       "location": "BARABANKI*",
       "spotPrice": 1363.9,
-      "change": 3.36,
-      "date": "09 Jul 2026",
-      "time": "17:45"
+      "change": 3.36
     },
     {
-      "id": "NATGASMINI",
+      "id": "NATGASMINI-NA",
       "name": "NATGASMINI",
       "symbol": "NATGASMINI",
       "unit": "1 mmBtu",
       "location": "NA",
       "spotPrice": 305.9,
-      "change": -1.7,
-      "date": "09 Jul 2026",
-      "time": "09:14"
+      "change": -1.7
     },
     {
-      "id": "NATURALGAS",
+      "id": "NATURALGAS-NA",
       "name": "NATURALGAS",
       "symbol": "NATURALGAS",
       "unit": "1 mmBtu",
       "location": "NA",
       "spotPrice": 305.9,
-      "change": -1.7,
-      "date": "09 Jul 2026",
-      "time": "09:14"
+      "change": -1.7
     },
     {
-      "id": "NICKEL",
+      "id": "NICKEL-THANE",
       "name": "NICKEL",
       "symbol": "NICKEL",
       "unit": "1 KGS",
       "location": "THANE",
       "spotPrice": 1591.3,
-      "change": -0.03,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": -0.03
     },
     {
-      "id": "SILVER",
+      "id": "SILVER-AHMEDABAD",
       "name": "SILVER",
       "symbol": "SILVER",
       "unit": "1 KGS",
       "location": "AHMEDABAD",
       "spotPrice": 223801,
-      "change": -0.29,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": -0.29
     },
     {
-      "id": "SILVER100",
+      "id": "SILVER100-AHMEDABAD",
       "name": "SILVER100",
       "symbol": "SILVER100",
       "unit": "10 GRMS",
       "location": "AHMEDABAD",
       "spotPrice": 2238,
-      "change": -0.27,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": -0.27
     },
     {
-      "id": "SILVERM",
+      "id": "SILVERM-AHMEDABAD",
       "name": "SILVERM",
       "symbol": "SILVERM",
       "unit": "1 KGS",
       "location": "AHMEDABAD",
       "spotPrice": 223801,
-      "change": -0.29,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": -0.29
     },
     {
-      "id": "SILVERMIC",
+      "id": "SILVERMIC-AHMEDABAD",
       "name": "SILVERMIC",
       "symbol": "SILVERMIC",
       "unit": "1 KGS",
       "location": "AHMEDABAD",
       "spotPrice": 223801,
-      "change": -0.29,
-      "date": "09 Jul 2026",
-      "time": "18:32"
+      "change": -0.29
     },
     {
-      "id": "STEELREBAR",
+      "id": "STEELREBAR-RAIPUR",
       "name": "STEELREBAR",
       "symbol": "STEELREBAR",
       "unit": "1 MT",
       "location": "RAIPUR",
       "spotPrice": 42440,
-      "change": 0.93,
-      "date": "09 Jul 2026",
-      "time": "17:44"
+      "change": 0.93
     },
     {
-      "id": "ZINC",
+      "id": "ZINC-THANE",
       "name": "ZINC",
       "symbol": "ZINC",
       "unit": "1 KGS",
       "location": "THANE",
       "spotPrice": 380,
-      "change": 1.81,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 1.81
     },
     {
-      "id": "ZINCMINI",
+      "id": "ZINCMINI-THANE",
       "name": "ZINCMINI",
       "symbol": "ZINCMINI",
       "unit": "1 KGS",
       "location": "THANE",
       "spotPrice": 380,
-      "change": 1.81,
-      "date": "09 Jul 2026",
-      "time": "17:54"
+      "change": 1.81
     }
   ]
 }

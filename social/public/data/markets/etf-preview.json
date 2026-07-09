@@ -1,0 +1,325 @@
+{
+  "syncedAt": "2026-07-09T19:04:18.541Z",
+  "items": [
+    {
+      "id": "HDFCBSE500",
+      "symbol": "HDFCBSE500",
+      "name": "HDFC S&P BSE 500 ETF",
+      "ltp": 39,
+      "changePct": 5.29,
+      "nav": 36.7438
+    },
+    {
+      "id": "MOREALTY",
+      "symbol": "MOREALTY",
+      "name": "Motilal Oswal Nifty Realty ETF",
+      "ltp": 90.69,
+      "changePct": 3.97,
+      "nav": 87.4056
+    },
+    {
+      "id": "AONETMMQ50",
+      "symbol": "AONETMMQ50",
+      "name": "Nifty Total Market Momentum Quality 50 TRI",
+      "ltp": 10.29,
+      "changePct": 3.52,
+      "nav": 9.9328
+    },
+    {
+      "id": "GROWWCAPM",
+      "symbol": "GROWWCAPM",
+      "name": "Nifty Capital Markets Index",
+      "ltp": 11.6,
+      "changePct": 3.48,
+      "nav": 11.2655
+    },
+    {
+      "id": "GROWWNET",
+      "symbol": "GROWWNET",
+      "name": "Index",
+      "ltp": 10.02,
+      "changePct": 3.3,
+      "nav": 9.7236
+    },
+    {
+      "id": "SBIETFPB",
+      "symbol": "SBIETFPB",
+      "name": "Nifty Private Bank Index",
+      "ltp": 289.95,
+      "changePct": 3.04,
+      "nav": 281.5896
+    },
+    {
+      "id": "MOIPO",
+      "symbol": "MOIPO",
+      "name": "BSE Select IPO Total Return Index",
+      "ltp": 46.54,
+      "changePct": 2.92,
+      "nav": 45.355
+    },
+    {
+      "id": "SELECTIPO",
+      "symbol": "SELECTIPO",
+      "name": "BSE Select IPO Index",
+      "ltp": 46.4,
+      "changePct": 2.7,
+      "nav": 45.3251
+    },
+    {
+      "id": "MOVALUE",
+      "symbol": "MOVALUE",
+      "name": "Motilal Oswal S&P BSE Enhanced Value ETF",
+      "ltp": 115,
+      "changePct": 2.58,
+      "nav": 111.7947
+    },
+    {
+      "id": "SMALLIETF",
+      "symbol": "SMALLIETF",
+      "name": "Nifty Smallcap 250 Index",
+      "ltp": 18,
+      "changePct": 2.56,
+      "nav": 17.5979
+    },
+    {
+      "id": "MOCAPITAL",
+      "symbol": "MOCAPITAL",
+      "name": "Nifty Capital Market Total Return Index",
+      "ltp": 54.87,
+      "changePct": 2.48,
+      "nav": 53.6783
+    },
+    {
+      "id": "SBISMLETF",
+      "symbol": "SBISMLETF",
+      "name": "Nifty Smallcap 250 Index",
+      "ltp": 18.06,
+      "changePct": 2.44,
+      "nav": 17.5878
+    },
+    {
+      "id": "INTERNET",
+      "symbol": "INTERNET",
+      "name": "Equity Index",
+      "ltp": 13.47,
+      "changePct": 2.36,
+      "nav": 13.1305
+    },
+    {
+      "id": "HDFCPVTBAN",
+      "symbol": "HDFCPVTBAN",
+      "name": "HDFC NIFTY Private Bank ETF",
+      "ltp": 28.65,
+      "changePct": 2.32,
+      "nav": 28.0926
+    },
+    {
+      "id": "MIDSELIETF",
+      "symbol": "MIDSELIETF",
+      "name": "S&P BSE Midcap Select Index",
+      "ltp": 19.15,
+      "changePct": 2.3,
+      "nav": 18.7674
+    },
+    {
+      "id": "FINIETF",
+      "symbol": "FINIETF",
+      "name": "ICICI Prudential Nifty Financial Services Ex-Bank ETF",
+      "ltp": 32.8,
+      "changePct": 2.28,
+      "nav": 32.09
+    },
+    {
+      "id": "SBIBPB",
+      "symbol": "SBIBPB",
+      "name": "BSE PSU Bank Index TRI",
+      "ltp": 47.67,
+      "changePct": 2.23,
+      "nav": 46.628
+    },
+    {
+      "id": "MONIFTY500",
+      "symbol": "MONIFTY500",
+      "name": "Motilal Oswal Nifty 500 ETF",
+      "ltp": 23.96,
+      "changePct": 2.22,
+      "nav": 23.3971
+    },
+    {
+      "id": "HEALTHADD",
+      "symbol": "HEALTHADD",
+      "name": "DSP Nifty Healthcare ETF",
+      "ltp": 16.62,
+      "changePct": 2.21,
+      "nav": 16.2897
+    },
+    {
+      "id": "MOSMALL250",
+      "symbol": "MOSMALL250",
+      "name": "Motilal Oswal Nifty Smallcap 250 ETF",
+      "ltp": 18,
+      "changePct": 2.16,
+      "nav": 17.6615
+    },
+    {
+      "id": "SML100CASE",
+      "symbol": "SML100CASE",
+      "name": "Nifty Smallcap 100 Index",
+      "ltp": 10.88,
+      "changePct": 2.16,
+      "nav": 10.6525
+    },
+    {
+      "id": "HEALTHAXIS",
+      "symbol": "HEALTHAXIS",
+      "name": "Nifty Healthcare Index",
+      "ltp": 167.48,
+      "changePct": 2.14,
+      "nav": 164.239
+    },
+    {
+      "id": "SMALLCAP",
+      "symbol": "SMALLCAP",
+      "name": "Mirae Asset Nifty Smallcap 250 Momentum Quality 100 ETF",
+      "ltp": 46.97,
+      "changePct": 2.11,
+      "nav": 46.1473
+    },
+    {
+      "id": "ITAXIS",
+      "symbol": "ITAXIS",
+      "name": "NIFTY IT Index",
+      "ltp": 307.44,
+      "changePct": 1.9,
+      "nav": 303.108
+    },
+    {
+      "id": "HDFCSML250",
+      "symbol": "HDFCSML250",
+      "name": "HDFC NIFTY Smallcap 250 ETF",
+      "ltp": 180.6,
+      "changePct": 1.88,
+      "nav": 177.1198
+    },
+    {
+      "id": "MONQ50",
+      "symbol": "MONQ50",
+      "name": "Nasdaq Q-50 Total Return Index",
+      "ltp": 143.65,
+      "changePct": -1.83,
+      "nav": 120.3173
+    },
+    {
+      "id": "MOMIDMTM",
+      "symbol": "MOMIDMTM",
+      "name": "Nifty Midcap 150 Momentum 50 Total Return Index",
+      "ltp": 63.01,
+      "changePct": 1.83,
+      "nav": 61.956
+    },
+    {
+      "id": "MOMENTUM50",
+      "symbol": "MOMENTUM50",
+      "name": "Nifty 500 Momentum 50 Total Return Index",
+      "ltp": 52.49,
+      "changePct": 1.82,
+      "nav": 51.7343
+    },
+    {
+      "id": "EVIETF",
+      "symbol": "EVIETF",
+      "name": "Nifty EV & New Age Automotive ETF",
+      "ltp": 31.6,
+      "changePct": 1.8,
+      "nav": 30.9784
+    },
+    {
+      "id": "HEALTHIETF",
+      "symbol": "HEALTHIETF",
+      "name": "Nifty Healthcare Index",
+      "ltp": 168.4,
+      "changePct": 1.78,
+      "nav": 165.5781
+    },
+    {
+      "id": "QUAL30IETF",
+      "symbol": "QUAL30IETF",
+      "name": "ICICI Prudential Nifty 200 Quality 30 ETF",
+      "ltp": 20.88,
+      "changePct": 1.75,
+      "nav": 20.4841
+    },
+    {
+      "id": "MOTOUR",
+      "symbol": "MOTOUR",
+      "name": "Nifty India Tourism Total Return Index",
+      "ltp": 80.3,
+      "changePct": 1.72,
+      "nav": 79.0445
+    },
+    {
+      "id": "GOLDAXIS",
+      "symbol": "GOLDAXIS",
+      "name": "Gold",
+      "ltp": 119.78,
+      "changePct": 1.7,
+      "nav": 118.0368
+    },
+    {
+      "id": "SMALLADD",
+      "symbol": "SMALLADD",
+      "name": "Nifty Smallcap 250 Index",
+      "ltp": 18,
+      "changePct": 1.69,
+      "nav": 17.6671
+    },
+    {
+      "id": "PSUBANKADD",
+      "symbol": "PSUBANKADD",
+      "name": "DSP Nifty PSU Bank ETF",
+      "ltp": 83.25,
+      "changePct": 1.65,
+      "nav": 81.6894
+    },
+    {
+      "id": "GROWWPSUBK",
+      "symbol": "GROWWPSUBK",
+      "name": "Nifty PSU Bank Index - TRI",
+      "ltp": 82.55,
+      "changePct": 1.63,
+      "nav": 81.0524
+    },
+    {
+      "id": "HDFCSILVER",
+      "symbol": "HDFCSILVER",
+      "name": "HDFC Silver ETF",
+      "ltp": 213.35,
+      "changePct": 1.62,
+      "nav": 210.7443
+    },
+    {
+      "id": "TNIDETF",
+      "symbol": "TNIDETF",
+      "name": "Nifty India Digital Index",
+      "ltp": 83.26,
+      "changePct": 1.6,
+      "nav": 82.6608
+    },
+    {
+      "id": "BANKPSU",
+      "symbol": "BANKPSU",
+      "name": "Nifty PSU Bank Total Return Index",
+      "ltp": 82.78,
+      "changePct": 1.6,
+      "nav": 81.4861
+    },
+    {
+      "id": "SBISILVER",
+      "symbol": "SBISILVER",
+      "name": "SBI SILVER ETF",
+      "ltp": 218.63,
+      "changePct": 1.57,
+      "nav": 215.8387
+    }
+  ]
+}

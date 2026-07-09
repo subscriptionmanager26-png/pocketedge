@@ -19,6 +19,16 @@ import {
   fetchEtfList,
   fetchIndices,
 } from './lib/indian-markets/nse.js';
+import {
+  PREVIEW_LIMIT,
+  buildMutualFundPreview,
+  buildPreview,
+  compactCommodity,
+  compactEtf,
+  compactFund,
+  compactIndex,
+  compactStock,
+} from './lib/indian-markets/publish.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.join(__dirname, '..', 'social', 'public', 'data', 'markets');
@@ -105,15 +115,83 @@ async function main() {
     },
   };
 
-  await writeJson('manifest.json', manifest);
+  await writeJson('manifest.json', {
+    ...manifest,
+    previewLimit: PREVIEW_LIMIT,
+    files: {
+      stocks: { full: 'stocks.json', preview: 'stocks-preview.json', search: 'stocks-search.json' },
+      mutualFunds: {
+        full: 'mutual-funds.json',
+        preview: 'mutual-funds-preview.json',
+        search: 'mutual-funds-search.json',
+      },
+      etf: { full: 'etf.json', preview: 'etf-preview.json', search: 'etf-search.json' },
+      indices: {
+        full: 'indices.json',
+        preview: 'indices-preview.json',
+        search: 'indices-search.json',
+      },
+      commodities: {
+        full: 'commodities.json',
+        preview: 'commodities-preview.json',
+        search: 'commodities-search.json',
+      },
+    },
+  });
+
   await writeJson('stocks.json', { syncedAt, items: stocks });
+  await writeJson('stocks-preview.json', {
+    syncedAt,
+    items: buildPreview(stocks).map(compactStock),
+  });
+  await writeJson('stocks-search.json', {
+    syncedAt,
+    items: stocks.map(compactStock),
+  });
+
   await writeJson('mutual-funds.json', { syncedAt, items: mutualFunds });
+  await writeJson('mutual-funds-preview.json', {
+    syncedAt,
+    items: buildMutualFundPreview(mutualFunds).map(compactFund),
+  });
+  await writeJson('mutual-funds-search.json', {
+    syncedAt,
+    items: mutualFunds.map(compactFund),
+  });
+
   await writeJson('etf.json', { syncedAt, items: etfs });
+  await writeJson('etf-preview.json', {
+    syncedAt,
+    items: buildPreview(etfs).map(compactEtf),
+  });
+  await writeJson('etf-search.json', {
+    syncedAt,
+    items: etfs.map(compactEtf),
+  });
+
   await writeJson('indices.json', { syncedAt, items: indices });
+  await writeJson('indices-preview.json', {
+    syncedAt,
+    items: buildPreview(indices).map(compactIndex),
+  });
+  await writeJson('indices-search.json', {
+    syncedAt,
+    items: indices.map(compactIndex),
+  });
+
   await writeJson('commodities.json', {
     syncedAt,
     asOn: commodities.asOn,
     items: commodities.items,
+  });
+  await writeJson('commodities-preview.json', {
+    syncedAt,
+    asOn: commodities.asOn,
+    items: buildPreview(commodities.items, { changeKey: 'change' }).map(compactCommodity),
+  });
+  await writeJson('commodities-search.json', {
+    syncedAt,
+    items: commodities.items.map(compactCommodity),
   });
 
   console.log('Done.', manifest.counts);

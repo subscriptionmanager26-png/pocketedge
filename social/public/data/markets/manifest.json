@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-09T18:58:41.517Z",
+  "syncedAt": "2026-07-09T19:04:18.541Z",
   "sources": {
     "equityList": "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",
     "smeEquityList": "https://nsearchives.nseindia.com/emerge/corporates/content/SME_EQUITY_L.csv",
@@ -18,5 +18,33 @@
     "indices": 139,
     "commodities": 29,
     "equityQuotes": 1998
+  },
+  "previewLimit": 40,
+  "files": {
+    "stocks": {
+      "full": "stocks.json",
+      "preview": "stocks-preview.json",
+      "search": "stocks-search.json"
+    },
+    "mutualFunds": {
+      "full": "mutual-funds.json",
+      "preview": "mutual-funds-preview.json",
+      "search": "mutual-funds-search.json"
+    },
+    "etf": {
+      "full": "etf.json",
+      "preview": "etf-preview.json",
+      "search": "etf-search.json"
+    },
+    "indices": {
+      "full": "indices.json",
+      "preview": "indices-preview.json",
+      "search": "indices-search.json"
+    },
+    "commodities": {
+      "full": "commodities.json",
+      "preview": "commodities-preview.json",
+      "search": "commodities-search.json"
+    }
   }
 }

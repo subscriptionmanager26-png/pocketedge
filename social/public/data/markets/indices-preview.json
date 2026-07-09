@@ -1,0 +1,365 @@
+{
+  "syncedAt": "2026-07-09T19:04:18.541Z",
+  "items": [
+    {
+      "id": "INDIA VIX",
+      "symbol": "INDIA VIX",
+      "name": "INDIA VIX",
+      "group": "BROAD MARKET INDICES",
+      "value": 13.36,
+      "changePct": -8.97,
+      "change": -1.32
+    },
+    {
+      "id": "NIFTY REALTY",
+      "symbol": "NIFTY REALTY",
+      "name": "NIFTY REALTY",
+      "group": "SECTORAL INDICES",
+      "value": 906.95,
+      "changePct": 3.54,
+      "change": 31
+    },
+    {
+      "id": "NIFTY INTERNET",
+      "symbol": "NIFTY INTERNET",
+      "name": "NIFTY INDIA INTERNET",
+      "group": "THEMATIC INDICES",
+      "value": 1344,
+      "changePct": 2.33,
+      "change": 30.55
+    },
+    {
+      "id": "NIFTY CAPITAL MKT",
+      "symbol": "NIFTY CAPITAL MKT",
+      "name": "NIFTY CAPITAL MARKETS",
+      "group": "THEMATIC INDICES",
+      "value": 5472.15,
+      "changePct": 2.31,
+      "change": 123.65
+    },
+    {
+      "id": "NIFTY HIGHBETA 50",
+      "symbol": "NIFTY HIGHBETA 50",
+      "name": "NIFTY HIGH BETA 50",
+      "group": "STRATEGY INDICES",
+      "value": 4363.65,
+      "changePct": 2.26,
+      "change": 96.4
+    },
+    {
+      "id": "NIFTY MEDIA",
+      "symbol": "NIFTY MEDIA",
+      "name": "NIFTY MEDIA",
+      "group": "SECTORAL INDICES",
+      "value": 1482.8,
+      "changePct": 2.09,
+      "change": 30.35
+    },
+    {
+      "id": "NIFTY MICROCAP250",
+      "symbol": "NIFTY MICROCAP250",
+      "name": "NIFTY MICROCAP 250",
+      "group": "BROAD MARKET INDICES",
+      "value": 25157.35,
+      "changePct": 1.92,
+      "change": 474.8
+    },
+    {
+      "id": "NIFTY IPO",
+      "symbol": "NIFTY IPO",
+      "name": "NIFTY IPO",
+      "group": "THEMATIC INDICES",
+      "value": 2302.75,
+      "changePct": 1.91,
+      "change": 43.2
+    },
+    {
+      "id": "NIFTY MS IND CONS",
+      "symbol": "NIFTY MS IND CONS",
+      "name": "NIFTY MIDSMALL INDIA CONSUMPTION",
+      "group": "THEMATIC INDICES",
+      "value": 18803.5,
+      "changePct": 1.85,
+      "change": 342.05
+    },
+    {
+      "id": "NIFTY SMLCAP 50",
+      "symbol": "NIFTY SMLCAP 50",
+      "name": "NIFTY SMALLCAP 50",
+      "group": "BROAD MARKET INDICES",
+      "value": 9477.95,
+      "changePct": 1.84,
+      "change": 171.1
+    },
+    {
+      "id": "NIFTY SMLCAP 100",
+      "symbol": "NIFTY SMLCAP 100",
+      "name": "NIFTY SMALLCAP 100",
+      "group": "BROAD MARKET INDICES",
+      "value": 19120.85,
+      "changePct": 1.8,
+      "change": 337.55
+    },
+    {
+      "id": "NIFTY MID LIQ 15",
+      "symbol": "NIFTY MID LIQ 15",
+      "name": "NIFTY MIDCAP LIQUID 15",
+      "group": "THEMATIC INDICES",
+      "value": 16651.75,
+      "changePct": 1.8,
+      "change": 295.2
+    },
+    {
+      "id": "NIFTY CONSR DURBL",
+      "symbol": "NIFTY CONSR DURBL",
+      "name": "NIFTY CONSUMER DURABLES",
+      "group": "SECTORAL INDICES",
+      "value": 37835.85,
+      "changePct": 1.68,
+      "change": 626.25
+    },
+    {
+      "id": "NIFTY WAVES",
+      "symbol": "NIFTY WAVES",
+      "name": "NIFTY WAVES",
+      "group": "THEMATIC INDICES",
+      "value": 1961.75,
+      "changePct": 1.68,
+      "change": 32.5
+    },
+    {
+      "id": "NIFTY SMALLCAP 500",
+      "symbol": "NIFTY SMALLCAP 500",
+      "name": "NIFTY SMALLCAP 500",
+      "group": "BROAD MARKET INDICES",
+      "value": 20284.65,
+      "changePct": 1.65,
+      "change": 328.3
+    },
+    {
+      "id": "NIFTY MID SELECT",
+      "symbol": "NIFTY MID SELECT",
+      "name": "NIFTY MIDCAP SELECT",
+      "group": "INDICES ELIGIBLE IN DERIVATIVES",
+      "value": 14654.8,
+      "changePct": 1.63,
+      "change": 235.7
+    },
+    {
+      "id": "NIFTY COREHOUSING",
+      "symbol": "NIFTY COREHOUSING",
+      "name": "NIFTY CORE HOUSING",
+      "group": "THEMATIC INDICES",
+      "value": 15679.05,
+      "changePct": 1.63,
+      "change": 251.95
+    },
+    {
+      "id": "NIFTY PSU BANK",
+      "symbol": "NIFTY PSU BANK",
+      "name": "NIFTY PSU BANK",
+      "group": "SECTORAL INDICES",
+      "value": 8203.2,
+      "changePct": 1.62,
+      "change": 130.9
+    },
+    {
+      "id": "NIFTY SMLCAP 250",
+      "symbol": "NIFTY SMLCAP 250",
+      "name": "NIFTY SMALLCAP 250",
+      "group": "BROAD MARKET INDICES",
+      "value": 17875.7,
+      "changePct": 1.58,
+      "change": 277.8
+    },
+    {
+      "id": "NIFTY MS FIN SERV",
+      "symbol": "NIFTY MS FIN SERV",
+      "name": "NIFTY MIDSMALL FINANCIAL SERVICES",
+      "group": "SECTORAL INDICES",
+      "value": 22290.75,
+      "changePct": 1.57,
+      "change": 345.35
+    },
+    {
+      "id": "NIFTYSML250MQ 100",
+      "symbol": "NIFTYSML250MQ 100",
+      "name": "NIFTY SMALLCAP250 MOMENTUM QUALITY 100",
+      "group": "STRATEGY INDICES",
+      "value": 46959.95,
+      "changePct": 1.56,
+      "change": 722.2
+    },
+    {
+      "id": "NIFTY MIDSML HLTH",
+      "symbol": "NIFTY MIDSML HLTH",
+      "name": "NIFTY MIDSMALL HEALTHCARE",
+      "group": "SECTORAL INDICES",
+      "value": 50631.75,
+      "changePct": 1.55,
+      "change": 770.65
+    },
+    {
+      "id": "NIFTY MIDSMALL 50 50",
+      "symbol": "NIFTY MIDSMALL 50 50",
+      "name": "NIFTY MIDSMALLCAP400 50:50",
+      "group": "BROAD MARKET INDICES",
+      "value": 20508.9,
+      "changePct": 1.49,
+      "change": 302.05
+    },
+    {
+      "id": "NIFTYM150MOMNTM50",
+      "symbol": "NIFTYM150MOMNTM50",
+      "name": "NIFTY MIDCAP150 MOMENTUM 50",
+      "group": "STRATEGY INDICES",
+      "value": 62116.65,
+      "changePct": 1.49,
+      "change": 908.95
+    },
+    {
+      "id": "NIFTY MIDSML 400",
+      "symbol": "NIFTY MIDSML 400",
+      "name": "NIFTY MIDSMALLCAP 400",
+      "group": "BROAD MARKET INDICES",
+      "value": 21044.95,
+      "changePct": 1.47,
+      "change": 304.5
+    },
+    {
+      "id": "NIFTY CEMENT",
+      "symbol": "NIFTY CEMENT",
+      "name": "NIFTY CEMENT",
+      "group": "SECTORAL INDICES",
+      "value": 15089.35,
+      "changePct": 1.45,
+      "change": 215.85
+    },
+    {
+      "id": "NIFTYMS400 MQ 100",
+      "symbol": "NIFTYMS400 MQ 100",
+      "name": "NIFTY MIDSMALLCAP400 MOMENTUM QUALITY 100",
+      "group": "STRATEGY INDICES",
+      "value": 50323.85,
+      "changePct": 1.44,
+      "change": 712.15
+    },
+    {
+      "id": "NIFTY MIDCAP 150",
+      "symbol": "NIFTY MIDCAP 150",
+      "name": "NIFTY MIDCAP 150",
+      "group": "BROAD MARKET INDICES",
+      "value": 22855.75,
+      "changePct": 1.41,
+      "change": 317.9
+    },
+    {
+      "id": "NIFTY REITS REALTY",
+      "symbol": "NIFTY REITS REALTY",
+      "name": "NIFTY REITS & REALTY",
+      "group": "SECTORAL INDICES",
+      "value": 1940.6,
+      "changePct": 1.4,
+      "change": 26.7
+    },
+    {
+      "id": "NIFTY MIDCAP 100",
+      "symbol": "NIFTY MIDCAP 100",
+      "name": "NIFTY MIDCAP 100",
+      "group": "BROAD MARKET INDICES",
+      "value": 62166.85,
+      "changePct": 1.38,
+      "change": 844.1
+    },
+    {
+      "id": "NIFTY MIDCAP 50",
+      "symbol": "NIFTY MIDCAP 50",
+      "name": "NIFTY MIDCAP 50",
+      "group": "BROAD MARKET INDICES",
+      "value": 17844.5,
+      "changePct": 1.36,
+      "change": 240.05
+    },
+    {
+      "id": "NIFTY500 EW",
+      "symbol": "NIFTY500 EW",
+      "name": "NIFTY500 EQUAL WEIGHT",
+      "group": "STRATEGY INDICES",
+      "value": 14762.2,
+      "changePct": 1.31,
+      "change": 190.25
+    },
+    {
+      "id": "NIFTY SML250 Q50",
+      "symbol": "NIFTY SML250 Q50",
+      "name": "NIFTY SMALLCAP250 QUALITY 50",
+      "group": "STRATEGY INDICES",
+      "value": 24887.2,
+      "changePct": 1.29,
+      "change": 316.6
+    },
+    {
+      "id": "NIFTY NEW CONSUMP",
+      "symbol": "NIFTY NEW CONSUMP",
+      "name": "NIFTY INDIA NEW AGE CONSUMPTION",
+      "group": "THEMATIC INDICES",
+      "value": 11676.85,
+      "changePct": 1.29,
+      "change": 149.1
+    },
+    {
+      "id": "NIFTY500MOMENTM50",
+      "symbol": "NIFTY500MOMENTM50",
+      "name": "NIFTY500 MOMENTUM 50",
+      "group": "STRATEGY INDICES",
+      "value": 53068.9,
+      "changePct": 1.28,
+      "change": 668.25
+    },
+    {
+      "id": "NIFTY SME EMERGE",
+      "symbol": "NIFTY SME EMERGE",
+      "name": "NIFTY SME EMERGE",
+      "group": "THEMATIC INDICES",
+      "value": 13995.3,
+      "changePct": 1.2,
+      "change": 166.4
+    },
+    {
+      "id": "NIFTY FINSEREXBNK",
+      "symbol": "NIFTY FINSEREXBNK",
+      "name": "NIFTY FINANCIAL SERVICES EX-BANK",
+      "group": "SECTORAL INDICES",
+      "value": 31785.5,
+      "changePct": 1.18,
+      "change": 370.8
+    },
+    {
+      "id": "NIFTY IND TOURISM",
+      "symbol": "NIFTY IND TOURISM",
+      "name": "NIFTY INDIA TOURISM",
+      "group": "THEMATIC INDICES",
+      "value": 8042,
+      "changePct": 1.15,
+      "change": 91.45
+    },
+    {
+      "id": "NIFTY500 LMS EQL",
+      "symbol": "NIFTY500 LMS EQL",
+      "name": "NIFTY500 LARGEMIDSMALL EQUAL-CAP WEIGHTED",
+      "group": "BROAD MARKET INDICES",
+      "value": 18284.45,
+      "changePct": 1.14,
+      "change": 205.65
+    },
+    {
+      "id": "NIFTY ALPHA 50",
+      "symbol": "NIFTY ALPHA 50",
+      "name": "NIFTY ALPHA 50",
+      "group": "STRATEGY INDICES",
+      "value": 53498.8,
+      "changePct": 1.14,
+      "change": 605.3
+    }
+  ]
+}

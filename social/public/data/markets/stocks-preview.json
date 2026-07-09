@@ -1,0 +1,365 @@
+{
+  "syncedAt": "2026-07-09T19:04:18.541Z",
+  "items": [
+    {
+      "id": "SURYALA",
+      "symbol": "SURYALA",
+      "name": "Suryalata Spinning Mills Limited",
+      "price": 481.2,
+      "changePct": 9,
+      "segment": "EQ",
+      "isin": "INE132C01027"
+    },
+    {
+      "id": "DGCONTENT",
+      "symbol": "DGCONTENT",
+      "name": "Digicontent Limited",
+      "price": 26.4,
+      "changePct": 7.36,
+      "segment": "EQ",
+      "isin": "INE03JI01017"
+    },
+    {
+      "id": "DHARAN",
+      "symbol": "DHARAN",
+      "name": "DHARAN INFRA-EPC LIMITED",
+      "price": 0.16,
+      "changePct": 6.67,
+      "segment": "EQ",
+      "isin": "INE278R01034"
+    },
+    {
+      "id": "UNICHEMLAB",
+      "symbol": "UNICHEMLAB",
+      "name": "Unichem Laboratories Limited",
+      "price": 610.15,
+      "changePct": 6.54,
+      "segment": "EQ",
+      "isin": "INE351A01035"
+    },
+    {
+      "id": "ZSARACOM",
+      "symbol": "ZSARACOM",
+      "name": "Saraswati Commercial India Limited",
+      "price": 14400,
+      "changePct": 5.54,
+      "segment": "EQ",
+      "isin": "INE967G01019"
+    },
+    {
+      "id": "FILATFASH",
+      "symbol": "FILATFASH",
+      "name": "Filatex Fashions Limited",
+      "price": 0.2,
+      "changePct": 5.26,
+      "segment": "EQ",
+      "isin": "INE185E01021"
+    },
+    {
+      "id": "SANWARIA",
+      "symbol": "SANWARIA",
+      "name": "Sanwaria Consumer Limited",
+      "price": 0.2,
+      "changePct": 5.26,
+      "segment": "EQ",
+      "isin": "INE890C01046"
+    },
+    {
+      "id": "PILITA",
+      "symbol": "PILITA",
+      "name": "PIL ITALICA LIFESTYLE LIMITED",
+      "price": 9.03,
+      "changePct": 5,
+      "segment": "EQ",
+      "isin": "INE600A01035"
+    },
+    {
+      "id": "RUBYMILLS",
+      "symbol": "RUBYMILLS",
+      "name": "The Ruby Mills Limited",
+      "price": 365.55,
+      "changePct": 5,
+      "segment": "EQ",
+      "isin": "INE301D01026"
+    },
+    {
+      "id": "STLTECH",
+      "symbol": "STLTECH",
+      "name": "Sterlite Technologies Limited",
+      "price": 501.75,
+      "changePct": -5,
+      "segment": "EQ",
+      "isin": "INE089C01029"
+    },
+    {
+      "id": "YAAP",
+      "symbol": "YAAP",
+      "name": "Yaap Digital Limited",
+      "price": 159.6,
+      "changePct": -5,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "AASTHA",
+      "symbol": "AASTHA",
+      "name": "Aastha Spintex Limited",
+      "price": 117.04,
+      "changePct": -4.99,
+      "segment": "EQ",
+      "isin": "INE2FMX01012"
+    },
+    {
+      "id": "BRANDMAN",
+      "symbol": "BRANDMAN",
+      "name": "Brandman Retail Limited",
+      "price": 182.95,
+      "changePct": -4.99,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "IWARE",
+      "symbol": "IWARE",
+      "name": "Iware Supplychain Services Limited",
+      "price": 402.65,
+      "changePct": 4.99,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "TAKE",
+      "symbol": "TAKE",
+      "name": "Take Solutions Limited",
+      "price": 23.61,
+      "changePct": -4.99,
+      "segment": "EQ",
+      "isin": "INE142I01023"
+    },
+    {
+      "id": "ABAN",
+      "symbol": "ABAN",
+      "name": "Aban Offshore Limited",
+      "price": 13.56,
+      "changePct": -4.98,
+      "segment": "EQ",
+      "isin": "INE421A01028"
+    },
+    {
+      "id": "CREATIVEYE",
+      "symbol": "CREATIVEYE",
+      "name": "Creative Eye Limited",
+      "price": 6.1,
+      "changePct": -4.98,
+      "segment": "EQ",
+      "isin": "INE230B01021"
+    },
+    {
+      "id": "GRANDOAK",
+      "symbol": "GRANDOAK",
+      "name": "Grand Oak Canyons Distillery Limited",
+      "price": 47.68,
+      "changePct": -4.98,
+      "segment": "EQ",
+      "isin": "INE926B01016"
+    },
+    {
+      "id": "NEUEON",
+      "symbol": "NEUEON",
+      "name": "Neueon Corporation Limited",
+      "price": 13.16,
+      "changePct": -4.98,
+      "segment": "EQ",
+      "isin": "INE333I01044"
+    },
+    {
+      "id": "SECURKLOUD",
+      "symbol": "SECURKLOUD",
+      "name": "SECUREKLOUD TECHNOLOGIES LIMITED",
+      "price": 18.99,
+      "changePct": 4.98,
+      "segment": "EQ",
+      "isin": "INE650K01021"
+    },
+    {
+      "id": "TECHLABS",
+      "symbol": "TECHLABS",
+      "name": "Trident Techlabs Limited",
+      "price": 139.2,
+      "changePct": 4.98,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "TEJA",
+      "symbol": "TEJA",
+      "name": "Teja Engineering Industries Limited",
+      "price": 483.75,
+      "changePct": 4.98,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "VMOBILE",
+      "symbol": "VMOBILE",
+      "name": "Vinit Mobile Limited",
+      "price": 132.95,
+      "changePct": -4.97,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "AGL",
+      "symbol": "AGL",
+      "name": "Allcargo Global Limited",
+      "price": 17.04,
+      "changePct": -4.96,
+      "segment": "EQ",
+      "isin": "INE1YPB01014"
+    },
+    {
+      "id": "BIKEWO",
+      "symbol": "BIKEWO",
+      "name": "Bikewo Green Tech Limited",
+      "price": 52.95,
+      "changePct": 4.96,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "FLEXITUFF",
+      "symbol": "FLEXITUFF",
+      "name": "Flexituff Ventures International Limited",
+      "price": 5.51,
+      "changePct": 4.95,
+      "segment": "EQ",
+      "isin": "INE060J01017"
+    },
+    {
+      "id": "UTKAL",
+      "symbol": "UTKAL",
+      "name": "Utkal Speciality Industries India Limited",
+      "price": 24.95,
+      "changePct": -4.95,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "ORTEL",
+      "symbol": "ORTEL",
+      "name": "Ortel Communications Limited",
+      "price": 1.7,
+      "changePct": 4.94,
+      "segment": "EQ",
+      "isin": "INE849L01019"
+    },
+    {
+      "id": "TICL",
+      "symbol": "TICL",
+      "name": "Twamev Construction and Infrastructure Limited",
+      "price": 11.17,
+      "changePct": -4.94,
+      "segment": "EQ",
+      "isin": "INE388G01026"
+    },
+    {
+      "id": "MARC",
+      "symbol": "MARC",
+      "name": "Marc Technocrats Limited",
+      "price": 96.85,
+      "changePct": 4.93,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "KONSTELEC",
+      "symbol": "KONSTELEC",
+      "name": "Konstelec Engineers Limited",
+      "price": 53.3,
+      "changePct": 4.92,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "LATTEYS",
+      "symbol": "LATTEYS",
+      "name": "Latteys Industries Limited",
+      "price": 20.98,
+      "changePct": 4.9,
+      "segment": "EQ",
+      "isin": "INE262Z01023"
+    },
+    {
+      "id": "EMPOWER",
+      "symbol": "EMPOWER",
+      "name": "Empower India Limited",
+      "price": 2.14,
+      "changePct": -4.89,
+      "segment": "EQ",
+      "isin": "INE507F01023"
+    },
+    {
+      "id": "TECHNVISN",
+      "symbol": "TECHNVISN",
+      "name": "TechNVision Ventures Limited",
+      "price": 3480,
+      "changePct": -4.87,
+      "segment": "EQ",
+      "isin": "INE314H01012"
+    },
+    {
+      "id": "KSHITIJPOL",
+      "symbol": "KSHITIJPOL",
+      "name": "Kshitij Polyline Limited",
+      "price": 3.36,
+      "changePct": -4.82,
+      "segment": "EQ",
+      "isin": "INE013801027"
+    },
+    {
+      "id": "OWAIS",
+      "symbol": "OWAIS",
+      "name": "Owais Metal And Mineral Processing Limited",
+      "price": 101.8,
+      "changePct": -4.82,
+      "segment": "SME",
+      "isin": "10"
+    },
+    {
+      "id": "BILVYAPAR",
+      "symbol": "BILVYAPAR",
+      "name": "BIL VYAPAR LIMITED",
+      "price": 4.38,
+      "changePct": 4.78,
+      "segment": "EQ",
+      "isin": "INE071A01013"
+    },
+    {
+      "id": "HYBRIDFIN",
+      "symbol": "HYBRIDFIN",
+      "name": "Hybrid Financial Services Limited",
+      "price": 18.18,
+      "changePct": -4.77,
+      "segment": "EQ",
+      "isin": "INE965B01022"
+    },
+    {
+      "id": "GICL",
+      "symbol": "GICL",
+      "name": "Globe International Carriers Limited",
+      "price": 15.61,
+      "changePct": -4.76,
+      "segment": "EQ",
+      "isin": "INE947T01022"
+    },
+    {
+      "id": "DEEDEV",
+      "symbol": "DEEDEV",
+      "name": "DEE Development Engineers Limited",
+      "price": 643,
+      "changePct": -4.73,
+      "segment": "EQ",
+      "isin": "INE841L01016"
+    }
+  ]
+}

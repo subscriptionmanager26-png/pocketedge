@@ -32,8 +32,9 @@ import {
 } from '../lib/reviewStore';
 import { subscribeWatchlists } from '../lib/watchlistStore';
 import {
-  fetchMarketTab,
+  fetchMarketPreview,
   marketStockToDetail,
+  resolveMarketStock,
 } from '../lib/marketDataApi';
 import { formatPct, formatPrice } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
@@ -60,12 +61,17 @@ export default function StockInvestmentPage({
     if (seedStock) return undefined;
     let cancelled = false;
     setMarketLoading(true);
-    Promise.all([fetchMarketTab('stocks'), fetchMarketTab('etf')])
+    Promise.all([fetchMarketPreview('stocks'), fetchMarketPreview('etf')])
       .then(([stocksPayload, etfPayload]) => {
-        if (cancelled) return;
+        if (cancelled) return null;
         const found =
           stocksPayload.items.find((item) => item.symbol === ticker) ??
           etfPayload.items.find((item) => item.symbol === ticker);
+        if (found) return found;
+        return resolveMarketStock(ticker);
+      })
+      .then((found) => {
+        if (cancelled) return;
         setMarketStock(found ? marketStockToDetail(found) : null);
       })
       .finally(() => {

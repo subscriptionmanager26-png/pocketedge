@@ -1,0 +1,267 @@
+{
+  "syncedAt": "2026-07-09T19:04:18.541Z",
+  "asOn": "/Date(1783602126740)/",
+  "items": [
+    {
+      "id": "ELECDMBL-NA",
+      "name": "ELECDMBL",
+      "symbol": "ELECDMBL",
+      "unit": "1 MWH",
+      "location": "NA",
+      "spotPrice": 4235.6,
+      "change": 36.19
+    },
+    {
+      "id": "CRUDEOIL-NA",
+      "name": "CRUDEOIL",
+      "symbol": "CRUDEOIL",
+      "unit": "1 BBL",
+      "location": "NA",
+      "spotPrice": 7001,
+      "change": 4.27
+    },
+    {
+      "id": "CRUDEOILM-NA",
+      "name": "CRUDEOILM",
+      "symbol": "CRUDEOILM",
+      "unit": "1 BBL",
+      "location": "NA",
+      "spotPrice": 7001,
+      "change": 4.27
+    },
+    {
+      "id": "MENTHAOIL-BARABANKI*",
+      "name": "MENTHAOIL",
+      "symbol": "MENTHAOIL",
+      "unit": "1 KGS",
+      "location": "BARABANKI*",
+      "spotPrice": 1363.9,
+      "change": 3.36
+    },
+    {
+      "id": "ZINC-THANE",
+      "name": "ZINC",
+      "symbol": "ZINC",
+      "unit": "1 KGS",
+      "location": "THANE",
+      "spotPrice": 380,
+      "change": 1.81
+    },
+    {
+      "id": "ZINCMINI-THANE",
+      "name": "ZINCMINI",
+      "symbol": "ZINCMINI",
+      "unit": "1 KGS",
+      "location": "THANE",
+      "spotPrice": 380,
+      "change": 1.81
+    },
+    {
+      "id": "NATGASMINI-NA",
+      "name": "NATGASMINI",
+      "symbol": "NATGASMINI",
+      "unit": "1 mmBtu",
+      "location": "NA",
+      "spotPrice": 305.9,
+      "change": -1.7
+    },
+    {
+      "id": "NATURALGAS-NA",
+      "name": "NATURALGAS",
+      "symbol": "NATURALGAS",
+      "unit": "1 mmBtu",
+      "location": "NA",
+      "spotPrice": 305.9,
+      "change": -1.7
+    },
+    {
+      "id": "COPPER-THANE",
+      "name": "COPPER",
+      "symbol": "COPPER",
+      "unit": "1 KGS",
+      "location": "THANE",
+      "spotPrice": 1289.15,
+      "change": 1.4
+    },
+    {
+      "id": "CARDAMOM-VANDANMEDU",
+      "name": "CARDAMOM",
+      "symbol": "CARDAMOM",
+      "unit": "1 KGS",
+      "location": "VANDANMEDU",
+      "spotPrice": 3206,
+      "change": 1.2
+    },
+    {
+      "id": "LEAD-CHENNAI",
+      "name": "LEAD",
+      "symbol": "LEAD",
+      "unit": "1 KGS",
+      "location": "CHENNAI",
+      "spotPrice": 206.05,
+      "change": 1
+    },
+    {
+      "id": "LEADMINI-CHENNAI",
+      "name": "LEADMINI",
+      "symbol": "LEADMINI",
+      "unit": "1 KGS",
+      "location": "CHENNAI",
+      "spotPrice": 206.05,
+      "change": 1
+    },
+    {
+      "id": "STEELREBAR-RAIPUR",
+      "name": "STEELREBAR",
+      "symbol": "STEELREBAR",
+      "unit": "1 MT",
+      "location": "RAIPUR",
+      "spotPrice": 42440,
+      "change": 0.93
+    },
+    {
+      "id": "SILVER-AHMEDABAD",
+      "name": "SILVER",
+      "symbol": "SILVER",
+      "unit": "1 KGS",
+      "location": "AHMEDABAD",
+      "spotPrice": 223801,
+      "change": -0.29
+    },
+    {
+      "id": "SILVERM-AHMEDABAD",
+      "name": "SILVERM",
+      "symbol": "SILVERM",
+      "unit": "1 KGS",
+      "location": "AHMEDABAD",
+      "spotPrice": 223801,
+      "change": -0.29
+    },
+    {
+      "id": "SILVERMIC-AHMEDABAD",
+      "name": "SILVERMIC",
+      "symbol": "SILVERMIC",
+      "unit": "1 KGS",
+      "location": "AHMEDABAD",
+      "spotPrice": 223801,
+      "change": -0.29
+    },
+    {
+      "id": "SILVER100-AHMEDABAD",
+      "name": "SILVER100",
+      "symbol": "SILVER100",
+      "unit": "10 GRMS",
+      "location": "AHMEDABAD",
+      "spotPrice": 2238,
+      "change": -0.27
+    },
+    {
+      "id": "COTTONOIL-KADI",
+      "name": "COTTONOIL",
+      "symbol": "COTTONOIL",
+      "unit": "10 KGS",
+      "location": "KADI",
+      "spotPrice": 1513,
+      "change": 0.2
+    },
+    {
+      "id": "GOLDPETAL-MUMBAI",
+      "name": "GOLDPETAL",
+      "symbol": "GOLDPETAL",
+      "unit": "1 GRMS",
+      "location": "MUMBAI",
+      "spotPrice": 14331,
+      "change": -0.2
+    },
+    {
+      "id": "ALUMINI-RAIPUR",
+      "name": "ALUMINI",
+      "symbol": "ALUMINI",
+      "unit": "1 KGS",
+      "location": "RAIPUR",
+      "spotPrice": 340.5,
+      "change": 0.19
+    },
+    {
+      "id": "ALUMINIUM-RAIPUR",
+      "name": "ALUMINIUM",
+      "symbol": "ALUMINIUM",
+      "unit": "1 KGS",
+      "location": "RAIPUR",
+      "spotPrice": 340.5,
+      "change": 0.19
+    },
+    {
+      "id": "CPO-KANDLA",
+      "name": "CPO",
+      "symbol": "CPO",
+      "unit": "10 KGS",
+      "location": "KANDLA",
+      "spotPrice": 1361.5,
+      "change": -0.17
+    },
+    {
+      "id": "COTTON-RAJKOT",
+      "name": "COTTON",
+      "symbol": "COTTON",
+      "unit": "1 BALES",
+      "location": "RAJKOT",
+      "spotPrice": 30790,
+      "change": 0.1
+    },
+    {
+      "id": "NICKEL-THANE",
+      "name": "NICKEL",
+      "symbol": "NICKEL",
+      "unit": "1 KGS",
+      "location": "THANE",
+      "spotPrice": 1591.3,
+      "change": -0.03
+    },
+    {
+      "id": "GOLD-AHMEDABAD",
+      "name": "GOLD",
+      "symbol": "GOLD",
+      "unit": "10 GRMS",
+      "location": "AHMEDABAD",
+      "spotPrice": 143206,
+      "change": 0.01
+    },
+    {
+      "id": "GOLDGUINEA-AHMEDABAD",
+      "name": "GOLDGUINEA",
+      "symbol": "GOLDGUINEA",
+      "unit": "8 GRMS",
+      "location": "AHMEDABAD",
+      "spotPrice": 115025,
+      "change": 0.01
+    },
+    {
+      "id": "GOLDM-AHMEDABAD",
+      "name": "GOLDM",
+      "symbol": "GOLDM",
+      "unit": "10 GRMS",
+      "location": "AHMEDABAD",
+      "spotPrice": 143206,
+      "change": 0.01
+    },
+    {
+      "id": "GOLDTEN-AHMEDABAD",
+      "name": "GOLDTEN",
+      "symbol": "GOLDTEN",
+      "unit": "10 GRMS",
+      "location": "AHMEDABAD",
+      "spotPrice": 143782,
+      "change": 0.01
+    },
+    {
+      "id": "KAPAS-RAJKOT",
+      "name": "KAPAS",
+      "symbol": "KAPAS",
+      "unit": "20 KGS",
+      "location": "RAJKOT",
+      "spotPrice": 1819,
+      "change": 0
+    }
+  ]
+}

@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import { useMarketTabData } from '../hooks/useMarketTabData';
+import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
@@ -43,31 +44,17 @@ function formatNavDate(isoDate) {
 export default function MarketsPage({ onSelectStock, onSelectFund }) {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('stocks');
-  const { items, syncedAt, loading, error } = useMarketTabData(tab);
-
-  const q = query.trim().toLowerCase();
-
-  const filtered = useMemo(() => {
-    let list = [...items];
-    if (q) {
-      list = list.filter((item) => matchesQuery(item, tab, q));
-    }
-
-    if (tab === 'commodity') {
-      return list.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-    }
-
-    if (tab === 'mutual_funds') {
-      return list.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-    }
-
-    return list.sort((a, b) => Math.abs(b.changePct ?? 0) - Math.abs(a.changePct ?? 0));
-  }, [items, q, tab]);
+  const { items, syncedAt, loading, error, statusMessage } = useMarketTabData(tab, query);
 
   const handleTabChange = (next) => {
     setTab(next);
     setQuery('');
   };
+
+  const searchHint =
+    query.trim().length > 0 && query.trim().length < MARKET_MIN_SEARCH_CHARS
+      ? `Type at least ${MARKET_MIN_SEARCH_CHARS} characters to search`
+      : null;
 
   return (
     <div>
@@ -87,9 +74,15 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
 
       <div className="px-4 py-6">
         {syncedAt ? (
-          <p className="mb-4 text-xs text-pe-text-muted">
+          <p className="mb-1 text-xs text-pe-text-muted">
             Data synced {new Date(syncedAt).toLocaleString('en-IN')}
           </p>
+        ) : null}
+        {statusMessage ? (
+          <p className="mb-4 text-xs font-medium text-pe-text-secondary">{statusMessage}</p>
+        ) : null}
+        {searchHint ? (
+          <p className="mb-4 text-xs text-pe-text-muted">{searchHint}</p>
         ) : null}
 
         {loading ? (
@@ -99,8 +92,8 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
         ) : null}
 
         {!loading && !error && tab === 'stocks' ? (
-          <MarketList empty={filtered.length === 0} emptyMessage="No stocks found">
-            {filtered.map((stock) => (
+          <MarketList empty={items.length === 0} emptyMessage="No stocks found">
+            {items.map((stock) => (
               <MarketRow
                 key={stock.symbol}
                 title={formatTicker(stock.symbol)}
@@ -114,8 +107,8 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
         ) : null}
 
         {!loading && !error && tab === 'mutual_funds' ? (
-          <MarketList empty={filtered.length === 0} emptyMessage="No mutual funds found">
-            {filtered.map((fund) => (
+          <MarketList empty={items.length === 0} emptyMessage="No mutual funds found">
+            {items.map((fund) => (
               <MarketRow
                 key={fund.schemeCode}
                 title={fund.name}
@@ -129,8 +122,8 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
         ) : null}
 
         {!loading && !error && tab === 'etf' ? (
-          <MarketList empty={filtered.length === 0} emptyMessage="No ETFs found">
-            {filtered.map((etf) => (
+          <MarketList empty={items.length === 0} emptyMessage="No ETFs found">
+            {items.map((etf) => (
               <MarketRow
                 key={etf.symbol}
                 title={formatTicker(etf.symbol)}
@@ -144,8 +137,8 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
         ) : null}
 
         {!loading && !error && tab === 'indices' ? (
-          <MarketList empty={filtered.length === 0} emptyMessage="No indices found">
-            {filtered.map((index) => (
+          <MarketList empty={items.length === 0} emptyMessage="No indices found">
+            {items.map((index) => (
               <MarketRow
                 key={index.id}
                 title={index.name}
@@ -158,10 +151,10 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
         ) : null}
 
         {!loading && !error && tab === 'commodity' ? (
-          <MarketList empty={filtered.length === 0} emptyMessage="No commodities found">
-            {filtered.map((item) => (
+          <MarketList empty={items.length === 0} emptyMessage="No commodities found">
+            {items.map((item) => (
               <MarketRow
-                key={`${item.id}-${item.location}`}
+                key={item.id}
                 title={item.name}
                 subtitle={[item.unit, item.location].filter(Boolean).join(' · ')}
                 primaryValue={item.spotPrice != null ? formatPrice(item.spotPrice) : '—'}
@@ -172,42 +165,6 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
       </div>
     </div>
   );
-}
-
-function matchesQuery(item, tab, q) {
-  switch (tab) {
-    case 'stocks':
-    case 'etf':
-      return (
-        item.symbol?.toLowerCase().includes(q) ||
-        item.name?.toLowerCase().includes(q) ||
-        item.ticker?.toLowerCase().includes(q)
-      );
-    case 'mutual_funds':
-      return (
-        item.name?.toLowerCase().includes(q) ||
-        item.category?.toLowerCase().includes(q) ||
-        item.subCategory?.toLowerCase().includes(q) ||
-        item.amc?.toLowerCase().includes(q) ||
-        item.schemeCode?.includes(q)
-      );
-    case 'indices':
-      return (
-        item.id?.toLowerCase().includes(q) ||
-        item.name?.toLowerCase().includes(q) ||
-        item.symbol?.toLowerCase().includes(q) ||
-        item.group?.toLowerCase().includes(q)
-      );
-    case 'commodity':
-      return (
-        item.id?.toLowerCase().includes(q) ||
-        item.name?.toLowerCase().includes(q) ||
-        item.symbol?.toLowerCase().includes(q) ||
-        item.location?.toLowerCase().includes(q)
-      );
-    default:
-      return true;
-  }
 }
 
 function MarketList({ children, empty, emptyMessage }) {

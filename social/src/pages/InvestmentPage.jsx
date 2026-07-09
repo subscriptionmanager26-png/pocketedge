@@ -27,8 +27,10 @@ import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
 import {
-  fetchMarketTab,
+  fetchMarketPreview,
   marketFundToDetail,
+  marketStockToDetail,
+  resolveMarketFund,
 } from '../lib/marketDataApi';
 import { formatPrice } from '../lib/format';
 import {
@@ -59,15 +61,18 @@ export default function InvestmentPage({
     if (seedFund) return undefined;
     let cancelled = false;
     setMarketLoading(true);
-    fetchMarketTab('mutual_funds')
-      .then(({ items }) => {
-        if (cancelled) return;
-        const found = items.find((item) => item.schemeCode === fundId);
-        setMarketFund(found ? marketFundToDetail(found) : null);
-      })
-      .finally(() => {
+
+    (async () => {
+      try {
+        const preview = await fetchMarketPreview('mutual_funds');
+        let found = preview.items.find((item) => item.schemeCode === fundId);
+        if (!found) found = await resolveMarketFund(fundId);
+        if (!cancelled) setMarketFund(found ? marketFundToDetail(found) : null);
+      } finally {
         if (!cancelled) setMarketLoading(false);
-      });
+      }
+    })();
+
     return () => {
       cancelled = true;
     };

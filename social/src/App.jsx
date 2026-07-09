@@ -428,6 +428,7 @@ export default function App() {
           <SearchPage
             onOpenProfile={openProfile}
             onSelectStock={openStock}
+            onSelectFund={openFund}
             onGraphChange={() => setGraphTick((n) => n + 1)}
           />
         )}
