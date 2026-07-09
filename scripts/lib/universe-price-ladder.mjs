@@ -75,11 +75,8 @@ function ladderDbRows(runId, instruments, ladder, yahoo) {
       rows.push({
         run_id: runId,
         conid: inst.conid,
-        symbol: inst.symbol,
         exchange_id: inst.exchange_id,
         success_step: 5,
-        success_step_label: 'yahoo_backup',
-        last_price: yhit.price,
         last_raw: null,
         price_source: yhit.source,
       });
@@ -89,11 +86,8 @@ function ladderDbRows(runId, instruments, ladder, yahoo) {
       rows.push({
         run_id: runId,
         conid: inst.conid,
-        symbol: entry.symbol ?? inst.symbol,
         exchange_id: entry.exchange_id ?? inst.exchange_id,
         success_step: entry.success_step,
-        success_step_label: entry.success_step_label,
-        last_price: entry.last,
         last_raw: entry.last_raw,
         price_source: entry.price_source,
       });
@@ -102,11 +96,8 @@ function ladderDbRows(runId, instruments, ladder, yahoo) {
     rows.push({
       run_id: runId,
       conid: inst.conid,
-      symbol: inst.symbol,
       exchange_id: inst.exchange_id,
       success_step: null,
-      success_step_label: null,
-      last_price: null,
       last_raw: null,
       price_source: null,
     });

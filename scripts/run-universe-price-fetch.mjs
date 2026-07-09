@@ -271,6 +271,16 @@ async function main() {
       dryRun: DRY_RUN,
       config,
     });
+
+    if (!DRY_RUN) {
+      const retentionDays = Number(process.env.LADDER_RETENTION_DAYS ?? '7');
+      console.log(`\n── Ladder archive (${retentionDays}-day retention) ──`);
+      const archive = await runsTable.rpc('archive_ibkr_fetch_ladder_results', {
+        p_retention_days: retentionDays,
+        p_dry_run: false,
+      });
+      console.log('Ladder archive:', JSON.stringify(archive));
+    }
   } catch (error) {
     if (!DRY_RUN && runId) {
       await runsTable
