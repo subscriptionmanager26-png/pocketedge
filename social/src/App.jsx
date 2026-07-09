@@ -52,6 +52,7 @@ export default function App() {
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [fundReviewPrefill, setFundReviewPrefill] = useState(null);
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
+  const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
   const [scrollAction, setScrollAction] = useState('reset');
@@ -323,6 +324,12 @@ export default function App() {
     backScroll,
   ]);
 
+  useEffect(() => {
+    if (tab !== 'profile') {
+      setMobileHeaderActions(null);
+    }
+  }, [tab]);
+
   if (authView === 'bootstrapping') {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-pe-canvas text-sm text-pe-text-secondary">
@@ -368,6 +375,7 @@ export default function App() {
         onSettings={openSettings}
         onGoHome={goHome}
         onCompose={openCompose}
+        mobileActions={mobileHeaderActions}
       >
         {tab === 'feed' &&
           (selectedPostId ? (
@@ -420,7 +428,6 @@ export default function App() {
             onSelectStock={openStock}
             onOpenProfile={openProfile}
             onOpenPost={openPost}
-            onSharePortfolio={sharePortfolioAsPost}
           />
         )}
         {tab === 'markets' &&
@@ -487,7 +494,7 @@ export default function App() {
             onOpenProfile={openProfile}
             onOpenPost={openPost}
             onGraphChange={() => setGraphTick((n) => n + 1)}
-            onSharePortfolio={sharePortfolioAsPost}
+            onMobileHeaderActionsChange={setMobileHeaderActions}
           />
         )}
         {tab === 'settings' && (

@@ -67,6 +67,7 @@ export default function Shell({
   onSettings,
   onGoHome,
   onCompose,
+  mobileActions = null,
   children,
 }) {
   const feedTitle = FEED_LABELS[feedMode] ?? 'For You';
@@ -284,35 +285,39 @@ export default function Shell({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => goTab('activity')}
-                      className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
-                      aria-label={
-                        activityUnread > 0
-                          ? `${activityUnread} unread activity items`
-                          : 'Activity'
-                      }
-                    >
-                      <Bell className="h-5 w-5" />
-                      {activityUnread > 0 && (
-                        <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
-                          {activityUnread > 9 ? '9+' : activityUnread}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onSettings}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-pe-surface ${
-                        tab === 'settings'
-                          ? 'text-pe-accent'
-                          : 'text-pe-text-secondary hover:text-pe-text'
-                      }`}
-                      aria-label="Settings"
-                    >
-                      <Settings className="h-5 w-5" />
-                    </button>
+                    {mobileActions ?? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => goTab('activity')}
+                          className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
+                          aria-label={
+                            activityUnread > 0
+                              ? `${activityUnread} unread activity items`
+                              : 'Activity'
+                          }
+                        >
+                          <Bell className="h-5 w-5" />
+                          {activityUnread > 0 && (
+                            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
+                              {activityUnread > 9 ? '9+' : activityUnread}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onSettings}
+                          className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-pe-surface ${
+                            tab === 'settings'
+                              ? 'text-pe-accent'
+                              : 'text-pe-text-secondary hover:text-pe-text'
+                          }`}
+                          aria-label="Settings"
+                        >
+                          <Settings className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </header>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, ClipboardCheck, Copy, Heart, MessageCircle, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -19,10 +19,20 @@ import {
   recalcHolding,
 } from '../data/mockData';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
-import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
+import PortfolioCard from '../components/PortfolioCard';
+import CommentRow from '../components/CommentRow';
 import ReviewCard from '../components/ReviewCard';
 import { getReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
+import {
+  addPortfolioComment,
+  getPortfolioSocial,
+  incrementPortfolioShare,
+  subscribePortfolioSocial,
+  togglePortfolioCopy,
+  togglePortfolioLike,
+} from '../lib/portfolioSocialStore';
 
 const PROFILE_TABS = [
   { id: 'posts', label: 'Posts' },
@@ -43,6 +53,32 @@ function getStoredReturnPeriod() {
     /* ignore */
   }
   return '1M';
+}
+
+function ReturnPeriodPicker({ value, onChange, className = '' }) {
+  return (
+    <div className={`flex items-center justify-between gap-3 border-b border-pe-border px-4 py-3 ${className}`}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        Return period
+      </p>
+      <div className="flex gap-1 rounded-lg bg-pe-surface p-1">
+        {RETURN_PERIODS.map((period) => (
+          <button
+            key={period}
+            type="button"
+            onClick={() => onChange(period)}
+            className={`rounded-md px-2.5 py-1.5 text-[12px] font-bold transition ${
+              value === period
+                ? 'bg-pe-canvas text-pe-text shadow-sm'
+                : 'text-pe-text-secondary hover:text-pe-text'
+            }`}
+          >
+            {period}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function formatJoined(isoDate) {
@@ -67,7 +103,7 @@ export default function ProfilePage({
   onOpenProfile,
   onOpenPost,
   onGraphChange,
-  onSharePortfolio,
+  onMobileHeaderActionsChange,
 }) {
   const isOwn = mode === 'own';
   const person = isOwn ? CURRENT_USER : getPerson(userId);
@@ -80,6 +116,7 @@ export default function ProfilePage({
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [tradesVersion, setTradesVersion] = useState(0);
   const [reviewsVersion, setReviewsVersion] = useState(0);
+  const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
 
   const bumpPortfolios = () => setPortfolioVersion((v) => v + 1);
@@ -95,6 +132,7 @@ export default function ProfilePage({
 
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
   useEffect(() => subscribeReviews(() => setReviewsVersion((n) => n + 1)), []);
+  useEffect(() => subscribePortfolioSocial(() => setPortfolioSocialTick((n) => n + 1)), []);
 
   useEffect(() => {
     if (!isOwn && !isMePublic) {
@@ -121,11 +159,11 @@ export default function ProfilePage({
     onClearPortfolio?.();
   }, [userId, mode]);
 
-  const handleAddPortfolio = (kind = 'live') => {
+  const handleAddPortfolio = () => {
     const created = addUserPortfolio(CURRENT_USER.id, {
-      id: `${kind === 'watchlist' ? 'wl' : 'pf'}_${Date.now()}`,
-      kind,
-      name: kind === 'watchlist' ? 'Untitled watchlist' : 'Untitled portfolio',
+      id: `pf_${Date.now()}`,
+      kind: 'live',
+      name: 'Untitled portfolio',
       objective: '',
       thesis: '',
       totalValue: 0,
@@ -204,14 +242,15 @@ export default function ProfilePage({
         portfolio={selectedPortfolio}
         userId={person.id}
         canEdit={canEdit}
-        returnPeriod={returnPeriod}
-        onReturnPeriodChange={handleReturnPeriodChange}
         onPortfolioUpdated={() => {
           bumpPortfolios();
           bumpTrades();
         }}
         onBack={onClearPortfolio}
-        onSharePortfolio={canEdit ? onSharePortfolio : undefined}
+        canCopy={!canEdit}
+        returnPeriod={returnPeriod}
+        onReturnPeriodChange={handleReturnPeriodChange}
+        onMobileHeaderActionsChange={onMobileHeaderActionsChange}
       />
     );
   }
@@ -309,11 +348,11 @@ export default function ProfilePage({
           userId={person.id}
           canEdit={canEdit}
           portfolioVersion={portfolioVersion}
+          portfolioSocialTick={portfolioSocialTick}
           returnPeriod={returnPeriod}
           onReturnPeriodChange={handleReturnPeriodChange}
           onSelectPortfolio={onSelectPortfolio}
           onAddPortfolio={handleAddPortfolio}
-          onSharePortfolio={canEdit ? onSharePortfolio : undefined}
         />
       )}
 
@@ -527,158 +566,52 @@ function PortfoliosListPanel({
   userId,
   canEdit,
   portfolioVersion,
+  portfolioSocialTick,
   returnPeriod,
   onReturnPeriodChange,
   onSelectPortfolio,
   onAddPortfolio,
-  onSharePortfolio,
 }) {
   void portfolioVersion;
-  const [addOpen, setAddOpen] = useState(false);
+  void portfolioSocialTick;
   const portfolios = getUserPortfolios(userId);
 
   return (
-    <div className="px-4 pb-5">
-      <div className="flex items-center justify-between gap-3 border-b border-pe-border py-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-          Return period
-        </p>
-        <div className="flex gap-1 rounded-lg bg-pe-surface p-1">
-          {RETURN_PERIODS.map((period) => (
-            <button
-              key={period}
-              type="button"
-              onClick={() => onReturnPeriodChange(period)}
-              className={`rounded-md px-2.5 py-1.5 text-[12px] font-bold transition ${
-                returnPeriod === period
-                  ? 'bg-pe-canvas text-pe-text shadow-sm'
-                  : 'text-pe-text-secondary hover:text-pe-text'
-              }`}
-            >
-              {period}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div>
+      <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
 
       {!portfolios.length ? (
-        <p className="py-10 text-center text-sm text-pe-text-secondary">
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
           {canEdit ? 'No portfolios yet.' : 'No portfolios published yet.'}
         </p>
       ) : (
-        <div className="divide-y divide-pe-border border-b border-pe-border">
-          {portfolios.map((portfolio) => {
-            const isWatchlist = portfolio.kind === 'watchlist';
-            const ret = getPortfolioReturn(portfolio, returnPeriod);
-            const canShare = canEdit && !isWatchlist && onSharePortfolio;
-            return (
-              <div
-                key={portfolio.id}
-                className="flex items-center gap-2 py-4"
-              >
-                <button
-                  type="button"
-                  onClick={() => onSelectPortfolio?.(portfolio.id)}
-                  className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left transition hover:bg-pe-surface"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <p className="text-[15px] font-semibold text-pe-text">{portfolio.name}</p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                          isWatchlist
-                            ? 'bg-pe-surface text-pe-text-secondary'
-                            : 'bg-pe-accent-wash text-pe-accent'
-                        }`}
-                      >
-                        {isWatchlist ? 'Watchlist' : 'Live'}
-                      </span>
-                    </div>
-                    {portfolio.thesis ? (
-                      <p className="mt-1 font-serif text-sm leading-6 text-pe-text-secondary">
-                        {portfolio.thesis}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <p className={`w-16 text-right text-[15px] font-bold ${pnlClass(ret)}`}>
-                      {formatPct(ret)}
-                    </p>
-                    <ChevronRight className="h-4 w-4 text-pe-text-muted" />
-                  </div>
-                </button>
-                {canShare ? (
-                  <button
-                    type="button"
-                    onClick={() => onSharePortfolio(portfolio)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-pe-accent transition hover:bg-pe-accent-wash"
-                    aria-label={`Share ${portfolio.name}`}
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-            );
-          })}
+        <div>
+          {portfolios.map((portfolio) => (
+            <PortfolioCard
+              key={portfolio.id}
+              portfolio={portfolio}
+              returnPct={getPortfolioReturn(portfolio, returnPeriod)}
+              social={getPortfolioSocial(portfolio.id)}
+              canCopy={!canEdit}
+              onOpen={onSelectPortfolio}
+              onDiscuss={onSelectPortfolio}
+            />
+          ))}
         </div>
       )}
 
-      {canEdit && (
-        <div className="mt-4">
-          {!addOpen ? (
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-pe-border-strong px-4 py-3.5 text-sm font-semibold text-pe-text-secondary transition hover:border-pe-accent hover:text-pe-accent"
-            >
-              <Plus className="h-4 w-4" />
-              Add portfolio
-            </button>
-          ) : (
-            <div className="overflow-hidden rounded-[10px] border border-pe-border">
-              <button
-                type="button"
-                onClick={() => {
-                  setAddOpen(false);
-                  onAddPortfolio('live');
-                }}
-                className="flex w-full items-center justify-between gap-3 border-b border-pe-border px-4 py-3.5 text-left transition hover:bg-pe-surface"
-              >
-                <div>
-                  <p className="text-[15px] font-semibold text-pe-text">Live</p>
-                  <p className="mt-0.5 text-sm text-pe-text-secondary">Actual holdings with disclosure</p>
-                </div>
-                <span className="rounded-full bg-pe-accent-wash px-2 py-0.5 text-[11px] font-semibold text-pe-accent">
-                  Live
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAddOpen(false);
-                  onAddPortfolio('watchlist');
-                }}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
-              >
-                <div>
-                  <p className="text-[15px] font-semibold text-pe-text">Watchlist</p>
-                  <p className="mt-0.5 text-sm text-pe-text-secondary">Ideas you are tracking</p>
-                </div>
-                <span className="rounded-full bg-pe-surface px-2 py-0.5 text-[11px] font-semibold text-pe-text-secondary">
-                  Watchlist
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAddOpen(false)}
-                className="w-full border-t border-pe-border px-4 py-2.5 text-sm font-semibold text-pe-text-muted hover:bg-pe-surface"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+      {canEdit ? (
+        <div className="px-4 pb-5">
+          <button
+            type="button"
+            onClick={onAddPortfolio}
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-pe-border-strong px-4 py-3.5 text-sm font-semibold text-pe-text-secondary transition hover:border-pe-accent hover:text-pe-accent"
+          >
+            <Plus className="h-4 w-4" />
+            Add portfolio
+          </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -730,11 +663,12 @@ function PortfolioDetailView({
   portfolio,
   userId,
   canEdit,
-  returnPeriod = '1M',
-  onReturnPeriodChange,
   onPortfolioUpdated,
   onBack,
-  onSharePortfolio,
+  canCopy = false,
+  returnPeriod = '1M',
+  onReturnPeriodChange,
+  onMobileHeaderActionsChange,
 }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -743,6 +677,15 @@ function PortfolioDetailView({
   const [thesis, setThesis] = useState(portfolio.thesis ?? '');
   const [editRows, setEditRows] = useState([]);
   const [tickerSuggestionsFor, setTickerSuggestionsFor] = useState(null);
+  const [socialTick, setSocialTick] = useState(0);
+  const [commentDraft, setCommentDraft] = useState('');
+
+  useEffect(() => subscribePortfolioSocial(() => setSocialTick((n) => n + 1)), []);
+
+  const social = useMemo(
+    () => getPortfolioSocial(portfolio.id),
+    [portfolio.id, socialTick]
+  );
 
   useEffect(() => {
     setName(portfolio.name);
@@ -813,6 +756,28 @@ function PortfolioDetailView({
     setEditing(false);
   };
 
+  useEffect(() => {
+    if (!canEdit || !onMobileHeaderActionsChange) {
+      onMobileHeaderActionsChange?.(null);
+      return undefined;
+    }
+
+    onMobileHeaderActionsChange(
+      editing ? (
+        <PortfolioDetailMobileActions
+          editing
+          saved={saved}
+          onCancel={cancelEdits}
+          onSave={saveEdits}
+        />
+      ) : (
+        <PortfolioDetailMobileActions onEdit={startEditing} />
+      )
+    );
+
+    return () => onMobileHeaderActionsChange(null);
+  }, [canEdit, editing, saved, onMobileHeaderActionsChange]);
+
   const updateRow = (rowId, patch) => {
     setEditRows((prev) =>
       prev.map((row) => (row.id === rowId ? { ...row, ...patch } : row))
@@ -855,19 +820,53 @@ function PortfolioDetailView({
   return (
     <div>
       <PageHeader desktopOnly>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Portfolios
-        </button>
+        <div className="flex w-full items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Portfolios
+          </button>
+
+          {canEdit ? (
+            editing ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelEdits}
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveEdits}
+                  className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+                >
+                  {saved ? <Check className="h-3.5 w-3.5" /> : null}
+                  {saved ? 'Saved' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditing}
+                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            )
+          ) : null}
+        </div>
       </PageHeader>
 
       <div className="border-b border-pe-border px-4 py-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col items-stretch gap-4 md:flex-row md:justify-between md:gap-3">
+          <div className="min-w-0 w-full flex-1">
             {editing ? (
               <div className="space-y-4">
                 <Field label="Portfolio name">
@@ -909,77 +908,17 @@ function PortfolioDetailView({
             )}
           </div>
 
-          {canEdit && (
-            <div className="flex shrink-0 items-center gap-2">
-              {editing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={cancelEdits}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveEdits}
-                    className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
-                  >
-                    {saved ? <Check className="h-3.5 w-3.5" /> : null}
-                    {saved ? 'Saved' : 'Save'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {portfolio.kind !== 'watchlist' && onSharePortfolio ? (
-                    <button
-                      type="button"
-                      onClick={() => onSharePortfolio(portfolio)}
-                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-accent hover:bg-pe-accent-wash"
-                    >
-                      <Share2 className="h-3.5 w-3.5" />
-                      Share
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={startEditing}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+          <div className="hidden md:block" />
         </div>
-
-        {!editing && (
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-              Return period
-            </p>
-            <div className="flex gap-1 rounded-lg bg-pe-surface p-1">
-              {RETURN_PERIODS.map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => onReturnPeriodChange?.(period)}
-                  className={`rounded-md px-2.5 py-1.5 text-[12px] font-bold transition ${
-                    returnPeriod === period
-                      ? 'bg-pe-canvas text-pe-text shadow-sm'
-                      : 'text-pe-text-secondary hover:text-pe-text'
-                  }`}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {!editing ? (
+        <PortfolioSocialBar portfolio={portfolio} social={social} canCopy={canCopy} />
+      ) : null}
+
+      {!editing ? (
+        <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
+      ) : null}
 
       {editing ? (
         <div className="px-4 py-5">
@@ -987,16 +926,16 @@ function PortfolioDetailView({
             Holdings
           </p>
           <p className="mt-1 text-sm text-pe-text-secondary">
-            Search a ticker, enter total investment and quantity. Incomplete last rows are ignored on save.
+            Search a ticker, then enter your total investment and quantity.
           </p>
 
           <div className="mt-4 space-y-2">
-            <div className="flex items-center gap-2 px-0.5">
+            <div className="hidden items-center gap-2 px-0.5 md:flex">
               <p className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Ticker
               </p>
               <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Total Investment
+                Total invested
               </p>
               <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Qty
@@ -1008,8 +947,8 @@ function PortfolioDetailView({
               const suggestions =
                 tickerSuggestionsFor === row.id ? tickerMatches(row.ticker, row.id) : [];
               return (
-                <div key={row.id} className="flex items-start gap-2">
-                  <div className="relative min-w-0 flex-1">
+                <div key={row.id} className="grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2">
+                  <div className="relative min-w-0">
                     <input
                       type="text"
                       value={row.ticker}
@@ -1054,15 +993,16 @@ function PortfolioDetailView({
                       </div>
                     )}
                   </div>
+
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={row.invested}
                     onChange={(e) => updateRow(row.id, { invested: e.target.value })}
-                    placeholder="0"
-                    aria-label="Total Investment"
-                    className={`${compactInputClass} w-[8.75rem] shrink-0 text-right tabular-nums`}
+                    placeholder="Total invested"
+                    aria-label="Total amount you invested"
+                    className={`${compactInputClass} text-right tabular-nums`}
                   />
                   <input
                     type="number"
@@ -1070,9 +1010,9 @@ function PortfolioDetailView({
                     step="1"
                     value={row.qty}
                     onChange={(e) => updateRow(row.id, { qty: e.target.value })}
-                    placeholder="0"
+                    placeholder="Qty"
                     aria-label="Quantity"
-                    className={`${compactInputClass} w-[5.25rem] shrink-0 text-right tabular-nums`}
+                    className={`${compactInputClass} text-right tabular-nums`}
                   />
                   <button
                     type="button"
@@ -1099,12 +1039,212 @@ function PortfolioDetailView({
       ) : (
         <PortfolioHoldingsList portfolio={portfolio} returnPeriod={returnPeriod} />
       )}
+
+      {!editing ? (
+        <PortfolioDiscussion
+          portfolioId={portfolio.id}
+          comments={social.comments ?? []}
+          commentDraft={commentDraft}
+          onCommentDraftChange={setCommentDraft}
+          onSubmitComment={() => {
+            addPortfolioComment(portfolio.id, commentDraft);
+            setCommentDraft('');
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
+function PortfolioDetailMobileActions({ editing = false, saved = false, onEdit, onCancel, onSave }) {
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+        >
+          <X className="h-3.5 w-3.5" />
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+        >
+          {saved ? <Check className="h-3.5 w-3.5" /> : null}
+          {saved ? 'Saved' : 'Save'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onEdit}
+      className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+    >
+      <Pencil className="h-3.5 w-3.5" />
+      Edit
+    </button>
+  );
+}
+
+function PortfolioSocialBar({ portfolio, social, canCopy }) {
+  const [liked, setLiked] = useState(social.liked);
+  const [copied, setCopied] = useState(social.copied);
+  const [likes, setLikes] = useState(social.likes);
+  const [copies, setCopies] = useState(social.copies);
+  const [shares, setShares] = useState(social.shares);
+  const commentCount = social.comments?.length ?? 0;
+
+  const handleLike = () => {
+    const next = togglePortfolioLike(portfolio.id);
+    setLiked(next.liked);
+    setLikes(next.likes);
+  };
+
+  const handleCopy = () => {
+    if (!canCopy) return;
+    const next = togglePortfolioCopy(portfolio.id);
+    setCopied(next.copied);
+    setCopies(next.copies);
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}${window.location.pathname}?portfolio=${portfolio.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: portfolio.name,
+          text: portfolio.thesis || portfolio.objective || 'Portfolio on PocketEdge',
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+      }
+      const next = incrementPortfolioShare(portfolio.id);
+      setShares(next.shares);
+    } catch {
+      /* cancelled */
+    }
+  };
+
+  return (
+    <div className="border-b border-pe-border px-4 py-4">
+      <div className="flex flex-wrap items-center gap-5 text-pe-text-secondary">
+        <button
+          type="button"
+          onClick={handleLike}
+          aria-pressed={liked}
+          className={`inline-flex items-center gap-1.5 text-sm transition ${
+            liked ? 'text-pe-accent' : 'hover:text-pe-accent'
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${liked ? 'fill-current text-pe-accent' : ''}`} />
+          {formatCount(likes)}
+        </button>
+        <span className="inline-flex items-center gap-1.5 text-sm text-pe-text">
+          <MessageCircle className="h-4 w-4" />
+          {commentCount}
+        </span>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="inline-flex items-center gap-1.5 text-sm transition hover:text-pe-text"
+        >
+          <Share2 className="h-4 w-4" />
+          {formatCount(shares)}
+        </button>
+        {canCopy ? (
+          <button
+            type="button"
+            onClick={handleCopy}
+            aria-pressed={copied}
+            className={`inline-flex items-center gap-1.5 text-sm transition ${
+              copied ? 'text-pe-accent' : 'hover:text-pe-text'
+            }`}
+          >
+            {copied ? (
+              <ClipboardCheck className="h-4 w-4 text-pe-accent" />
+            ) : (
+              <Copy className="h-4 w-4 text-pe-text-secondary" />
+            )}
+            {formatCount(copies)}
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-sm text-pe-text-muted">
+            <Copy className="h-4 w-4 opacity-40" />
+            {formatCount(copies)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PortfolioDiscussion({
+  portfolioId,
+  comments,
+  commentDraft,
+  onCommentDraftChange,
+  onSubmitComment,
+}) {
+  void portfolioId;
+  return (
+    <section className="border-t border-pe-border px-4 py-5">
+      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        Discussion · {comments.length}
+      </p>
+
+      {comments.length === 0 ? (
+        <p className="mt-4 text-sm text-pe-text-secondary">
+          Be the first to discuss this portfolio — ask about allocation, thesis, or recent moves.
+        </p>
+      ) : (
+        <div className="mt-2 divide-y divide-pe-border border-y border-pe-border">
+          {comments.map((comment) => (
+            <CommentRow key={comment.id} comment={comment} />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex gap-2">
+        <input
+          value={commentDraft}
+          onChange={(e) => onCommentDraftChange(e.target.value)}
+          placeholder="Add to the discussion…"
+          className={`${inputClass} flex-1`}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              onSubmitComment();
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={onSubmitComment}
+          disabled={!commentDraft.trim()}
+          className="shrink-0 rounded-md bg-pe-accent px-4 py-2 text-sm font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40"
+        >
+          Post
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function PortfolioHoldingsList({ portfolio, returnPeriod }) {
+  const HOLDINGS_PAGE_SIZE = 4;
+  const [page, setPage] = useState(0);
   const overallReturn = getPortfolioReturn(portfolio, returnPeriod);
+
+  useEffect(() => {
+    setPage(0);
+  }, [portfolio.id, returnPeriod]);
   const rows = useMemo(() => {
     const periodReturnForTicker = (ticker, fallbackPnl) => {
       const stock = STOCKS[ticker];
@@ -1151,6 +1291,17 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     }));
   }, [portfolio, returnPeriod]);
 
+  const sortedRows = useMemo(
+    () => [...rows].sort((a, b) => b.weight - a.weight),
+    [rows]
+  );
+  const totalPages = Math.max(1, Math.ceil(sortedRows.length / HOLDINGS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageRows = sortedRows.slice(
+    safePage * HOLDINGS_PAGE_SIZE,
+    safePage * HOLDINGS_PAGE_SIZE + HOLDINGS_PAGE_SIZE
+  );
+
   if (!rows.length) {
     return (
       <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
@@ -1164,13 +1315,13 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
       <div className="flex items-center justify-between gap-4 py-3.5">
         <div className="min-w-0">
           <p className="text-[15px] font-semibold text-pe-text">Overall</p>
-          <p className="text-sm text-pe-text-muted">Portfolio return · {returnPeriod}</p>
+          <p className="text-sm text-pe-text-muted">Return</p>
         </div>
         <p className={`shrink-0 w-16 text-right text-[15px] font-bold ${pnlClass(overallReturn)}`}>
           {formatPct(overallReturn)}
         </p>
       </div>
-      {rows.map((row) => (
+      {pageRows.map((row) => (
         <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
@@ -1186,6 +1337,31 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
           </p>
         </div>
       ))}
+      {sortedRows.length > HOLDINGS_PAGE_SIZE ? (
+        <div className="flex items-center justify-between gap-3 border-t border-pe-border py-3.5">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+            className="rounded-md px-3 py-1.5 text-sm font-semibold text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <p className="text-sm text-pe-text-muted">
+            {safePage + 1} / {totalPages}
+            <span className="mx-1.5">·</span>
+            {sortedRows.length} holdings
+          </p>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={safePage >= totalPages - 1}
+            className="rounded-md px-3 py-1.5 text-sm font-semibold text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

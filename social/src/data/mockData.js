@@ -262,6 +262,61 @@ function buildHoldingsFromPositions(userId, tickers) {
     .filter(Boolean);
 }
 
+const DEMO_25_STOCK_NAMES = [
+  'Reliance Industries',
+  'HDFC Bank',
+  'ICICI Bank',
+  'Tata Consultancy',
+  'Infosys',
+  'Tata Motors',
+  'ONGC',
+  'NTPC',
+  'IRCTC',
+  'Wipro',
+  'Nippon Nifty BeES',
+  'Asian Paints',
+  'Bajaj Finance',
+  'Hindustan Unilever',
+  'ITC',
+  'Larsen & Toubro',
+  'Axis Bank',
+  'State Bank of India',
+  'Maruti Suzuki',
+  'Sun Pharma',
+  'Kotak Mahindra Bank',
+  'Titan Company',
+  'Nestle India',
+  'HCL Technologies',
+  'Power Grid',
+];
+
+function buildDemo25Holdings() {
+  return DEMO_25_STOCK_NAMES.map((name, i) => {
+    const ticker = `D${String(i + 1).padStart(2, '0')}`;
+    const qty = 18 + i * 2;
+    const price = 220 + i * 72;
+    const avg = Number((price * 0.9).toFixed(2));
+    const value = Number((qty * price).toFixed(2));
+    if (!STOCKS[ticker]) {
+      STOCKS[ticker] = {
+        name,
+        price,
+        changePct: Number((((i % 7) - 3) * 0.8).toFixed(2)),
+        return3M: Number(((i % 9) - 4).toFixed(1)),
+        spark: [price * 0.96, price * 0.98, price * 0.99, price, price * 1.01, price * 1.02, price],
+      };
+    }
+    return {
+      ticker,
+      qty,
+      avg,
+      price,
+      value,
+      pnlPct: Number((((i % 7) - 3) * 1.1).toFixed(1)),
+    };
+  });
+}
+
 /** A user may publish multiple portfolios on their profile. */
 export const USER_PORTFOLIOS = {
   u_me: [
@@ -277,6 +332,19 @@ export const USER_PORTFOLIOS = {
       return1M: 2.4,
       xirr: 24.6,
       holdings: MY_PORTFOLIO.holdings,
+    },
+    {
+      id: 'pf_diversified',
+      kind: 'live',
+      name: 'Diversified 25',
+      objective: 'Broad market exposure across sectors.',
+      thesis: 'Core satellite split with 25 names — demo for paginated holdings.',
+      totalValue: 12_50_000,
+      invested: 10_80_000,
+      totalPnlPct: 15.7,
+      return1M: 2.1,
+      xirr: 22.4,
+      holdings: buildDemo25Holdings(),
     },
     {
       id: 'pf_dividend',
