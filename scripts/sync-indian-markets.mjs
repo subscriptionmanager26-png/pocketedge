@@ -79,10 +79,11 @@ async function main() {
 
   console.log('Fetching NSE quotes, ETFs, and indices...');
   const nseFetch = await createNseSession();
+  const indicesFetch = await createNseSession(SOURCES.nseLiveIndices);
   const [quotes, etfs, indices] = await Promise.all([
     fetchEquityQuotes(nseFetch),
     fetchEtfList(nseFetch),
-    fetchIndices(nseFetch),
+    fetchIndices(indicesFetch),
   ]);
 
   console.log('Fetching MCX spot prices...');

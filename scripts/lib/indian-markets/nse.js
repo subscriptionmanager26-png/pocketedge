@@ -1,7 +1,7 @@
-import { UA } from './constants.js';
+import { SOURCES, UA } from './constants.js';
 
-export async function createNseSession(referer = 'https://www.nseindia.com/') {
-  const res = await fetch('https://www.nseindia.com/', {
+export async function createNseSession(seedUrl = 'https://www.nseindia.com/') {
+  const res = await fetch(seedUrl, {
     headers: { 'User-Agent': UA, Accept: 'text/html' },
     redirect: 'follow',
   });
@@ -14,8 +14,8 @@ export async function createNseSession(referer = 'https://www.nseindia.com/') {
       ...options,
       headers: {
         'User-Agent': UA,
-        Accept: 'application/json, text/plain, */*',
-        Referer: referer,
+        Accept: '*/*',
+        Referer: seedUrl,
         Cookie: cookie,
         ...(options.headers ?? {}),
       },
@@ -75,12 +75,27 @@ export async function fetchEtfList(nseFetch) {
 }
 
 export async function fetchIndices(nseFetch) {
-  const payload = await nseFetch('/api/allIndices');
+  const payload = await nseFetch('/api/allIndices', {
+    headers: { Referer: SOURCES.nseLiveIndices },
+  });
+
   return (payload?.data ?? []).map((row) => ({
     id: row.indexSymbol || row.index,
+    symbol: row.indexSymbol || row.index,
     name: row.index || row.indexSymbol,
+    group: row.key ?? null,
     value: row.last != null ? Number(row.last) : null,
+    change: row.variation != null ? Number(row.variation) : null,
     previousClose: row.previousClose != null ? Number(row.previousClose) : null,
     changePct: row.percentChange != null ? Number(row.percentChange) : null,
+    open: row.open != null ? Number(row.open) : null,
+    high: row.high != null ? Number(row.high) : null,
+    low: row.low != null ? Number(row.low) : null,
+    advances: row.advances != null ? Number(row.advances) : null,
+    declines: row.declines != null ? Number(row.declines) : null,
+    yearHigh: row.yearHigh != null ? Number(row.yearHigh) : null,
+    yearLow: row.yearLow != null ? Number(row.yearLow) : null,
+    change30dPct: row.perChange30d != null ? Number(row.perChange30d) : null,
+    change365dPct: row.perChange365d != null ? Number(row.perChange365d) : null,
   }));
 }

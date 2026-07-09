@@ -5,6 +5,8 @@ export const SOURCES = {
   nseLiveEquity: 'https://www.nseindia.com/market-data/live-equity-market',
   nseSmeMarket: 'https://www.nseindia.com/market-data/sme-market',
   nseEtf: 'https://www.nseindia.com/market-data/exchange-traded-funds-etf',
+  nseLiveIndices: 'https://www.nseindia.com/market-data/live-market-indices',
+  nseAllIndicesApi: 'https://www.nseindia.com/api/allIndices',
   mcxSpot: 'https://www.mcxindia.com/market-data/spot-market-price#Recent',
 };
 

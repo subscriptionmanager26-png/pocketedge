@@ -21,6 +21,13 @@ const SEARCH_PLACEHOLDERS = {
   commodity: 'Search commodities',
 };
 
+function formatIndexGroup(group) {
+  if (!group) return null;
+  return group
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function formatIndexValue(value) {
   if (value == null) return '—';
   return value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -142,6 +149,7 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
               <MarketRow
                 key={index.id}
                 title={index.name}
+                subtitle={formatIndexGroup(index.group)}
                 primaryValue={formatIndexValue(index.value)}
                 changePct={index.changePct}
               />
@@ -186,7 +194,9 @@ function matchesQuery(item, tab, q) {
     case 'indices':
       return (
         item.id?.toLowerCase().includes(q) ||
-        item.name?.toLowerCase().includes(q)
+        item.name?.toLowerCase().includes(q) ||
+        item.symbol?.toLowerCase().includes(q) ||
+        item.group?.toLowerCase().includes(q)
       );
     case 'commodity':
       return (
