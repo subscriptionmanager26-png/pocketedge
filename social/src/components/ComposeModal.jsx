@@ -85,7 +85,7 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
                 : 'Share a thesis… use @TICKER for disclosure'
             }
             rows={share ? 4 : 6}
-            className="w-full resize-none bg-transparent font-serif text-[17px] leading-[1.65] text-pe-ink outline-none placeholder:font-sans placeholder:text-[15px] placeholder:text-pe-text-muted"
+            className="w-full resize-none bg-transparent text-[17px] leading-[1.65] text-pe-ink outline-none placeholder:font-sans placeholder:text-[15px] placeholder:text-pe-text-muted"
           />
 
           {share ? (

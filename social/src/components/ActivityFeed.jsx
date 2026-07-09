@@ -55,7 +55,7 @@ export function NewsFeed({ items }) {
                 {formatTicker(item.ticker)}
               </p>
             )}
-            <p className="font-serif text-[15px] leading-6 text-pe-text">{item.title}</p>
+            <p className="text-[15px] leading-6 text-pe-text">{item.title}</p>
             <p className="mt-0.5 text-xs text-pe-text-muted">
               {item.source} · {item.time}
             </p>
@@ -145,7 +145,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
                   </span>
                 )}
               </div>
-              <p className="mt-1 font-serif text-[15px] leading-6 text-pe-ink">{item.snippet}</p>
+              <p className="mt-1 text-[15px] leading-6 text-pe-ink">{item.snippet}</p>
               <p className="mt-1 text-xs text-pe-text-muted">{item.time}</p>
             </div>
           </button>

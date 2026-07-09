@@ -16,7 +16,7 @@ export default function PostDetailPage({
   if (!post) {
     return (
       <div className="px-4 py-16 text-center">
-        <p className="font-serif text-lg font-bold text-pe-text">Post not found</p>
+        <p className="text-lg font-bold text-pe-text">Post not found</p>
         <button
           type="button"
           onClick={onBack}

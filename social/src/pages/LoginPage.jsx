@@ -23,7 +23,7 @@ export default function LoginPage({ onBack, onLogin, onGoSignup }) {
       <div className="mx-auto mt-10 max-w-sm">
         <div className="flex items-center gap-2">
           <LogoMark className="h-8 w-8" />
-          <span className="font-serif text-xl font-bold text-pe-text">Welcome back</span>
+          <span className="text-xl font-bold text-pe-text">Welcome back</span>
         </div>
         <p className="mt-2 text-[15px] text-pe-text-secondary">Sign in to your investor profile.</p>
 

@@ -17,7 +17,7 @@ export default function FundReviewStep({
 
   return (
     <>
-      <h2 className="font-serif text-2xl font-bold leading-tight text-pe-text md:text-3xl">
+      <h2 className="text-2xl font-bold leading-tight text-pe-text md:text-3xl">
         Recommend a fund
       </h2>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">

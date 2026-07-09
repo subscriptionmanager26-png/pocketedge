@@ -31,7 +31,7 @@ export default function ProfileHero({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-              <h1 className="font-serif text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
+              <h1 className="text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
                 {displayName}
               </h1>
               <BadgeCheck className="h-4 w-4 shrink-0 text-pe-link" aria-label="Verified" />
@@ -88,7 +88,7 @@ export default function ProfileHero({
           </dl>
 
           {displayBio ? (
-            <p className="mt-4 font-serif text-[15px] leading-6 text-pe-ink">{displayBio}</p>
+            <p className="mt-4 text-[15px] leading-6 text-pe-ink">{displayBio}</p>
           ) : null}
         </div>
       </div>

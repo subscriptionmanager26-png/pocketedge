@@ -11,7 +11,7 @@ export default function SettingsPage({ onLogout }) {
   return (
     <div>
       <div className="border-b border-pe-border px-4 py-5">
-        <h1 className="font-serif text-2xl font-bold text-pe-text">Settings</h1>
+        <h1 className="text-2xl font-bold text-pe-text">Settings</h1>
       </div>
 
       <div className="divide-y divide-pe-border">

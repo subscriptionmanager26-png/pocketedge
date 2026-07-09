@@ -10,15 +10,20 @@ import {
   TradesFeed,
   collectActivity,
 } from '../components/ActivityFeed';
-import { CURRENT_USER, MY_PORTFOLIO, STOCKS, getUserPortfolios } from '../data/mockData';
+import { CURRENT_USER, MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
+import {
+  PortfolioKindMetaTags,
+  PortfolioSourceAttribution,
+} from '../components/PortfolioMetaTag';
 
 export default function PortfolioPage({
   onSelectStock,
   onOpenProfile,
   onOpenPost,
+  onOpenSourcePortfolio,
 }) {
   const [listId, setListId] = useState(null);
   const [period, setPeriod] = useState('1D');
@@ -48,10 +53,8 @@ export default function PortfolioPage({
     return [
       ...portfolioLists,
       ...watchlistPortfolios.map((w) => ({
-        id: w.id,
-        name: w.name,
+        ...w,
         kind: 'watchlist',
-        tickers: w.tickers ?? [],
       })),
     ];
   }, [watchlists]);
@@ -64,83 +67,44 @@ export default function PortfolioPage({
   }, [lists, listId]);
 
   const activeList = lists.find((l) => l.id === listId) ?? lists[0];
-  const isPortfolio = activeList?.kind === 'portfolio';
+  const isPortfolio = activeList?.kind === 'portfolio' || activeList?.kind === 'watchlist';
 
   const holdingsRows = useMemo(() => {
     if (!activeList) return [];
-    if (isPortfolio) {
-      const holdings = activeList.holdings ?? [];
-      const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
-      return holdings.map((h) => ({
-        ...h,
-        weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
-      }));
-    }
-    return (activeList.tickers ?? []).map((ticker) => ({
-      ticker,
-      watchlistOnly: true,
-      spark: STOCKS[ticker]?.spark,
-      pnlPct: STOCKS[ticker]?.changePct,
-      price: STOCKS[ticker]?.price,
+    const metrics = computePortfolioDisplayMetrics(activeList);
+    const holdings = metrics.holdings ?? [];
+    const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
+    return holdings.map((h) => ({
+      ...h,
+      weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
     }));
-  }, [activeList, isPortfolio]);
+  }, [activeList]);
 
   const tickers = holdingsRows.map((h) => h.ticker);
 
   const metrics = useMemo(() => {
-    if (isPortfolio) {
-      const p = activeList ?? MY_PORTFOLIO;
-      const holdings = p.holdings ?? [];
-      const totalValue = holdings.reduce((s, h) => s + (h.value ?? 0), 0);
-      const distribution = holdings
-        .map((h) => ({
-          ticker: h.ticker,
-          weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
-        }))
-        .sort((a, b) => b.weight - a.weight);
-      return {
-        kind: 'portfolio',
-        totalValue: p.totalValue,
-        todayPnl: p.todayPnl,
-        todayPnlPct: p.todayPnlPct,
-        invested: p.invested,
-        totalPnl: p.totalPnl,
-        totalPnlPct: p.totalPnlPct,
-        xirr: p.xirr,
-        count: holdings.length,
-        distribution,
-      };
+    if (!activeList) return null;
+    if (activeList.kind === 'portfolio' || activeList.kind === 'watchlist') {
+      return computePortfolioDisplayMetrics(activeList);
     }
-
-    const changes = tickers.map((t) => STOCKS[t]?.changePct ?? 0);
-    const avgChange = changes.length
-      ? changes.reduce((a, b) => a + b, 0) / changes.length
-      : 0;
-    const distribution = tickers.map((t) => ({
-      ticker: t,
-      weight: 100 / Math.max(tickers.length, 1),
-    }));
-    return {
-      kind: 'watchlist',
-      count: tickers.length,
-      avgChange,
-      gainers: changes.filter((c) => c > 0).length,
-      losers: changes.filter((c) => c < 0).length,
-      distribution,
-    };
-  }, [isPortfolio, activeList, tickers]);
+    return computePortfolioDisplayMetrics({
+      ...activeList,
+      kind: 'portfolio',
+      holdings: MY_PORTFOLIO.holdings,
+    });
+  }, [activeList]);
 
   const activity = useMemo(() => collectActivity(tickers), [tickers]);
 
   const overallRow = useMemo(() => {
-    if (!isPortfolio || metrics?.kind !== 'portfolio') return null;
+    if (!metrics || metrics.kind !== 'portfolio') return null;
     return {
       overall: true,
       weight: 100,
       pnlPct: metrics.todayPnlPct ?? 0,
       invested: metrics.invested ?? 0,
     };
-  }, [isPortfolio, metrics]);
+  }, [metrics]);
 
   const chartDistribution = useMemo(
     () => compressDistribution(metrics?.distribution ?? []),
@@ -176,15 +140,25 @@ export default function PortfolioPage({
 
       {/* Metrics for selected list */}
       <section className="border-b border-pe-border px-4 py-5">
-        {metrics.kind === 'portfolio' ? (
+        {metrics?.kind === 'portfolio' ? (
           <>
-            <p className="font-serif text-[15px] font-semibold text-pe-text-muted">Current value</p>
-            <p className="mt-1 font-serif text-3xl font-bold tracking-tight text-pe-text">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[15px] font-semibold text-pe-text-muted">Current value</p>
+              <PortfolioKindMetaTags portfolio={activeList} />
+            </div>
+            <PortfolioSourceAttribution
+              portfolio={activeList}
+              onSeeOriginal={onOpenSourcePortfolio}
+            />
+            <p className="mt-1 text-3xl font-bold tracking-tight text-pe-text">
               {formatInr(metrics.totalValue)}
             </p>
 
             <div className="mt-4 grid grid-cols-3 gap-2.5">
-              <MetricCard label="Invested" value={formatInr(metrics.invested, { compact: true })} />
+              <MetricCard
+                label="Invested"
+                value={formatInr(metrics.invested, { compact: true })}
+              />
               <MetricCard
                 label="Total P&L"
                 value={formatInr(metrics.totalPnl, { compact: true })}
@@ -197,21 +171,7 @@ export default function PortfolioPage({
               />
             </div>
           </>
-        ) : (
-          <>
-            <p className="mt-1 font-serif text-3xl font-bold tracking-tight text-pe-text">
-              {metrics.count} stocks
-            </p>
-            <p className={`mt-1 text-[15px] font-semibold ${pnlClass(metrics.avgChange)}`}>
-              Avg {formatPct(metrics.avgChange)} today
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-2.5">
-              <MetricCard label="Tracking" value={String(metrics.count)} />
-              <MetricCard label="Gainers" value={String(metrics.gainers)} tone={1} />
-              <MetricCard label="Losers" value={String(metrics.losers)} tone={-1} />
-            </div>
-          </>
-        )}
+        ) : null}
 
         {/* Distribution — Top N + Others so large portfolios stay readable */}
         <div className="mt-5">

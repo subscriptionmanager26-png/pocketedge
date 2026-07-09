@@ -28,7 +28,7 @@ export default function FeedPage({
   if (feedPosts.length === 0) {
     return (
       <div className="px-4 py-20 text-center">
-        <p className="font-serif text-xl font-bold text-pe-text">Nothing here yet</p>
+        <p className="text-xl font-bold text-pe-text">Nothing here yet</p>
         <p className="mt-2 text-sm leading-relaxed text-pe-text-secondary">
           Follow people or topics to fill your Following feed.
         </p>

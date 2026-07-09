@@ -8,8 +8,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Using DM Sans for clean UI and Playfair Display for elegant headings -->
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -18,7 +17,7 @@
         }
         
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: #111827; /* Tailwind gray-900 */
             /* Subtle dot pattern background for texture */
@@ -26,8 +25,8 @@
             background-size: 24px 24px;
         }
 
-        h1, .font-serif {
-            font-family: 'Playfair Display', serif;
+        h1 {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         .text-brand { color: var(--brand-orange); }
@@ -84,7 +83,7 @@
             
             <!-- Logo Header -->
             <header class="flex items-end gap-2 mb-10 select-none">
-                <div class="font-serif italic font-bold tracking-tight text-5xl leading-none flex items-start">
+                <div class="italic font-bold tracking-tight text-5xl leading-none flex items-start">
                     p<span class="text-[0.6em] ml-0.5 mt-1">e</span>
                 </div>
                 <div class="text-2xl font-bold tracking-tight pb-0.5">pocketedge</div>

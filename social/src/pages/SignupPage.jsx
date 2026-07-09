@@ -25,7 +25,7 @@ export default function SignupPage({ onBack, onSignup, onGoLogin }) {
       <div className="mx-auto mt-10 max-w-sm">
         <div className="flex items-center gap-2">
           <LogoMark className="h-8 w-8" />
-          <span className="font-serif text-xl font-bold text-pe-text">Create account</span>
+          <span className="text-xl font-bold text-pe-text">Create account</span>
         </div>
         <p className="mt-2 text-[15px] text-pe-text-secondary">Join a community of disclosed investors.</p>
 

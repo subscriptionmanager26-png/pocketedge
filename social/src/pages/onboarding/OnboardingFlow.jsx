@@ -28,7 +28,7 @@ export default function OnboardingFlow({ userId, onComplete }) {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-feed px-4 py-6 md:py-8">
-          <p className="font-serif text-2xl font-bold text-pe-text md:text-3xl">
+          <p className="text-2xl font-bold text-pe-text md:text-3xl">
             One review to join the community
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">

@@ -25,7 +25,7 @@ export default function TickerText({
 
   return (
     <p
-      className={`font-serif text-[16px] font-normal leading-[1.55] text-pe-ink ${className}`}
+      className={`text-[16px] font-normal leading-[1.55] text-pe-ink ${className}`}
     >
       {parts.map((part, i) => {
         const ticker = mentionTicker(part);

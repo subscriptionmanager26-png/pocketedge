@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { ClipboardCheck, Copy, Heart, MessageCircle, Share2 } from 'lucide-react';
-import { STOCKS } from '../data/mockData';
+import { CURRENT_USER, STOCKS, copyPortfolioForUser } from '../data/mockData';
 import { formatCount, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
+import { PortfolioKindMetaTags } from './PortfolioMetaTag';
 import {
   incrementPortfolioShare,
   togglePortfolioCopy,
@@ -36,6 +37,9 @@ export default function PortfolioCard({
   returnPct = 0,
   social,
   canCopy = false,
+  sourceOwnerId,
+  sourceOwnerName,
+  onPortfolioCopied,
   onOpen,
   onDiscuss,
 }) {
@@ -61,6 +65,13 @@ export default function PortfolioCard({
     const next = togglePortfolioCopy(portfolio.id);
     setCopied(next.copied);
     setCopies(next.copies);
+    if (next.copied) {
+      copyPortfolioForUser(CURRENT_USER.id, portfolio, {
+        sourceUserId: sourceOwnerId,
+        sourceUserName: sourceOwnerName,
+      });
+      onPortfolioCopied?.();
+    }
   };
 
   const handleShare = async (event) => {
@@ -93,7 +104,10 @@ export default function PortfolioCard({
       <button type="button" onClick={() => onOpen?.(portfolio.id)} className="w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="font-serif text-xl font-bold text-pe-text">{portfolio.name}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-xl font-bold text-pe-text">{portfolio.name}</h3>
+              <PortfolioKindMetaTags portfolio={portfolio} />
+            </div>
             {portfolio.objective ? (
               <p className="mt-1 text-sm text-pe-text-secondary">{portfolio.objective}</p>
             ) : null}

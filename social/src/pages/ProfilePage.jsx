@@ -11,12 +11,12 @@ import {
   STOCKS,
   addUserPortfolio,
   applyPortfolioHoldingsUpdate,
+  deleteUserPortfolio,
   getPerson,
   getPortfolioReturn,
   getUserPortfolio,
   getUserPortfolios,
   getUserTrades,
-  recalcHolding,
 } from '../data/mockData';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
@@ -33,12 +33,25 @@ import {
   togglePortfolioCopy,
   togglePortfolioLike,
 } from '../lib/portfolioSocialStore';
+import {
+  WATCHLIST_BASE_INVESTMENT,
+  buildLiveHoldings,
+  buildWatchlistHoldings,
+  fieldClass,
+  isWatchlistKind,
+  portfolioHasDraftWork,
+  validatePortfolioDraft,
+} from '../lib/portfolioEdit';
+import {
+  PortfolioKindMetaTags,
+  PortfolioSourceAttribution,
+} from '../components/PortfolioMetaTag';
 
 const PROFILE_TABS = [
-  { id: 'posts', label: 'Posts' },
   { id: 'about', label: 'About me' },
-  { id: 'portfolios', label: 'Portfolios' },
+  { id: 'posts', label: 'Posts' },
   { id: 'reviews', label: 'Reviews' },
+  { id: 'portfolios', label: 'Portfolio' },
   { id: 'trades', label: 'Trades' },
 ];
 
@@ -104,13 +117,15 @@ export default function ProfilePage({
   onOpenPost,
   onGraphChange,
   onMobileHeaderActionsChange,
+  onRegisterPortfolioBackHandler,
+  onOpenSourcePortfolio,
 }) {
   const isOwn = mode === 'own';
   const person = isOwn ? CURRENT_USER : getPerson(userId);
   const isMePublic = !isOwn && person.id === CURRENT_USER.id;
   const canEdit = isOwn && !isMePublic;
 
-  const [tab, setTab] = useState('posts');
+  const [tab, setTab] = useState('about');
   const [aboutEditing, setAboutEditing] = useState(false);
   const [savedFlash, setSavedFlash] = useState(null);
   const [portfolioVersion, setPortfolioVersion] = useState(0);
@@ -153,17 +168,17 @@ export default function ProfilePage({
   );
 
   useEffect(() => {
-    setTab('posts');
+    setTab(selectedPortfolioId ? 'portfolios' : 'about');
     setAboutEditing(false);
     setFollowListMode(null);
-    onClearPortfolio?.();
-  }, [userId, mode]);
+  }, [userId, mode, selectedPortfolioId]);
 
   const handleAddPortfolio = () => {
     const created = addUserPortfolio(CURRENT_USER.id, {
       id: `pf_${Date.now()}`,
       kind: 'live',
-      name: 'Untitled portfolio',
+      isDraft: true,
+      name: '',
       objective: '',
       thesis: '',
       totalValue: 0,
@@ -251,6 +266,9 @@ export default function ProfilePage({
         returnPeriod={returnPeriod}
         onReturnPeriodChange={handleReturnPeriodChange}
         onMobileHeaderActionsChange={onMobileHeaderActionsChange}
+        startInEditMode={Boolean(selectedPortfolio.isDraft)}
+        onRegisterPortfolioBackHandler={onRegisterPortfolioBackHandler}
+        onOpenSourcePortfolio={onOpenSourcePortfolio}
       />
     );
   }
@@ -353,6 +371,7 @@ export default function ProfilePage({
           onReturnPeriodChange={handleReturnPeriodChange}
           onSelectPortfolio={onSelectPortfolio}
           onAddPortfolio={handleAddPortfolio}
+          onPortfolioCopied={bumpPortfolios}
         />
       )}
 
@@ -457,7 +476,7 @@ function AboutPanel({
               value={bio}
               onChange={(e) => onBioChange(e.target.value)}
               rows={3}
-              className={`${inputClass} resize-none font-serif leading-6 text-pe-ink`}
+              className={`${inputClass} resize-none leading-6 text-pe-ink`}
             />
           </Field>
           <Field label="Location">
@@ -517,7 +536,7 @@ function ReadOnlyRow({ label, value, multiline, tone }) {
     <div className="grid grid-cols-[7.5rem_1fr] gap-3 py-3.5">
       <dt className="text-sm font-semibold text-pe-text-muted">{label}</dt>
       <dd
-        className={`text-sm text-pe-text ${multiline ? 'font-serif leading-6 text-pe-ink' : ''} ${
+        className={`text-sm text-pe-text ${multiline ? 'leading-6 text-pe-ink' : ''} ${
           tone != null ? `${pnlClass(tone)} font-semibold` : ''
         }`}
       >
@@ -571,6 +590,7 @@ function PortfoliosListPanel({
   onReturnPeriodChange,
   onSelectPortfolio,
   onAddPortfolio,
+  onPortfolioCopied,
 }) {
   void portfolioVersion;
   void portfolioSocialTick;
@@ -593,6 +613,9 @@ function PortfoliosListPanel({
               returnPct={getPortfolioReturn(portfolio, returnPeriod)}
               social={getPortfolioSocial(portfolio.id)}
               canCopy={!canEdit}
+              sourceOwnerId={userId}
+              sourceOwnerName={canEdit ? undefined : getPerson(userId).name}
+              onPortfolioCopied={onPortfolioCopied}
               onOpen={onSelectPortfolio}
               onDiscuss={onSelectPortfolio}
             />
@@ -669,16 +692,24 @@ function PortfolioDetailView({
   returnPeriod = '1M',
   onReturnPeriodChange,
   onMobileHeaderActionsChange,
+  onRegisterPortfolioBackHandler,
+  startInEditMode = false,
+  onOpenSourcePortfolio,
 }) {
-  const [editing, setEditing] = useState(false);
+  const isDraft = Boolean(portfolio.isDraft);
+  const [editing, setEditing] = useState(startInEditMode);
   const [saved, setSaved] = useState(false);
   const [name, setName] = useState(portfolio.name);
   const [objective, setObjective] = useState(portfolio.objective ?? '');
   const [thesis, setThesis] = useState(portfolio.thesis ?? '');
+  const [portfolioKind, setPortfolioKind] = useState(portfolio.kind ?? 'live');
   const [editRows, setEditRows] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
   const [tickerSuggestionsFor, setTickerSuggestionsFor] = useState(null);
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
+
+  const isWatchlist = isWatchlistKind(portfolioKind);
 
   useEffect(() => subscribePortfolioSocial(() => setSocialTick((n) => n + 1)), []);
 
@@ -691,70 +722,186 @@ function PortfolioDetailView({
     setName(portfolio.name);
     setObjective(portfolio.objective ?? '');
     setThesis(portfolio.thesis ?? '');
-    setEditing(false);
-  }, [portfolio.id, portfolio.name, portfolio.objective, portfolio.thesis]);
+    setPortfolioKind(portfolio.kind ?? 'live');
+    setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
+    if (!startInEditMode) setEditing(false);
+  }, [portfolio.id, portfolio.name, portfolio.objective, portfolio.thesis, portfolio.kind, startInEditMode]);
 
   const makeBlankRow = () => ({
     id: `draft_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     ticker: '',
     invested: '',
     qty: '',
+    weight: '',
   });
 
-  const holdingToRow = (h) => ({
-    id: `hold_${h.ticker}`,
-    ticker: h.ticker,
-    invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
-    qty: String(h.qty ?? ''),
-  });
+  const holdingToRow = (h) => {
+    if (isWatchlistKind(portfolio.kind)) {
+      const weightPct =
+        h.weightPct ??
+        (() => {
+          const total = (portfolio.holdings ?? []).reduce((sum, row) => sum + (row.value ?? 0), 0);
+          return total > 0 ? ((h.value ?? 0) / total) * 100 : '';
+        })();
+      return {
+        id: `hold_${h.ticker}`,
+        ticker: h.ticker,
+        weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
+        invested: '',
+        qty: '',
+      };
+    }
+    return {
+      id: `hold_${h.ticker}`,
+      ticker: h.ticker,
+      invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
+      qty: String(h.qty ?? ''),
+      weight: '',
+    };
+  };
 
-  const isRowComplete = (row) => {
-    const ticker = row.ticker.trim().toUpperCase();
-    const qty = Number(row.qty);
-    const invested = Number(row.invested);
-    return Boolean(ticker && STOCKS[ticker] && qty > 0 && invested >= 0 && row.invested !== '');
+  const initEditRows = (kind = portfolioKind) => {
+    const watchlist = isWatchlistKind(kind);
+    const source = watchlist
+      ? portfolio.holdings?.length
+        ? portfolio.holdings
+        : (portfolio.tickers ?? []).map((ticker) => ({ ticker }))
+      : portfolio.holdings ?? [];
+    const rows = source.map((h) =>
+      watchlist
+        ? {
+            id: `hold_${h.ticker}`,
+            ticker: h.ticker,
+            weight:
+              h.weightPct != null
+                ? String(h.weightPct)
+                : portfolio.tickers?.length
+                  ? String((100 / portfolio.tickers.length).toFixed(1))
+                  : '',
+            invested: '',
+            qty: '',
+          }
+        : holdingToRow(h)
+    );
+    setEditRows([...rows, makeBlankRow()]);
+    setTickerSuggestionsFor(null);
   };
 
   const startEditing = () => {
-    const rows = (portfolio.holdings ?? []).map(holdingToRow);
-    setEditRows([...rows, makeBlankRow()]);
-    setTickerSuggestionsFor(null);
+    initEditRows(portfolioKind);
+    setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
     setEditing(true);
   };
 
-  const saveEdits = () => {
-    const completeByTicker = new Map();
-    for (const row of editRows) {
-      if (!isRowComplete(row)) continue;
-      const ticker = row.ticker.trim().toUpperCase();
-      const qty = Number(row.qty) || 0;
-      const invested = Number(row.invested) || 0;
-      const avg = qty > 0 ? invested / qty : 0;
-      const price = STOCKS[ticker]?.price ?? 0;
-      completeByTicker.set(ticker, recalcHolding({ ticker, qty, avg, price }));
+  useEffect(() => {
+    if (startInEditMode) {
+      initEditRows(portfolio.kind ?? 'live');
+      setEditing(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolio.id, startInEditMode]);
 
-    applyPortfolioHoldingsUpdate(userId, portfolio.id, [...completeByTicker.values()], {
-      name: name.trim() || portfolio.name,
+  const saveEdits = () => {
+    const validation = validatePortfolioDraft({
+      kind: portfolioKind,
+      name,
+      objective,
+      thesis,
+      rows: editRows,
+    });
+    setFieldErrors(validation.errors);
+    if (!validation.valid) return;
+
+    const holdings = isWatchlist
+      ? buildWatchlistHoldings(validation.completeRows)
+      : buildLiveHoldings(validation.completeRows);
+
+    applyPortfolioHoldingsUpdate(userId, portfolio.id, holdings, {
+      name: name.trim(),
       objective: objective.trim(),
       thesis: thesis.trim(),
+      kind: portfolioKind,
+      isDraft: false,
+      tickers: holdings.map((h) => h.ticker),
+      ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
     });
     onPortfolioUpdated?.();
     setEditing(false);
     setEditRows([]);
     setTickerSuggestionsFor(null);
+    setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
 
-  const cancelEdits = () => {
+  const discardAndExit = (proceed) => {
+    if (isDraft) {
+      deleteUserPortfolio(userId, portfolio.id);
+      onPortfolioUpdated?.();
+      proceed();
+      return;
+    }
     setName(portfolio.name);
     setObjective(portfolio.objective ?? '');
     setThesis(portfolio.thesis ?? '');
-    setEditRows([]);
-    setTickerSuggestionsFor(null);
+    setPortfolioKind(portfolio.kind ?? 'live');
     setEditing(false);
+    setEditRows([]);
+    setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
   };
+
+  const cancelEdits = () => {
+    requestBack(() => {
+      if (isDraft) onBack();
+    });
+  };
+
+  const requestBack = (proceed) => {
+    if (!editing && !isDraft) {
+      proceed();
+      return;
+    }
+
+    const validation = validatePortfolioDraft({
+      kind: portfolioKind,
+      name,
+      objective,
+      thesis,
+      rows: editRows,
+    });
+    const hasWork = portfolioHasDraftWork({
+      name,
+      objective,
+      thesis,
+      rows: editRows,
+      isWatchlist,
+    });
+
+    if (!hasWork && isDraft) {
+      discardAndExit(proceed);
+      return;
+    }
+
+    if (validation.valid) {
+      const leave = window.confirm(
+        'You have unsaved changes. Save is still required — discard your work and go back?'
+      );
+      if (leave) discardAndExit(proceed);
+      return;
+    }
+
+    const leave = window.confirm(
+      'Your portfolio is incomplete. Unless all mandatory fields are filled, your work will be discarded. Go back anyway?'
+    );
+    if (leave) discardAndExit(proceed);
+  };
+
+  useEffect(() => {
+    if (!onRegisterPortfolioBackHandler) return undefined;
+    onRegisterPortfolioBackHandler((proceed) => requestBack(proceed));
+    return () => onRegisterPortfolioBackHandler(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onRegisterPortfolioBackHandler, editing, isDraft, portfolioKind, name, objective, thesis, editRows]);
 
   useEffect(() => {
     if (!canEdit || !onMobileHeaderActionsChange) {
@@ -776,7 +923,13 @@ function PortfolioDetailView({
     );
 
     return () => onMobileHeaderActionsChange(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEdit, editing, saved, onMobileHeaderActionsChange]);
+
+  const handleKindChange = (nextKind) => {
+    setPortfolioKind(nextKind);
+    if (editing) initEditRows(nextKind);
+  };
 
   const updateRow = (rowId, patch) => {
     setEditRows((prev) =>
@@ -808,8 +961,8 @@ function PortfolioDetailView({
     return Object.keys(STOCKS)
       .filter((ticker) => {
         if (used.has(ticker)) return false;
-        const name = (STOCKS[ticker]?.name ?? '').toUpperCase();
-        return ticker.includes(q) || name.includes(q);
+        const stockName = (STOCKS[ticker]?.name ?? '').toUpperCase();
+        return ticker.includes(q) || stockName.includes(q);
       })
       .slice(0, 6);
   };
@@ -817,13 +970,17 @@ function PortfolioDetailView({
   const compactInputClass =
     'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[14px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
 
+  const rowGridClass = isWatchlist
+    ? 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2'
+    : 'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
+
   return (
     <div>
       <PageHeader desktopOnly>
         <div className="flex w-full items-center justify-between gap-2">
           <button
             type="button"
-            onClick={onBack}
+            onClick={() => requestBack(onBack)}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -865,7 +1022,13 @@ function PortfolioDetailView({
       </PageHeader>
 
       <div className="border-b border-pe-border px-4 py-5">
-        <div className="flex flex-col items-stretch gap-4 md:flex-row md:justify-between md:gap-3">
+        <div className="flex flex-col items-stretch gap-4">
+          {!editing ? (
+            <PortfolioKindMetaTags portfolio={portfolio} />
+          ) : (
+            <PortfolioKindToggle value={portfolioKind} onChange={handleKindChange} />
+          )}
+
           <div className="min-w-0 w-full flex-1">
             {editing ? (
               <div className="space-y-4">
@@ -873,7 +1036,7 @@ function PortfolioDetailView({
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className={inputClass}
+                    className={fieldClass(inputClass, fieldErrors.name)}
                     placeholder="e.g. Main portfolio"
                   />
                 </Field>
@@ -881,7 +1044,7 @@ function PortfolioDetailView({
                   <input
                     value={objective}
                     onChange={(e) => setObjective(e.target.value)}
-                    className={inputClass}
+                    className={fieldClass(inputClass, fieldErrors.objective)}
                     placeholder="What this portfolio is for"
                   />
                 </Field>
@@ -890,25 +1053,30 @@ function PortfolioDetailView({
                     value={thesis}
                     onChange={(e) => setThesis(e.target.value)}
                     rows={3}
-                    placeholder="Why these holdings — shown on your portfolio card"
-                    className={`${inputClass} resize-none font-serif leading-6 text-pe-ink`}
+                    placeholder="Why these holdings — shown in portfolio detail"
+                    className={fieldClass(
+                      `${inputClass} resize-none leading-6 text-pe-ink`,
+                      fieldErrors.thesis
+                    )}
                   />
                 </Field>
               </div>
             ) : (
               <>
-                <h2 className="font-serif text-2xl font-bold text-pe-text">{portfolio.name}</h2>
+                <h2 className="text-2xl font-bold text-pe-text">{portfolio.name}</h2>
                 {portfolio.objective ? (
                   <p className="mt-2 text-sm text-pe-text-secondary">{portfolio.objective}</p>
                 ) : null}
                 {portfolio.thesis ? (
-                  <p className="mt-2 font-serif text-sm leading-6 text-pe-ink">{portfolio.thesis}</p>
+                  <p className="mt-2 text-sm leading-6 text-pe-ink">{portfolio.thesis}</p>
                 ) : null}
+                <PortfolioSourceAttribution
+                  portfolio={portfolio}
+                  onSeeOriginal={onOpenSourcePortfolio}
+                />
               </>
             )}
           </div>
-
-          <div className="hidden md:block" />
         </div>
       </div>
 
@@ -926,28 +1094,39 @@ function PortfolioDetailView({
             Holdings
           </p>
           <p className="mt-1 text-sm text-pe-text-secondary">
-            Search a ticker, then enter your total investment and quantity.
+            {isWatchlist
+              ? 'Search a ticker and enter its share of total holdings (%). Weights must add up to 100%.'
+              : 'Search a ticker, then enter your total investment and quantity.'}
           </p>
 
           <div className="mt-4 space-y-2">
-            <div className="hidden items-center gap-2 px-0.5 md:flex">
+            <div className={`hidden items-center gap-2 px-0.5 md:flex ${isWatchlist ? 'grid-cols-[minmax(0,1fr)_5.5rem_auto]' : ''}`}>
               <p className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Ticker
               </p>
-              <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Total invested
-              </p>
-              <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Qty
-              </p>
+              {isWatchlist ? (
+                <p className="w-[5.5rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Weight %
+                </p>
+              ) : (
+                <>
+                  <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    Total invested
+                  </p>
+                  <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    Qty
+                  </p>
+                </>
+              )}
               <span className="h-9 w-9 shrink-0" aria-hidden="true" />
             </div>
 
             {editRows.map((row) => {
               const suggestions =
                 tickerSuggestionsFor === row.id ? tickerMatches(row.ticker, row.id) : [];
+              const rowErr = fieldErrors.rows[row.id] ?? {};
               return (
-                <div key={row.id} className="grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2">
+                <div key={row.id} className={rowGridClass}>
                   <div className="relative min-w-0">
                     <input
                       type="text"
@@ -967,7 +1146,7 @@ function PortfolioDetailView({
                       placeholder="Search ticker"
                       aria-label="Ticker"
                       autoComplete="off"
-                      className={compactInputClass}
+                      className={fieldClass(compactInputClass, rowErr.ticker)}
                     />
                     {suggestions.length > 0 && (
                       <div className="absolute left-0 right-0 z-20 mt-1 overflow-hidden rounded-md border border-pe-border-strong bg-pe-canvas shadow-lg">
@@ -994,26 +1173,42 @@ function PortfolioDetailView({
                     )}
                   </div>
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={row.invested}
-                    onChange={(e) => updateRow(row.id, { invested: e.target.value })}
-                    placeholder="Total invested"
-                    aria-label="Total amount you invested"
-                    className={`${compactInputClass} text-right tabular-nums`}
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={row.qty}
-                    onChange={(e) => updateRow(row.id, { qty: e.target.value })}
-                    placeholder="Qty"
-                    aria-label="Quantity"
-                    className={`${compactInputClass} text-right tabular-nums`}
-                  />
+                  {isWatchlist ? (
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={row.weight}
+                      onChange={(e) => updateRow(row.id, { weight: e.target.value })}
+                      placeholder="Weight %"
+                      aria-label="Weight percentage"
+                      className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.weight)}
+                    />
+                  ) : (
+                    <>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.invested}
+                        onChange={(e) => updateRow(row.id, { invested: e.target.value })}
+                        placeholder="Total invested"
+                        aria-label="Total amount you invested"
+                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.invested)}
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={row.qty}
+                        onChange={(e) => updateRow(row.id, { qty: e.target.value })}
+                        placeholder="Qty"
+                        aria-label="Quantity"
+                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.qty)}
+                      />
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeRow(row.id)}
@@ -1052,6 +1247,30 @@ function PortfolioDetailView({
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function PortfolioKindToggle({ value, onChange }) {
+  return (
+    <div className="flex w-fit gap-1 rounded-lg bg-pe-surface p-1">
+      {[
+        { id: 'live', label: 'Live' },
+        { id: 'watchlist', label: 'Watchlist' },
+      ].map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          onClick={() => onChange(option.id)}
+          className={`rounded-md px-3 py-1.5 text-[12px] font-bold transition ${
+            value === option.id
+              ? 'bg-pe-canvas text-pe-text shadow-sm'
+              : 'text-pe-text-secondary hover:text-pe-text'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
     </div>
   );
 }

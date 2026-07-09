@@ -53,6 +53,7 @@ export default function App() {
   const [fundReviewPrefill, setFundReviewPrefill] = useState(null);
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
+  const portfolioBackRef = useRef(null);
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
   const [scrollAction, setScrollAction] = useState('reset');
@@ -241,6 +242,17 @@ export default function App() {
     setTab('profile');
   };
 
+  const openProfilePortfolio = (userId, portfolioId) => {
+    if (!userId || !portfolioId) return;
+    resetScroll();
+    setSelectedPostId(null);
+    setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
+    setProfileUserId(userId);
+    setProfileMode(userId === CURRENT_USER.id ? 'own' : 'public');
+    setProfilePortfolioId(portfolioId);
+    setTab('profile');
+  };
+
   const handleTabChange = (next) => {
     resetScroll();
     setTab(next);
@@ -296,7 +308,20 @@ export default function App() {
       return { label: 'Markets', onBack: () => { backScroll(); setSelectedTicker(null); } };
     }
     if (tab === 'profile' && profilePortfolioId) {
-      return { label: 'Portfolios', onBack: () => { backScroll(); setProfilePortfolioId(null); } };
+      return {
+        label: 'Portfolios',
+        onBack: () => {
+          if (portfolioBackRef.current) {
+            portfolioBackRef.current(() => {
+              backScroll();
+              setProfilePortfolioId(null);
+            });
+            return;
+          }
+          backScroll();
+          setProfilePortfolioId(null);
+        },
+      };
     }
     if (tab === 'profile' && profileMode === 'public') {
       if (profileUserId === CURRENT_USER.id) {
@@ -428,6 +453,7 @@ export default function App() {
             onSelectStock={openStock}
             onOpenProfile={openProfile}
             onOpenPost={openPost}
+            onOpenSourcePortfolio={openProfilePortfolio}
           />
         )}
         {tab === 'markets' &&
@@ -495,6 +521,10 @@ export default function App() {
             onOpenPost={openPost}
             onGraphChange={() => setGraphTick((n) => n + 1)}
             onMobileHeaderActionsChange={setMobileHeaderActions}
+            onRegisterPortfolioBackHandler={(handler) => {
+              portfolioBackRef.current = handler;
+            }}
+            onOpenSourcePortfolio={openProfilePortfolio}
           />
         )}
         {tab === 'settings' && (

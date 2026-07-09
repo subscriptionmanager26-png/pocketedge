@@ -112,7 +112,7 @@ export default function ReviewCard({
           </div>
 
           {review.body ? (
-            <p className="mt-2 font-serif text-[15px] leading-relaxed text-pe-ink">
+            <p className="mt-2 text-[15px] leading-relaxed text-pe-ink">
               &ldquo;{review.body}&rdquo;
             </p>
           ) : null}

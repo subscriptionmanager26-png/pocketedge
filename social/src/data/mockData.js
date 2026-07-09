@@ -376,6 +376,23 @@ export const USER_PORTFOLIOS = {
       holdings: [MY_PORTFOLIO.holdings.find((h) => h.ticker === 'TATAMOTORS')].filter(Boolean),
     },
     {
+      id: 'pf_copy_banks',
+      kind: 'live',
+      name: 'Banking book',
+      objective: 'Private banks and financials.',
+      thesis: 'Copied allocation to track a peer portfolio alongside my own book.',
+      sourcePortfolioId: 'pf_banks',
+      sourcePortfolioName: 'Banking book',
+      sourceUserId: 'u1',
+      sourceUserName: 'Ananya S.',
+      totalValue: 3_24_000,
+      invested: 2_85_000,
+      totalPnlPct: 13.7,
+      return1M: 1.8,
+      xirr: 28.4,
+      holdings: buildHoldingsFromPositions('u1', ['HDFCBANK', 'ICICIBANK']),
+    },
+    {
       id: 'wl_tech',
       kind: 'watchlist',
       name: 'Tech picks',
@@ -383,6 +400,20 @@ export const USER_PORTFOLIOS = {
       thesis: 'Quality IT services names with improving demand visibility.',
       tickers: ['TCS', 'INFY', 'WIPRO'],
       return1M: -0.9,
+      holdings: [],
+    },
+    {
+      id: 'wl_copy_growth',
+      kind: 'watchlist',
+      name: 'Growth watch',
+      objective: 'High-growth names to track before sizing live.',
+      thesis: 'Copied from Ananya — monitoring before adding to live book.',
+      sourcePortfolioId: 'wl_growth',
+      sourcePortfolioName: 'Growth watch',
+      sourceUserId: 'u1',
+      sourceUserName: 'Ananya S.',
+      tickers: ['RELIANCE', 'TCS'],
+      return1M: 1.4,
       holdings: [],
     },
     {
@@ -418,6 +449,16 @@ export const USER_PORTFOLIOS = {
       return1M: 2.1,
       xirr: 26.4,
       holdings: buildHoldingsFromPositions('u1', ['RELIANCE']),
+    },
+    {
+      id: 'wl_growth',
+      kind: 'watchlist',
+      name: 'Growth watch',
+      objective: 'High-growth names to track before sizing live.',
+      thesis: 'Quality compounders with long runway.',
+      tickers: ['RELIANCE', 'TCS'],
+      return1M: 1.4,
+      holdings: [],
     },
   ],
   u2: [
@@ -1101,6 +1142,106 @@ export function addUserPortfolio(userId, portfolio) {
   if (!USER_PORTFOLIOS[userId]) USER_PORTFOLIOS[userId] = [];
   USER_PORTFOLIOS[userId].push(portfolio);
   return portfolio;
+}
+
+export function isCopiedPortfolio(portfolio) {
+  return Boolean(portfolio?.sourcePortfolioId);
+}
+
+export function copyPortfolioForUser(userId, source, { sourceUserId = null, sourceUserName = null } = {}) {
+  const priorCopies = getUserPortfolios(userId).filter((p) => p.sourcePortfolioId === source.id);
+  const name =
+    priorCopies.length > 0 ? `${source.name} ${priorCopies.length + 1}` : source.name;
+  const created = addUserPortfolio(userId, {
+    id: `pf_copy_${Date.now()}`,
+    kind: source.kind ?? 'live',
+    name,
+    objective: source.objective ?? '',
+    thesis: source.thesis ?? '',
+    sourcePortfolioId: source.id,
+    sourcePortfolioName: source.name,
+    sourceUserId,
+    sourceUserName,
+    holdings: (source.holdings ?? []).map((h) => ({ ...h })),
+    tickers: [...(source.tickers ?? [])],
+    watchlistBaseInvestment: source.watchlistBaseInvestment,
+    totalValue: source.totalValue ?? 0,
+    invested: source.invested ?? 0,
+    totalPnlPct: source.totalPnlPct ?? 0,
+    return1M: source.return1M,
+    xirr: source.xirr ?? 0,
+  });
+  return created;
+}
+
+export function deleteUserPortfolio(userId, portfolioId) {
+  const list = USER_PORTFOLIOS[userId];
+  if (!list) return false;
+  const idx = list.findIndex((p) => p.id === portfolioId);
+  if (idx < 0) return false;
+  list.splice(idx, 1);
+  return true;
+}
+
+export const WATCHLIST_BASE_INVESTMENT = 10_000;
+
+/** Build holdings for watchlists from tickers or stored weights (₹10k assumed at creation). */
+export function resolveWatchlistHoldings(portfolio) {
+  const base = portfolio.watchlistBaseInvestment ?? WATCHLIST_BASE_INVESTMENT;
+  const existing = portfolio.holdings ?? [];
+  if (existing.length) return existing.map(recalcHolding);
+
+  const tickers = portfolio.tickers ?? [];
+  if (!tickers.length) return [];
+
+  const weight = 100 / tickers.length;
+  return tickers.map((ticker) => {
+    const price = STOCKS[ticker]?.price ?? 0;
+    const invested = base * (weight / 100);
+    const qty = price > 0 ? invested / price : 0;
+    return recalcHolding({ ticker, qty, avg: price, price, weightPct: weight });
+  });
+}
+
+/** Metrics for Portfolio tab — live and watchlist share the same layout. */
+export function computePortfolioDisplayMetrics(portfolio) {
+  const isWatchlist = portfolio.kind === 'watchlist';
+  const holdings = isWatchlist
+    ? resolveWatchlistHoldings(portfolio)
+    : (portfolio.holdings ?? []).map(recalcHolding);
+
+  const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
+  const invested = isWatchlist
+    ? portfolio.watchlistBaseInvestment ?? WATCHLIST_BASE_INVESTMENT
+    : holdings.reduce((sum, h) => sum + (h.qty ?? 0) * (h.avg ?? 0), 0);
+  const totalPnl = totalValue - invested;
+  const totalPnlPct = invested > 0 ? (totalPnl / invested) * 100 : 0;
+  const todayPnl = holdings.reduce((sum, h) => {
+    const changePct = STOCKS[h.ticker]?.changePct ?? 0;
+    return sum + (h.value ?? 0) * (changePct / 100);
+  }, 0);
+  const todayPnlPct = totalValue > 0 ? (todayPnl / totalValue) * 100 : 0;
+
+  const distribution = holdings
+    .map((h) => ({
+      ticker: h.ticker,
+      weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
+    }))
+    .sort((a, b) => b.weight - a.weight);
+
+  return {
+    kind: 'portfolio',
+    totalValue,
+    invested,
+    totalPnl,
+    totalPnlPct,
+    todayPnl,
+    todayPnlPct,
+    xirr: portfolio.xirr ?? totalPnlPct,
+    count: holdings.length,
+    distribution,
+    holdings,
+  };
 }
 
 export function updateUserPortfolio(userId, portfolioId, patch) {
