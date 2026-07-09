@@ -162,6 +162,31 @@ export async function resolveMarketFund(schemeCode) {
   return items.find((item) => item.schemeCode === schemeCode) ?? null;
 }
 
+async function loadFullMarketTab(tab) {
+  const file = TAB_FULL[tab];
+  if (!file) return [];
+  const payload = await fetchJson(file);
+  return payload.items ?? [];
+}
+
+export async function resolveMarketIndex(indexId) {
+  const cached = findCachedMarketItem('indices', indexId);
+  if (cached) return cached;
+
+  const items = await loadFullMarketTab('indices');
+  return (
+    items.find((item) => item.id === indexId || item.symbol === indexId) ?? null
+  );
+}
+
+export async function resolveMarketCommodity(commodityId) {
+  const cached = findCachedMarketItem('commodity', commodityId);
+  if (cached) return cached;
+
+  const items = await loadFullMarketTab('commodity');
+  return items.find((item) => item.id === commodityId) ?? null;
+}
+
 export function marketFundToDetail(fund) {
   if (!fund) return null;
   const category = [fund.category, fund.subCategory].filter(Boolean).join(' · ');

@@ -41,7 +41,12 @@ function formatNavDate(isoDate) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function MarketsPage({ onSelectStock, onSelectFund }) {
+export default function MarketsPage({
+  onSelectStock,
+  onSelectFund,
+  onSelectIndex,
+  onSelectCommodity,
+}) {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('stocks');
   const { items, syncedAt, loading, error, statusMessage } = useMarketTabData(tab, query);
@@ -145,6 +150,7 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
                 subtitle={formatIndexGroup(index.group)}
                 primaryValue={formatIndexValue(index.value)}
                 changePct={index.changePct}
+                onClick={() => onSelectIndex?.(index.id)}
               />
             ))}
           </MarketList>
@@ -158,6 +164,7 @@ export default function MarketsPage({ onSelectStock, onSelectFund }) {
                 title={item.name}
                 subtitle={[item.unit, item.location].filter(Boolean).join(' · ')}
                 primaryValue={item.spotPrice != null ? formatPrice(item.spotPrice) : '—'}
+                onClick={() => onSelectCommodity?.(item.id)}
               />
             ))}
           </MarketList>

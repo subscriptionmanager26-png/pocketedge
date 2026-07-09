@@ -9,6 +9,8 @@ import SettingsPage from './pages/SettingsPage';
 import MarketsPage from './pages/MarketsPage';
 import InvestmentPage from './pages/InvestmentPage';
 import StockInvestmentPage from './pages/StockInvestmentPage';
+import IndexDetailPage from './pages/IndexDetailPage';
+import CommodityDetailPage from './pages/CommodityDetailPage';
 import FundReviewModal from './components/FundReviewModal';
 import PortfolioPage from './pages/PortfolioPage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -44,6 +46,8 @@ export default function App() {
   const [posts, setPosts] = useState(POSTS);
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedFundId, setSelectedFundId] = useState(null);
+  const [selectedIndexId, setSelectedIndexId] = useState(null);
+  const [selectedCommodityId, setSelectedCommodityId] = useState(null);
   const [fundReviewOpen, setFundReviewOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [profileMode, setProfileMode] = useState('own');
@@ -64,6 +68,8 @@ export default function App() {
 
   const routeKey = useMemo(() => {
     if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
+    if (tab === 'markets' && selectedCommodityId) return `commodity:${selectedCommodityId}`;
+    if (tab === 'markets' && selectedIndexId) return `index:${selectedIndexId}`;
     if (tab === 'markets' && selectedFundId) return `fund:${selectedFundId}`;
     if (tab === 'markets' && selectedTicker) return `stock:${selectedTicker}`;
     if (tab === 'profile' && profilePortfolioId) {
@@ -78,6 +84,8 @@ export default function App() {
     tab,
     selectedPostId,
     selectedFundId,
+    selectedIndexId,
+    selectedCommodityId,
     selectedTicker,
     profilePortfolioId,
     profileMode,
@@ -186,18 +194,41 @@ export default function App() {
     setTab('feed');
   };
 
+  const clearMarketSelection = () => {
+    setSelectedTicker(null);
+    setSelectedFundId(null);
+    setSelectedIndexId(null);
+    setSelectedCommodityId(null);
+  };
+
   const openStock = (ticker) => {
     resetScroll();
+    clearMarketSelection();
     setSelectedTicker(ticker);
-    setSelectedFundId(null);
     setSelectedPostId(null);
     setTab('markets');
   };
 
   const openFund = (fundId) => {
     resetScroll();
+    clearMarketSelection();
     setSelectedFundId(fundId);
-    setSelectedTicker(null);
+    setSelectedPostId(null);
+    setTab('markets');
+  };
+
+  const openIndex = (indexId) => {
+    resetScroll();
+    clearMarketSelection();
+    setSelectedIndexId(indexId);
+    setSelectedPostId(null);
+    setTab('markets');
+  };
+
+  const openCommodity = (commodityId) => {
+    resetScroll();
+    clearMarketSelection();
+    setSelectedCommodityId(commodityId);
     setSelectedPostId(null);
     setTab('markets');
   };
@@ -220,6 +251,8 @@ export default function App() {
     setSelectedPostId(null);
     setSelectedTicker(null);
     setSelectedFundId(null);
+    setSelectedIndexId(null);
+    setSelectedCommodityId(null);
     setProfilePortfolioId(null);
     setTab('feed');
   };
@@ -259,8 +292,7 @@ export default function App() {
     setSelectedPostId(null);
     setProfilePortfolioId(null);
     if (next !== 'markets') {
-      setSelectedTicker(null);
-      setSelectedFundId(null);
+      clearMarketSelection();
     }
     if (next === 'profile') {
       setProfileMode('own');
@@ -290,6 +322,10 @@ export default function App() {
           ? 'Activity'
           : authView === 'app' && tab === 'profile' && profileMode === 'public'
             ? getPerson(profileUserId).name
+          : authView === 'app' && tab === 'markets' && selectedCommodityId
+            ? selectedCommodityId
+          : authView === 'app' && tab === 'markets' && selectedIndexId
+            ? selectedIndexId
           : authView === 'app' && tab === 'markets' && selectedFundId
             ? getFund(selectedFundId)?.name ?? 'Fund'
             : authView === 'app' && tab === 'markets' && selectedTicker
@@ -300,6 +336,12 @@ export default function App() {
     if (authView !== 'app') return null;
     if (selectedPostId && tab === 'feed') {
       return { label: 'Back', onBack: () => { backScroll(); setSelectedPostId(null); } };
+    }
+    if (tab === 'markets' && selectedCommodityId) {
+      return { label: 'Markets', onBack: () => { backScroll(); setSelectedCommodityId(null); } };
+    }
+    if (tab === 'markets' && selectedIndexId) {
+      return { label: 'Markets', onBack: () => { backScroll(); setSelectedIndexId(null); } };
     }
     if (tab === 'markets' && selectedFundId) {
       return { label: 'Markets', onBack: () => { backScroll(); setSelectedFundId(null); } };
@@ -342,6 +384,8 @@ export default function App() {
     tab,
     selectedTicker,
     selectedFundId,
+    selectedIndexId,
+    selectedCommodityId,
     profileMode,
     profileUserId,
     profileReturnTab,
@@ -429,6 +473,7 @@ export default function App() {
             onOpenProfile={openProfile}
             onSelectStock={openStock}
             onSelectFund={openFund}
+            onSelectIndex={openIndex}
             onGraphChange={() => setGraphTick((n) => n + 1)}
           />
         )}
@@ -458,7 +503,23 @@ export default function App() {
           />
         )}
         {tab === 'markets' &&
-          (selectedFundId ? (
+          (selectedCommodityId ? (
+            <CommodityDetailPage
+              commodityId={selectedCommodityId}
+              onBack={() => {
+                backScroll();
+                setSelectedCommodityId(null);
+              }}
+            />
+          ) : selectedIndexId ? (
+            <IndexDetailPage
+              indexId={selectedIndexId}
+              onBack={() => {
+                backScroll();
+                setSelectedIndexId(null);
+              }}
+            />
+          ) : selectedFundId ? (
             <InvestmentPage
               fundId={selectedFundId}
               onBack={() => {
@@ -490,6 +551,8 @@ export default function App() {
             <MarketsPage
               onSelectStock={openStock}
               onSelectFund={openFund}
+              onSelectIndex={openIndex}
+              onSelectCommodity={openCommodity}
             />
           ))}
         {tab === 'profile' && (

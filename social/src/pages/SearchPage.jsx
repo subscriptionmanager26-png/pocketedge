@@ -40,6 +40,7 @@ export default function SearchPage({
   onOpenProfile,
   onSelectStock,
   onSelectFund,
+  onSelectIndex,
   onGraphChange,
 }) {
   const [query, setQuery] = useState('');
@@ -249,6 +250,7 @@ export default function SearchPage({
                     item={item}
                     onSelectStock={onSelectStock}
                     onSelectFund={onSelectFund}
+                    onSelectIndex={onSelectIndex}
                   />
                 ))
               ) : (
@@ -262,7 +264,7 @@ export default function SearchPage({
   );
 }
 
-function MarketSearchRow({ tab, item, onSelectStock, onSelectFund }) {
+function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex }) {
   if (tab === 'stocks' || tab === 'etf') {
     return (
       <button
@@ -311,7 +313,11 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund }) {
   }
 
   return (
-    <div className="flex w-full items-center justify-between py-3.5 text-left">
+    <button
+      type="button"
+      onClick={() => onSelectIndex?.(item.id)}
+      className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
+    >
       <div>
         <p className="text-[15px] font-semibold text-pe-text">{item.name}</p>
         {item.group ? <p className="text-sm text-pe-text-muted">{item.group}</p> : null}
@@ -328,7 +334,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund }) {
           </p>
         ) : null}
       </div>
-    </div>
+    </button>
   );
 }
 
