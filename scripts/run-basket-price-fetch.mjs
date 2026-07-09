@@ -12,15 +12,20 @@
 import { getSupabaseAdminConfig, supabaseRest } from './lib/supabase-admin.mjs';
 import { fetchAllBasketPrices } from './lib/basket-prices.mjs';
 import { detectFetchSlot } from './lib/nav-engine.mjs';
-import { attachUsdToPriceRows, fetchFxRatesToUsd } from './lib/fx-rates-usd.mjs';
+import {
+  attachFxRateToPriceRows,
+  attachUsdToPriceRows,
+  fetchFxRatesToUsd,
+  resolveUsdPrice,
+} from './lib/fx-rates-usd.mjs';
 import { refreshFxRatesInDb, updateBasketNavs } from './lib/basket-nav-update.mjs';
 
-function pricesUsdMapFromRows(rows) {
+function pricesUsdMapFromRows(rows, fxRates) {
   const map = new Map();
   for (const row of rows || []) {
-    if (row.conid != null && row.price_usd != null && row.price_usd > 0) {
-      map.set(Number(row.conid), Number(row.price_usd));
-    }
+    if (row.conid == null) continue;
+    const usd = resolveUsdPrice(row, fxRates);
+    if (usd != null && usd > 0) map.set(Number(row.conid), usd);
   }
   return map;
 }
@@ -42,11 +47,14 @@ async function main() {
   console.log(`Basket price fetch — slot=${FETCH_SLOT} at ${FETCHED_AT}`);
   if (DRY_RUN) console.log('DRY RUN — no database writes');
 
+  let fxRates;
   if (!DRY_RUN) {
     console.log('Refreshing FX rates…');
-    await refreshFxRatesInDb(config);
+    const fxRefresh = await refreshFxRatesInDb(config);
+    fxRates = fxRefresh.rates;
+  } else {
+    fxRates = await fetchFxRatesToUsd({ force: false });
   }
-  const fxRates = await fetchFxRatesToUsd({ force: !DRY_RUN });
 
   // ── Phase 1: global price fetch ─────────────────────────────────────────
   const conidList = await db.rpc('list_conids_for_price_fetch');
@@ -65,12 +73,13 @@ async function main() {
 
   const { rows: priceRows, ibkrCount, yahooCount, missing } = await fetchAllBasketPrices(conids);
   const usdPriceRows = attachUsdToPriceRows(priceRows, fxRates);
+  const historyRows = attachFxRateToPriceRows(priceRows, fxRates);
   console.log(
     `Phase 1 — prices: ${usdPriceRows.length}/${conids.length} ` +
       `(${ibkrCount} IBKR, ${yahooCount} Yahoo, ${missing} missing)`
   );
 
-  const currentPrices = pricesUsdMapFromRows(usdPriceRows);
+  const currentPrices = pricesUsdMapFromRows(usdPriceRows, fxRates);
 
   if (!DRY_RUN) {
     const pricesTable = supabaseRest('instrument_prices', config);
@@ -95,17 +104,11 @@ async function main() {
     );
 
     await historyTable.insert(
-      usdPriceRows.map((r) => ({
+      historyRows.map((r) => ({
         conid: r.conid,
         price: r.price,
-        price_usd: r.price_usd,
         fx_rate_to_usd: r.fx_rate_to_usd,
         currency: r.currency,
-        source: r.source,
-        exchange_id: r.exchange_id ?? null,
-        yahoo_symbol: r.yahoo_symbol ?? null,
-        ibkr_reference_price: r.ibkr_reference_price ?? null,
-        quote_confidence: r.quote_confidence ?? null,
         fetch_slot: FETCH_SLOT,
         fetched_at: FETCHED_AT,
       }))

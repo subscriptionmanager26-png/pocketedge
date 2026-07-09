@@ -12,7 +12,7 @@
 import { detectFetchSlot } from './lib/nav-engine.mjs';
 import { getSupabaseAdminConfig, supabaseRest } from './lib/supabase-admin.mjs';
 import { refreshFxRatesInDb, updateBasketNavs } from './lib/basket-nav-update.mjs';
-import { attachUsdToPriceRows, fetchFxRatesToUsd } from './lib/fx-rates-usd.mjs';
+import { attachFxRateToPriceRows, attachUsdToPriceRows, fetchFxRatesToUsd } from './lib/fx-rates-usd.mjs';
 import { IBKR_BATCH_SIZE, processInstrumentChunk } from './lib/universe-price-ladder.mjs';
 
 const slotArg = process.argv.find((a) => a.startsWith('--slot='));
@@ -73,11 +73,14 @@ async function main() {
       (DRY_RUN ? ' [dry-run]' : ''),
   );
 
+  let fxRates;
   if (!DRY_RUN) {
     console.log('Refreshing FX rates…');
-    await refreshFxRatesInDb(config);
+    const fxRefresh = await refreshFxRatesInDb(config);
+    fxRates = fxRefresh.rates;
+  } else {
+    fxRates = await fetchFxRatesToUsd({ force: false });
   }
-  const fxRates = await fetchFxRatesToUsd({ force: !DRY_RUN });
 
   let runId = null;
   if (!DRY_RUN) {
@@ -160,6 +163,7 @@ async function main() {
         const historyTable = supabaseRest('instrument_price_history', config);
         const ladderTable = supabaseRest('ibkr_fetch_ladder_results', config);
         const usdPriceRows = attachUsdToPriceRows(result.priceRows, fxRates);
+        const historyRows = attachFxRateToPriceRows(result.priceRows, fxRates);
 
         await upsertInBatches(
           pricesTable,
@@ -182,17 +186,11 @@ async function main() {
 
         await insertInBatches(
           historyTable,
-          usdPriceRows.map((r) => ({
+          historyRows.map((r) => ({
             conid: r.conid,
             price: r.price,
-            price_usd: r.price_usd,
             fx_rate_to_usd: r.fx_rate_to_usd,
             currency: r.currency,
-            source: r.source,
-            exchange_id: r.exchange_id,
-            yahoo_symbol: r.yahoo_symbol,
-            ibkr_reference_price: r.ibkr_reference_price,
-            quote_confidence: r.quote_confidence,
             fetch_slot: FETCH_SLOT,
             fetched_at: FETCHED_AT,
           })),

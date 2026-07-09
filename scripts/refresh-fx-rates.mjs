@@ -22,7 +22,9 @@ async function main() {
   const config = getSupabaseAdminConfig({ requireServiceRole: true });
   const table = supabaseRest('fx_rates_to_usd', config);
   await table.upsert(rows, 'currency');
-  console.log(`Upserted ${rows.length} FX rates at ${fetchedAt}`);
+  const historyTable = supabaseRest('fx_rates_history', config);
+  await historyTable.insert(rows);
+  console.log(`Upserted ${rows.length} FX rates at ${fetchedAt} (live + history)`);
 }
 
 main().catch((err) => {

@@ -7,6 +7,11 @@ import {
 } from './ibkr-preflight-ladder.js';
 import { fetchYahooBackupBatch, type InstrumentRow, type YahooQuote } from './yahoo-backup.js';
 import { getSupabaseAdminConfig, supabaseRest, type SupabaseConfig } from './supabase-admin.js';
+import {
+  attachFxRateToPriceRows,
+  loadFxRatesFromDb,
+  refreshFxRatesInDb,
+} from './fx-rates-usd.js';
 
 export type FetchSlot = 'us_close' | 'overnight';
 
@@ -255,6 +260,7 @@ export async function processInstrumentChunk(options: {
   supabaseUrl?: string;
   probeSecret?: string;
   batchSize?: number;
+  fxRates?: Record<string, number>;
 }) {
   const {
     runId,
@@ -267,6 +273,8 @@ export async function processInstrumentChunk(options: {
 
   const supabaseConfig = options.supabaseConfig ?? getSupabaseAdminConfig();
   const supabaseUrl = options.supabaseUrl ?? supabaseConfig.url;
+
+  const fxRates = options.fxRates ?? (await loadFxRatesFromDb(supabaseConfig));
 
   const ladder = new Map<number, LadderRow>(
     instruments.map((row) => [
@@ -313,6 +321,7 @@ export async function processInstrumentChunk(options: {
   totals[5] = yahoo.size;
 
   const priceRows = ladderRowsToPrices(instruments, ladder, yahoo);
+  const historyRows = attachFxRateToPriceRows(priceRows, fxRates);
   const ladderRows = ladderDbRows(runId, instruments, ladder, yahoo);
 
   const pricesTable = supabaseRest('instrument_prices', supabaseConfig);
@@ -336,15 +345,11 @@ export async function processInstrumentChunk(options: {
   );
 
   await historyTable.insert(
-    priceRows.map((r) => ({
+    historyRows.map((r) => ({
       conid: r.conid,
       price: r.price,
+      fx_rate_to_usd: r.fx_rate_to_usd,
       currency: r.currency,
-      source: r.source,
-      exchange_id: r.exchange_id,
-      yahoo_symbol: r.yahoo_symbol,
-      ibkr_reference_price: r.ibkr_reference_price,
-      quote_confidence: r.quote_confidence,
       fetch_slot: fetchSlot,
       fetched_at: fetchedAt,
     }))
@@ -395,6 +400,9 @@ export async function runUniversePriceFetch(options: {
   const config = getSupabaseAdminConfig();
   const db = supabaseRest('universe_price_fetch_runs', config);
   const rpc = supabaseRest('instrument_prices', config);
+
+  const fxSnapshot = await refreshFxRatesInDb(config);
+  const fxRates = fxSnapshot.rates;
 
   const universeCount = await rpc.rpc<number>('count_universe_instruments_for_price_fetch');
   const universeSize =
@@ -477,6 +485,7 @@ export async function runUniversePriceFetch(options: {
       fetchSlot,
       fetchedAt,
       instruments,
+      fxRates,
     });
 
     offset += instruments.length;

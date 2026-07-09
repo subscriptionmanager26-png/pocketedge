@@ -76,24 +76,35 @@ export async function fetchFxRatesToUsd({ force = false } = {}) {
   return rates;
 }
 
+/** USD price from local price + FX rates (never uses stored price_usd). */
 export function resolveUsdPrice(row, rates = {}) {
-  if (row?.price_usd != null) {
-    const stored = Number(row.price_usd);
-    if (Number.isFinite(stored) && stored > 0) return stored;
-  }
-
   const price = Number(row?.price);
   if (!Number.isFinite(price) || price <= 0) return null;
   return convertToUsd(price, row?.currency, rates);
 }
 
+export function fxRateForCurrency(currency, rates = {}) {
+  const code = normalizeCurrencyCode(currency || 'USD');
+  if (code === 'USD') return 1;
+  const rate = rates[code];
+  return rate != null && Number.isFinite(rate) && rate > 0 ? rate : null;
+}
+
+export function attachFxRateFields(row, rates = {}) {
+  return {
+    ...row,
+    fx_rate_to_usd: fxRateForCurrency(row?.currency, rates),
+  };
+}
+
+export function attachFxRateToPriceRows(rows, rates = {}) {
+  return (rows || []).map((row) => attachFxRateFields(row, rates));
+}
+
+/** Latest snapshot rows: cache USD + FX at write time (instrument_prices only). */
 export function attachUsdFields(row, rates = {}) {
+  const fxRate = fxRateForCurrency(row?.currency, rates);
   const priceUsd = resolveUsdPrice(row, rates);
-  const currency = normalizeCurrencyCode(row?.currency || 'USD');
-  const fxRate =
-    currency === 'USD'
-      ? 1
-      : rates[currency] ?? (row?.price > 0 && priceUsd != null ? priceUsd / Number(row.price) : null);
 
   return {
     ...row,
@@ -123,6 +134,16 @@ export function ratesMapFromDbRows(rows) {
     if (row.currency && row.rate_to_usd != null) {
       rates[row.currency] = Number(row.rate_to_usd);
     }
+  }
+  return rates;
+}
+
+export function ratesMapFromJsonObject(obj) {
+  const rates = { USD: 1 };
+  if (!obj || typeof obj !== 'object') return rates;
+  for (const [currency, rate] of Object.entries(obj)) {
+    const n = Number(rate);
+    if (currency && Number.isFinite(n) && n > 0) rates[currency] = n;
   }
   return rates;
 }

@@ -10,6 +10,7 @@ import {
   fetchFxRatesToUsd,
   fxRatesRowsForDb,
   ratesMapFromDbRows,
+  ratesMapFromJsonObject,
   resolveUsdPrice,
 } from './fx-rates-usd.mjs';
 
@@ -25,12 +26,35 @@ export async function loadFxRatesFromDb(config = getSupabaseAdminConfig()) {
   return ratesMapFromDbRows(await response.json());
 }
 
+export async function loadFxRatesAtTimestamp(fetchedAt, config = getSupabaseAdminConfig()) {
+  if (!fetchedAt) return loadFxRatesFromDb(config);
+
+  const { url, key } = config;
+  const response = await fetch(`${url}/rest/v1/rpc/get_fx_rates_at_timestamp`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_fetched_at: fetchedAt }),
+  });
+  if (!response.ok) {
+    console.warn('Could not load historical FX rates:', await response.text());
+    return loadFxRatesFromDb(config);
+  }
+  return ratesMapFromJsonObject(await response.json());
+}
+
 export async function refreshFxRatesInDb(config = getSupabaseAdminConfig()) {
   const fetchedAt = new Date().toISOString();
   const rates = await fetchFxRatesToUsd({ force: true });
+  const rows = fxRatesRowsForDb(rates, fetchedAt);
   const table = supabaseRest('fx_rates_to_usd', config);
-  await table.upsert(fxRatesRowsForDb(rates, fetchedAt), 'currency');
-  return rates;
+  await table.upsert(rows, 'currency');
+  const historyTable = supabaseRest('fx_rates_history', config);
+  await historyTable.insert(rows);
+  return { rates, fetchedAt };
 }
 
 function pricesUsdMapFromRows(rows, fxRates) {
@@ -46,11 +70,11 @@ function pricesUsdMapFromRows(rows, fxRates) {
 export async function loadPriorPrices(conids, lastFetchAt, config = getSupabaseAdminConfig()) {
   if (!lastFetchAt || !conids.length) return new Map();
 
-  const fxRates = await loadFxRatesFromDb(config);
+  const fxRates = await loadFxRatesAtTimestamp(lastFetchAt, config);
   const { url, key } = config;
   const inList = conids.join(',');
   const response = await fetch(
-    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(lastFetchAt)}&select=conid,price,price_usd,currency`,
+    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(lastFetchAt)}&select=conid,price,currency`,
     {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
     }
@@ -75,7 +99,7 @@ export async function loadCurrentPricesFromDb(conids, fetchedAt, config = getSup
   const rows = [];
 
   const historyResponse = await fetch(
-    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(fetchedAt)}&select=conid,price,price_usd,currency`,
+    `${url}/rest/v1/instrument_price_history?conid=in.(${inList})&fetched_at=eq.${encodeURIComponent(fetchedAt)}&select=conid,price,currency`,
     { headers }
   );
   if (!historyResponse.ok) {
@@ -89,7 +113,7 @@ export async function loadCurrentPricesFromDb(conids, fetchedAt, config = getSup
   if (missing.length) {
     const missingList = missing.join(',');
     const latestResponse = await fetch(
-      `${url}/rest/v1/instrument_prices?conid=in.(${missingList})&select=conid,price,price_usd,currency`,
+      `${url}/rest/v1/instrument_prices?conid=in.(${missingList})&select=conid,price,currency`,
       { headers }
     );
     if (!latestResponse.ok) {
