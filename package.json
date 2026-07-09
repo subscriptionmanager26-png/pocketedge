@@ -70,7 +70,8 @@
     "probe:ibkr-preflight-ladder:50": "node scripts/probe-ibkr-preflight-ladder.mjs --sample=50 --batch-size=10",
     "probe:server-ibkr": "node scripts/invoke-server-ibkr-probes.mjs --sample=50",
     "probe:server-yahoo": "node scripts/invoke-server-ibkr-probes.mjs --yahoo --sample=10",
-    "simulate:basket-nav": "node scripts/simulate-basket-nav.mjs"
+    "simulate:basket-nav": "node scripts/simulate-basket-nav.mjs",
+    "sync:indian-markets": "node scripts/sync-indian-markets.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.10.1",

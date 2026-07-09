@@ -1,0 +1,978 @@
+{
+  "syncedAt": "2026-07-09T18:52:47.181Z",
+  "items": [
+    {
+      "id": "NIFTY 50",
+      "name": "NIFTY 50",
+      "value": 23962.8,
+      "previousClose": 23882.05,
+      "changePct": 0.34
+    },
+    {
+      "id": "NIFTY NEXT 50",
+      "name": "NIFTY NEXT 50",
+      "value": 71485.85,
+      "previousClose": 70898.75,
+      "changePct": 0.83
+    },
+    {
+      "id": "NIFTY BANK",
+      "name": "NIFTY BANK",
+      "value": 57252.45,
+      "previousClose": 56742.6,
+      "changePct": 0.9
+    },
+    {
+      "id": "NIFTY FIN SERVICE",
+      "name": "NIFTY FINANCIAL SERVICES",
+      "value": 26482.45,
+      "previousClose": 26323.75,
+      "changePct": 0.6
+    },
+    {
+      "id": "NIFTY MID SELECT",
+      "name": "NIFTY MIDCAP SELECT",
+      "value": 14654.8,
+      "previousClose": 14419.1,
+      "changePct": 1.63
+    },
+    {
+      "id": "NIFTY 100",
+      "name": "NIFTY 100",
+      "value": 24989.25,
+      "previousClose": 24883.05,
+      "changePct": 0.43
+    },
+    {
+      "id": "NIFTY 200",
+      "name": "NIFTY 200",
+      "value": 13852.55,
+      "previousClose": 13767.7,
+      "changePct": 0.62
+    },
+    {
+      "id": "NIFTY 500",
+      "name": "NIFTY 500",
+      "value": 23081.15,
+      "previousClose": 22908.05,
+      "changePct": 0.76
+    },
+    {
+      "id": "NIFTY MIDCAP 50",
+      "name": "NIFTY MIDCAP 50",
+      "value": 17844.5,
+      "previousClose": 17604.45,
+      "changePct": 1.36
+    },
+    {
+      "id": "NIFTY MIDCAP 100",
+      "name": "NIFTY MIDCAP 100",
+      "value": 62166.85,
+      "previousClose": 61322.75,
+      "changePct": 1.38
+    },
+    {
+      "id": "NIFTY SMLCAP 100",
+      "name": "NIFTY SMALLCAP 100",
+      "value": 19120.85,
+      "previousClose": 18783.3,
+      "changePct": 1.8
+    },
+    {
+      "id": "INDIA VIX",
+      "name": "INDIA VIX",
+      "value": 13.36,
+      "previousClose": 14.68,
+      "changePct": -8.97
+    },
+    {
+      "id": "NIFTY MIDCAP 150",
+      "name": "NIFTY MIDCAP 150",
+      "value": 22855.75,
+      "previousClose": 22537.85,
+      "changePct": 1.41
+    },
+    {
+      "id": "NIFTY SMLCAP 50",
+      "name": "NIFTY SMALLCAP 50",
+      "value": 9477.95,
+      "previousClose": 9306.85,
+      "changePct": 1.84
+    },
+    {
+      "id": "NIFTY SMLCAP 250",
+      "name": "NIFTY SMALLCAP 250",
+      "value": 17875.7,
+      "previousClose": 17597.9,
+      "changePct": 1.58
+    },
+    {
+      "id": "NIFTY MIDSML 400",
+      "name": "NIFTY MIDSMALLCAP 400",
+      "value": 21044.95,
+      "previousClose": 20740.45,
+      "changePct": 1.47
+    },
+    {
+      "id": "NIFTY500 MULTICAP",
+      "name": "NIFTY500 MULTICAP 50:25:25",
+      "value": 16354.95,
+      "previousClose": 16199.5,
+      "changePct": 0.96
+    },
+    {
+      "id": "NIFTY LARGEMID250",
+      "name": "NIFTY LARGEMIDCAP 250",
+      "value": 16530.2,
+      "previousClose": 16380,
+      "changePct": 0.92
+    },
+    {
+      "id": "NIFTY TOTAL MKT",
+      "name": "NIFTY TOTAL MARKET",
+      "value": 13024.95,
+      "previousClose": 12920.85,
+      "changePct": 0.81
+    },
+    {
+      "id": "NIFTY MICROCAP250",
+      "name": "NIFTY MICROCAP 250",
+      "value": 25157.35,
+      "previousClose": 24682.55,
+      "changePct": 1.92
+    },
+    {
+      "id": "NIFTY500 LMS EQL",
+      "name": "NIFTY500 LARGEMIDSMALL EQUAL-CAP WEIGHTED",
+      "value": 18284.45,
+      "previousClose": 18078.8,
+      "changePct": 1.14
+    },
+    {
+      "id": "NIFTY FPI 150",
+      "name": "NIFTY INDIA FPI 150",
+      "value": 1545.4,
+      "previousClose": 1536.7,
+      "changePct": 0.57
+    },
+    {
+      "id": "NIFTY SMALLCAP 500",
+      "name": "NIFTY SMALLCAP 500",
+      "value": 20284.65,
+      "previousClose": 19956.35,
+      "changePct": 1.65
+    },
+    {
+      "id": "NIFTY MIDSMALL 50 50",
+      "name": "NIFTY MIDSMALLCAP400 50:50",
+      "value": 20508.9,
+      "previousClose": 20206.85,
+      "changePct": 1.49
+    },
+    {
+      "id": "NIFTY AUTO",
+      "name": "NIFTY AUTO",
+      "value": 26676.35,
+      "previousClose": 26733.4,
+      "changePct": -0.21
+    },
+    {
+      "id": "NIFTY FINSRV25 50",
+      "name": "NIFTY FINANCIAL SERVICES 25/50",
+      "value": 28872.9,
+      "previousClose": 28678.35,
+      "changePct": 0.68
+    },
+    {
+      "id": "NIFTY FMCG",
+      "name": "NIFTY FMCG",
+      "value": 49350.15,
+      "previousClose": 48977.4,
+      "changePct": 0.76
+    },
+    {
+      "id": "NIFTY IT",
+      "name": "NIFTY IT",
+      "value": 27471.25,
+      "previousClose": 27555.2,
+      "changePct": -0.3
+    },
+    {
+      "id": "NIFTY MEDIA",
+      "name": "NIFTY MEDIA",
+      "value": 1482.8,
+      "previousClose": 1452.45,
+      "changePct": 2.09
+    },
+    {
+      "id": "NIFTY METAL",
+      "name": "NIFTY METAL",
+      "value": 12503.3,
+      "previousClose": 12468.7,
+      "changePct": 0.28
+    },
+    {
+      "id": "NIFTY PHARMA",
+      "name": "NIFTY PHARMA",
+      "value": 25656.25,
+      "previousClose": 25429.8,
+      "changePct": 0.89
+    },
+    {
+      "id": "NIFTY PSU BANK",
+      "name": "NIFTY PSU BANK",
+      "value": 8203.2,
+      "previousClose": 8072.3,
+      "changePct": 1.62
+    },
+    {
+      "id": "NIFTY PVT BANK",
+      "name": "NIFTY PRIVATE BANK",
+      "value": 27762.8,
+      "previousClose": 27591.65,
+      "changePct": 0.62
+    },
+    {
+      "id": "NIFTY REALTY",
+      "name": "NIFTY REALTY",
+      "value": 906.95,
+      "previousClose": 875.95,
+      "changePct": 3.54
+    },
+    {
+      "id": "NIFTY HEALTHCARE",
+      "name": "NIFTY HEALTHCARE INDEX",
+      "value": 16307.25,
+      "previousClose": 16145.75,
+      "changePct": 1
+    },
+    {
+      "id": "NIFTY CONSR DURBL",
+      "name": "NIFTY CONSUMER DURABLES",
+      "value": 37835.85,
+      "previousClose": 37209.6,
+      "changePct": 1.68
+    },
+    {
+      "id": "NIFTY OIL AND GAS",
+      "name": "NIFTY OIL & GAS",
+      "value": 11032.85,
+      "previousClose": 10998.55,
+      "changePct": 0.31
+    },
+    {
+      "id": "NIFTY MIDSML HLTH",
+      "name": "NIFTY MIDSMALL HEALTHCARE",
+      "value": 50631.75,
+      "previousClose": 49861.1,
+      "changePct": 1.55
+    },
+    {
+      "id": "NIFTY FINSEREXBNK",
+      "name": "NIFTY FINANCIAL SERVICES EX-BANK",
+      "value": 31785.5,
+      "previousClose": 31414.7,
+      "changePct": 1.18
+    },
+    {
+      "id": "NIFTY MS FIN SERV",
+      "name": "NIFTY MIDSMALL FINANCIAL SERVICES",
+      "value": 22290.75,
+      "previousClose": 21945.4,
+      "changePct": 1.57
+    },
+    {
+      "id": "NIFTY MS IT TELCM",
+      "name": "NIFTY MIDSMALL IT & TELECOM",
+      "value": 9328.05,
+      "previousClose": 9228.95,
+      "changePct": 1.07
+    },
+    {
+      "id": "NIFTY CHEMICALS",
+      "name": "NIFTY CHEMICALS",
+      "value": 29345.75,
+      "previousClose": 29147.4,
+      "changePct": 0.68
+    },
+    {
+      "id": "NIFTY500 HEALTH",
+      "name": "NIFTY500 HEALTHCARE",
+      "value": 21112.4,
+      "previousClose": 20900.85,
+      "changePct": 1.01
+    },
+    {
+      "id": "NIFTY REITS REALTY",
+      "name": "NIFTY REITS & REALTY",
+      "value": 1940.6,
+      "previousClose": 1913.9,
+      "changePct": 1.4
+    },
+    {
+      "id": "NIFTY CEMENT",
+      "name": "NIFTY CEMENT",
+      "value": 15089.35,
+      "previousClose": 14873.5,
+      "changePct": 1.45
+    },
+    {
+      "id": "NIFTY DIV OPPS 50",
+      "name": "NIFTY DIVIDEND OPPORTUNITIES 50",
+      "value": 5725.05,
+      "previousClose": 5711.75,
+      "changePct": 0.23
+    },
+    {
+      "id": "NIFTY GROWSECT 15",
+      "name": "NIFTY GROWTH SECTORS 15",
+      "value": 10828.9,
+      "previousClose": 10847,
+      "changePct": -0.17
+    },
+    {
+      "id": "NIFTY100 QUALTY30",
+      "name": "NIFTY100 QUALITY 30",
+      "value": 5452.3,
+      "previousClose": 5459.35,
+      "changePct": -0.13
+    },
+    {
+      "id": "NIFTY50 VALUE 20",
+      "name": "NIFTY50 VALUE 20",
+      "value": 11880.55,
+      "previousClose": 11867,
+      "changePct": 0.11
+    },
+    {
+      "id": "NIFTY50 TR 2X LEV",
+      "name": "NIFTY50 TR 2X LEVERAGE",
+      "value": 17998.2,
+      "previousClose": 17877.9,
+      "changePct": 0.67
+    },
+    {
+      "id": "NIFTY50 PR 2X LEV",
+      "name": "NIFTY50 PR 2X LEVERAGE",
+      "value": 11869.55,
+      "previousClose": 11791.55,
+      "changePct": 0.66
+    },
+    {
+      "id": "NIFTY50 TR 1X INV",
+      "name": "NIFTY50 TR 1X INVERSE",
+      "value": 179.55,
+      "previousClose": 180.15,
+      "changePct": -0.33
+    },
+    {
+      "id": "NIFTY50 PR 1X INV",
+      "name": "NIFTY50 PR 1X INVERSE",
+      "value": 220.7,
+      "previousClose": 221.45,
+      "changePct": -0.34
+    },
+    {
+      "id": "NIFTY50 DIV POINT",
+      "name": "NIFTY50 DIVIDEND POINTS",
+      "value": 130.24,
+      "previousClose": 128.89,
+      "changePct": 1.05
+    },
+    {
+      "id": "NIFTY ALPHA 50",
+      "name": "NIFTY ALPHA 50",
+      "value": 53498.8,
+      "previousClose": 52893.5,
+      "changePct": 1.14
+    },
+    {
+      "id": "NIFTY50 EQL WGT",
+      "name": "NIFTY50 EQUAL WEIGHT",
+      "value": 32488.2,
+      "previousClose": 32395.55,
+      "changePct": 0.29
+    },
+    {
+      "id": "NIFTY100 EQL WGT",
+      "name": "NIFTY100 EQUAL WEIGHT",
+      "value": 34200.9,
+      "previousClose": 33997.7,
+      "changePct": 0.6
+    },
+    {
+      "id": "NIFTY100 LOWVOL30",
+      "name": "NIFTY100 LOW VOLATILITY 30",
+      "value": 19941.7,
+      "previousClose": 19864.7,
+      "changePct": 0.39
+    },
+    {
+      "id": "NIFTY200 QUALTY30",
+      "name": "NIFTY200 QUALITY 30",
+      "value": 19840,
+      "previousClose": 19776.05,
+      "changePct": 0.32
+    },
+    {
+      "id": "NIFTY ALPHALOWVOL",
+      "name": "NIFTY ALPHA LOW-VOLATILITY 30",
+      "value": 26748.75,
+      "previousClose": 26568.75,
+      "changePct": 0.68
+    },
+    {
+      "id": "NIFTY200MOMENTM30",
+      "name": "NIFTY200 MOMENTUM 30",
+      "value": 30289.75,
+      "previousClose": 30099.25,
+      "changePct": 0.63
+    },
+    {
+      "id": "NIFTY M150 QLTY50",
+      "name": "NIFTY MIDCAP150 QUALITY 50",
+      "value": 23878,
+      "previousClose": 23617.3,
+      "changePct": 1.1
+    },
+    {
+      "id": "NIFTY200 ALPHA 30",
+      "name": "NIFTY200 ALPHA 30",
+      "value": 25994.9,
+      "previousClose": 25748.05,
+      "changePct": 0.96
+    },
+    {
+      "id": "NIFTYM150MOMNTM50",
+      "name": "NIFTY MIDCAP150 MOMENTUM 50",
+      "value": 62116.65,
+      "previousClose": 61207.7,
+      "changePct": 1.49
+    },
+    {
+      "id": "NIFTY500MOMENTM50",
+      "name": "NIFTY500 MOMENTUM 50",
+      "value": 53068.9,
+      "previousClose": 52400.65,
+      "changePct": 1.28
+    },
+    {
+      "id": "NIFTYMS400 MQ 100",
+      "name": "NIFTY MIDSMALLCAP400 MOMENTUM QUALITY 100",
+      "value": 50323.85,
+      "previousClose": 49611.7,
+      "changePct": 1.44
+    },
+    {
+      "id": "NIFTYSML250MQ 100",
+      "name": "NIFTY SMALLCAP250 MOMENTUM QUALITY 100",
+      "value": 46959.95,
+      "previousClose": 46237.75,
+      "changePct": 1.56
+    },
+    {
+      "id": "NIFTY TOP 10 EW",
+      "name": "NIFTY TOP 10 EQUAL WEIGHT",
+      "value": 8477.95,
+      "previousClose": 8455.45,
+      "changePct": 0.27
+    },
+    {
+      "id": "NIFTY AQL 30",
+      "name": "NIFTY ALPHA QUALITY LOW-VOLATILITY 30",
+      "value": 22834.6,
+      "previousClose": 22709.65,
+      "changePct": 0.55
+    },
+    {
+      "id": "NIFTY AQLV 30",
+      "name": "NIFTY ALPHA QUALITY VALUE LOW-VOLATILITY 30",
+      "value": 20117.4,
+      "previousClose": 20059.05,
+      "changePct": 0.29
+    },
+    {
+      "id": "NIFTY HIGHBETA 50",
+      "name": "NIFTY HIGH BETA 50",
+      "value": 4363.65,
+      "previousClose": 4267.25,
+      "changePct": 2.26
+    },
+    {
+      "id": "NIFTY LOW VOL 50",
+      "name": "NIFTY LOW VOLATILITY 50",
+      "value": 24459.65,
+      "previousClose": 24355.15,
+      "changePct": 0.43
+    },
+    {
+      "id": "NIFTY QLTY LV 30",
+      "name": "NIFTY QUALITY LOW-VOLATILITY 30",
+      "value": 16451.2,
+      "previousClose": 16388.7,
+      "changePct": 0.38
+    },
+    {
+      "id": "NIFTY SML250 Q50",
+      "name": "NIFTY SMALLCAP250 QUALITY 50",
+      "value": 24887.2,
+      "previousClose": 24570.6,
+      "changePct": 1.29
+    },
+    {
+      "id": "NIFTY TOP 15 EW",
+      "name": "NIFTY TOP 15 EQUAL WEIGHT",
+      "value": 9636.45,
+      "previousClose": 9632.6,
+      "changePct": 0.04
+    },
+    {
+      "id": "NIFTY100 ALPHA 30",
+      "name": "NIFTY100 ALPHA 30",
+      "value": 17874.3,
+      "previousClose": 17865.85,
+      "changePct": 0.05
+    },
+    {
+      "id": "NIFTY200 VALUE 30",
+      "name": "NIFTY200 VALUE 30",
+      "value": 14903.3,
+      "previousClose": 14822.5,
+      "changePct": 0.55
+    },
+    {
+      "id": "NIFTY500 EW",
+      "name": "NIFTY500 EQUAL WEIGHT",
+      "value": 14762.2,
+      "previousClose": 14571.95,
+      "changePct": 1.31
+    },
+    {
+      "id": "NIFTY MULTI MQ 50",
+      "name": "NIFTY500 MULTICAP MOMENTUM QUALITY 50",
+      "value": 40865.2,
+      "previousClose": 40539.15,
+      "changePct": 0.8
+    },
+    {
+      "id": "NIFTY500 VALUE 50",
+      "name": "NIFTY500 VALUE 50",
+      "value": 15915.55,
+      "previousClose": 15817.4,
+      "changePct": 0.62
+    },
+    {
+      "id": "NIFTY TOP 20 EW",
+      "name": "NIFTY TOP 20 EQUAL WEIGHT",
+      "value": 8628.7,
+      "previousClose": 8612.1,
+      "changePct": 0.19
+    },
+    {
+      "id": "NIFTY500 QLTY50",
+      "name": "NIFTY500 QUALITY 50",
+      "value": 19481.9,
+      "previousClose": 19335.45,
+      "changePct": 0.76
+    },
+    {
+      "id": "NIFTY500 LOWVOL50",
+      "name": "NIFTY500 LOW VOLATILITY 50",
+      "value": 22006,
+      "previousClose": 21918.9,
+      "changePct": 0.4
+    },
+    {
+      "id": "NIFTY500 MQVLV50",
+      "name": "NIFTY500 MULTIFACTOR MQVLV 50",
+      "value": 30811.45,
+      "previousClose": 30546.95,
+      "changePct": 0.87
+    },
+    {
+      "id": "NIFTY50 USD",
+      "name": "NIFTY50 USD",
+      "value": 8710.35,
+      "previousClose": 8659.28,
+      "changePct": 0.58
+    },
+    {
+      "id": "NIFTY500 FLEXICAP",
+      "name": "NIFTY500 FLEXICAP QUALITY 30",
+      "value": 9713.95,
+      "previousClose": 9627,
+      "changePct": 0.9
+    },
+    {
+      "id": "NIFTY TMMQ 50",
+      "name": "NIFTY TOTAL MARKET MOMENTUM QUALITY 50",
+      "value": 43291.65,
+      "previousClose": 42878.4,
+      "changePct": 0.96
+    },
+    {
+      "id": "NIFTY COMMODITIES",
+      "name": "NIFTY COMMODITIES",
+      "value": 9774.1,
+      "previousClose": 9760.75,
+      "changePct": 0.14
+    },
+    {
+      "id": "NIFTY CONSUMPTION",
+      "name": "NIFTY INDIA CONSUMPTION",
+      "value": 11700.4,
+      "previousClose": 11628.6,
+      "changePct": 0.62
+    },
+    {
+      "id": "NIFTY CPSE",
+      "name": "NIFTY CPSE",
+      "value": 6589.65,
+      "previousClose": 6614.75,
+      "changePct": -0.38
+    },
+    {
+      "id": "NIFTY ENERGY",
+      "name": "NIFTY ENERGY",
+      "value": 38838.1,
+      "previousClose": 38695.65,
+      "changePct": 0.37
+    },
+    {
+      "id": "NIFTY INFRA",
+      "name": "NIFTY INFRASTRUCTURE",
+      "value": 9325.7,
+      "previousClose": 9249.95,
+      "changePct": 0.82
+    },
+    {
+      "id": "NIFTY100 LIQ 15",
+      "name": "NIFTY100 LIQUID 15",
+      "value": 7398,
+      "previousClose": 7341.55,
+      "changePct": 0.77
+    },
+    {
+      "id": "NIFTY MID LIQ 15",
+      "name": "NIFTY MIDCAP LIQUID 15",
+      "value": 16651.75,
+      "previousClose": 16356.55,
+      "changePct": 1.8
+    },
+    {
+      "id": "NIFTY MNC",
+      "name": "NIFTY MNC",
+      "value": 32466.2,
+      "previousClose": 32288.05,
+      "changePct": 0.55
+    },
+    {
+      "id": "NIFTY PSE",
+      "name": "NIFTY PSE",
+      "value": 9805.25,
+      "previousClose": 9804.25,
+      "changePct": 0.01
+    },
+    {
+      "id": "NIFTY SERV SECTOR",
+      "name": "NIFTY SERVICES SECTOR",
+      "value": 30861.65,
+      "previousClose": 30679.15,
+      "changePct": 0.59
+    },
+    {
+      "id": "NIFTY100ESGSECLDR",
+      "name": "NIFTY100 ESG SECTOR LEADERS",
+      "value": 4032.65,
+      "previousClose": 4018,
+      "changePct": 0.36
+    },
+    {
+      "id": "NIFTY IND DIGITAL",
+      "name": "NIFTY INDIA DIGITAL",
+      "value": 8025.65,
+      "previousClose": 7938.65,
+      "changePct": 1.1
+    },
+    {
+      "id": "NIFTY100 ESG",
+      "name": "NIFTY100 ESG",
+      "value": 4904.6,
+      "previousClose": 4884.2,
+      "changePct": 0.42
+    },
+    {
+      "id": "NIFTY INDIA MFG",
+      "name": "NIFTY INDIA MANUFACTURING",
+      "value": 15793.3,
+      "previousClose": 15740.1,
+      "changePct": 0.34
+    },
+    {
+      "id": "NIFTY TATA 25 CAP",
+      "name": "NIFTY INDIA CORPORATE GROUP INDEX - TATA GROUP 25% CAP",
+      "value": 13868.35,
+      "previousClose": 13863.9,
+      "changePct": 0.03
+    },
+    {
+      "id": "NIFTY MULTI MFG",
+      "name": "NIFTY500 MULTICAP INDIA MANUFACTURING 50:30:20",
+      "value": 16212.4,
+      "previousClose": 16130.7,
+      "changePct": 0.51
+    },
+    {
+      "id": "NIFTY MULTI INFRA",
+      "name": "NIFTY500 MULTICAP INFRASTRUCTURE 50:30:20",
+      "value": 14575,
+      "previousClose": 14414.15,
+      "changePct": 1.12
+    },
+    {
+      "id": "NIFTY IND DEFENCE",
+      "name": "NIFTY INDIA DEFENCE",
+      "value": 9309.25,
+      "previousClose": 9324.05,
+      "changePct": -0.16
+    },
+    {
+      "id": "NIFTY IND TOURISM",
+      "name": "NIFTY INDIA TOURISM",
+      "value": 8042,
+      "previousClose": 7950.55,
+      "changePct": 1.15
+    },
+    {
+      "id": "NIFTY CAPITAL MKT",
+      "name": "NIFTY CAPITAL MARKETS",
+      "value": 5472.15,
+      "previousClose": 5348.5,
+      "changePct": 2.31
+    },
+    {
+      "id": "NIFTY EV",
+      "name": "NIFTY EV & NEW AGE AUTOMOTIVE",
+      "value": 3091.15,
+      "previousClose": 3082.7,
+      "changePct": 0.27
+    },
+    {
+      "id": "NIFTY NEW CONSUMP",
+      "name": "NIFTY INDIA NEW AGE CONSUMPTION",
+      "value": 11676.85,
+      "previousClose": 11527.75,
+      "changePct": 1.29
+    },
+    {
+      "id": "NIFTY CORP MAATR",
+      "name": "NIFTY INDIA SELECT 5 CORPORATE GROUPS (MAATR)",
+      "value": 38178.4,
+      "previousClose": 38070.05,
+      "changePct": 0.28
+    },
+    {
+      "id": "NIFTY MOBILITY",
+      "name": "NIFTY MOBILITY",
+      "value": 22356.25,
+      "previousClose": 22236,
+      "changePct": 0.54
+    },
+    {
+      "id": "NIFTY100 ENH ESG",
+      "name": "NIFTY100 ENHANCED ESG",
+      "value": 4937.7,
+      "previousClose": 4917.3,
+      "changePct": 0.41
+    },
+    {
+      "id": "NIFTY COREHOUSING",
+      "name": "NIFTY CORE HOUSING",
+      "value": 15679.05,
+      "previousClose": 15427.1,
+      "changePct": 1.63
+    },
+    {
+      "id": "NIFTY HOUSING",
+      "name": "NIFTY HOUSING",
+      "value": 11942.8,
+      "previousClose": 11872.55,
+      "changePct": 0.59
+    },
+    {
+      "id": "NIFTY IPO",
+      "name": "NIFTY IPO",
+      "value": 2302.75,
+      "previousClose": 2259.55,
+      "changePct": 1.91
+    },
+    {
+      "id": "NIFTY MS IND CONS",
+      "name": "NIFTY MIDSMALL INDIA CONSUMPTION",
+      "value": 18803.5,
+      "previousClose": 18461.45,
+      "changePct": 1.85
+    },
+    {
+      "id": "NIFTY NONCYC CONS",
+      "name": "NIFTY NON-CYCLICAL CONSUMER",
+      "value": 15342.4,
+      "previousClose": 15180.95,
+      "changePct": 1.06
+    },
+    {
+      "id": "NIFTY RURAL",
+      "name": "NIFTY RURAL",
+      "value": 15272.15,
+      "previousClose": 15182.4,
+      "changePct": 0.59
+    },
+    {
+      "id": "NIFTY SHARIAH 25",
+      "name": "NIFTY SHARIAH 25",
+      "value": 7754.8,
+      "previousClose": 7724.75,
+      "changePct": 0.39
+    },
+    {
+      "id": "NIFTY TRANS LOGIS",
+      "name": "NIFTY TRANSPORTATION & LOGISTICS",
+      "value": 24929.4,
+      "previousClose": 24816.7,
+      "changePct": 0.45
+    },
+    {
+      "id": "NIFTY50 SHARIAH",
+      "name": "NIFTY50 SHARIAH",
+      "value": 4169.55,
+      "previousClose": 4174.75,
+      "changePct": -0.12
+    },
+    {
+      "id": "NIFTY500 SHARIAH",
+      "name": "NIFTY500 SHARIAH",
+      "value": 6844.75,
+      "previousClose": 6791.9,
+      "changePct": 0.78
+    },
+    {
+      "id": "NIFTY SME EMERGE",
+      "name": "NIFTY SME EMERGE",
+      "value": 13995.3,
+      "previousClose": 13828.9,
+      "changePct": 1.2
+    },
+    {
+      "id": "NIFTY INTERNET",
+      "name": "NIFTY INDIA INTERNET",
+      "value": 1344,
+      "previousClose": 1313.45,
+      "changePct": 2.33
+    },
+    {
+      "id": "NIFTY WAVES",
+      "name": "NIFTY WAVES",
+      "value": 1961.75,
+      "previousClose": 1929.25,
+      "changePct": 1.68
+    },
+    {
+      "id": "NIFTY INFRALOG",
+      "name": "NIFTY INDIA INFRASTRUCTURE & LOGISTICS",
+      "value": 12181.8,
+      "previousClose": 12061.85,
+      "changePct": 0.99
+    },
+    {
+      "id": "NIFTY RAILWAYSPSU",
+      "name": "NIFTY INDIA RAILWAYS PSU",
+      "value": 2806.6,
+      "previousClose": 2795.7,
+      "changePct": 0.39
+    },
+    {
+      "id": "NIFTYCONGLOMERATE",
+      "name": "NIFTY CONGLOMERATE 50",
+      "value": 14636.2,
+      "previousClose": 14597.15,
+      "changePct": 0.27
+    },
+    {
+      "id": "NIFTY GS 8 13YR",
+      "name": "NIFTY 8-13 YR G-SEC",
+      "value": 3047.53,
+      "previousClose": 3043.46,
+      "changePct": 0.13
+    },
+    {
+      "id": "NIFTY GS 10YR",
+      "name": "NIFTY 10 YR BENCHMARK G-SEC",
+      "value": 2673.22,
+      "previousClose": 2669.49,
+      "changePct": 0.13
+    },
+    {
+      "id": "NIFTY GS 10YR CLN",
+      "name": "NIFTY 10 YR BENCHMARK G-SEC (CLEAN PRICE)",
+      "value": 880.43,
+      "previousClose": 879.36,
+      "changePct": 0.12
+    },
+    {
+      "id": "NIFTY GS 4 8YR",
+      "name": "NIFTY 4-8 YR G-SEC INDEX",
+      "value": 3323.85,
+      "previousClose": 3324.17,
+      "changePct": 0
+    },
+    {
+      "id": "NIFTY GS 11 15YR",
+      "name": "NIFTY 11-15 YR G-SEC INDEX",
+      "value": 3370.72,
+      "previousClose": 3370.27,
+      "changePct": 0.01
+    },
+    {
+      "id": "NIFTY GS 15YRPLUS",
+      "name": "NIFTY 15 YR AND ABOVE G-SEC INDEX",
+      "value": 3583.52,
+      "previousClose": 3576.43,
+      "changePct": 0.19
+    },
+    {
+      "id": "NIFTY GS COMPSITE",
+      "name": "NIFTY COMPOSITE G-SEC INDEX",
+      "value": 3141.09,
+      "previousClose": 3136.52,
+      "changePct": 0.14
+    },
+    {
+      "id": "BHARATBOND-APR30",
+      "name": "NIFTY BHARAT BOND INDEX - APRIL 2030",
+      "value": 1605.18,
+      "previousClose": 1604.94,
+      "changePct": 0.01
+    },
+    {
+      "id": "BHARATBOND-APR31",
+      "name": "NIFTY BHARAT BOND INDEX - APRIL 2031",
+      "value": 1459.66,
+      "previousClose": 1459.38,
+      "changePct": 0.01
+    },
+    {
+      "id": "BHARATBOND-APR32",
+      "name": "NIFTY BHARAT BOND INDEX - APRIL 2032",
+      "value": 1327.77,
+      "previousClose": 1327.52,
+      "changePct": 0.01
+    },
+    {
+      "id": "BHARATBOND-APR33",
+      "name": "NIFTY BHARAT BOND INDEX - APRIL 2033",
+      "value": 1287.35,
+      "previousClose": 1287.11,
+      "changePct": 0.01
+    }
+  ]
+}

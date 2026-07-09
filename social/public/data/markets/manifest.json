@@ -1,0 +1,20 @@
+{
+  "syncedAt": "2026-07-09T18:52:47.181Z",
+  "sources": {
+    "equityList": "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",
+    "smeEquityList": "https://nsearchives.nseindia.com/emerge/corporates/content/SME_EQUITY_L.csv",
+    "amfiNavAll": "https://portal.amfiindia.com/spages/NAVAll.txt",
+    "nseLiveEquity": "https://www.nseindia.com/market-data/live-equity-market",
+    "nseSmeMarket": "https://www.nseindia.com/market-data/sme-market",
+    "nseEtf": "https://www.nseindia.com/market-data/exchange-traded-funds-etf",
+    "mcxSpot": "https://www.mcxindia.com/market-data/spot-market-price#Recent"
+  },
+  "counts": {
+    "stocks": 2940,
+    "mutualFunds": 14216,
+    "etfs": 328,
+    "indices": 139,
+    "commodities": 29,
+    "equityQuotes": 1998
+  }
+}

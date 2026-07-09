@@ -26,6 +26,10 @@ import { getPerson, CURRENT_USER } from '../data/mockData';
 import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
+import {
+  fetchMarketTab,
+  marketFundToDetail,
+} from '../lib/marketDataApi';
 import { formatPrice } from '../lib/format';
 import {
   addReviewComment,
@@ -42,11 +46,32 @@ export default function InvestmentPage({
   onGraphChange,
   onPromptReview,
 }) {
-  const fund = getFund(fundId);
+  const seedFund = getFund(fundId);
+  const [marketFund, setMarketFund] = useState(null);
+  const [marketLoading, setMarketLoading] = useState(!seedFund);
+  const fund = seedFund ?? marketFund;
   const [tab, setTab] = useState('reviews');
   const [reviewTick, setReviewTick] = useState(0);
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    if (seedFund) return undefined;
+    let cancelled = false;
+    setMarketLoading(true);
+    fetchMarketTab('mutual_funds')
+      .then(({ items }) => {
+        if (cancelled) return;
+        const found = items.find((item) => item.schemeCode === fundId);
+        setMarketFund(found ? marketFundToDetail(found) : null);
+      })
+      .finally(() => {
+        if (!cancelled) setMarketLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fundId, seedFund]);
 
   const unlocked = hasCommunityReviewsAccess();
   const hasAccess = hasFundAccess(fundId);
@@ -66,6 +91,12 @@ export default function InvestmentPage({
   const reviewsLocked = !unlocked;
   const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
+
+  if (marketLoading) {
+    return (
+      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading fund…</div>
+    );
+  }
 
   if (!fund) {
     return (

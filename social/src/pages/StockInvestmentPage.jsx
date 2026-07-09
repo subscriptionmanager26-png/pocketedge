@@ -31,6 +31,10 @@ import {
   subscribeReviews,
 } from '../lib/reviewStore';
 import { subscribeWatchlists } from '../lib/watchlistStore';
+import {
+  fetchMarketTab,
+  marketStockToDetail,
+} from '../lib/marketDataApi';
 import { formatPct, formatPrice } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
@@ -41,13 +45,36 @@ export default function StockInvestmentPage({
   onGraphChange,
   onPromptReview,
 }) {
-  const stock = getStock(ticker);
+  const seedStock = getStock(ticker);
+  const [marketStock, setMarketStock] = useState(null);
+  const [marketLoading, setMarketLoading] = useState(!seedStock);
+  const stock = seedStock ?? marketStock;
   const [tab, setTab] = useState('reviews');
   const [reviewTick, setReviewTick] = useState(0);
   const [accessTick, setAccessTick] = useState(0);
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
   useEffect(() => subscribeWatchlists(() => setAccessTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    if (seedStock) return undefined;
+    let cancelled = false;
+    setMarketLoading(true);
+    Promise.all([fetchMarketTab('stocks'), fetchMarketTab('etf')])
+      .then(([stocksPayload, etfPayload]) => {
+        if (cancelled) return;
+        const found =
+          stocksPayload.items.find((item) => item.symbol === ticker) ??
+          etfPayload.items.find((item) => item.symbol === ticker);
+        setMarketStock(found ? marketStockToDetail(found) : null);
+      })
+      .finally(() => {
+        if (!cancelled) setMarketLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, seedStock]);
 
   const unlocked = hasCommunityReviewsAccess();
   const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
@@ -67,6 +94,12 @@ export default function StockInvestmentPage({
   const reviewsLocked = !unlocked;
   const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
+
+  if (marketLoading) {
+    return (
+      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading stock…</div>
+    );
+  }
 
   if (!stock) {
     return (

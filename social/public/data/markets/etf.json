@@ -1,0 +1,2957 @@
+{
+  "syncedAt": "2026-07-09T18:52:47.181Z",
+  "items": [
+    {
+      "symbol": "SILVERBEES",
+      "name": "Domestic price of Silver- based on LBMA Silver daily spot fixing price",
+      "ltp": 212.92,
+      "previousClose": 210.14999999999998,
+      "changePct": 1.32,
+      "nav": 210.6598,
+      "tradedValue": 5548190168.64
+    },
+    {
+      "symbol": "LIQUIDBEES",
+      "name": "Government Securities",
+      "ltp": 999.99,
+      "previousClose": 1000,
+      "changePct": 0,
+      "nav": 1000,
+      "tradedValue": 2868694312.77
+    },
+    {
+      "symbol": "GOLDBEES",
+      "name": "Gold",
+      "ltp": 118.49,
+      "previousClose": 116.96,
+      "changePct": 1.31,
+      "nav": 117.1323,
+      "tradedValue": 2198241409.76
+    },
+    {
+      "symbol": "NIFTYBEES",
+      "name": "Nifty 50",
+      "ltp": 272.95,
+      "previousClose": 271.69,
+      "changePct": 0.46,
+      "nav": 271.6614,
+      "tradedValue": 1933995879.33
+    },
+    {
+      "symbol": "LIQUID1",
+      "name": "Kotak Nifty 1D Rate Liquid ETF",
+      "ltp": 1112.61,
+      "previousClose": 1112.4599999999998,
+      "changePct": 0.01,
+      "nav": 1112.4607,
+      "tradedValue": 1713893371.86
+    },
+    {
+      "symbol": "LIQUIDCASE",
+      "name": "Zerodha Nifty 1D Rate Liquid ETF",
+      "ltp": 114.92,
+      "previousClose": 114.89,
+      "changePct": 0.03,
+      "nav": 114.895,
+      "tradedValue": 1569284502.4
+    },
+    {
+      "symbol": "TATSILV",
+      "name": "Tata Silver Exchange Traded Fund",
+      "ltp": 21.65,
+      "previousClose": 21.349999999999998,
+      "changePct": 1.41,
+      "nav": 21.4075,
+      "tradedValue": 1093095462.24
+    },
+    {
+      "symbol": "LIQUIDADD",
+      "name": "DSP S&P BSE Liquid Rate ETF",
+      "ltp": 1134.77,
+      "previousClose": 1134.6,
+      "changePct": 0.01,
+      "nav": 1134.6107,
+      "tradedValue": 691192528.84
+    },
+    {
+      "symbol": "PVTBANKADD",
+      "name": "DSP Nifty Private Bank ETF",
+      "ltp": 28.08,
+      "previousClose": 28,
+      "changePct": 0.29,
+      "nav": 27.9923,
+      "tradedValue": 626917981.15
+    },
+    {
+      "symbol": "SILVERIETF",
+      "name": "Domestic Price of Silver",
+      "ltp": 222.2,
+      "previousClose": 219.45,
+      "changePct": 1.25,
+      "nav": 219.8235,
+      "tradedValue": 595279299.32
+    },
+    {
+      "symbol": "HDFCSILVER",
+      "name": "HDFC Silver ETF",
+      "ltp": 213.35,
+      "previousClose": 209.94,
+      "changePct": 1.62,
+      "nav": 210.7443,
+      "tradedValue": 584522085.84
+    },
+    {
+      "symbol": "BANKBEES",
+      "name": "Nifty Bank",
+      "ltp": 593,
+      "previousClose": 587.67,
+      "changePct": 0.91,
+      "nav": 587.4526,
+      "tradedValue": 575046296.32
+    },
+    {
+      "symbol": "CASHIETF",
+      "name": "BSE Liquid Rate Index",
+      "ltp": 1069.99,
+      "previousClose": 1069.84,
+      "changePct": 0.01,
+      "nav": 1069.8285,
+      "tradedValue": 560681399.52
+    },
+    {
+      "symbol": "TATAGOLD",
+      "name": "Tata Gold Exchange Traded Fund",
+      "ltp": 13.9,
+      "previousClose": 13.75,
+      "changePct": 1.09,
+      "nav": 13.7663,
+      "tradedValue": 535925102.08
+    },
+    {
+      "symbol": "GOLDIETF",
+      "name": "Gold",
+      "ltp": 122.69,
+      "previousClose": 121.16,
+      "changePct": 1.26,
+      "nav": 121.2916,
+      "tradedValue": 462016887.66
+    },
+    {
+      "symbol": "SETFGOLD",
+      "name": "Gold",
+      "ltp": 122.1,
+      "previousClose": 120.72999999999999,
+      "changePct": 1.13,
+      "nav": 120.7771,
+      "tradedValue": 447273351
+    },
+    {
+      "symbol": "ITBEES",
+      "name": "Nifty IT TRI",
+      "ltp": 30.6,
+      "previousClose": 30.51,
+      "changePct": 0.29,
+      "nav": 30.559,
+      "tradedValue": 445446810.76
+    },
+    {
+      "symbol": "LIQUIDIETF",
+      "name": "S&P BSE Liquid Rate Index",
+      "ltp": 1000,
+      "previousClose": 999.99,
+      "changePct": 0,
+      "nav": 1000,
+      "tradedValue": 410847891.48
+    },
+    {
+      "symbol": "LIQUID",
+      "name": "Mirae Asset Nifty 1D Rate Liquid ETF",
+      "ltp": 999.99,
+      "previousClose": 999.99,
+      "changePct": 0,
+      "nav": 1000,
+      "tradedValue": 393767062.29
+    },
+    {
+      "symbol": "GOLDCASE",
+      "name": "Zerodha Gold ETF",
+      "ltp": 22.5,
+      "previousClose": 22.28,
+      "changePct": 0.99,
+      "nav": 22.284,
+      "tradedValue": 336399408.84
+    },
+    {
+      "symbol": "SETFNIFBK",
+      "name": "Nifty Bank",
+      "ltp": 588.65,
+      "previousClose": 583.37,
+      "changePct": 0.91,
+      "nav": 582.8078,
+      "tradedValue": 299589490.2
+    },
+    {
+      "symbol": "JUNIORBEES",
+      "name": "Nippon India ETF Nifty Next 50 Junior BeES",
+      "ltp": 772.53,
+      "previousClose": 765.88,
+      "changePct": 0.87,
+      "nav": 764.9779,
+      "tradedValue": 290223827.28
+    },
+    {
+      "symbol": "BANKIETF",
+      "name": "Nifty Bank",
+      "ltp": 58.72,
+      "previousClose": 58.36,
+      "changePct": 0.62,
+      "nav": 58.261,
+      "tradedValue": 287353260.72
+    },
+    {
+      "symbol": "SILVERCASE",
+      "name": "Commodity-Silver",
+      "ltp": 22.56,
+      "previousClose": 22.25,
+      "changePct": 1.39,
+      "nav": 22.284,
+      "tradedValue": 276175119.67
+    },
+    {
+      "symbol": "LIQUIDPLUS",
+      "name": "Nifty 1D Rate Index",
+      "ltp": 1093.53,
+      "previousClose": 1093.37,
+      "changePct": 0.01,
+      "nav": 1093.3666,
+      "tradedValue": 262055506.88
+    },
+    {
+      "symbol": "HDFCGOLD",
+      "name": "Gold",
+      "ltp": 122.3,
+      "previousClose": 120.98,
+      "changePct": 1.09,
+      "nav": 120.9889,
+      "tradedValue": 250527975.84
+    },
+    {
+      "symbol": "PSUBNKBEES",
+      "name": "Nifty PSU Bank",
+      "ltp": 91.85,
+      "previousClose": 90.44,
+      "changePct": 1.56,
+      "nav": 90.2729,
+      "tradedValue": 219155073.28
+    },
+    {
+      "symbol": "GILT5YBEES",
+      "name": "Nifty 5 yr Benchmark G-Sec Index",
+      "ltp": 65.88,
+      "previousClose": 65.77,
+      "changePct": 0.17,
+      "nav": 65.8263,
+      "tradedValue": 218740180.08
+    },
+    {
+      "symbol": "HDFCSML250",
+      "name": "HDFC NIFTY Smallcap 250 ETF",
+      "ltp": 180.6,
+      "previousClose": 177.26,
+      "changePct": 1.88,
+      "nav": 177.1198,
+      "tradedValue": 202831171.2
+    },
+    {
+      "symbol": "SBISILVER",
+      "name": "SBI SILVER ETF",
+      "ltp": 218.63,
+      "previousClose": 215.25,
+      "changePct": 1.57,
+      "nav": 215.8387,
+      "tradedValue": 189679512.24
+    },
+    {
+      "symbol": "SILVER",
+      "name": "Physical price of Silver",
+      "ltp": 222.4,
+      "previousClose": 219.53,
+      "changePct": 1.31,
+      "nav": 219.8863,
+      "tradedValue": 185511210.56
+    },
+    {
+      "symbol": "GOLDAXIS",
+      "name": "Gold",
+      "ltp": 119.78,
+      "previousClose": 117.78,
+      "changePct": 1.7,
+      "nav": 118.0368,
+      "tradedValue": 181051653.9
+    },
+    {
+      "symbol": "BANKBETA",
+      "name": "Nifty Bank",
+      "ltp": 59.16,
+      "previousClose": 59.449999999999996,
+      "changePct": -0.49,
+      "nav": 58.6883,
+      "tradedValue": 177851182.6
+    },
+    {
+      "symbol": "PVTBANIETF",
+      "name": "Nifty Private Bank Index",
+      "ltp": 28.07,
+      "previousClose": 27.88,
+      "changePct": 0.68,
+      "nav": 27.8508,
+      "tradedValue": 173644338.45
+    },
+    {
+      "symbol": "BANKNIFTY1",
+      "name": "Nifty Bank",
+      "ltp": 59.33,
+      "previousClose": 58.989999999999995,
+      "changePct": 0.58,
+      "nav": 58.8858,
+      "tradedValue": 165694085.87
+    },
+    {
+      "symbol": "SILVERBETA",
+      "name": "UTI Silver Exchange Traded Fund (UTI Silver ETF)",
+      "ltp": 215,
+      "previousClose": 212.24,
+      "changePct": 1.3,
+      "nav": 212.6905,
+      "tradedValue": 162702597.68
+    },
+    {
+      "symbol": "ESILVER",
+      "name": "Edelweiss Silver ETF",
+      "ltp": 222,
+      "previousClose": 219.79,
+      "changePct": 1.01,
+      "nav": 219.9894,
+      "tradedValue": 152811765.75
+    },
+    {
+      "symbol": "GOLD1",
+      "name": "Gold",
+      "ltp": 119.54,
+      "previousClose": 118.06,
+      "changePct": 1.25,
+      "nav": 118.1883,
+      "tradedValue": 140002013.22
+    },
+    {
+      "symbol": "SETFNIF50",
+      "name": "Nifty 50",
+      "ltp": 258.22,
+      "previousClose": 257.1,
+      "changePct": 0.44,
+      "nav": 256.7423,
+      "tradedValue": 131835471.12
+    },
+    {
+      "symbol": "LIQUIDBETF",
+      "name": "Bajaj Finserv Nifty 1D Rate Liquid ETF",
+      "ltp": 1089.35,
+      "previousClose": 1089.2099999999998,
+      "changePct": 0.01,
+      "nav": 1089.1968,
+      "tradedValue": 127587940.05
+    },
+    {
+      "symbol": "MID150BEES",
+      "name": "Nifty Midcap 150 TRI",
+      "ltp": 236.42,
+      "previousClose": 233.11999999999998,
+      "changePct": 1.42,
+      "nav": 232.728,
+      "tradedValue": 122032348.88
+    },
+    {
+      "symbol": "SMALLCAP",
+      "name": "Mirae Asset Nifty Smallcap 250 Momentum Quality 100 ETF",
+      "ltp": 46.97,
+      "previousClose": 46,
+      "changePct": 2.11,
+      "nav": 46.1473,
+      "tradedValue": 118314479.25
+    },
+    {
+      "symbol": "NIFTY1",
+      "name": "Nifty 50",
+      "ltp": 266.47,
+      "previousClose": 264.94000000000005,
+      "changePct": 0.58,
+      "nav": 264.6012,
+      "tradedValue": 118221808.78
+    },
+    {
+      "symbol": "SILVERADD",
+      "name": "DSP Silver ETF",
+      "ltp": 214.75,
+      "previousClose": 211.71,
+      "changePct": 1.44,
+      "nav": 212.2261,
+      "tradedValue": 110902423.74
+    },
+    {
+      "symbol": "GOLDETF",
+      "name": "Mirae Asset Gold ETF",
+      "ltp": 138.93,
+      "previousClose": 137.65,
+      "changePct": 0.93,
+      "nav": 137.6991,
+      "tradedValue": 108737377.92
+    },
+    {
+      "symbol": "LIQUIDETF",
+      "name": "Nifty1D rate index",
+      "ltp": 1000,
+      "previousClose": 999.99,
+      "changePct": 0,
+      "nav": 1000,
+      "tradedValue": 108378916.2
+    },
+    {
+      "symbol": "MOREALTY",
+      "name": "Motilal Oswal Nifty Realty ETF",
+      "ltp": 90.69,
+      "previousClose": 87.23,
+      "changePct": 3.97,
+      "nav": 87.4056,
+      "tradedValue": 107693291.5
+    },
+    {
+      "symbol": "MODEFENCE",
+      "name": "Nifty India Defence Total Return Index",
+      "ltp": 102.61,
+      "previousClose": 102.67999999999999,
+      "changePct": -0.07,
+      "nav": 102.3557,
+      "tradedValue": 107539923.39
+    },
+    {
+      "symbol": "MON100",
+      "name": "Nasdaq100",
+      "ltp": 324.85,
+      "previousClose": 324.70000000000005,
+      "changePct": 0.05,
+      "nav": 273.1106,
+      "tradedValue": 107368772.3
+    },
+    {
+      "symbol": "NIFTYBETA",
+      "name": "Nifty 50",
+      "ltp": 265.43,
+      "previousClose": 264.85,
+      "changePct": 0.22,
+      "nav": 264.3771,
+      "tradedValue": 106572680.4
+    },
+    {
+      "symbol": "HDFCNIFBAN",
+      "name": "Nifty Bank",
+      "ltp": 59.19,
+      "previousClose": 58.48,
+      "changePct": 1.21,
+      "nav": 58.4067,
+      "tradedValue": 106010929
+    },
+    {
+      "symbol": "NIFTYIETF",
+      "name": "Nifty 50",
+      "ltp": 271.42,
+      "previousClose": 270.37,
+      "changePct": 0.39,
+      "nav": 270.2702,
+      "tradedValue": 105601412.96
+    },
+    {
+      "symbol": "PHARMABEES",
+      "name": "Nifty Pharma TRI",
+      "ltp": 26.45,
+      "previousClose": 26.16,
+      "changePct": 1.11,
+      "nav": 26.1169,
+      "tradedValue": 97114180.56
+    },
+    {
+      "symbol": "SILVER1",
+      "name": "Kotak Silver ETF",
+      "ltp": 21.63,
+      "previousClose": 21.31,
+      "changePct": 1.5,
+      "nav": 21.3641,
+      "tradedValue": 81124168.6
+    },
+    {
+      "symbol": "NIFTYETF",
+      "name": "Nifty 50",
+      "ltp": 259.93,
+      "previousClose": 259.36,
+      "changePct": 0.22,
+      "nav": 259.3754,
+      "tradedValue": 79151354
+    },
+    {
+      "symbol": "NV20BEES",
+      "name": "Nifty50 Value20 TRI",
+      "ltp": 138.5,
+      "previousClose": 139.54,
+      "changePct": -0.75,
+      "nav": 139.5768,
+      "tradedValue": 75580697.25
+    },
+    {
+      "symbol": "CPSEETF",
+      "name": "CPSE ETF",
+      "ltp": 95.64,
+      "previousClose": 95.92,
+      "changePct": -0.29,
+      "nav": 95.9093,
+      "tradedValue": 75525305.28
+    },
+    {
+      "symbol": "SILVERAG",
+      "name": "Mirae Asset Silver ETF",
+      "ltp": 215.66,
+      "previousClose": 213.60999999999999,
+      "changePct": 0.96,
+      "nav": 214.4218,
+      "tradedValue": 70192536.6
+    },
+    {
+      "symbol": "LIQGRWBEES",
+      "name": "Liquid",
+      "ltp": 1046.78,
+      "previousClose": 1046.6399999999999,
+      "changePct": 0.01,
+      "nav": 1046.6482,
+      "tradedValue": 67469802.66
+    },
+    {
+      "symbol": "GROWWHOSPI",
+      "name": "BSE Hospitals Index",
+      "ltp": 54.1,
+      "previousClose": 53.28,
+      "changePct": 1.54,
+      "nav": 52.8989,
+      "tradedValue": 65740041.42
+    },
+    {
+      "symbol": "GROWWSLVR",
+      "name": "Commodity-Silver",
+      "ltp": 21.83,
+      "previousClose": 21.5,
+      "changePct": 1.53,
+      "nav": 21.5957,
+      "tradedValue": 62913041.16
+    },
+    {
+      "symbol": "NEXT50IETF",
+      "name": "Nifty Next 50",
+      "ltp": 75.4,
+      "previousClose": 74.69000000000001,
+      "changePct": 0.95,
+      "nav": 74.6602,
+      "tradedValue": 54991132.95
+    },
+    {
+      "symbol": "METALIETF",
+      "name": "Nifty Metal Index",
+      "ltp": 12.58,
+      "previousClose": 12.51,
+      "changePct": 0.56,
+      "nav": 12.5405,
+      "tradedValue": 53247688.48
+    },
+    {
+      "symbol": "MOVALUE",
+      "name": "Motilal Oswal S&P BSE Enhanced Value ETF",
+      "ltp": 115,
+      "previousClose": 112.11,
+      "changePct": 2.58,
+      "nav": 111.7947,
+      "tradedValue": 52263434.52
+    },
+    {
+      "symbol": "AONELIQUID",
+      "name": "Nifty 1D Rate Index",
+      "ltp": 1067.3,
+      "previousClose": 1067.1599999999999,
+      "changePct": 0.01,
+      "nav": 1067.1722,
+      "tradedValue": 41969437.9
+    },
+    {
+      "symbol": "EBBETF0430",
+      "name": "Nifty BHARAT Bond",
+      "ltp": 1606.9,
+      "previousClose": 1607.42,
+      "changePct": -0.03,
+      "nav": 1606.6651,
+      "tradedValue": 40665799.05
+    },
+    {
+      "symbol": "MIDCAPETF",
+      "name": "Mirae Asset Mutual Fund - Mirae Asset Nifty Midcap 150 ETF",
+      "ltp": 23.36,
+      "previousClose": 23.02,
+      "changePct": 1.48,
+      "nav": 23.0166,
+      "tradedValue": 40444608.04
+    },
+    {
+      "symbol": "ALPHA",
+      "name": "NIFTY Alpha 50 Index",
+      "ltp": 51.2,
+      "previousClose": 50.510000000000005,
+      "changePct": 1.37,
+      "nav": 50.6228,
+      "tradedValue": 40400171
+    },
+    {
+      "symbol": "GROWWGOLD",
+      "name": "Commodity",
+      "ltp": 13.96,
+      "previousClose": 13.82,
+      "changePct": 1.01,
+      "nav": 13.847,
+      "tradedValue": 40159464.48
+    },
+    {
+      "symbol": "HNGSNGBEES",
+      "name": "Hang Seng Index",
+      "ltp": 480,
+      "previousClose": 477.96,
+      "changePct": 0.43,
+      "nav": 437.4323,
+      "tradedValue": 38931748.28
+    },
+    {
+      "symbol": "MOCAPITAL",
+      "name": "Nifty Capital Market Total Return Index",
+      "ltp": 54.87,
+      "previousClose": 53.54,
+      "changePct": 2.48,
+      "nav": 53.6783,
+      "tradedValue": 38355719.95
+    },
+    {
+      "symbol": "HEALTHIETF",
+      "name": "Nifty Healthcare Index",
+      "ltp": 168.4,
+      "previousClose": 165.45000000000002,
+      "changePct": 1.78,
+      "nav": 165.5781,
+      "tradedValue": 38342169.45
+    },
+    {
+      "symbol": "SBILIQETF",
+      "name": "Nifty 1D Rate Index",
+      "ltp": 1046.64,
+      "previousClose": 1046.51,
+      "changePct": 0.01,
+      "nav": 1046.5055,
+      "tradedValue": 37500422.85
+    },
+    {
+      "symbol": "AUTOBEES",
+      "name": "Nifty Auto TRI",
+      "ltp": 276.05,
+      "previousClose": 275.56,
+      "changePct": 0.18,
+      "nav": 275.9875,
+      "tradedValue": 37145141.17
+    },
+    {
+      "symbol": "ICICIB22",
+      "name": "S&P BSE BHARAT 22 index",
+      "ltp": 116,
+      "previousClose": 115.98,
+      "changePct": 0.02,
+      "nav": 115.8674,
+      "tradedValue": 35691680.88
+    },
+    {
+      "symbol": "MOMENTUM50",
+      "name": "Nifty 500 Momentum 50 Total Return Index",
+      "ltp": 52.49,
+      "previousClose": 51.550000000000004,
+      "changePct": 1.82,
+      "nav": 51.7343,
+      "tradedValue": 35257622.07
+    },
+    {
+      "symbol": "SETFNN50",
+      "name": "Nifty Next 50",
+      "ltp": 767.41,
+      "previousClose": 757.9499999999999,
+      "changePct": 1.25,
+      "nav": 758.4079,
+      "tradedValue": 33624984.6
+    },
+    {
+      "symbol": "GOLDBETA",
+      "name": "Gold",
+      "ltp": 121,
+      "previousClose": 119.15,
+      "changePct": 1.55,
+      "nav": 119.1646,
+      "tradedValue": 33252573.61
+    },
+    {
+      "symbol": "HDFCPSUBK",
+      "name": "HDFC NIFTY PSU BANK ETF",
+      "ltp": 83.12,
+      "previousClose": 81.86,
+      "changePct": 1.54,
+      "nav": 81.7325,
+      "tradedValue": 32480038.8
+    },
+    {
+      "symbol": "SILVERAXIS",
+      "name": "Axis Silver ETF",
+      "ltp": 221,
+      "previousClose": 218.73,
+      "changePct": 1.04,
+      "nav": 218.9719,
+      "tradedValue": 30924523.5
+    },
+    {
+      "symbol": "NEXT50",
+      "name": "Nifty Next 50",
+      "ltp": 738.15,
+      "previousClose": 731.1,
+      "changePct": 0.96,
+      "nav": 730.3617,
+      "tradedValue": 29112551.68
+    },
+    {
+      "symbol": "LTGILTBEES",
+      "name": "NIFTY 8-13 yr G-Sec Index",
+      "ltp": 29.95,
+      "previousClose": 29.849999999999998,
+      "changePct": 0.34,
+      "nav": 29.8759,
+      "tradedValue": 28953418.38
+    },
+    {
+      "symbol": "FMCGIETF",
+      "name": "Nifty FMCG Index",
+      "ltp": 52.89,
+      "previousClose": 52.53,
+      "changePct": 0.69,
+      "nav": 52.5397,
+      "tradedValue": 28820393
+    },
+    {
+      "symbol": "PSUBANKADD",
+      "name": "DSP Nifty PSU Bank ETF",
+      "ltp": 83.25,
+      "previousClose": 81.9,
+      "changePct": 1.65,
+      "nav": 81.6894,
+      "tradedValue": 27587286.83
+    },
+    {
+      "symbol": "HDFCNEXT50",
+      "name": "HDFC NIFTY NEXT 50 ETF",
+      "ltp": 73.2,
+      "previousClose": 72.27,
+      "changePct": 1.29,
+      "nav": 72.3494,
+      "tradedValue": 26776090.35
+    },
+    {
+      "symbol": "GROWWDEFNC",
+      "name": "Nifty India Defence Index- Total Return Index",
+      "ltp": 93.42,
+      "previousClose": 93.43,
+      "changePct": -0.01,
+      "nav": 93.1133,
+      "tradedValue": 26755525.47
+    },
+    {
+      "symbol": "MOSMALL250",
+      "name": "Motilal Oswal Nifty Smallcap 250 ETF",
+      "ltp": 18,
+      "previousClose": 17.62,
+      "changePct": 2.16,
+      "nav": 17.6615,
+      "tradedValue": 24976449.09
+    },
+    {
+      "symbol": "QGOLDHALF",
+      "name": "Gold",
+      "ltp": 118.75,
+      "previousClose": 117.25,
+      "changePct": 1.28,
+      "nav": 117.3292,
+      "tradedValue": 23868032.43
+    },
+    {
+      "symbol": "GROWWPOWER",
+      "name": "BSE Power Index - TRI",
+      "ltp": 11.67,
+      "previousClose": 11.64,
+      "changePct": 0.26,
+      "nav": 11.6066,
+      "tradedValue": 23069851.17
+    },
+    {
+      "symbol": "ELIQUID",
+      "name": "Nifty 1D Rate Index (Debt Index)",
+      "ltp": 1038.5,
+      "previousClose": 1038.35,
+      "changePct": 0.01,
+      "nav": 1038.3648,
+      "tradedValue": 22364920.64
+    },
+    {
+      "symbol": "PSUBNKIETF",
+      "name": "ICICI Prudential Nifty PSU Bank ETF",
+      "ltp": 83.33,
+      "previousClose": 82.06,
+      "changePct": 1.55,
+      "nav": 81.9706,
+      "tradedValue": 22337249.7
+    },
+    {
+      "symbol": "MOM100",
+      "name": "Nifty Midcap 100",
+      "ltp": 67.1,
+      "previousClose": 66.13,
+      "changePct": 1.47,
+      "nav": 66.1044,
+      "tradedValue": 21696362.54
+    },
+    {
+      "symbol": "BSLGOLDETF",
+      "name": "Gold",
+      "ltp": 125.79,
+      "previousClose": 124.71000000000001,
+      "changePct": 0.87,
+      "nav": 124.5494,
+      "tradedValue": 21321224.64
+    },
+    {
+      "symbol": "HDFCLIQUID",
+      "name": "HDFC Nifty 1D Rate Liquid ETF",
+      "ltp": 1068.47,
+      "previousClose": 1068.31,
+      "changePct": 0.01,
+      "nav": null,
+      "tradedValue": 21197177.94
+    },
+    {
+      "symbol": "HDFCNIFTY",
+      "name": "Nifty 50",
+      "ltp": 270.3,
+      "previousClose": 269,
+      "changePct": 0.48,
+      "nav": 268.7282,
+      "tradedValue": 20420315.5
+    },
+    {
+      "symbol": "HDFCBSE500",
+      "name": "HDFC S&P BSE 500 ETF",
+      "ltp": 39,
+      "previousClose": 37.04,
+      "changePct": 5.29,
+      "nav": 36.7438,
+      "tradedValue": 20272942.44
+    },
+    {
+      "symbol": "METAL",
+      "name": "Nifty Metal Total Return Index",
+      "ltp": 12.63,
+      "previousClose": 12.57,
+      "changePct": 0.48,
+      "nav": 12.5845,
+      "tradedValue": 19442337.59
+    },
+    {
+      "symbol": "EBBETF0431",
+      "name": "Nifty BHARAT Bond",
+      "ltp": 1434.02,
+      "previousClose": 1436.1399999999999,
+      "changePct": -0.15,
+      "nav": 1437.4472,
+      "tradedValue": 19355252.02
+    },
+    {
+      "symbol": "MAFANG",
+      "name": "NYSE FANG+ Total Return Index",
+      "ltp": 194.06,
+      "previousClose": 193.17000000000002,
+      "changePct": 0.46,
+      "nav": 161.8129,
+      "tradedValue": 18050296.84
+    },
+    {
+      "symbol": "NEXT50BETA",
+      "name": "Nifty Next 50",
+      "ltp": 77.22,
+      "previousClose": 76.53999999999999,
+      "changePct": 0.89,
+      "nav": 76.423,
+      "tradedValue": 17983291.95
+    },
+    {
+      "symbol": "BSLNIFTY",
+      "name": "Nifty 50",
+      "ltp": 28.12,
+      "previousClose": 28.01,
+      "changePct": 0.39,
+      "nav": 27.9563,
+      "tradedValue": 17363243.61
+    },
+    {
+      "symbol": "ITETF",
+      "name": "Mirae Asset Nifty IT ETF",
+      "ltp": 29.19,
+      "previousClose": 29.1,
+      "changePct": 0.31,
+      "nav": 29.1428,
+      "tradedValue": 16825252.96
+    },
+    {
+      "symbol": "SML100CASE",
+      "name": "Nifty Smallcap 100 Index",
+      "ltp": 10.88,
+      "previousClose": 10.65,
+      "changePct": 2.16,
+      "nav": 10.6525,
+      "tradedValue": 16723500.2
+    },
+    {
+      "symbol": "MONIFTY500",
+      "name": "Motilal Oswal Nifty 500 ETF",
+      "ltp": 23.96,
+      "previousClose": 23.44,
+      "changePct": 2.22,
+      "nav": 23.3971,
+      "tradedValue": 16624259.84
+    },
+    {
+      "symbol": "LOWVOLIETF",
+      "name": "Nifty 100 Low Volatility 30 Index",
+      "ltp": 21.97,
+      "previousClose": 21.84,
+      "changePct": 0.6,
+      "nav": 21.8778,
+      "tradedValue": 15985608.51
+    },
+    {
+      "symbol": "ABSLBANETF",
+      "name": "Nifty Bank",
+      "ltp": 58.63,
+      "previousClose": 58.260000000000005,
+      "changePct": 0.64,
+      "nav": 58.1649,
+      "tradedValue": 15700834.8
+    },
+    {
+      "symbol": "GROWWLIQID",
+      "name": "Nifty 1D Rate Index",
+      "ltp": 109.83,
+      "previousClose": 109.81,
+      "changePct": 0.02,
+      "nav": 109.8108,
+      "tradedValue": 15656158.84
+    },
+    {
+      "symbol": "MASPTOP50",
+      "name": "S&P 500 Top 50 Total Return Index",
+      "ltp": 78.33,
+      "previousClose": 78.74,
+      "changePct": -0.52,
+      "nav": 65.2799,
+      "tradedValue": 15269963.52
+    },
+    {
+      "symbol": "TOP10ADD",
+      "name": "Nifty Top 10 Equal Weight Index",
+      "ltp": 86.7,
+      "previousClose": 86.35000000000001,
+      "changePct": 0.41,
+      "nav": 86.1605,
+      "tradedValue": 14605769.81
+    },
+    {
+      "symbol": "MOM30IETF",
+      "name": "ICICI Prudential Nifty 200 Momentum 30 ETF",
+      "ltp": 30.75,
+      "previousClose": 30.56,
+      "changePct": 0.62,
+      "nav": 30.6028,
+      "tradedValue": 13340691.2
+    },
+    {
+      "symbol": "GROWWRAIL",
+      "name": "Nifty India Railways PSU Index",
+      "ltp": 28.59,
+      "previousClose": 28.45,
+      "changePct": 0.49,
+      "nav": 28.3033,
+      "tradedValue": 13101346.48
+    },
+    {
+      "symbol": "DEFENCE",
+      "name": "BSE India Defence",
+      "ltp": 77.55,
+      "previousClose": 77.74,
+      "changePct": -0.24,
+      "nav": 77.6474,
+      "tradedValue": 13064160.48
+    },
+    {
+      "symbol": "ITIETF",
+      "name": "Nifty IT Index",
+      "ltp": 30.59,
+      "previousClose": 30.57,
+      "changePct": 0.07,
+      "nav": 30.5678,
+      "tradedValue": 12940201.45
+    },
+    {
+      "symbol": "MIDCAPIETF",
+      "name": "Nifty Midcap 150",
+      "ltp": 23.65,
+      "previousClose": 23.32,
+      "changePct": 1.42,
+      "nav": 23.3004,
+      "tradedValue": 12490326.86
+    },
+    {
+      "symbol": "TNIDETF",
+      "name": "Nifty India Digital Index",
+      "ltp": 83.26,
+      "previousClose": 81.95,
+      "changePct": 1.6,
+      "nav": 82.6608,
+      "tradedValue": 12377451.8
+    },
+    {
+      "symbol": "INFRABEES",
+      "name": "Nifty Infra",
+      "ltp": 964.9,
+      "previousClose": 956.61,
+      "changePct": 0.87,
+      "nav": 955.105,
+      "tradedValue": 12255167.68
+    },
+    {
+      "symbol": "GOLDADD",
+      "name": "DSP Gold ETF",
+      "ltp": 139.26,
+      "previousClose": 137.48,
+      "changePct": 1.29,
+      "nav": 137.5956,
+      "tradedValue": 12055756.16
+    },
+    {
+      "symbol": "SBIETFPB",
+      "name": "Nifty Private Bank Index",
+      "ltp": 289.95,
+      "previousClose": 281.39,
+      "changePct": 3.04,
+      "nav": 281.5896,
+      "tradedValue": 11944575.36
+    },
+    {
+      "symbol": "ALPHAETF",
+      "name": "Mirae Asset Nifty 200 Alpha 30 ETF",
+      "ltp": 25.95,
+      "previousClose": 25.65,
+      "changePct": 1.17,
+      "nav": 25.692,
+      "tradedValue": 11564492.98
+    },
+    {
+      "symbol": "GROWWCAPM",
+      "name": "Nifty Capital Markets Index",
+      "ltp": 11.6,
+      "previousClose": 11.209999999999999,
+      "changePct": 3.48,
+      "nav": 11.2655,
+      "tradedValue": 11465549.28
+    },
+    {
+      "symbol": "MIDSMALL",
+      "name": "Mirae Asset Nifty MidSmallcap400 Momentum Quality 100 ETF",
+      "ltp": 50.61,
+      "previousClose": 49.88,
+      "changePct": 1.46,
+      "nav": 49.7729,
+      "tradedValue": 11416019.94
+    },
+    {
+      "symbol": "AUTOIETF",
+      "name": "Nifty Auto Index",
+      "ltp": 27.58,
+      "previousClose": 27.599999999999998,
+      "changePct": -0.07,
+      "nav": 27.6433,
+      "tradedValue": 11161446.6
+    },
+    {
+      "symbol": "HEALTHY",
+      "name": "Nifty Healthcare TRI",
+      "ltp": 16.75,
+      "previousClose": 16.58,
+      "changePct": 1.03,
+      "nav": 16.6001,
+      "tradedValue": 10973751.36
+    },
+    {
+      "symbol": "MID150CASE",
+      "name": "Zerodha Nifty Midcap 150 ETF",
+      "ltp": 11.48,
+      "previousClose": 11.33,
+      "changePct": 1.32,
+      "nav": 11.3211,
+      "tradedValue": 10713850.86
+    },
+    {
+      "symbol": "EVIETF",
+      "name": "Nifty EV & New Age Automotive ETF",
+      "ltp": 31.6,
+      "previousClose": 31.040000000000003,
+      "changePct": 1.8,
+      "nav": 30.9784,
+      "tradedValue": 10396281.99
+    },
+    {
+      "symbol": "IT",
+      "name": "NIFTY IT Index",
+      "ltp": 30.85,
+      "previousClose": 30.5,
+      "changePct": 1.15,
+      "nav": 30.553,
+      "tradedValue": 10324555.56
+    },
+    {
+      "symbol": "HDFCMID150",
+      "name": "HDFC NIFTY Midcap 150 ETF",
+      "ltp": 23.09,
+      "previousClose": 22.77,
+      "changePct": 1.41,
+      "nav": 22.8015,
+      "tradedValue": 10281032.16
+    },
+    {
+      "symbol": "AONESILVER",
+      "name": "Domestic price of Silver",
+      "ltp": 8.52,
+      "previousClose": 8.42,
+      "changePct": 1.19,
+      "nav": 8.4235,
+      "tradedValue": 10052910
+    },
+    {
+      "symbol": "OILIETF",
+      "name": "Nifty Oil & Gas Index",
+      "ltp": 11.23,
+      "previousClose": 11.190000000000001,
+      "changePct": 0.36,
+      "nav": 11.163,
+      "tradedValue": 9956710.79
+    },
+    {
+      "symbol": "CONSUMBEES",
+      "name": "Nifty India Consumption TRI",
+      "ltp": 129.25,
+      "previousClose": 129.2,
+      "changePct": 0.04,
+      "nav": 129.3847,
+      "tradedValue": 9947534.24
+    },
+    {
+      "symbol": "PSUBANK",
+      "name": "Nifty PSU Bank",
+      "ltp": 822.9,
+      "previousClose": 810.59,
+      "changePct": 1.52,
+      "nav": 809.0168,
+      "tradedValue": 9428052.69
+    },
+    {
+      "symbol": "AONETOTAL",
+      "name": "Nifty Total Market Index",
+      "ltp": 11.8,
+      "previousClose": 11.66,
+      "changePct": 1.2,
+      "nav": 11.6744,
+      "tradedValue": 8961390.48
+    },
+    {
+      "symbol": "MAHKTECH",
+      "name": "Hang Seng TECH Total Return Index",
+      "ltp": 21.99,
+      "previousClose": 22.259999999999998,
+      "changePct": -1.21,
+      "nav": 19.3643,
+      "tradedValue": 8938561.17
+    },
+    {
+      "symbol": "LOWVOL1",
+      "name": "Kotak Nifty 100 Low Vol 30 ETF",
+      "ltp": 20.97,
+      "previousClose": 20.88,
+      "changePct": 0.43,
+      "nav": 20.8387,
+      "tradedValue": 8898596.41
+    },
+    {
+      "symbol": "BANKETF",
+      "name": "Mirae Asset Nifty Bank ETF",
+      "ltp": 584.45,
+      "previousClose": 577.9000000000001,
+      "changePct": 1.13,
+      "nav": 578.0475,
+      "tradedValue": 8751285.84
+    },
+    {
+      "symbol": "GROWWNET",
+      "name": "Index",
+      "ltp": 10.02,
+      "previousClose": 9.7,
+      "changePct": 3.3,
+      "nav": 9.7236,
+      "tradedValue": 8602203
+    },
+    {
+      "symbol": "SMALL250",
+      "name": "Nifty Smallcap 250",
+      "ltp": 17.9,
+      "previousClose": 17.639999999999997,
+      "changePct": 1.47,
+      "nav": 17.6226,
+      "tradedValue": 8567842.98
+    },
+    {
+      "symbol": "NIF100BEES",
+      "name": "Nifty 100 TRI",
+      "ltp": 266,
+      "previousClose": 264.12,
+      "changePct": 0.71,
+      "nav": 263.7401,
+      "tradedValue": 8557008.19
+    },
+    {
+      "symbol": "ALPL30IETF",
+      "name": "Nifty Alpha Low-Volatility 30 Index",
+      "ltp": 27.56,
+      "previousClose": 27.369999999999997,
+      "changePct": 0.69,
+      "nav": 27.4161,
+      "tradedValue": 8435490.03
+    },
+    {
+      "symbol": "MIDCAP",
+      "name": "Nifty Midcap 50 Index",
+      "ltp": 18.21,
+      "previousClose": 17.93,
+      "changePct": 1.56,
+      "nav": 17.9637,
+      "tradedValue": 8433622.75
+    },
+    {
+      "symbol": "MOSILVER",
+      "name": "Domestic Price of Physical Silver",
+      "ltp": 219.5,
+      "previousClose": 217.44,
+      "changePct": 0.95,
+      "nav": 217.8373,
+      "tradedValue": 8425546.28
+    },
+    {
+      "symbol": "CHEMICAL",
+      "name": "Nifty Chemicals Index (TRI)",
+      "ltp": 29.46,
+      "previousClose": 29.12,
+      "changePct": 1.17,
+      "nav": 29.161,
+      "tradedValue": 8277311.43
+    },
+    {
+      "symbol": "SENSEXETF",
+      "name": "Mirae Asset S&P BSE Sensex ETF",
+      "ltp": 79.03,
+      "previousClose": 78.9,
+      "changePct": 0.16,
+      "nav": 78.836,
+      "tradedValue": 8257093.56
+    },
+    {
+      "symbol": "BFSI",
+      "name": "Nifty Financial Services Index",
+      "ltp": 27.57,
+      "previousClose": 27.330000000000002,
+      "changePct": 0.88,
+      "nav": 27.3401,
+      "tradedValue": 8199015.24
+    },
+    {
+      "symbol": "ENERGY",
+      "name": "Nifty Energy",
+      "ltp": 39.09,
+      "previousClose": 38.7,
+      "changePct": 1.01,
+      "nav": 38.8472,
+      "tradedValue": 8098783
+    },
+    {
+      "symbol": "SENSEXIETF",
+      "name": "SENSEX",
+      "ltp": 884.99,
+      "previousClose": 878.41,
+      "changePct": 0.75,
+      "nav": 878.416,
+      "tradedValue": 8034062.34
+    },
+    {
+      "symbol": "FINIETF",
+      "name": "ICICI Prudential Nifty Financial Services Ex-Bank ETF",
+      "ltp": 32.8,
+      "previousClose": 32.07,
+      "changePct": 2.28,
+      "nav": 32.09,
+      "tradedValue": 7879388.4
+    },
+    {
+      "symbol": "INFRAIETF",
+      "name": "ICICI Prudential Nifty Infrastructure ETF",
+      "ltp": 96.4,
+      "previousClose": 95.21000000000001,
+      "changePct": 1.25,
+      "nav": 95.0747,
+      "tradedValue": 7425387.05
+    },
+    {
+      "symbol": "MOMENTUM",
+      "name": "Aditya Birla Sun Life Nifty 200 Momentum 30 ETF",
+      "ltp": 30.77,
+      "previousClose": 30.45,
+      "changePct": 1.05,
+      "nav": 30.4349,
+      "tradedValue": 6950398.43
+    },
+    {
+      "symbol": "MIDSELIETF",
+      "name": "S&P BSE Midcap Select Index",
+      "ltp": 19.15,
+      "previousClose": 18.72,
+      "changePct": 2.3,
+      "nav": 18.7674,
+      "tradedValue": 6465689.89
+    },
+    {
+      "symbol": "GROWWRLTY",
+      "name": "Index",
+      "ltp": 9.93,
+      "previousClose": 9.81,
+      "changePct": 1.22,
+      "nav": 9.7917,
+      "tradedValue": 6315178.87
+    },
+    {
+      "symbol": "AONEGOLD",
+      "name": "Domestic price of Gold",
+      "ltp": 13.38,
+      "previousClose": 13.260000000000002,
+      "changePct": 0.9,
+      "nav": 13.2348,
+      "tradedValue": 6079141.44
+    },
+    {
+      "symbol": "MOGOLD",
+      "name": "Domestic Price of Physical Gold",
+      "ltp": 141.6,
+      "previousClose": 140.35,
+      "changePct": 0.89,
+      "nav": 140.151,
+      "tradedValue": 5943835.42
+    },
+    {
+      "symbol": "ABSLLIQUID",
+      "name": "Aditya Birla Sun Life CRISIL Overnight Fund AI ETF",
+      "ltp": 999.99,
+      "previousClose": 999.99,
+      "changePct": 0,
+      "nav": 1000,
+      "tradedValue": 5930940.69
+    },
+    {
+      "symbol": "GROWWNIFTY",
+      "name": "Nifty 50 Index - TRI",
+      "ltp": 9.66,
+      "previousClose": 9.66,
+      "changePct": 0,
+      "nav": 9.6377,
+      "tradedValue": 5716867.44
+    },
+    {
+      "symbol": "SBINEQWETF",
+      "name": "Nifty50 Equal Weight",
+      "ltp": 33.12,
+      "previousClose": 32.839999999999996,
+      "changePct": 0.85,
+      "nav": 32.8404,
+      "tradedValue": 5574047.75
+    },
+    {
+      "symbol": "TOP100CASE",
+      "name": "Zerodha Nifty 100 ETF",
+      "ltp": 10.54,
+      "previousClose": 10.45,
+      "changePct": 0.86,
+      "nav": 10.4352,
+      "tradedValue": 5423067.75
+    },
+    {
+      "symbol": "NV20IETF",
+      "name": "Nifty50 Value 20",
+      "ltp": 13.72,
+      "previousClose": 13.64,
+      "changePct": 0.59,
+      "nav": 13.6003,
+      "tradedValue": 5083710.45
+    },
+    {
+      "symbol": "SILVERBND",
+      "name": "Commodity - Silver",
+      "ltp": 223.26,
+      "previousClose": 220.38,
+      "changePct": 1.31,
+      "nav": 220.9798,
+      "tradedValue": 5051437.05
+    },
+    {
+      "symbol": "HDFCNIFIT",
+      "name": "HDFC NIFTY IT ETF",
+      "ltp": 29.32,
+      "previousClose": 29.330000000000002,
+      "changePct": -0.03,
+      "nav": 29.3883,
+      "tradedValue": 4730076
+    },
+    {
+      "symbol": "GROWWEV",
+      "name": "Nifty EV and New Age Automotive Index",
+      "ltp": 31,
+      "previousClose": 30.91,
+      "changePct": 0.29,
+      "nav": 30.9098,
+      "tradedValue": 4704276.06
+    },
+    {
+      "symbol": "NIFTYCASE",
+      "name": "Nifty Index 50 Index",
+      "ltp": 9.62,
+      "previousClose": 9.569999999999999,
+      "changePct": 0.52,
+      "nav": 9.5701,
+      "tradedValue": 4694802.13
+    },
+    {
+      "symbol": "CONSUMER",
+      "name": "Nifty India New AgeConsumption",
+      "ltp": 11.71,
+      "previousClose": 11.56,
+      "changePct": 1.3,
+      "nav": 11.5553,
+      "tradedValue": 4650097.52
+    },
+    {
+      "symbol": "LIQUIDSHRI",
+      "name": "SHRIRAM NIFTY 1D RATE LIQUID ETF",
+      "ltp": 1112.15,
+      "previousClose": 1111.98,
+      "changePct": 0.02,
+      "nav": 1111.9916,
+      "tradedValue": 4559733
+    },
+    {
+      "symbol": "MOHEALTH",
+      "name": "Motilal Oswal S&P BSE Healthcare ETF",
+      "ltp": 50.35,
+      "previousClose": 49.83,
+      "changePct": 1.04,
+      "nav": 49.8466,
+      "tradedValue": 4530364.02
+    },
+    {
+      "symbol": "HDFCPVTBAN",
+      "name": "HDFC NIFTY Private Bank ETF",
+      "ltp": 28.65,
+      "previousClose": 28,
+      "changePct": 2.32,
+      "nav": 28.0926,
+      "tradedValue": 4479041
+    },
+    {
+      "symbol": "IVZINGOLD",
+      "name": "Gold",
+      "ltp": 125.05,
+      "previousClose": 123.45,
+      "changePct": 1.3,
+      "nav": 123.1474,
+      "tradedValue": 4440758.4
+    },
+    {
+      "symbol": "NIF100IETF",
+      "name": "Nifty 100",
+      "ltp": 28.1,
+      "previousClose": 27.740000000000002,
+      "changePct": 1.3,
+      "nav": 27.742,
+      "tradedValue": 4075635.74
+    },
+    {
+      "symbol": "LTGILTCASE",
+      "name": "Nifty 8-13 Yr G-Sec Index",
+      "ltp": 30.59,
+      "previousClose": 30.43,
+      "changePct": 0.53,
+      "nav": 30.4269,
+      "tradedValue": 4022049.36
+    },
+    {
+      "symbol": "LIQUIDSBI",
+      "name": "SBI NIFTY 1D Rate ETF",
+      "ltp": 1000.01,
+      "previousClose": 999.99,
+      "changePct": 0,
+      "nav": 1000,
+      "tradedValue": 4021959.78
+    },
+    {
+      "symbol": "EQUAL50ADD",
+      "name": "NIFTY 50 Equal Weight Index",
+      "ltp": 338,
+      "previousClose": 338.01,
+      "changePct": 0,
+      "nav": 337.5102,
+      "tradedValue": 4012104.25
+    },
+    {
+      "symbol": "EGOLD",
+      "name": "Edelweiss Gold ETF",
+      "ltp": 142.7,
+      "previousClose": 141.85,
+      "changePct": 0.6,
+      "nav": 141.5657,
+      "tradedValue": 3921924.37
+    },
+    {
+      "symbol": "MONQ50",
+      "name": "Nasdaq Q-50 Total Return Index",
+      "ltp": 143.65,
+      "previousClose": 146.33,
+      "changePct": -1.83,
+      "nav": 120.3173,
+      "tradedValue": 3881279.35
+    },
+    {
+      "symbol": "MNC",
+      "name": "Kotak Nifty MNC ETF",
+      "ltp": 33.23,
+      "previousClose": 33.12,
+      "changePct": 0.33,
+      "nav": 33.1721,
+      "tradedValue": 3556210.55
+    },
+    {
+      "symbol": "INTERNET",
+      "name": "Equity Index",
+      "ltp": 13.47,
+      "previousClose": 13.16,
+      "changePct": 2.36,
+      "nav": 13.1305,
+      "tradedValue": 3542028.2
+    },
+    {
+      "symbol": "EBBETF0433",
+      "name": "BHARAT Bond ETF-April 2033",
+      "ltp": 1318.25,
+      "previousClose": 1312.33,
+      "changePct": 0.45,
+      "nav": 1309.0825,
+      "tradedValue": 3395759.4
+    },
+    {
+      "symbol": "MOMENTUM30",
+      "name": "Nifty 200 Momentum 30 Index",
+      "ltp": 30.35,
+      "previousClose": 30.020000000000003,
+      "changePct": 1.1,
+      "nav": 30.053,
+      "tradedValue": 3387756.68
+    },
+    {
+      "symbol": "COMMOIETF",
+      "name": "ICICI Prudential Nifty Commodities ETF",
+      "ltp": 99.98,
+      "previousClose": 99.35000000000001,
+      "changePct": 0.63,
+      "nav": 99.3182,
+      "tradedValue": 3323003.6
+    },
+    {
+      "symbol": "MOENERGY",
+      "name": "Nifty Energy Index",
+      "ltp": 38.93,
+      "previousClose": 38.69,
+      "changePct": 0.62,
+      "nav": 38.7839,
+      "tradedValue": 3200106
+    },
+    {
+      "symbol": "SILVER360",
+      "name": "Commodity-Silver",
+      "ltp": 218.8,
+      "previousClose": 216.24,
+      "changePct": 1.18,
+      "nav": 216.6989,
+      "tradedValue": 3132094.6
+    },
+    {
+      "symbol": "SBIBPB",
+      "name": "BSE PSU Bank Index TRI",
+      "ltp": 47.67,
+      "previousClose": 46.63,
+      "changePct": 2.23,
+      "nav": 46.628,
+      "tradedValue": 3111125.8
+    },
+    {
+      "symbol": "BNKETFAXIS",
+      "name": "Nifty Bank",
+      "ltp": 591.81,
+      "previousClose": 586.3199999999999,
+      "changePct": 0.94,
+      "nav": 585.0112,
+      "tradedValue": 3059245.52
+    },
+    {
+      "symbol": "MOTOUR",
+      "name": "Nifty India Tourism Total Return Index",
+      "ltp": 80.3,
+      "previousClose": 78.94,
+      "changePct": 1.72,
+      "nav": 79.0445,
+      "tradedValue": 3051807.14
+    },
+    {
+      "symbol": "SELECTIPO",
+      "name": "BSE Select IPO Index",
+      "ltp": 46.4,
+      "previousClose": 45.18,
+      "changePct": 2.7,
+      "nav": 45.3251,
+      "tradedValue": 3049157.8
+    },
+    {
+      "symbol": "HDFCGROWTH",
+      "name": "HDFC NIFTY Growth Sectors 15 ETF",
+      "ltp": 113.14,
+      "previousClose": 113.53,
+      "changePct": -0.34,
+      "nav": 113.454,
+      "tradedValue": 3038924.14
+    },
+    {
+      "symbol": "NIFTYADD",
+      "name": "Nifty 50 Index",
+      "ltp": 251.73,
+      "previousClose": 251.36999999999998,
+      "changePct": 0.14,
+      "nav": 251.2133,
+      "tradedValue": 3019699.94
+    },
+    {
+      "symbol": "GROWWMETAL",
+      "name": "Nifty Metal Index",
+      "ltp": 11.93,
+      "previousClose": 11.879999999999999,
+      "changePct": 0.42,
+      "nav": 11.8802,
+      "tradedValue": 2937705.4
+    },
+    {
+      "symbol": "MAKEINDIA",
+      "name": "Nifty India Manufacturing Total Return Index",
+      "ltp": 160.36,
+      "previousClose": 159.91000000000003,
+      "changePct": 0.28,
+      "nav": 159.9884,
+      "tradedValue": 2822287.75
+    },
+    {
+      "symbol": "LICMFGOLD",
+      "name": "Gold",
+      "ltp": 129.3,
+      "previousClose": 127.4,
+      "changePct": 1.49,
+      "nav": null,
+      "tradedValue": 2789628.03
+    },
+    {
+      "symbol": "EVINDIA",
+      "name": "Nifty EV and New Age Automotive Total Return Index",
+      "ltp": 31.16,
+      "previousClose": 31.01,
+      "changePct": 0.48,
+      "nav": 31.0196,
+      "tradedValue": 2783418.66
+    },
+    {
+      "symbol": "BSE500IETF",
+      "name": "S&P BSE 500 index",
+      "ltp": 39.01,
+      "previousClose": 38.629999999999995,
+      "changePct": 0.98,
+      "nav": 38.6754,
+      "tradedValue": 2626678.32
+    },
+    {
+      "symbol": "NIFTYBETF",
+      "name": "Bajaj Finserv Nifty 50 ETF",
+      "ltp": 245.95,
+      "previousClose": 246.04999999999998,
+      "changePct": -0.04,
+      "nav": 245.3991,
+      "tradedValue": 2618516.88
+    },
+    {
+      "symbol": "SBIETFIT",
+      "name": "Nifty IT Index",
+      "ltp": 309.1,
+      "previousClose": 306.25,
+      "changePct": 0.93,
+      "nav": 305.0519,
+      "tradedValue": 2606977.38
+    },
+    {
+      "symbol": "DIVOPPBEES",
+      "name": "Nifty Dividend Opportunities 50 TRI",
+      "ltp": 75.64,
+      "previousClose": 75.45,
+      "changePct": 0.25,
+      "nav": 75.3557,
+      "tradedValue": 2598035.21
+    },
+    {
+      "symbol": "MULTICAP",
+      "name": "Nifty500 Multicap 50:25:25 Index",
+      "ltp": 16.55,
+      "previousClose": 16.330000000000002,
+      "changePct": 1.35,
+      "nav": 16.3589,
+      "tradedValue": 2583595.84
+    },
+    {
+      "symbol": "HDFCSENSEX",
+      "name": "SENSEX",
+      "ltp": 87.27,
+      "previousClose": 86.82,
+      "changePct": 0.52,
+      "nav": 86.6685,
+      "tradedValue": 2465747.28
+    },
+    {
+      "symbol": "MOMIDMTM",
+      "name": "Nifty Midcap 150 Momentum 50 Total Return Index",
+      "ltp": 63.01,
+      "previousClose": 61.879999999999995,
+      "changePct": 1.83,
+      "nav": 61.956,
+      "tradedValue": 2390697.6
+    },
+    {
+      "symbol": "MOBANK10",
+      "name": "BSE Top 10 Banks Total Return Index",
+      "ltp": 17.31,
+      "previousClose": 17.389999999999997,
+      "changePct": -0.46,
+      "nav": 17.1461,
+      "tradedValue": 2387244.3
+    },
+    {
+      "symbol": "VALUEAXIS",
+      "name": "Nifty500 Value 50 TRI",
+      "ltp": 32.62,
+      "previousClose": 32.349999999999994,
+      "changePct": 0.83,
+      "nav": 32.3327,
+      "tradedValue": 2154136.6
+    },
+    {
+      "symbol": "ESG",
+      "name": "NIFTY100 ESG SECTOR LEADERS",
+      "ltp": 41.35,
+      "previousClose": 41.07,
+      "changePct": 0.68,
+      "nav": 41.1044,
+      "tradedValue": 2076491.29
+    },
+    {
+      "symbol": "HEALTHAXIS",
+      "name": "Nifty Healthcare Index",
+      "ltp": 167.48,
+      "previousClose": 163.97,
+      "changePct": 2.14,
+      "nav": 164.239,
+      "tradedValue": 2016463.68
+    },
+    {
+      "symbol": "GOLD360",
+      "name": "Commodity-Gold",
+      "ltp": 139.4,
+      "previousClose": 138.65,
+      "changePct": 0.54,
+      "nav": 138.3019,
+      "tradedValue": 1899455.34
+    },
+    {
+      "symbol": "MOMOMENTUM",
+      "name": "Nifty 200 Momentum 30 Total Return Index",
+      "ltp": 61.01,
+      "previousClose": 60.82,
+      "changePct": 0.31,
+      "nav": 60.8377,
+      "tradedValue": 1836251.77
+    },
+    {
+      "symbol": "GOLDBND",
+      "name": "Commodity - Gold",
+      "ltp": 143.41,
+      "previousClose": 141.41,
+      "changePct": 1.41,
+      "nav": 141.5586,
+      "tradedValue": 1776262.32
+    },
+    {
+      "symbol": "VAL30IETF",
+      "name": "Nifty200 Value 30 Index",
+      "ltp": 15.23,
+      "previousClose": 15.110000000000001,
+      "changePct": 0.79,
+      "nav": 15.1014,
+      "tradedValue": 1717532.23
+    },
+    {
+      "symbol": "BBETF0432",
+      "name": "Nifty BHARAT Bond Index - April 2032",
+      "ltp": 1356,
+      "previousClose": 1352.45,
+      "changePct": 0.26,
+      "nav": 1349.2401,
+      "tradedValue": 1611759.8
+    },
+    {
+      "symbol": "NIFTYAXIS",
+      "name": "Nifty 50",
+      "ltp": 264.47,
+      "previousClose": 264.62,
+      "changePct": -0.06,
+      "nav": 263.942,
+      "tradedValue": 1600541.25
+    },
+    {
+      "symbol": "SENSEXBETA",
+      "name": "SENSEX",
+      "ltp": 847.66,
+      "previousClose": 847.67,
+      "changePct": 0,
+      "nav": 846.4341,
+      "tradedValue": 1578292.75
+    },
+    {
+      "symbol": "SHARIABEES",
+      "name": "Shariah",
+      "ltp": 451,
+      "previousClose": 449.48,
+      "changePct": 0.34,
+      "nav": 448.684,
+      "tradedValue": 1555510.34
+    },
+    {
+      "symbol": "QNIFTY",
+      "name": "Nifty 50",
+      "ltp": 263.6,
+      "previousClose": 263.09000000000003,
+      "changePct": 0.19,
+      "nav": 262.4946,
+      "tradedValue": 1505354.62
+    },
+    {
+      "symbol": "HDFCQUAL",
+      "name": "HDFC NIFTY100 Quality 30 ETF",
+      "ltp": 56.67,
+      "previousClose": 56.75,
+      "changePct": -0.14,
+      "nav": 56.6131,
+      "tradedValue": 1421080.83
+    },
+    {
+      "symbol": "BANK10ADD",
+      "name": "BSE Top 10 Banks Index (TRI)",
+      "ltp": 17.26,
+      "previousClose": 17.130000000000003,
+      "changePct": 0.76,
+      "nav": 17.1418,
+      "tradedValue": 1405042.76
+    },
+    {
+      "symbol": "ABSLPSE",
+      "name": "Aditya Birla Sun Life Nifty PSE ETF",
+      "ltp": 10.24,
+      "previousClose": 10.16,
+      "changePct": 0.79,
+      "nav": 10.1641,
+      "tradedValue": 1358337.19
+    },
+    {
+      "symbol": "TECH",
+      "name": "Nifty IT TRI Index",
+      "ltp": 30.03,
+      "previousClose": 30.05,
+      "changePct": -0.07,
+      "nav": 30.1157,
+      "tradedValue": 1340268.93
+    },
+    {
+      "symbol": "HDFCMOMENT",
+      "name": "HDFC NIFTY200 Momentum 30 ETF",
+      "ltp": 30.65,
+      "previousClose": 30.31,
+      "changePct": 1.12,
+      "nav": 30.3338,
+      "tradedValue": 1291453.8
+    },
+    {
+      "symbol": "AONENIFTY",
+      "name": "Nifty 50 Index",
+      "ltp": 9.92,
+      "previousClose": 9.85,
+      "changePct": 0.71,
+      "nav": 9.8481,
+      "tradedValue": 1230500.7
+    },
+    {
+      "symbol": "HEALTHCARE",
+      "name": "Nifty 500 Healthcare Index",
+      "ltp": 21.15,
+      "previousClose": 20.9,
+      "changePct": 1.2,
+      "nav": 20.8979,
+      "tradedValue": 1217600.58
+    },
+    {
+      "symbol": "CONSUMIETF",
+      "name": "Nifty India Consumption Index",
+      "ltp": 120.69,
+      "previousClose": 120.05,
+      "changePct": 0.53,
+      "nav": 120.3511,
+      "tradedValue": 1154992.51
+    },
+    {
+      "symbol": "QUAL30IETF",
+      "name": "ICICI Prudential Nifty 200 Quality 30 ETF",
+      "ltp": 20.88,
+      "previousClose": 20.52,
+      "changePct": 1.75,
+      "nav": 20.4841,
+      "tradedValue": 1133705.99
+    },
+    {
+      "symbol": "ITADD",
+      "name": "DSP Nifty IT ETF",
+      "ltp": 28.7,
+      "previousClose": 29.099999999999998,
+      "changePct": -1.37,
+      "nav": 29.1768,
+      "tradedValue": 1128169.89
+    },
+    {
+      "symbol": "GROWWPSUBK",
+      "name": "Nifty PSU Bank Index - TRI",
+      "ltp": 82.55,
+      "previousClose": 81.23,
+      "changePct": 1.63,
+      "nav": 81.0524,
+      "tradedValue": 1089966.2
+    },
+    {
+      "symbol": "ABSLMSCIN",
+      "name": "MSCI India Index",
+      "ltp": 29.16,
+      "previousClose": 29.18,
+      "changePct": -0.07,
+      "nav": 29.0993,
+      "tradedValue": 1076494.02
+    },
+    {
+      "symbol": "EMULTIMQ",
+      "name": "Nifty500 Multicap Momentum Quality 50 Total Return Index",
+      "ltp": 41.01,
+      "previousClose": 40.839999999999996,
+      "changePct": 0.42,
+      "nav": 40.6933,
+      "tradedValue": 1013399.97
+    },
+    {
+      "symbol": "MIDQ50ADD",
+      "name": "Nifty Midcap 150 Quality 50 Index",
+      "ltp": 24.55,
+      "previousClose": 24.38,
+      "changePct": 0.7,
+      "nav": 24.3336,
+      "tradedValue": 994089.84
+    },
+    {
+      "symbol": "GROWWCHEM",
+      "name": "Nifty Chemicals Index - TRI",
+      "ltp": 29.32,
+      "previousClose": 29.1,
+      "changePct": 0.76,
+      "nav": 29.1151,
+      "tradedValue": 941497.76
+    },
+    {
+      "symbol": "MOM50",
+      "name": "Nifty 50",
+      "ltp": 253,
+      "previousClose": 249.6,
+      "changePct": 1.36,
+      "nav": 249.6622,
+      "tradedValue": 941337.52
+    },
+    {
+      "symbol": "GROWWSC250",
+      "name": "Nifty Smallcap 250 Index - TRI",
+      "ltp": 10.27,
+      "previousClose": 10.18,
+      "changePct": 0.88,
+      "nav": 10.1451,
+      "tradedValue": 872492.4
+    },
+    {
+      "symbol": "ITAXIS",
+      "name": "NIFTY IT Index",
+      "ltp": 307.44,
+      "previousClose": 301.7,
+      "changePct": 1.9,
+      "nav": 303.108,
+      "tradedValue": 871417.6
+    },
+    {
+      "symbol": "GROWWMOM50",
+      "name": "Nifty 500 Momentum 50 Index- Total Return Index",
+      "ltp": 10.61,
+      "previousClose": 10.479999999999999,
+      "changePct": 1.24,
+      "nav": 10.4718,
+      "tradedValue": 855509.38
+    },
+    {
+      "symbol": "BANKPSU",
+      "name": "Nifty PSU Bank Total Return Index",
+      "ltp": 82.78,
+      "previousClose": 81.48,
+      "changePct": 1.6,
+      "nav": 81.4861,
+      "tradedValue": 854680.68
+    },
+    {
+      "symbol": "BANKBETF",
+      "name": "Bajaj Finserv Nifty Bank ETF",
+      "ltp": 58.18,
+      "previousClose": 58.72,
+      "changePct": -0.92,
+      "nav": 57.6701,
+      "tradedValue": 823818.36
+    },
+    {
+      "symbol": "HEALTHADD",
+      "name": "DSP Nifty Healthcare ETF",
+      "ltp": 16.62,
+      "previousClose": 16.26,
+      "changePct": 2.21,
+      "nav": 16.2897,
+      "tradedValue": 816416
+    },
+    {
+      "symbol": "NIFTYQLITY",
+      "name": "Aditya Birla Sun Life Nifty 200 Quality 30 ETF",
+      "ltp": 20.54,
+      "previousClose": 20.689999999999998,
+      "changePct": -0.72,
+      "nav": 20.6913,
+      "tradedValue": 814190.18
+    },
+    {
+      "symbol": "SBIMIDMOM",
+      "name": "Nifty Midcap 150 Momentum 50 Index",
+      "ltp": 61.99,
+      "previousClose": 61.38,
+      "changePct": 0.99,
+      "nav": 61.1369,
+      "tradedValue": 798716.76
+    },
+    {
+      "symbol": "NEXT50ETF",
+      "name": "Nifty Next 50 Index",
+      "ltp": 72.03,
+      "previousClose": 71.45,
+      "changePct": 0.81,
+      "nav": 71.269,
+      "tradedValue": 765412.83
+    },
+    {
+      "symbol": "TOP15IETF",
+      "name": "Nifty Top 15 Equal Weight Index",
+      "ltp": 9.75,
+      "previousClose": 9.74,
+      "changePct": 0.1,
+      "nav": 9.7205,
+      "tradedValue": 759554.25
+    },
+    {
+      "symbol": "NIFTY100EW",
+      "name": "Nifty 100 Equal Weight Index",
+      "ltp": 34.81,
+      "previousClose": 34.32,
+      "changePct": 1.43,
+      "nav": 34.289,
+      "tradedValue": 695485.44
+    },
+    {
+      "symbol": "AONETMMQ50",
+      "name": "Nifty Total Market Momentum Quality 50 TRI",
+      "ltp": 10.29,
+      "previousClose": 9.94,
+      "changePct": 3.52,
+      "nav": 9.9328,
+      "tradedValue": 679522.82
+    },
+    {
+      "symbol": "NV20",
+      "name": "Nifty50 Value 20",
+      "ltp": 14,
+      "previousClose": 13.95,
+      "changePct": 0.36,
+      "nav": 13.9433,
+      "tradedValue": 671808.9
+    },
+    {
+      "symbol": "MIDCAPBETA",
+      "name": "UTI Nifty Midcap 150 Exchange Traded Fund (ETF)",
+      "ltp": 230.99,
+      "previousClose": 227.68,
+      "changePct": 1.45,
+      "nav": 227.528,
+      "tradedValue": 655077.78
+    },
+    {
+      "symbol": "MSCIINDIA",
+      "name": "MSCI India Index",
+      "ltp": 29.52,
+      "previousClose": 29.44,
+      "changePct": 0.27,
+      "nav": 29.417,
+      "tradedValue": 626974.92
+    },
+    {
+      "symbol": "SBIETFCON",
+      "name": "Nifty India Consumption Index",
+      "ltp": 120.36,
+      "previousClose": 119.99,
+      "changePct": 0.31,
+      "nav": 119.8945,
+      "tradedValue": 589389.35
+    },
+    {
+      "symbol": "SMALLADD",
+      "name": "Nifty Smallcap 250 Index",
+      "ltp": 18,
+      "previousClose": 17.7,
+      "changePct": 1.69,
+      "nav": 17.6671,
+      "tradedValue": 547797.9
+    },
+    {
+      "symbol": "MANUFGBEES",
+      "name": "Nifty India Manufacturing TRI",
+      "ltp": 159.9,
+      "previousClose": 158.38,
+      "changePct": 0.96,
+      "nav": 157.9044,
+      "tradedValue": 536406
+    },
+    {
+      "symbol": "SBISMLETF",
+      "name": "Nifty Smallcap 250 Index",
+      "ltp": 18.06,
+      "previousClose": 17.63,
+      "changePct": 2.44,
+      "nav": 17.5878,
+      "tradedValue": 535013.1
+    },
+    {
+      "symbol": "BANKADD",
+      "name": "DSP Nifty Bank ETF",
+      "ltp": 58.7,
+      "previousClose": 58.18,
+      "changePct": 0.89,
+      "nav": 58.0821,
+      "tradedValue": 529536.42
+    },
+    {
+      "symbol": "CHOICEGOLD",
+      "name": "Gold",
+      "ltp": 142.48,
+      "previousClose": 140.35,
+      "changePct": 1.52,
+      "nav": 140.6362,
+      "tradedValue": 527437.41
+    },
+    {
+      "symbol": "HDFCVALUE",
+      "name": "HDFC NIFTY50 Value 20 ETF",
+      "ltp": 125.83,
+      "previousClose": 125.89999999999999,
+      "changePct": -0.06,
+      "nav": 125.5467,
+      "tradedValue": 518662.1
+    },
+    {
+      "symbol": "HDFCNIF100",
+      "name": "HDFC NIFTY 100 ETF",
+      "ltp": 25.88,
+      "previousClose": 25.72,
+      "changePct": 0.62,
+      "nav": 25.6983,
+      "tradedValue": 512535.1
+    },
+    {
+      "symbol": "MOSERVICE",
+      "name": "Nifty Services Sector Total Return Index",
+      "ltp": 31.03,
+      "previousClose": 30.740000000000002,
+      "changePct": 0.94,
+      "nav": 30.7939,
+      "tradedValue": 512439.36
+    },
+    {
+      "symbol": "NEXT30ADD",
+      "name": "BSE SENSEX Next 30 Index",
+      "ltp": 42,
+      "previousClose": 41.89,
+      "changePct": 0.26,
+      "nav": 41.7558,
+      "tradedValue": 509343.34
+    },
+    {
+      "symbol": "GROWWN200",
+      "name": "Nifty 200 Index- Total Return Index",
+      "ltp": 11.26,
+      "previousClose": 11.14,
+      "changePct": 1.08,
+      "nav": 11.1679,
+      "tradedValue": 506338.24
+    },
+    {
+      "symbol": "PVTBKGROWW",
+      "name": "Nifty Private Bank Index - TRI",
+      "ltp": 27.76,
+      "previousClose": 27.71,
+      "changePct": 0.18,
+      "nav": 27.6567,
+      "tradedValue": 503027.28
+    },
+    {
+      "symbol": "ECAPINSURE",
+      "name": "BSE Capital Markets & Insurance Total Return Index",
+      "ltp": 24.39,
+      "previousClose": 24.12,
+      "changePct": 1.12,
+      "nav": 23.9101,
+      "tradedValue": 501779.07
+    },
+    {
+      "symbol": "NETF",
+      "name": "Tata Nifty 50 Exchange Traded Fund",
+      "ltp": 259.73,
+      "previousClose": 259.63,
+      "changePct": 0.04,
+      "nav": 259.5568,
+      "tradedValue": 500229.99
+    },
+    {
+      "symbol": "SMALLGROWW",
+      "name": "Nifty Smallcap 250 Momentum Quality 100 Index TRI",
+      "ltp": 46.69,
+      "previousClose": 46.08,
+      "changePct": 1.32,
+      "nav": 46.1939,
+      "tradedValue": 493680
+    },
+    {
+      "symbol": "GSEC5IETF",
+      "name": "Nifty 5 yr Benchmark G-Sec Index",
+      "ltp": 66.42,
+      "previousClose": 66.01,
+      "changePct": 0.62,
+      "nav": 65.961,
+      "tradedValue": 441612.64
+    },
+    {
+      "symbol": "MOGSEC",
+      "name": "Nifty 5 yr Benchmark G-Sec Index",
+      "ltp": 65.45,
+      "previousClose": 65.23,
+      "changePct": 0.34,
+      "nav": 64.9993,
+      "tradedValue": 420481.88
+    },
+    {
+      "symbol": "GROWWNXT50",
+      "name": "Index",
+      "ltp": 71.43,
+      "previousClose": 71.11000000000001,
+      "changePct": 0.45,
+      "nav": 71.0822,
+      "tradedValue": 415457.28
+    },
+    {
+      "symbol": "ESENSEX",
+      "name": "BSE Sensex TRI",
+      "ltp": 77.02,
+      "previousClose": 77,
+      "changePct": 0.03,
+      "nav": 76.9074,
+      "tradedValue": 411976.02
+    },
+    {
+      "symbol": "SMALLIETF",
+      "name": "Nifty Smallcap 250 Index",
+      "ltp": 18,
+      "previousClose": 17.55,
+      "changePct": 2.56,
+      "nav": 17.5979,
+      "tradedValue": 400557.1
+    },
+    {
+      "symbol": "SETF10GILT",
+      "name": "Nifty 10 yr Benchmark G-Sec Index",
+      "ltp": 265.86,
+      "previousClose": 265.16,
+      "changePct": 0.26,
+      "nav": 264.6428,
+      "tradedValue": 399457.1
+    },
+    {
+      "symbol": "EQUAL50",
+      "name": "Nifty50 Equal Weight",
+      "ltp": 327.65,
+      "previousClose": 328,
+      "changePct": -0.11,
+      "nav": 326.6106,
+      "tradedValue": 383115.68
+    },
+    {
+      "symbol": "MID150",
+      "name": "Nifty Midcap 150 Index",
+      "ltp": 23.26,
+      "previousClose": 22.930000000000003,
+      "changePct": 1.44,
+      "nav": null,
+      "tradedValue": 376165.04
+    },
+    {
+      "symbol": "ABSLNN50ET",
+      "name": "Nifty Next 50",
+      "ltp": 75.22,
+      "previousClose": 74.47,
+      "changePct": 1.01,
+      "nav": 74.5078,
+      "tradedValue": 360776.89
+    },
+    {
+      "symbol": "CONS",
+      "name": "Kotak Nifty India Consumption ETF",
+      "ltp": 12.03,
+      "previousClose": 11.93,
+      "changePct": 0.84,
+      "nav": 11.946,
+      "tradedValue": 341061.99
+    },
+    {
+      "symbol": "FLEXIADD",
+      "name": "Nifty500 Flexicap Quality 30 TRI",
+      "ltp": 9.8,
+      "previousClose": 9.680000000000001,
+      "changePct": 1.24,
+      "nav": 9.6781,
+      "tradedValue": 338349.92
+    },
+    {
+      "symbol": "TWCGOLDETF",
+      "name": "Commodity",
+      "ltp": 142.85,
+      "previousClose": 141.41,
+      "changePct": 1.02,
+      "nav": 141.1186,
+      "tradedValue": 329107.9
+    },
+    {
+      "symbol": "SENSEXAXIS",
+      "name": "AXIS S&P BSE SENSEX ETF",
+      "ltp": 79.36,
+      "previousClose": 79.29,
+      "changePct": 0.09,
+      "nav": 79.277,
+      "tradedValue": 311044.37
+    },
+    {
+      "symbol": "VALUE",
+      "name": "Nifty 500 Value 50",
+      "ltp": 16.02,
+      "previousClose": 15.84,
+      "changePct": 1.14,
+      "nav": 15.8812,
+      "tradedValue": 303562.98
+    },
+    {
+      "symbol": "TOP20",
+      "name": "Nifty Top 20 Equal Weight",
+      "ltp": 8.7,
+      "previousClose": 8.67,
+      "changePct": 0.35,
+      "nav": 8.6655,
+      "tradedValue": 300254.4
+    },
+    {
+      "symbol": "ELM250",
+      "name": "Nifty LargeMidcap 250 TRI",
+      "ltp": 16.43,
+      "previousClose": 16.29,
+      "changePct": 0.86,
+      "nav": 16.3098,
+      "tradedValue": 291010.5
+    },
+    {
+      "symbol": "BSLSENETFG",
+      "name": "BSE SENSEX Index",
+      "ltp": 77.51,
+      "previousClose": 77.11,
+      "changePct": 0.52,
+      "nav": 77.0308,
+      "tradedValue": 290153.11
+    },
+    {
+      "symbol": "ENIFTY",
+      "name": "Nifty 50 TRI",
+      "ltp": 24.09,
+      "previousClose": 24.05,
+      "changePct": 0.17,
+      "nav": 24.0202,
+      "tradedValue": 289532.43
+    },
+    {
+      "symbol": "MOIPO",
+      "name": "BSE Select IPO Total Return Index",
+      "ltp": 46.54,
+      "previousClose": 45.22,
+      "changePct": 2.92,
+      "nav": 45.355,
+      "tradedValue": 286441.92
+    },
+    {
+      "symbol": "GROWWLOVOL",
+      "name": "Nifty 500 Low Volatility 50 Index   TRI",
+      "ltp": 10.23,
+      "previousClose": 10.190000000000001,
+      "changePct": 0.39,
+      "nav": 10.2369,
+      "tradedValue": 284043.1
+    },
+    {
+      "symbol": "UNIONGOLD",
+      "name": "Commodity Gold",
+      "ltp": 139.9,
+      "previousClose": 138.75,
+      "changePct": 0.83,
+      "nav": 138.7105,
+      "tradedValue": 259971.12
+    },
+    {
+      "symbol": "GROWWPSE",
+      "name": "Nifty PSE Index - TRI",
+      "ltp": 98.79,
+      "previousClose": 98.46000000000001,
+      "changePct": 0.34,
+      "nav": 98.2546,
+      "tradedValue": 251714.88
+    },
+    {
+      "symbol": "IDFNIFTYET",
+      "name": "Nifty 50",
+      "ltp": 264.95,
+      "previousClose": 264.24,
+      "changePct": 0.27,
+      "nav": 263.4884,
+      "tradedValue": 223395
+    },
+    {
+      "symbol": "GSEC10IETF",
+      "name": "ICICI Prudential Nifty 10 yr Benchmark G-Sec ETF",
+      "ltp": 265.45,
+      "previousClose": 265.15999999999997,
+      "changePct": 0.11,
+      "nav": 264.148,
+      "tradedValue": 217129.92
+    },
+    {
+      "symbol": "MIDCAPADD",
+      "name": "Nifty Midcap 150 Index",
+      "ltp": 22.86,
+      "previousClose": 22.62,
+      "changePct": 1.06,
+      "nav": 22.5654,
+      "tradedValue": 215706.96
+    },
+    {
+      "symbol": "LICNETFGSC",
+      "name": "GSEC10 NSE Index",
+      "ltp": 29.4,
+      "previousClose": 29.5,
+      "changePct": -0.34,
+      "nav": 29.404,
+      "tradedValue": 209024
+    },
+    {
+      "symbol": "CONSUMAXIS",
+      "name": "NIFTY India Consumption Index",
+      "ltp": 120.04,
+      "previousClose": 119.4,
+      "changePct": 0.54,
+      "nav": 119.5817,
+      "tradedValue": 208752.66
+    },
+    {
+      "symbol": "SNXT30BEES",
+      "name": "BSE Sensex Next 30 Index",
+      "ltp": 41.85,
+      "previousClose": 41.690000000000005,
+      "changePct": 0.38,
+      "nav": 41.6574,
+      "tradedValue": 207561.06
+    },
+    {
+      "symbol": "INFRA",
+      "name": "Nifty India Infrastructure & Logistics",
+      "ltp": 12.22,
+      "previousClose": 12.09,
+      "changePct": 1.08,
+      "nav": 12.0729,
+      "tradedValue": 195190.06
+    },
+    {
+      "symbol": "SBIETFQLTY",
+      "name": "Nifty 200 Quality 30 Index",
+      "ltp": 216.26,
+      "previousClose": 215.76999999999998,
+      "changePct": 0.23,
+      "nav": 215.4115,
+      "tradedValue": 173881.08
+    },
+    {
+      "symbol": "MON50EQUAL",
+      "name": "Nifty 50 Equal Weight Total Return Index",
+      "ltp": 32.95,
+      "previousClose": 32.910000000000004,
+      "changePct": 0.12,
+      "nav": 32.7639,
+      "tradedValue": 165330
+    },
+    {
+      "symbol": "SENSEXADD",
+      "name": "DSP S&P BSE Sensex ETF",
+      "ltp": 78.93,
+      "previousClose": 78.75,
+      "changePct": 0.23,
+      "nav": 78.7916,
+      "tradedValue": 161830.89
+    },
+    {
+      "symbol": "MSCI360",
+      "name": "MSCI India Index",
+      "ltp": 10.05,
+      "previousClose": 10.14,
+      "changePct": -0.89,
+      "nav": 9.9598,
+      "tradedValue": 160188.84
+    },
+    {
+      "symbol": "MONEXT50",
+      "name": "Nifty Next 50 Total Return Index",
+      "ltp": 71.36,
+      "previousClose": 70.46,
+      "changePct": 1.28,
+      "nav": 70.6881,
+      "tradedValue": 156638.28
+    },
+    {
+      "symbol": "MONIFTY100",
+      "name": "Nifty 100 Total Return Index",
+      "ltp": 25.16,
+      "previousClose": 25.04,
+      "changePct": 0.48,
+      "nav": 25.0129,
+      "tradedValue": 135957.53
+    },
+    {
+      "symbol": "MOINFRA",
+      "name": "BSE India Infrastructure Total Return Index",
+      "ltp": 61.02,
+      "previousClose": 60.690000000000005,
+      "changePct": 0.54,
+      "nav": 60.7591,
+      "tradedValue": 133997.49
+    },
+    {
+      "symbol": "SBINMID150",
+      "name": "Nifty Midcap 150 Index",
+      "ltp": 22.96,
+      "previousClose": 22.62,
+      "changePct": 1.5,
+      "nav": 22.565,
+      "tradedValue": 125364.24
+    },
+    {
+      "symbol": "DIVIDEND",
+      "name": "BSE 500 Dividend Leaders",
+      "ltp": 34.67,
+      "previousClose": 34.47,
+      "changePct": 0.58,
+      "nav": 34.4942,
+      "tradedValue": 125001.9
+    },
+    {
+      "symbol": "FMCGADD",
+      "name": "Nifty FMCG Index (TRI)",
+      "ltp": 49.35,
+      "previousClose": 49.1,
+      "changePct": 0.51,
+      "nav": 49.0851,
+      "tradedValue": 123305.46
+    },
+    {
+      "symbol": "NEXT50ADD",
+      "name": "Nifty Next 50 TRI",
+      "ltp": 71.9,
+      "previousClose": 71.4,
+      "changePct": 0.7,
+      "nav": 71.1228,
+      "tradedValue": 119491.84
+    },
+    {
+      "symbol": "LICNMID100",
+      "name": "LIC MF Nifty Midcap 100 ETF",
+      "ltp": 62.37,
+      "previousClose": 61.73,
+      "changePct": 1.04,
+      "nav": 61.6634,
+      "tradedValue": 118622.4
+    },
+    {
+      "symbol": "ENEXT50",
+      "name": "Nifty Next 50 Total Return Index",
+      "ltp": 71,
+      "previousClose": 70.59,
+      "changePct": 0.58,
+      "nav": 70.4906,
+      "tradedValue": 116014
+    },
+    {
+      "symbol": "IVZINNIFTY",
+      "name": "Nifty 50",
+      "ltp": 2740.5,
+      "previousClose": 2740.81,
+      "changePct": -0.01,
+      "nav": 2734.8332,
+      "tradedValue": 115401.72
+    },
+    {
+      "symbol": "ITBETA",
+      "name": "UTI Nifty IT ETF",
+      "ltp": 288.55,
+      "previousClose": 289.95,
+      "changePct": -0.48,
+      "nav": 289.3052,
+      "tradedValue": 103453.03
+    },
+    {
+      "symbol": "SBIVALETF",
+      "name": "Nifty200 Value 30 Index",
+      "ltp": 14.77,
+      "previousClose": 14.69,
+      "changePct": 0.54,
+      "nav": 14.6567,
+      "tradedValue": 100154.88
+    },
+    {
+      "symbol": "HDFCLOWVOL",
+      "name": "HDFC NIFTY100 Low Volatility 30 ETF",
+      "ltp": 20.42,
+      "previousClose": 20.310000000000002,
+      "changePct": 0.54,
+      "nav": 20.3634,
+      "tradedValue": 98344.96
+    },
+    {
+      "symbol": "MOLOWVOL",
+      "name": "Nifty Midcap 100 TRI",
+      "ltp": 37.25,
+      "previousClose": 36.93,
+      "changePct": 0.87,
+      "nav": 36.6863,
+      "tradedValue": 93695.67
+    },
+    {
+      "symbol": "MOPSE",
+      "name": "Nifty PSE Total Return Index",
+      "ltp": 99.55,
+      "previousClose": 100.38,
+      "changePct": -0.83,
+      "nav": 99.4554,
+      "tradedValue": 89249.4
+    },
+    {
+      "symbol": "GROWWMC150",
+      "name": "Nifty Midcap 150 Index - TRI",
+      "ltp": 228.53,
+      "previousClose": 226.32,
+      "changePct": 0.98,
+      "nav": 225.7575,
+      "tradedValue": 86403.24
+    },
+    {
+      "symbol": "ABSL10BANK",
+      "name": "BSE Top 10 Banks Index",
+      "ltp": 172.06,
+      "previousClose": 170.58,
+      "changePct": 0.87,
+      "nav": 171.3398,
+      "tradedValue": 81809.25
+    },
+    {
+      "symbol": "LICNETFN50",
+      "name": "Nifty 50",
+      "ltp": 269.35,
+      "previousClose": 266.79,
+      "changePct": 0.96,
+      "nav": 267.5153,
+      "tradedValue": 75908
+    },
+    {
+      "symbol": "EQUAL200",
+      "name": "BSE 200 Equal Weight",
+      "ltp": 13.62,
+      "previousClose": 13.5,
+      "changePct": 0.89,
+      "nav": 11.453,
+      "tradedValue": 75332.22
+    },
+    {
+      "symbol": "BBNPPGOLD",
+      "name": "Baroda BNP Paribas Gold ETF",
+      "ltp": 139,
+      "previousClose": 137.2,
+      "changePct": 1.31,
+      "nav": 137.1451,
+      "tradedValue": 73304.28
+    },
+    {
+      "symbol": "MOMGF",
+      "name": "Nifty India Manufacturing Total Return Index",
+      "ltp": 157.93,
+      "previousClose": 158,
+      "changePct": -0.04,
+      "nav": 156.9316,
+      "tradedValue": 68817
+    },
+    {
+      "symbol": "HSBCGOLD",
+      "name": "Commodity",
+      "ltp": 125.3,
+      "previousClose": 123.39,
+      "changePct": 1.55,
+      "nav": 123.3238,
+      "tradedValue": 61810.65
+    },
+    {
+      "symbol": "QUALITY30",
+      "name": "Nifty200 Quality 30 Index",
+      "ltp": 20.17,
+      "previousClose": 20.110000000000003,
+      "changePct": 0.3,
+      "nav": 20.065,
+      "tradedValue": 60188.7
+    },
+    {
+      "symbol": "GILT5BETA",
+      "name": "UTI Nifty 5 yr Benchmark G-Sec ETF",
+      "ltp": 66.64,
+      "previousClose": 66.79,
+      "changePct": -0.22,
+      "nav": 66.0232,
+      "tradedValue": 45155.2
+    },
+    {
+      "symbol": "GSEC10YEAR",
+      "name": "Mirae Asset Nifty 8-13 yr G-Sec ETF",
+      "ltp": 30.43,
+      "previousClose": 30.39,
+      "changePct": 0.13,
+      "nav": 30.382,
+      "tradedValue": 36042.54
+    },
+    {
+      "symbol": "MOMNC",
+      "name": "Nifty MNC ETF Total Return Index",
+      "ltp": 32.41,
+      "previousClose": 32.26,
+      "changePct": 0.46,
+      "nav": 32.1401,
+      "tradedValue": 30957.3
+    },
+    {
+      "symbol": "EBANKNIFTY",
+      "name": "Edelweiss Nifty Bank ETF",
+      "ltp": 57.68,
+      "previousClose": 57.23,
+      "changePct": 0.79,
+      "nav": 57.214,
+      "tradedValue": 30592.07
+    },
+    {
+      "symbol": "BBNPNBETF",
+      "name": "Baroda BNP Paribas NIFTY Bank ETF",
+      "ltp": 57.59,
+      "previousClose": 57.25,
+      "changePct": 0.59,
+      "nav": 57.1936,
+      "tradedValue": 29076.45
+    },
+    {
+      "symbol": "SNXT50BETA",
+      "name": "BSE Sensex Next 50",
+      "ltp": 93.2,
+      "previousClose": 92.03,
+      "changePct": 1.27,
+      "nav": 91.9763,
+      "tradedValue": 28557.14
+    },
+    {
+      "symbol": "LICNETFSEN",
+      "name": "SENSEX",
+      "ltp": 866.56,
+      "previousClose": 864.52,
+      "changePct": 0.24,
+      "nav": 862.9513,
+      "tradedValue": 20867.28
+    },
+    {
+      "symbol": "GILT10BETA",
+      "name": "UTI Nifty 10 yr Benchmark G-Sec ETF",
+      "ltp": 26.78,
+      "previousClose": 27.05,
+      "changePct": -1,
+      "nav": 26.5932,
+      "tradedValue": 19508.04
+    },
+    {
+      "symbol": "MOQUALITY",
+      "name": "Motilal Oswal S&P BSE Quality ETF",
+      "ltp": 201.22,
+      "previousClose": 198.3,
+      "changePct": 1.47,
+      "nav": 198.2836,
+      "tradedValue": 19199.04
+    },
+    {
+      "symbol": "MOALPHA50",
+      "name": "Nifty Alpha 50 Total Return Index",
+      "ltp": 53.31,
+      "previousClose": 52.6,
+      "changePct": 1.35,
+      "nav": 52.5672,
+      "tradedValue": 14193.72
+    },
+    {
+      "symbol": "NPBET",
+      "name": "Nifty Private Bank Index",
+      "ltp": 287,
+      "previousClose": 286.41,
+      "changePct": 0.21,
+      "nav": 285.6736,
+      "tradedValue": 13817.76
+    },
+    {
+      "symbol": "GSEC10ABSL",
+      "name": "CRISIL 10 Year Gilt ETF",
+      "ltp": 114.28,
+      "previousClose": 114.93,
+      "changePct": -0.57,
+      "nav": 112.5333,
+      "tradedValue": 10666.17
+    },
+    {
+      "symbol": "LICNFNHGP",
+      "name": "Nifty 100",
+      "ltp": 274.55,
+      "previousClose": 273.33,
+      "changePct": 0.45,
+      "nav": 272.4135,
+      "tradedValue": 8793.92
+    },
+    {
+      "symbol": "LOWVOL",
+      "name": "Mirae Asset Nifty 100 Low Volatility 30 ETF",
+      "ltp": 204.86,
+      "previousClose": 203.85000000000002,
+      "changePct": 0.5,
+      "nav": 203.8493,
+      "tradedValue": 819.44
+    },
+    {
+      "symbol": "MSCIADD",
+      "name": "MSCI India Index",
+      "ltp": 29.33,
+      "previousClose": 29.22,
+      "changePct": 0.38,
+      "nav": 29.1313,
+      "tradedValue": 439.2
+    },
+    {
+      "symbol": "ABGSEC",
+      "name": "Aditya Birla Sun Life CRISIL Broad Based Gilt ETF",
+      "ltp": 114.79,
+      "previousClose": 114.79,
+      "changePct": 0,
+      "nav": 114.2274,
+      "tradedValue": 0
+    }
+  ]
+}
