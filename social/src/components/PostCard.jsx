@@ -7,7 +7,7 @@ import TickerText from './TickerText';
 import TradePill from './TradePill';
 import { PortfolioSharePreview } from './ComposeModal';
 import { getPerson } from '../data/mockData';
-import { formatCount, timeAgo } from '../lib/format';
+import { formatCount, formatPct, timeAgo } from '../lib/format';
 import { extractTickers } from '../lib/tickers';
 
 /** Feed cards truncate long bodies; full text + comments only on the open post. */
