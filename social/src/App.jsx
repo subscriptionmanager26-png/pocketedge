@@ -40,7 +40,7 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import { ensureSocialProfile } from './lib/socialProfileApi';
 import { isProductionApp } from './lib/appMode';
 import { flushDemoLocalData } from './lib/flushDemoLocalData';
-import { getAppCurrentUser } from './lib/socialIdentity';
+import { getAppCurrentUser, setSelfProfile } from './lib/socialIdentity';
 import { parseAppPath } from './lib/routes';
 import {
   navigateToProfile,
