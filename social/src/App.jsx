@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
 import ActivityPage from './pages/ActivityPage';
@@ -35,8 +36,18 @@ import { clearReviewStore } from './lib/reviewStore';
 import { buildPortfolioShare } from './lib/portfolioShare';
 import { CURRENT_USER, POSTS, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
+import PublicProfilePage from './pages/PublicProfilePage';
+import { ensureSocialProfile } from './lib/socialProfileApi';
+import { parseAppPath } from './lib/routes';
+import {
+  navigateToProfile,
+  navigateToTab,
+  useProfileRouting,
+} from './lib/useProfileRouting';
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [authView, setAuthView] = useState('bootstrapping');
   const [authUser, setAuthUser] = useState(null);
   const [tab, setTab] = useState('feed');
@@ -92,6 +103,17 @@ export default function App() {
     profileUserId,
   ]);
 
+  useProfileRouting({
+    authView,
+    tab,
+    profileUserId,
+    profilePortfolioId,
+    setTab,
+    setProfileUserId,
+    setProfilePortfolioId,
+    setProfileMode,
+  });
+
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
 
   useEffect(() => {
@@ -125,6 +147,11 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (authView !== 'app' || !authUser?.id) return;
+    ensureSocialProfile().catch(() => {});
+  }, [authView, authUser?.id]);
 
   const activityItems = useMemo(
     () => getActivityFeed(),
@@ -244,6 +271,7 @@ export default function App() {
     setSelectedPostId(null);
     setSettingsReturnTab(tab === 'settings' ? settingsReturnTab : tab);
     setTab('settings');
+    navigateToTab(navigate, 'settings');
   };
 
   const goHome = () => {
@@ -255,6 +283,7 @@ export default function App() {
     setSelectedCommodityId(null);
     setProfilePortfolioId(null);
     setTab('feed');
+    navigateToTab(navigate, 'feed');
   };
 
   const openProfile = (userId) => {
@@ -267,12 +296,14 @@ export default function App() {
       setProfileMode('own');
       setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
       setTab('profile');
+      navigateToProfile(navigate, userId);
       return;
     }
     setProfileReturnTab(tab === 'profile' ? profileReturnTab : tab);
     setProfileUserId(userId);
     setProfileMode('public');
     setTab('profile');
+    navigateToProfile(navigate, userId);
   };
 
   const openProfilePortfolio = (userId, portfolioId) => {
@@ -284,6 +315,7 @@ export default function App() {
     setProfileMode(userId === CURRENT_USER.id ? 'own' : 'public');
     setProfilePortfolioId(portfolioId);
     setTab('profile');
+    navigateToProfile(navigate, userId, { portfolioId });
   };
 
   const handleTabChange = (next) => {
@@ -298,7 +330,10 @@ export default function App() {
       setProfileMode('own');
       setProfileUserId(CURRENT_USER.id);
       setProfileReturnTab(next);
+      navigateToProfile(navigate, CURRENT_USER.id);
+      return;
     }
+    navigateToTab(navigate, next);
   };
 
   const handleLogout = async () => {
@@ -408,6 +443,10 @@ export default function App() {
   }
 
   if (authView === 'landing') {
+    const parsed = parseAppPath(location.pathname);
+    if (parsed.kind === 'profile' && parsed.username) {
+      return <PublicProfilePage username={parsed.username} />;
+    }
     return <HomePage />;
   }
 
@@ -440,6 +479,7 @@ export default function App() {
           setProfileUserId(CURRENT_USER.id);
           setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
           setTab('profile');
+          navigateToProfile(navigate, CURRENT_USER.id);
         }}
         onSettings={openSettings}
         onGoHome={goHome}

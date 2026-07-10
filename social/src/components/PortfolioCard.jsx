@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { ClipboardCheck, Copy, Heart, MessageCircle, Share2 } from 'lucide-react';
-import { CURRENT_USER, STOCKS, copyPortfolioForUser } from '../data/mockData';
+import { ClipboardCheck, Copy, Heart, Share2 } from 'lucide-react';
+import { CURRENT_USER, STOCKS, copyPortfolioForUser, getHandleForUserId } from '../data/mockData';
 import { formatCount, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
+import { profilePath } from '../lib/routes';
+import CommentEngagementButton from './CommentEngagementButton';
 import { PortfolioKindMetaTags } from './PortfolioMetaTag';
 import {
-  incrementPortfolioShare,
+  recordPortfolioShare,
   togglePortfolioCopy,
   togglePortfolioLike,
-} from '../lib/portfolioSocialStore';
+} from '../lib/portfolioEngagementApi';
 
 const TOP_N = 4;
 
@@ -37,6 +39,7 @@ export default function PortfolioCard({
   returnPct = 0,
   social,
   canCopy = false,
+  showUnreadComments = false,
   sourceOwnerId,
   sourceOwnerName,
   onPortfolioCopied,
@@ -76,7 +79,8 @@ export default function PortfolioCard({
 
   const handleShare = async (event) => {
     event.stopPropagation();
-    const url = `${window.location.origin}${window.location.pathname}?portfolio=${portfolio.id}`;
+    const ownerHandle = getHandleForUserId(sourceOwnerId ?? CURRENT_USER.id);
+    const url = `${window.location.origin}${profilePath(ownerHandle, { portfolioId: portfolio.id })}`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -87,7 +91,7 @@ export default function PortfolioCard({
       } else {
         await navigator.clipboard.writeText(url);
       }
-      const next = incrementPortfolioShare(portfolio.id);
+      const next = await recordPortfolioShare(portfolio.id);
       setShares(next.shares);
     } catch {
       /* user cancelled share sheet */
@@ -155,14 +159,11 @@ export default function PortfolioCard({
           {formatCount(likes)}
         </button>
 
-        <button
-          type="button"
+        <CommentEngagementButton
+          count={commentCount}
+          unreadCount={showUnreadComments ? social?.unreadComments ?? 0 : 0}
           onClick={handleDiscuss}
-          className="inline-flex items-center gap-1.5 text-sm transition hover:text-pe-text"
-        >
-          <MessageCircle className="h-4 w-4" />
-          {commentCount}
-        </button>
+        />
 
         <button
           type="button"

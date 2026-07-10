@@ -899,6 +899,28 @@ export function getPerson(id) {
   return PEOPLE.find((p) => p.id === id) ?? PEOPLE[0];
 }
 
+export function normalizeHandle(handle) {
+  return String(handle ?? '')
+    .trim()
+    .replace(/^@/, '')
+    .toLowerCase();
+}
+
+export function getPersonByHandle(handle) {
+  const normalized = normalizeHandle(handle);
+  if (!normalized) return null;
+  if (normalizeHandle(CURRENT_USER.handle) === normalized) return CURRENT_USER;
+  return PEOPLE.find((p) => normalizeHandle(p.handle) === normalized) ?? null;
+}
+
+export function getHandleForUserId(userId) {
+  return getPerson(userId).handle;
+}
+
+export function getUserIdForHandle(handle) {
+  return getPersonByHandle(handle)?.id ?? null;
+}
+
 export function getPosition(authorId, ticker) {
   return AUTHOR_POSITIONS[authorId]?.[ticker] ?? { status: 'none' };
 }

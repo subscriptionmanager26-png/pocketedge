@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, ClipboardCheck, Copy, Heart, MessageCircle, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, ClipboardCheck, Copy, Heart, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -12,6 +12,7 @@ import {
   addUserPortfolio,
   applyPortfolioHoldingsUpdate,
   deleteUserPortfolio,
+  getHandleForUserId,
   getPerson,
   getPortfolioReturn,
   getUserPortfolio,
@@ -22,17 +23,19 @@ import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 import PortfolioCard from '../components/PortfolioCard';
+import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
 import ReviewCard from '../components/ReviewCard';
 import { getReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
 import {
   addPortfolioComment,
-  getPortfolioSocial,
-  incrementPortfolioShare,
-  subscribePortfolioSocial,
+  getPortfolioEngagementSync,
+  markPortfolioCommentsRead,
+  recordPortfolioShare,
+  subscribePortfolioEngagement,
   togglePortfolioCopy,
   togglePortfolioLike,
-} from '../lib/portfolioSocialStore';
+} from '../lib/portfolioEngagementApi';
 import {
   WATCHLIST_BASE_INVESTMENT,
   buildLiveHoldings,
@@ -46,6 +49,7 @@ import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
+import { profilePath } from '../lib/routes';
 
 const PROFILE_TABS = [
   { id: 'about', label: 'About me' },
@@ -147,7 +151,7 @@ export default function ProfilePage({
 
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
   useEffect(() => subscribeReviews(() => setReviewsVersion((n) => n + 1)), []);
-  useEffect(() => subscribePortfolioSocial(() => setPortfolioSocialTick((n) => n + 1)), []);
+  useEffect(() => subscribePortfolioEngagement(() => setPortfolioSocialTick((n) => n + 1)), []);
 
   useEffect(() => {
     if (!isOwn && !isMePublic) {
@@ -611,8 +615,9 @@ function PortfoliosListPanel({
               key={portfolio.id}
               portfolio={portfolio}
               returnPct={getPortfolioReturn(portfolio, returnPeriod)}
-              social={getPortfolioSocial(portfolio.id)}
+              social={getPortfolioEngagementSync(portfolio.id)}
               canCopy={!canEdit}
+              showUnreadComments={canEdit}
               sourceOwnerId={userId}
               sourceOwnerName={canEdit ? undefined : getPerson(userId).name}
               onPortfolioCopied={onPortfolioCopied}
@@ -711,10 +716,10 @@ function PortfolioDetailView({
 
   const isWatchlist = isWatchlistKind(portfolioKind);
 
-  useEffect(() => subscribePortfolioSocial(() => setSocialTick((n) => n + 1)), []);
+  useEffect(() => subscribePortfolioEngagement(() => setSocialTick((n) => n + 1)), []);
 
   const social = useMemo(
-    () => getPortfolioSocial(portfolio.id),
+    () => getPortfolioEngagementSync(portfolio.id),
     [portfolio.id, socialTick]
   );
 
@@ -1081,7 +1086,16 @@ function PortfolioDetailView({
       </div>
 
       {!editing ? (
-        <PortfolioSocialBar portfolio={portfolio} social={social} canCopy={canCopy} />
+        <PortfolioSocialBar
+          portfolio={portfolio}
+          social={social}
+          canCopy={canCopy}
+          ownerUserId={userId}
+          showUnreadComments={canEdit}
+          onOpenDiscussion={() => {
+            document.getElementById('portfolio-discussion')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
       ) : null}
 
       {!editing ? (
@@ -1245,6 +1259,7 @@ function PortfolioDetailView({
             addPortfolioComment(portfolio.id, commentDraft);
             setCommentDraft('');
           }}
+          markReadOnMount={canEdit}
         />
       ) : null}
     </div>
@@ -1311,7 +1326,14 @@ function PortfolioDetailMobileActions({ editing = false, saved = false, onEdit, 
   );
 }
 
-function PortfolioSocialBar({ portfolio, social, canCopy }) {
+function PortfolioSocialBar({
+  portfolio,
+  social,
+  canCopy,
+  ownerUserId,
+  showUnreadComments = false,
+  onOpenDiscussion,
+}) {
   const [liked, setLiked] = useState(social.liked);
   const [copied, setCopied] = useState(social.copied);
   const [likes, setLikes] = useState(social.likes);
@@ -1333,7 +1355,8 @@ function PortfolioSocialBar({ portfolio, social, canCopy }) {
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}${window.location.pathname}?portfolio=${portfolio.id}`;
+    const ownerHandle = getHandleForUserId(ownerUserId);
+    const url = `${window.location.origin}${profilePath(ownerHandle, { portfolioId: portfolio.id })}`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -1344,7 +1367,7 @@ function PortfolioSocialBar({ portfolio, social, canCopy }) {
       } else {
         await navigator.clipboard.writeText(url);
       }
-      const next = incrementPortfolioShare(portfolio.id);
+      const next = await recordPortfolioShare(portfolio.id);
       setShares(next.shares);
     } catch {
       /* cancelled */
@@ -1365,10 +1388,11 @@ function PortfolioSocialBar({ portfolio, social, canCopy }) {
           <Heart className={`h-4 w-4 ${liked ? 'fill-current text-pe-accent' : ''}`} />
           {formatCount(likes)}
         </button>
-        <span className="inline-flex items-center gap-1.5 text-sm text-pe-text">
-          <MessageCircle className="h-4 w-4" />
-          {commentCount}
-        </span>
+        <CommentEngagementButton
+          count={commentCount}
+          unreadCount={showUnreadComments ? social.unreadComments ?? 0 : 0}
+          onClick={onOpenDiscussion}
+        />
         <button
           type="button"
           onClick={handleShare}
@@ -1410,10 +1434,16 @@ function PortfolioDiscussion({
   commentDraft,
   onCommentDraftChange,
   onSubmitComment,
+  markReadOnMount = false,
 }) {
-  void portfolioId;
+  useEffect(() => {
+    if (markReadOnMount) {
+      markPortfolioCommentsRead(portfolioId);
+    }
+  }, [markReadOnMount, portfolioId]);
+
   return (
-    <section className="border-t border-pe-border px-4 py-5">
+    <section id="portfolio-discussion" className="border-t border-pe-border px-4 py-5">
       <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
         Discussion · {comments.length}
       </p>
