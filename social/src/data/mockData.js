@@ -1138,22 +1138,24 @@ export function getPortfolioReturn(portfolio, period = '1M') {
   return returns[period] ?? returns['1M'] ?? 0;
 }
 
+export function enrichUserPortfolio(portfolio) {
+  const returns = estimateReturns(portfolio);
+  return {
+    ...portfolio,
+    kind: portfolio.kind ?? 'live',
+    objective: portfolio.objective ?? portfolio.description ?? '',
+    thesis: portfolio.thesis ?? portfolio.description ?? '',
+    tickers:
+      portfolio.tickers ??
+      (portfolio.holdings ?? []).map((h) => h?.ticker).filter(Boolean),
+    holdingsCount: (portfolio.holdings ?? []).length,
+    return1M: returns['1M'],
+    returns,
+  };
+}
+
 export function getUserPortfolios(userId) {
-  return (USER_PORTFOLIOS[userId] ?? []).map((portfolio) => {
-    const returns = estimateReturns(portfolio);
-    return {
-      ...portfolio,
-      kind: portfolio.kind ?? 'live',
-      objective: portfolio.objective ?? portfolio.description ?? '',
-      thesis: portfolio.thesis ?? portfolio.description ?? '',
-      tickers:
-        portfolio.tickers ??
-        (portfolio.holdings ?? []).map((h) => h?.ticker).filter(Boolean),
-      holdingsCount: (portfolio.holdings ?? []).length,
-      return1M: returns['1M'],
-      returns,
-    };
-  });
+  return (USER_PORTFOLIOS[userId] ?? []).map(enrichUserPortfolio);
 }
 
 export function getUserPortfolio(userId, portfolioId) {

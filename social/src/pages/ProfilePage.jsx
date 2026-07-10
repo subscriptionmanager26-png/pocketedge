@@ -9,16 +9,16 @@ import {
   CURRENT_USER,
   POSTS,
   STOCKS,
-  addUserPortfolio,
-  applyPortfolioHoldingsUpdate,
-  deleteUserPortfolio,
-  getHandleForUserId,
-  getPerson,
   getPortfolioReturn,
-  getUserPortfolio,
-  getUserPortfolios,
   getUserTrades,
 } from '../data/mockData';
+import {
+  discardLocalDraft,
+  createDraftPortfolio,
+  fetchUserPortfolios,
+  saveSocialPortfolio,
+} from '../lib/socialPortfolioApi';
+import { getAppCurrentUser, getHandleForUserIdSync, resolvePerson } from '../lib/socialIdentity';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
@@ -124,15 +124,17 @@ export default function ProfilePage({
   onRegisterPortfolioBackHandler,
   onOpenSourcePortfolio,
 }) {
+  const appUser = getAppCurrentUser();
   const isOwn = mode === 'own';
-  const person = isOwn ? CURRENT_USER : getPerson(userId);
-  const isMePublic = !isOwn && person.id === CURRENT_USER.id;
+  const [person, setPerson] = useState(() => (isOwn ? appUser : null));
+  const isMePublic = !isOwn && person?.id === appUser.id;
   const canEdit = isOwn && !isMePublic;
 
   const [tab, setTab] = useState('about');
   const [aboutEditing, setAboutEditing] = useState(false);
   const [savedFlash, setSavedFlash] = useState(null);
   const [portfolioVersion, setPortfolioVersion] = useState(0);
+  const [portfolios, setPortfolios] = useState([]);
   const [tradesVersion, setTradesVersion] = useState(0);
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
@@ -154,22 +156,52 @@ export default function ProfilePage({
   useEffect(() => subscribePortfolioEngagement(() => setPortfolioSocialTick((n) => n + 1)), []);
 
   useEffect(() => {
-    if (!isOwn && !isMePublic) {
+    let cancelled = false;
+    resolvePerson(userId)
+      .then((resolved) => {
+        if (!cancelled && resolved) setPerson(resolved);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, mode]);
+
+  useEffect(() => {
+    if (!person?.id) return;
+    let cancelled = false;
+    fetchUserPortfolios(person.id)
+      .then((rows) => {
+        if (!cancelled) setPortfolios(rows);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [person?.id, portfolioVersion]);
+
+  useEffect(() => {
+    if (!isOwn && person?.id) {
       setFollowingState(isFollowing(person.id));
     }
-  }, [person.id, isOwn, isMePublic]);
+  }, [person?.id, isOwn, isMePublic]);
 
-  const authorPosts = (posts ?? POSTS).filter((p) => p.authorId === person.id);
+  const authorPosts = (posts ?? POSTS).filter((p) => p.authorId === person?.id);
   const tabs = PROFILE_TABS;
   const authoredReviews = useMemo(
-    () => getReviewsByAuthor(person.id),
-    [person.id, reviewsVersion]
+    () => getReviewsByAuthor(person?.id),
+    [person?.id, reviewsVersion]
   );
   const selectedPortfolio = useMemo(
-    () =>
-      selectedPortfolioId ? getUserPortfolio(person.id, selectedPortfolioId) : null,
-    [person.id, selectedPortfolioId, portfolioVersion]
+    () => (selectedPortfolioId ? portfolios.find((p) => p.id === selectedPortfolioId) ?? null : null),
+    [portfolios, selectedPortfolioId]
   );
+
+  if (!person) {
+    return (
+      <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading profile…</p>
+    );
+  }
 
   useEffect(() => {
     setTab(selectedPortfolioId ? 'portfolios' : 'about');
@@ -177,21 +209,9 @@ export default function ProfilePage({
     setFollowListMode(null);
   }, [userId, mode, selectedPortfolioId]);
 
-  const handleAddPortfolio = () => {
-    const created = addUserPortfolio(CURRENT_USER.id, {
-      id: `pf_${Date.now()}`,
-      kind: 'live',
-      isDraft: true,
-      name: '',
-      objective: '',
-      thesis: '',
-      totalValue: 0,
-      invested: 0,
-      totalPnlPct: 0,
-      xirr: 0,
-      holdings: [],
-      tickers: [],
-    });
+  const handleAddPortfolio = async () => {
+    const created = await createDraftPortfolio(person.id);
+    setPortfolios((prev) => [created, ...prev]);
     bumpPortfolios();
     onSelectPortfolio?.(created.id);
   };
@@ -273,6 +293,7 @@ export default function ProfilePage({
         startInEditMode={Boolean(selectedPortfolio.isDraft)}
         onRegisterPortfolioBackHandler={onRegisterPortfolioBackHandler}
         onOpenSourcePortfolio={onOpenSourcePortfolio}
+        onSelectPortfolio={onSelectPortfolio}
       />
     );
   }
@@ -367,9 +388,9 @@ export default function ProfilePage({
 
       {tab === 'portfolios' && (
         <PortfoliosListPanel
-          userId={person.id}
+          portfolios={portfolios}
+          person={person}
           canEdit={canEdit}
-          portfolioVersion={portfolioVersion}
           portfolioSocialTick={portfolioSocialTick}
           returnPeriod={returnPeriod}
           onReturnPeriodChange={handleReturnPeriodChange}
@@ -586,9 +607,9 @@ function ReviewsPanel({ reviews, onOpenProfile, onGraphChange }) {
 }
 
 function PortfoliosListPanel({
-  userId,
+  portfolios,
+  person,
   canEdit,
-  portfolioVersion,
   portfolioSocialTick,
   returnPeriod,
   onReturnPeriodChange,
@@ -596,9 +617,7 @@ function PortfoliosListPanel({
   onAddPortfolio,
   onPortfolioCopied,
 }) {
-  void portfolioVersion;
   void portfolioSocialTick;
-  const portfolios = getUserPortfolios(userId);
 
   return (
     <div>
@@ -618,8 +637,8 @@ function PortfoliosListPanel({
               social={getPortfolioEngagementSync(portfolio.id)}
               canCopy={!canEdit}
               showUnreadComments={canEdit}
-              sourceOwnerId={userId}
-              sourceOwnerName={canEdit ? undefined : getPerson(userId).name}
+              sourceOwnerId={person.id}
+              sourceOwnerName={canEdit ? undefined : person.name}
               onPortfolioCopied={onPortfolioCopied}
               onOpen={onSelectPortfolio}
               onDiscuss={onSelectPortfolio}
@@ -700,6 +719,7 @@ function PortfolioDetailView({
   onRegisterPortfolioBackHandler,
   startInEditMode = false,
   onOpenSourcePortfolio,
+  onSelectPortfolio,
 }) {
   const isDraft = Boolean(portfolio.isDraft);
   const [editing, setEditing] = useState(startInEditMode);
@@ -806,7 +826,7 @@ function PortfolioDetailView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.id, startInEditMode]);
 
-  const saveEdits = () => {
+  const saveEdits = async () => {
     const validation = validatePortfolioDraft({
       kind: portfolioKind,
       name,
@@ -821,16 +841,20 @@ function PortfolioDetailView({
       ? buildWatchlistHoldings(validation.completeRows)
       : buildLiveHoldings(validation.completeRows);
 
-    applyPortfolioHoldingsUpdate(userId, portfolio.id, holdings, {
+    const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
       name: name.trim(),
       objective: objective.trim(),
       thesis: thesis.trim(),
       kind: portfolioKind,
       isDraft: false,
       tickers: holdings.map((h) => h.ticker),
+      holdings,
       ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
     });
     onPortfolioUpdated?.();
+    if (savedPortfolio?.id && savedPortfolio.id !== portfolio.id) {
+      onSelectPortfolio?.(savedPortfolio.id);
+    }
     setEditing(false);
     setEditRows([]);
     setTickerSuggestionsFor(null);
@@ -839,9 +863,9 @@ function PortfolioDetailView({
     setTimeout(() => setSaved(false), 1600);
   };
 
-  const discardAndExit = (proceed) => {
+  const discardAndExit = async (proceed) => {
     if (isDraft) {
-      deleteUserPortfolio(userId, portfolio.id);
+      discardLocalDraft(userId, portfolio.id);
       onPortfolioUpdated?.();
       proceed();
       return;
@@ -1355,7 +1379,7 @@ function PortfolioSocialBar({
   };
 
   const handleShare = async () => {
-    const ownerHandle = getHandleForUserId(ownerUserId);
+    const ownerHandle = getHandleForUserIdSync(ownerUserId);
     const url = `${window.location.origin}${profilePath(ownerHandle, { portfolioId: portfolio.id })}`;
     try {
       if (navigator.share) {

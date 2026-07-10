@@ -38,6 +38,7 @@ import { CURRENT_USER, POSTS, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
 import PublicProfilePage from './pages/PublicProfilePage';
 import { ensureSocialProfile } from './lib/socialProfileApi';
+import { setSelfProfile } from './lib/socialIdentity';
 import { parseAppPath } from './lib/routes';
 import {
   navigateToProfile,
@@ -72,6 +73,9 @@ export default function App() {
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
   const [scrollAction, setScrollAction] = useState('reset');
+  const [profileReady, setProfileReady] = useState(false);
+  const [socialProfile, setSocialProfile] = useState(null);
+  const currentUserId = socialProfile?.user_id ?? CURRENT_USER.id;
 
   const resetScroll = useCallback(() => setScrollAction('reset'), []);
   const backScroll = useCallback(() => setScrollAction('back'), []);
@@ -86,7 +90,7 @@ export default function App() {
     if (tab === 'profile' && profilePortfolioId) {
       return `profile:${profileUserId}:portfolio:${profilePortfolioId}`;
     }
-    if (tab === 'profile' && profileMode === 'public' && profileUserId !== CURRENT_USER.id) {
+    if (tab === 'profile' && profileMode === 'public' && profileUserId !== currentUserId) {
       return `profile:${profileUserId}:public`;
     }
     if (tab === 'profile') return `profile:${profileUserId}`;
@@ -101,10 +105,12 @@ export default function App() {
     profilePortfolioId,
     profileMode,
     profileUserId,
+    currentUserId,
   ]);
 
   useProfileRouting({
     authView,
+    profileReady,
     tab,
     profileUserId,
     profilePortfolioId,
@@ -149,8 +155,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (authView !== 'app' || !authUser?.id) return;
-    ensureSocialProfile().catch(() => {});
+    if (authView !== 'app' || !authUser?.id) {
+      setSelfProfile(null);
+      setProfileReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    setProfileReady(false);
+
+    ensureSocialProfile()
+      .then((profile) => {
+        if (cancelled) return;
+        setSocialProfile(profile);
+        setSelfProfile(profile);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSocialProfile(null);
+          setSelfProfile(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProfileReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [authView, authUser?.id]);
 
   const activityItems = useMemo(
@@ -291,8 +323,8 @@ export default function App() {
     resetScroll();
     setSelectedPostId(null);
     setProfilePortfolioId(null);
-    if (userId === CURRENT_USER.id) {
-      setProfileUserId(CURRENT_USER.id);
+    if (userId === currentUserId) {
+      setProfileUserId(currentUserId);
       setProfileMode('own');
       setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
       setTab('profile');
@@ -312,7 +344,7 @@ export default function App() {
     setSelectedPostId(null);
     setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
     setProfileUserId(userId);
-    setProfileMode(userId === CURRENT_USER.id ? 'own' : 'public');
+    setProfileMode(userId === currentUserId ? 'own' : 'public');
     setProfilePortfolioId(portfolioId);
     setTab('profile');
     navigateToProfile(navigate, userId, { portfolioId });
@@ -328,9 +360,9 @@ export default function App() {
     }
     if (next === 'profile') {
       setProfileMode('own');
-      setProfileUserId(CURRENT_USER.id);
+      setProfileUserId(currentUserId);
       setProfileReturnTab(next);
-      navigateToProfile(navigate, CURRENT_USER.id);
+      navigateToProfile(navigate, currentUserId);
       return;
     }
     navigateToTab(navigate, next);
@@ -401,7 +433,7 @@ export default function App() {
       };
     }
     if (tab === 'profile' && profileMode === 'public') {
-      if (profileUserId === CURRENT_USER.id) {
+      if (profileUserId === currentUserId) {
         return null;
       }
       return {
@@ -476,10 +508,10 @@ export default function App() {
           resetScroll();
           setSelectedPostId(null);
           setProfileMode('own');
-          setProfileUserId(CURRENT_USER.id);
+          setProfileUserId(currentUserId);
           setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
           setTab('profile');
-          navigateToProfile(navigate, CURRENT_USER.id);
+          navigateToProfile(navigate, currentUserId);
         }}
         onSettings={openSettings}
         onGoHome={goHome}
@@ -550,6 +582,11 @@ export default function App() {
                 backScroll();
                 setSelectedCommodityId(null);
               }}
+              onOpenProfile={openProfile}
+              onPromptReview={() => {
+                setFundReviewPrefill(null);
+                setFundReviewOpen(true);
+              }}
             />
           ) : selectedIndexId ? (
             <IndexDetailPage
@@ -557,6 +594,11 @@ export default function App() {
               onBack={() => {
                 backScroll();
                 setSelectedIndexId(null);
+              }}
+              onOpenProfile={openProfile}
+              onPromptReview={() => {
+                setFundReviewPrefill(null);
+                setFundReviewOpen(true);
               }}
             />
           ) : selectedFundId ? (
@@ -614,11 +656,11 @@ export default function App() {
               setTab(profileReturnTab || 'feed');
             }}
             onOpenPublicPreview={() => {
-              setProfileUserId(CURRENT_USER.id);
+              setProfileUserId(currentUserId);
               setProfileMode('public');
             }}
             onExitPublicPreview={() => {
-              setProfileUserId(CURRENT_USER.id);
+              setProfileUserId(currentUserId);
               setProfileMode('own');
             }}
             onOpenProfile={openProfile}

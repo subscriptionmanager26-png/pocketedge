@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CURRENT_USER, getHandleForUserId, getPersonByHandle } from '../data/mockData';
 import { parseAppPath, profilePath, tabPath } from './routes';
+import { getAppCurrentUserId, getHandleForUserIdSync, resolvePersonByHandle } from './socialIdentity';
 
 /**
  * Keeps App tab/profile state in sync with /@username URLs.
  */
 export function useProfileRouting({
   authView,
+  profileReady,
   tab,
   profileUserId,
   profilePortfolioId,
@@ -22,20 +23,26 @@ export function useProfileRouting({
 
   // URL -> state
   useEffect(() => {
-    if (authView !== 'app') return;
+    if (authView !== 'app' || !profileReady) return;
 
     const parsed = parseAppPath(location.pathname);
     applyingUrl.current = true;
 
     if (parsed.kind === 'profile') {
-      const person = getPersonByHandle(parsed.username);
-      if (person) {
+      resolvePersonByHandle(parsed.username).then((person) => {
+        if (!person) return;
         setProfileUserId(person.id);
-        setProfileMode(person.id === CURRENT_USER.id ? 'own' : 'public');
+        setProfileMode(person.id === getAppCurrentUserId() ? 'own' : 'public');
         setProfilePortfolioId(parsed.portfolioId);
         setTab('profile');
-      }
-    } else if (parsed.kind === 'tab') {
+        queueMicrotask(() => {
+          applyingUrl.current = false;
+        });
+      });
+      return;
+    }
+
+    if (parsed.kind === 'tab') {
       setTab(parsed.tab);
       if (parsed.tab !== 'profile') {
         setProfilePortfolioId(null);
@@ -47,6 +54,7 @@ export function useProfileRouting({
     });
   }, [
     authView,
+    profileReady,
     location.pathname,
     setProfileMode,
     setProfilePortfolioId,
@@ -56,11 +64,11 @@ export function useProfileRouting({
 
   // state -> URL
   useEffect(() => {
-    if (authView !== 'app' || applyingUrl.current) return;
+    if (authView !== 'app' || !profileReady || applyingUrl.current) return;
 
     let target = tabPath(tab);
     if (tab === 'profile') {
-      const handle = getHandleForUserId(profileUserId);
+      const handle = getHandleForUserIdSync(profileUserId);
       if (handle) {
         target = profilePath(handle, { portfolioId: profilePortfolioId });
       }
@@ -71,6 +79,7 @@ export function useProfileRouting({
     }
   }, [
     authView,
+    profileReady,
     tab,
     profileUserId,
     profilePortfolioId,
@@ -80,7 +89,7 @@ export function useProfileRouting({
 }
 
 export function navigateToProfile(navigate, userId, { portfolioId } = {}) {
-  const handle = getHandleForUserId(userId);
+  const handle = getHandleForUserIdSync(userId);
   if (!handle) return;
   navigate(profilePath(handle, { portfolioId }));
 }

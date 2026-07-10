@@ -55,6 +55,7 @@ create table if not exists public.social_portfolios (
   objective text not null default '',
   thesis text not null default '',
   is_draft boolean not null default false,
+  is_archived boolean not null default false,
   source_portfolio_id uuid references public.social_portfolios (id) on delete set null,
   source_user_id uuid references auth.users (id) on delete set null,
   source_portfolio_name text,
@@ -68,7 +69,7 @@ create table if not exists public.social_portfolios (
 
 create index if not exists social_portfolios_owner_idx
   on public.social_portfolios (owner_id, updated_at desc)
-  where not is_draft;
+  where not is_archived;
 
 create index if not exists social_portfolios_source_idx
   on public.social_portfolios (source_portfolio_id)
@@ -79,7 +80,7 @@ alter table public.social_portfolios enable row level security;
 create policy "social_portfolios_select_authenticated"
   on public.social_portfolios for select
   to authenticated
-  using (not is_draft or owner_id = auth.uid());
+  using (not is_archived);
 
 create policy "social_portfolios_insert_own"
   on public.social_portfolios for insert
@@ -92,10 +93,7 @@ create policy "social_portfolios_update_own"
   using (auth.uid() = owner_id)
   with check (auth.uid() = owner_id);
 
-create policy "social_portfolios_delete_own"
-  on public.social_portfolios for delete
-  to authenticated
-  using (auth.uid() = owner_id);
+-- Portfolios cannot be deleted. Drafts are local-only in the app; is_archived is for a future archive feature.
 
 -- ---------------------------------------------------------------------------
 -- Engagement: likes, shares, copies
