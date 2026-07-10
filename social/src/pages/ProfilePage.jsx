@@ -32,9 +32,7 @@ import { getReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
 import {
   addPortfolioComment,
   getPortfolioEngagementSync,
-  loadPortfolioEngagement,
   markPortfolioCommentsRead,
-  prefetchPortfoliosEngagement,
   recordPortfolioShare,
   subscribePortfolioEngagement,
   togglePortfolioCopy,
@@ -190,19 +188,6 @@ export default function ProfilePage({
       cancelled = true;
     };
   }, [person?.id, portfolioVersion]);
-
-  useEffect(() => {
-    if (!portfolios.length) return undefined;
-    let cancelled = false;
-    prefetchPortfoliosEngagement(portfolios.map((p) => p.id))
-      .then(() => {
-        if (!cancelled) setPortfolioSocialTick((n) => n + 1);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [portfolios]);
 
   useEffect(() => {
     if (!person?.id || !selectedPortfolioId) return;
@@ -809,18 +794,6 @@ function PortfolioDetailView({
 
   useEffect(() => subscribePortfolioEngagement(() => setSocialTick((n) => n + 1)), []);
 
-  useEffect(() => {
-    let cancelled = false;
-    loadPortfolioEngagement(portfolio.id)
-      .then(() => {
-        if (!cancelled) setSocialTick((n) => n + 1);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [portfolio.id]);
-
   const social = useMemo(
     () => getPortfolioEngagementSync(portfolio.id),
     [portfolio.id, socialTick]
@@ -1417,15 +1390,9 @@ function PortfolioDetailView({
           comments={social.comments ?? []}
           commentDraft={commentDraft}
           onCommentDraftChange={setCommentDraft}
-          onSubmitComment={async () => {
-            const text = commentDraft.trim();
-            if (!text) return;
-            try {
-              await addPortfolioComment(portfolio.id, text);
-              setCommentDraft('');
-            } catch (err) {
-              console.error('addPortfolioComment failed', err);
-            }
+          onSubmitComment={() => {
+            addPortfolioComment(portfolio.id, commentDraft);
+            setCommentDraft('');
           }}
           markReadOnMount={canEdit}
         />
@@ -1509,33 +1476,17 @@ function PortfolioSocialBar({
   const [shares, setShares] = useState(social.shares);
   const commentCount = social.comments?.length ?? 0;
 
-  useEffect(() => {
-    setLiked(social.liked ?? false);
-    setCopied(social.copied ?? false);
-    setLikes(social.likes ?? 0);
-    setCopies(social.copies ?? 0);
-    setShares(social.shares ?? 0);
-  }, [social.liked, social.copied, social.likes, social.copies, social.shares]);
-
-  const handleLike = async () => {
-    try {
-      const next = await togglePortfolioLike(portfolio.id);
-      setLiked(next.liked);
-      setLikes(next.likes);
-    } catch (err) {
-      console.error('togglePortfolioLike failed', err);
-    }
+  const handleLike = () => {
+    const next = togglePortfolioLike(portfolio.id);
+    setLiked(next.liked);
+    setLikes(next.likes);
   };
 
-  const handleCopy = async () => {
+  const handleCopy = () => {
     if (!canCopy) return;
-    try {
-      const next = await togglePortfolioCopy(portfolio.id);
-      setCopied(next.copied);
-      setCopies(next.copies);
-    } catch (err) {
-      console.error('togglePortfolioCopy failed', err);
-    }
+    const next = togglePortfolioCopy(portfolio.id);
+    setCopied(next.copied);
+    setCopies(next.copies);
   };
 
   const handleShare = async () => {
