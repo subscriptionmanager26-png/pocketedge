@@ -32,7 +32,7 @@ export default function OnboardingFlow({ userId, onComplete }) {
             One review to join the community
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-            Share a quick fund rating so you can read what other investors own and say.
+            Share a quick rating on something you invest in to read what other investors own and say.
           </p>
 
           <div className="mt-8 border-t border-pe-border pt-8">
@@ -61,7 +61,7 @@ export default function OnboardingFlow({ userId, onComplete }) {
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
           <p className="mt-3 text-center text-[13px] text-pe-text-muted">
-            One quick rating unlocks community reviews on funds and stocks.
+            One quick review unlocks community insights across PocketEdge.
           </p>
         </div>
       </footer>

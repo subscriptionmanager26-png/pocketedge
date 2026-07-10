@@ -57,6 +57,11 @@ export async function fetchEquityQuotes(nseFetch) {
   return quotes;
 }
 
+/**
+ * Live equity ticks: wss://streamer.nseindia.com/streams/indices/high/EQUITY-SME-MARKET
+ * Bulk traded snapshot: /api/live-analysis-stocksTraded (stocks-traded page).
+ */
+
 export async function fetchEtfList(nseFetch) {
   const payload = await nseFetch('/api/etf', {
     headers: { Referer: 'https://www.nseindia.com/market-data/exchange-traded-funds-etf' },
@@ -74,6 +79,11 @@ export async function fetchEtfList(nseFetch) {
   }));
 }
 
+/**
+ * Snapshot indices via REST. Live ticks use NSE WebSocket:
+ * wss://streamer.nseindia.com/streams/indices/high/{segment}
+ * Segments: drdMkt, brdMkt, fixMkt, secMkt, strMkt, thmMkt (map from row.key).
+ */
 export async function fetchIndices(nseFetch) {
   const payload = await nseFetch('/api/allIndices', {
     headers: { Referer: SOURCES.nseLiveIndices },

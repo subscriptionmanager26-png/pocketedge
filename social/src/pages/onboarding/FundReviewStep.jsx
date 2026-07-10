@@ -18,11 +18,11 @@ export default function FundReviewStep({
   return (
     <>
       <h2 className="text-2xl font-bold leading-tight text-pe-text md:text-3xl">
-        Recommend a fund
+        Share your take
       </h2>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Share your take on one <span className="font-semibold text-pe-text">{category}</span> fund to
-        unlock community reviews.
+        Rate one <span className="font-semibold text-pe-text">{category}</span> fund you know to
+        unlock community reviews across PocketEdge.
       </p>
 
       <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
@@ -60,14 +60,14 @@ export default function FundReviewStep({
       <input
         value={reviewLine}
         onChange={(e) => onReviewLine(e.target.value)}
-        placeholder="I like this fund because…"
+        placeholder="I like this because…"
         maxLength={160}
         className={`${inputClass} mt-3`}
       />
       <p className="mt-1.5 text-xs text-pe-text-muted">{reviewLine.length}/160</p>
 
       <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-[15px] text-pe-text-secondary">
-        Submitting unlocks full community reviews and fund discussions.
+        Submitting unlocks full community reviews and discussions across PocketEdge.
       </div>
     </>
   );

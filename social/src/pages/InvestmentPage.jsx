@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
+import NewsList from '../components/NewsList';
 import {
   BlurredSection,
   DiscussionsBlurPreview,
@@ -232,18 +233,11 @@ export default function InvestmentPage({
           lock={TRACK_FUND_LOCK}
           preview={<NewsBlurPreview />}
         >
-          <div className="divide-y divide-pe-border">
+          <div>
             {news.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
             ) : (
-              news.map((item) => (
-                <div key={item.id} className="px-4 py-4">
-                  <p className="text-[15px] font-semibold leading-snug text-pe-text">{item.title}</p>
-                  <p className="mt-1 text-sm text-pe-text-muted">
-                    {item.source} · {item.time}
-                  </p>
-                </div>
-              ))
+              <NewsList items={news} />
             )}
           </div>
         </BlurredSection>

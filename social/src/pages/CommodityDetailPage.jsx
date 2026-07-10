@@ -1,15 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import AssetProductHeader from '../components/AssetProductHeader';
+import PageHeader from '../components/PageHeader';
+import UnderlineTabs from '../components/UnderlineTabs';
 import {
-  MarketDetailHeader,
-  MarketDetailShell,
-  MetricTile,
-} from '../components/MarketDetailLayout';
-import { formatPrice, pnlClass } from '../lib/format';
+  BlurredSection,
+  DiscussionsBlurPreview,
+  DiscussionsList,
+  HoldersBlurPreview,
+  INVESTMENT_TABS,
+  NewsBlurPreview,
+  REVIEW_LOCK,
+  ReviewsBlurPreview,
+  TRACK_MARKET_LOCK,
+  TRACK_MARKET_NEWS_LOCK,
+} from '../components/InvestmentSections';
+import { hasMarketAssetAccess } from '../lib/assetAccess';
+import { getCommodityDiscussions } from '../lib/assetDiscussions';
+import { formatPrice } from '../lib/format';
+import { hasCommunityReviewsAccess } from '../lib/reviewStore';
 import { fetchMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
 
-export default function CommodityDetailPage({ commodityId, onBack }) {
+export default function CommodityDetailPage({
+  commodityId,
+  onBack,
+  onOpenProfile,
+  onPromptReview,
+}) {
   const [commodity, setCommodity] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('reviews');
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +55,17 @@ export default function CommodityDetailPage({ commodityId, onBack }) {
     };
   }, [commodityId]);
 
+  const unlocked = hasCommunityReviewsAccess();
+  const hasAccess = hasMarketAssetAccess();
+  const discussions = useMemo(
+    () => getCommodityDiscussions(commodityId, commodity?.name),
+    [commodityId, commodity?.name]
+  );
+
+  const reviewsLocked = !unlocked;
+  const discussionsLocked = !unlocked || !hasAccess;
+  const holdersLocked = !hasAccess;
+
   if (loading) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">
@@ -51,41 +82,80 @@ export default function CommodityDetailPage({ commodityId, onBack }) {
     );
   }
 
-  const subtitle = [commodity.unit, commodity.location].filter(Boolean).join(' · ');
+  const subtitle = [commodity.unit, commodity.location].filter(Boolean).join(' · ') || 'MCX spot';
 
   return (
-    <MarketDetailShell title="Markets" onBack={onBack}>
-      <MarketDetailHeader
+    <div>
+      <PageHeader desktopOnly>
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+      </PageHeader>
+
+      <AssetProductHeader
         name={commodity.name}
-        symbol={commodity.symbol}
+        ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
+        subtitle={subtitle}
         type="Commodity"
-        subtitle={subtitle || 'MCX spot'}
         price={commodity.spotPrice != null ? formatPrice(commodity.spotPrice) : '—'}
       />
 
-      {commodity.change != null ? (
-        <section className="border-b border-pe-border px-4 py-5">
-          <p className={`text-lg font-bold ${pnlClass(commodity.change)}`}>
-            {commodity.change > 0 ? '+' : ''}
-            {commodity.change.toLocaleString('en-IN', { maximumFractionDigits: 2 })} change
-          </p>
-          <p className="mt-1 text-sm text-pe-text-muted">
-            Spot price only — previous close not available from MCX feed.
-          </p>
-        </section>
-      ) : null}
+      <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
-      <section className="px-4 py-5">
-        <div className="grid grid-cols-2 gap-2.5">
-          <MetricTile label="Symbol" value={commodity.symbol ?? '—'} />
-          <MetricTile label="Unit" value={commodity.unit ?? '—'} />
-          <MetricTile label="Location" value={commodity.location ?? '—'} />
-          <MetricTile
-            label="Spot price"
-            value={commodity.spotPrice != null ? formatPrice(commodity.spotPrice) : '—'}
+      {tab === 'reviews' && (
+        <BlurredSection
+          locked={reviewsLocked}
+          lock={REVIEW_LOCK}
+          onCta={onPromptReview}
+          preview={<ReviewsBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            No community reviews yet — be the first to share your view on {commodity.name}.
+          </p>
+        </BlurredSection>
+      )}
+
+      {tab === 'discussions' && (
+        <BlurredSection
+          locked={discussionsLocked}
+          lock={!unlocked ? REVIEW_LOCK : TRACK_MARKET_LOCK}
+          onCta={!unlocked ? onPromptReview : undefined}
+          preview={<DiscussionsBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage={`No posts yet — posts mentioning ${commodity.name} will show up here.`}
           />
-        </div>
-      </section>
-    </MarketDetailShell>
+        </BlurredSection>
+      )}
+
+      {tab === 'holders' && (
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_MARKET_LOCK}
+          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            No disclosed holders yet.
+          </p>
+        </BlurredSection>
+      )}
+
+      {tab === 'news' && (
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_MARKET_NEWS_LOCK}
+          preview={<NewsBlurPreview />}
+        >
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+        </BlurredSection>
+      )}
+    </div>
   );
 }

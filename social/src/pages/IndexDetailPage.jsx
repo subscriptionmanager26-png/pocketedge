@@ -1,11 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import AssetProductHeader from '../components/AssetProductHeader';
+import PageHeader from '../components/PageHeader';
+import UnderlineTabs from '../components/UnderlineTabs';
 import {
-  MarketDetailHeader,
-  MarketDetailShell,
-  MetricTile,
-  formatIndexGroup,
-} from '../components/MarketDetailLayout';
-import { formatPct, formatPrice, pnlClass } from '../lib/format';
+  BlurredSection,
+  DiscussionsBlurPreview,
+  DiscussionsList,
+  HoldersBlurPreview,
+  INVESTMENT_TABS,
+  NewsBlurPreview,
+  REVIEW_LOCK,
+  ReviewsBlurPreview,
+  TRACK_MARKET_LOCK,
+  TRACK_MARKET_NEWS_LOCK,
+} from '../components/InvestmentSections';
+import { formatIndexGroup } from '../components/MarketDetailLayout';
+import { hasMarketAssetAccess } from '../lib/assetAccess';
+import { getIndexDiscussions } from '../lib/assetDiscussions';
+import { hasCommunityReviewsAccess } from '../lib/reviewStore';
+import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 
 function formatIndexValue(value) {
@@ -13,9 +27,15 @@ function formatIndexValue(value) {
   return value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 }
 
-export default function IndexDetailPage({ indexId, onBack }) {
+export default function IndexDetailPage({
+  indexId,
+  onBack,
+  onOpenProfile,
+  onPromptReview,
+}) {
   const [index, setIndex] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('reviews');
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +61,20 @@ export default function IndexDetailPage({ indexId, onBack }) {
     };
   }, [indexId]);
 
+  const liveIndex = useNseIndexLiveQuote(index, Boolean(index));
+  const displayIndex = liveIndex ?? index;
+
+  const unlocked = hasCommunityReviewsAccess();
+  const hasAccess = hasMarketAssetAccess();
+  const discussions = useMemo(
+    () => getIndexDiscussions(indexId, displayIndex?.name),
+    [indexId, displayIndex?.name]
+  );
+
+  const reviewsLocked = !unlocked;
+  const discussionsLocked = !unlocked || !hasAccess;
+  const holdersLocked = !hasAccess;
+
   if (loading) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading index…</div>
@@ -53,67 +87,78 @@ export default function IndexDetailPage({ indexId, onBack }) {
     );
   }
 
-
   return (
-    <MarketDetailShell title="Markets" onBack={onBack}>
-      <MarketDetailHeader
-        name={index.name}
-        symbol={index.symbol}
+    <div>
+      <PageHeader desktopOnly>
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+      </PageHeader>
+
+      <AssetProductHeader
+        name={displayIndex.name}
+        ticker={displayIndex.symbol !== displayIndex.name ? displayIndex.symbol : null}
+        subtitle={formatIndexGroup(displayIndex.group)}
         type="Index"
-        subtitle={formatIndexGroup(index.group)}
-        price={formatIndexValue(index.value)}
+        price={formatIndexValue(displayIndex.value)}
       />
 
-      <section className="border-b border-pe-border px-4 py-5">
-        <div className="flex flex-wrap items-baseline gap-3">
-          {index.changePct != null ? (
-            <p className={`text-lg font-bold ${pnlClass(index.changePct)}`}>
-              {formatPct(index.changePct)}
-            </p>
-          ) : null}
-          {index.change != null ? (
-            <p className={`text-sm font-semibold ${pnlClass(index.change)}`}>
-              {index.change > 0 ? '+' : ''}
-              {formatIndexValue(index.change)} pts
-            </p>
-          ) : null}
-        </div>
-      </section>
+      <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
-      <section className="px-4 py-5">
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          <MetricTile label="Previous close" value={formatIndexValue(index.previousClose)} />
-          <MetricTile label="Open" value={formatIndexValue(index.open)} />
-          <MetricTile label="High" value={formatIndexValue(index.high)} />
-          <MetricTile label="Low" value={formatIndexValue(index.low)} />
-          <MetricTile label="52W high" value={formatIndexValue(index.yearHigh)} />
-          <MetricTile label="52W low" value={formatIndexValue(index.yearLow)} />
-          <MetricTile
-            label="Advances"
-            value={index.advances != null ? String(index.advances) : '—'}
-            tone="positive"
+      {tab === 'reviews' && (
+        <BlurredSection
+          locked={reviewsLocked}
+          lock={REVIEW_LOCK}
+          onCta={onPromptReview}
+          preview={<ReviewsBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            No community reviews yet — be the first to share your view on {displayIndex.name}.
+          </p>
+        </BlurredSection>
+      )}
+
+      {tab === 'discussions' && (
+        <BlurredSection
+          locked={discussionsLocked}
+          lock={!unlocked ? REVIEW_LOCK : TRACK_MARKET_LOCK}
+          onCta={!unlocked ? onPromptReview : undefined}
+          preview={<DiscussionsBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage={`No posts yet — posts mentioning ${displayIndex.name} will show up here.`}
           />
-          <MetricTile
-            label="Declines"
-            value={index.declines != null ? String(index.declines) : '—'}
-            tone="negative"
-          />
-          <MetricTile
-            label="30D change"
-            value={index.change30dPct != null ? formatPct(index.change30dPct) : '—'}
-            tone={
-              index.change30dPct > 0 ? 'positive' : index.change30dPct < 0 ? 'negative' : null
-            }
-          />
-          <MetricTile
-            label="1Y change"
-            value={index.change365dPct != null ? formatPct(index.change365dPct) : '—'}
-            tone={
-              index.change365dPct > 0 ? 'positive' : index.change365dPct < 0 ? 'negative' : null
-            }
-          />
-        </div>
-      </section>
-    </MarketDetailShell>
+        </BlurredSection>
+      )}
+
+      {tab === 'holders' && (
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_MARKET_LOCK}
+          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
+        >
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            No disclosed holders yet.
+          </p>
+        </BlurredSection>
+      )}
+
+      {tab === 'news' && (
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_MARKET_NEWS_LOCK}
+          preview={<NewsBlurPreview />}
+        >
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+        </BlurredSection>
+      )}
+    </div>
   );
 }

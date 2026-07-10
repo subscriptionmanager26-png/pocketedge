@@ -135,7 +135,7 @@ export default function MarketsPage({
                 subtitle={etf.name}
                 primaryValue={etf.ltp != null ? formatPrice(etf.ltp) : '—'}
                 changePct={etf.changePct}
-                onClick={() => onSelectStock?.(etf.symbol)}
+                onClick={() => onSelectStock?.(etf.symbol, { kind: 'etf' })}
               />
             ))}
           </MarketList>
@@ -196,7 +196,7 @@ function MarketRow({ title, subtitle, primaryValue, secondaryValue, changePct, o
       }`}
     >
       <div className="min-w-0 pr-3">
-        <p className="text-[15px] font-semibold text-pe-text">{title}</p>
+        <p className="truncate text-[15px] font-semibold text-pe-text">{title}</p>
         {subtitle ? <p className="text-sm text-pe-text-muted">{subtitle}</p> : null}
       </div>
       {primaryValue != null || changePct != null || secondaryValue ? (

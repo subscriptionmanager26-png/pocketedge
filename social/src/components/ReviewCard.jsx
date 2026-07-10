@@ -52,7 +52,7 @@ export default function ReviewCard({
     const text = `${person.name} rated ${assetLabel ?? 'an investment'} ${review.rating}★${review.body ? `: ${review.body}` : ''}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Fund review on PocketEdge', text, url });
+        await navigator.share({ title: 'Investor review on PocketEdge', text, url });
       } else {
         await navigator.clipboard.writeText(`${text}\n${url}`);
       }

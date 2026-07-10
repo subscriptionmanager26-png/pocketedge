@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
+import NewsList from '../components/NewsList';
 import {
   BlurredSection,
   DiscussionsBlurPreview,
@@ -19,6 +20,8 @@ import {
   TRACK_STOCK_NEWS_LOCK,
 } from '../components/InvestmentSections';
 import { getStock, getStockHolders, getStockNews } from '../data/stockData';
+import { isDevMockMode } from '../lib/appMode';
+import { fetchStockNews, isStockNewsConfigured } from '../lib/stockNewsApi';
 import { AUTHOR_POSITIONS, CURRENT_USER, getPerson } from '../data/mockData';
 import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions } from '../lib/assetDiscussions';
@@ -31,6 +34,7 @@ import {
   subscribeReviews,
 } from '../lib/reviewStore';
 import { subscribeWatchlists } from '../lib/watchlistStore';
+import { useNseEquityLiveQuote } from '../hooks/useNseEquityStream';
 import {
   fetchMarketPreview,
   marketStockToDetail,
@@ -48,8 +52,20 @@ export default function StockInvestmentPage({
 }) {
   const seedStock = getStock(ticker);
   const [marketStock, setMarketStock] = useState(null);
-  const [marketLoading, setMarketLoading] = useState(!seedStock);
-  const stock = seedStock ?? marketStock;
+  const [isEtf, setIsEtf] = useState(false);
+  const [marketLoading, setMarketLoading] = useState(true);
+  const stock = useMemo(() => {
+    if (marketStock) return marketStock;
+    if (!seedStock) return null;
+    return marketStockToDetail({
+      symbol: ticker,
+      name: seedStock.name,
+      price: seedStock.price,
+      changePct: seedStock.changePct,
+    });
+  }, [marketStock, seedStock, ticker]);
+  const liveStock = useNseEquityLiveQuote(stock, Boolean(stock && !marketLoading), { isEtf });
+  const displayStock = liveStock ?? stock;
   const [tab, setTab] = useState('reviews');
   const [reviewTick, setReviewTick] = useState(0);
   const [accessTick, setAccessTick] = useState(0);
@@ -58,17 +74,18 @@ export default function StockInvestmentPage({
   useEffect(() => subscribeWatchlists(() => setAccessTick((n) => n + 1)), []);
 
   useEffect(() => {
-    if (seedStock) return undefined;
     let cancelled = false;
     setMarketLoading(true);
-    Promise.all([fetchMarketPreview('stocks'), fetchMarketPreview('etf')])
-      .then(([stocksPayload, etfPayload]) => {
+    Promise.all([fetchMarketPreview('etf'), resolveMarketStock(ticker)])
+      .then(([etfPayload, resolved]) => {
         if (cancelled) return null;
-        const found =
-          stocksPayload.items.find((item) => item.symbol === ticker) ??
-          etfPayload.items.find((item) => item.symbol === ticker);
-        if (found) return found;
-        return resolveMarketStock(ticker);
+        const etfMatch = etfPayload.items.find((item) => item.symbol === ticker);
+        if (etfMatch) {
+          setIsEtf(true);
+          return etfMatch;
+        }
+        setIsEtf(false);
+        return resolved;
       })
       .then((found) => {
         if (cancelled) return;
@@ -80,7 +97,7 @@ export default function StockInvestmentPage({
     return () => {
       cancelled = true;
     };
-  }, [ticker, seedStock]);
+  }, [ticker]);
 
   const unlocked = hasCommunityReviewsAccess();
   const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
@@ -95,7 +112,34 @@ export default function StockInvestmentPage({
   );
   const discussions = useMemo(() => getStockDiscussions(ticker), [ticker]);
   const holders = getStockHolders(ticker);
-  const news = getStockNews(ticker);
+  const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
+  const [newsLoading, setNewsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isStockNewsConfigured()) {
+      let cancelled = false;
+      setNewsLoading(true);
+      fetchStockNews(ticker)
+        .then((items) => {
+          if (!cancelled) setNews(items);
+        })
+        .finally(() => {
+          if (!cancelled) setNewsLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (isDevMockMode()) {
+      setNews(getStockNews(ticker));
+      return undefined;
+    }
+
+    setNews([]);
+    return undefined;
+  }, [ticker]);
 
   const reviewsLocked = !unlocked;
   const discussionsLocked = !unlocked || !hasAccess;
@@ -132,10 +176,10 @@ export default function StockInvestmentPage({
       </PageHeader>
 
       <AssetProductHeader
-        name={stock.name}
+        name={displayStock.name}
         ticker={formatTicker(ticker)}
-        type={getStockAssetType(ticker, stock)}
-        price={formatPrice(stock.price)}
+        type={getStockAssetType(ticker, displayStock)}
+        price={formatPrice(displayStock.price)}
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
@@ -246,18 +290,13 @@ export default function StockInvestmentPage({
           lock={TRACK_STOCK_NEWS_LOCK}
           preview={<NewsBlurPreview />}
         >
-          <div className="divide-y divide-pe-border">
-            {news.length === 0 ? (
+          <div>
+            {newsLoading ? (
+              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
+            ) : news.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
             ) : (
-              news.map((item) => (
-                <div key={item.id} className="px-4 py-4">
-                  <p className="text-[15px] font-semibold leading-snug text-pe-text">{item.title}</p>
-                  <p className="mt-1 text-sm text-pe-text-muted">
-                    {item.source} · {item.time}
-                  </p>
-                </div>
-              ))
+              <NewsList items={news} />
             )}
           </div>
         </BlurredSection>

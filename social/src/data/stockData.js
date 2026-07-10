@@ -1,5 +1,7 @@
 /** Stock-specific reviews, holders, and news for investment pages. */
 
+import { isDevMockMode } from '../lib/appMode';
+import { formatNewsDate } from '../lib/format';
 import { AUTHOR_POSITIONS, PORTFOLIO_UPDATES, STOCKS } from './mockData';
 
 export const SEED_STOCK_REVIEWS = [
@@ -93,14 +95,18 @@ export function getStockHolders(ticker) {
     .map(([userId]) => userId);
 }
 
+/** Demo-only news; production uses stockNewsApi. */
 export function getStockNews(ticker) {
+  if (!isDevMockMode()) return [];
+
   return (PORTFOLIO_UPDATES[ticker] ?? [])
     .filter((u) => u.type === 'news')
     .map((u) => ({
       id: u.id,
       title: u.title,
-      source: u.source,
-      time: u.time,
+      summary: u.summary ?? '',
+      publishedAt: u.publishedAt,
+      time: u.publishedAt ? formatNewsDate(u.publishedAt) : u.time,
     }));
 }
 

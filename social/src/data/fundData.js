@@ -1,5 +1,7 @@
 /** Mutual fund catalogue, seed reviews, holders, and news for investment pages. */
 
+import { isDevMockMode } from '../lib/appMode';
+
 export const FUND_CATEGORIES = ['Flexi Cap', 'Mid Cap', 'Small Cap'];
 
 export const FUNDS = {
@@ -220,15 +222,40 @@ export const FUND_HOLDERS = {
 
 export const FUND_NEWS = {
   fund_parag_flexi: [
-    { id: 'fn1', title: 'Parag Parikh Flexi Cap adds to cash amid global volatility', source: 'Economic Times', time: '2d' },
-    { id: 'fn2', title: 'Overseas allocation in flexi caps: what changed in Q1', source: 'Mint', time: '5d' },
+    {
+      id: 'fn1',
+      title: 'Parag Parikh Flexi Cap adds to cash amid global volatility',
+      publishedAt: '2026-07-08T10:00:00.000Z',
+      summary: 'The fund increased cash allocation as managers turned cautious on elevated global valuations and currency volatility.',
+    },
+    {
+      id: 'fn2',
+      title: 'Overseas allocation in flexi caps: what changed in Q1',
+      publishedAt: '2026-07-05T09:00:00.000Z',
+      summary: 'Flexi cap schemes trimmed international exposure in Q1 while maintaining a barbell of quality domestic franchises.',
+    },
   ],
   fund_motilal_mid: [
-    { id: 'fn3', title: 'Motilal Oswal Midcap tops peer returns over 3 years', source: 'Moneycontrol', time: '1d' },
+    {
+      id: 'fn3',
+      title: 'Motilal Oswal Midcap tops peer returns over 3 years',
+      publishedAt: '2026-07-09T11:00:00.000Z',
+      summary: 'Category data shows the scheme leading midcap peers on a three-year basis, driven by concentrated bets in high-growth industrials.',
+    },
   ],
   fund_nippon_small: [
-    { id: 'fn4', title: 'Small cap inflows hit record — AMFI data', source: 'Business Standard', time: '3d' },
-    { id: 'fn5', title: 'Nippon India Small Cap restricts lump sum above ₹2L', source: 'Livemint', time: '1w' },
+    {
+      id: 'fn4',
+      title: 'Small cap inflows hit record — AMFI data',
+      publishedAt: '2026-07-07T08:00:00.000Z',
+      summary: 'Monthly AMFI flows show small cap funds attracting record inflows as investors chase higher beta exposure.',
+    },
+    {
+      id: 'fn5',
+      title: 'Nippon India Small Cap restricts lump sum above ₹2L',
+      publishedAt: '2026-07-01T12:00:00.000Z',
+      summary: 'The AMC capped fresh lump sum investments citing liquidity constraints in the small cap universe.',
+    },
   ],
 };
 
@@ -237,6 +264,7 @@ export function getFundHolders(fundId) {
 }
 
 export function getFundNews(fundId) {
+  if (!isDevMockMode()) return [];
   return FUND_NEWS[fundId] ?? [];
 }
 

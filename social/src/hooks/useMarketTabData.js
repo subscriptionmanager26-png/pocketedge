@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNseEquityLiveItems } from './useNseEquityStream';
+import { useNseIndexLiveItems } from './useNseIndexStream';
 import {
   MARKET_MIN_SEARCH_CHARS,
   MARKET_PREVIEW_LIMIT,
@@ -24,6 +26,8 @@ export function useMarketTabData(tab, query = '') {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
+
+  const [searchError, setSearchError] = useState(null);
 
   const debouncedQuery = useDebouncedValue(query.trim());
 
@@ -56,20 +60,24 @@ export function useMarketTabData(tab, query = '') {
     if (debouncedQuery.length < MARKET_MIN_SEARCH_CHARS) {
       setSearchItems([]);
       setSearching(false);
+      setSearchError(null);
       return undefined;
     }
 
     let cancelled = false;
     setSearching(true);
+    setSearchError(null);
 
     searchMarketTab(tab, debouncedQuery)
-      .then(({ items }) => {
+      .then(({ items, total }) => {
         if (cancelled) return;
         setSearchItems(items);
+        void total;
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
         setSearchItems([]);
+        setSearchError(err.message || 'Search failed');
       })
       .finally(() => {
         if (!cancelled) setSearching(false);
@@ -81,17 +89,22 @@ export function useMarketTabData(tab, query = '') {
   }, [tab, debouncedQuery]);
 
   const isSearching = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
-  const items = isSearching ? searchItems : previewItems;
+  const baseItems = isSearching ? searchItems : previewItems;
+  const streamIndices = tab === 'indices' && !loading && !error;
+  const streamEquity = (tab === 'stocks' || tab === 'etf') && !loading && !error;
+  const indexItems = useNseIndexLiveItems(baseItems, streamIndices);
+  const items = useNseEquityLiveItems(indexItems, tab, streamEquity);
 
   const statusMessage = useMemo(() => {
     if (loading) return null;
     if (isSearching) {
       if (searching) return 'Searching…';
+      if (searchError) return searchError;
       if (!searchItems.length) return 'No matches found';
       return `Showing ${searchItems.length} result${searchItems.length === 1 ? '' : 's'}`;
     }
     return `Top ${Math.min(previewItems.length, MARKET_PREVIEW_LIMIT)} movers · search for more`;
-  }, [loading, isSearching, searching, searchItems.length, previewItems.length]);
+  }, [loading, isSearching, searching, searchError, searchItems.length, previewItems.length]);
 
   return {
     items,
@@ -99,6 +112,7 @@ export function useMarketTabData(tab, query = '') {
     loading,
     searching,
     error,
+    searchError,
     isSearching,
     statusMessage,
   };

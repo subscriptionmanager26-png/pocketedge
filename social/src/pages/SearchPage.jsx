@@ -19,6 +19,7 @@ import {
   fetchMarketPreview,
   searchMarketTab,
 } from '../lib/marketDataApi';
+import { useNseEquityLiveItems } from '../hooks/useNseEquityStream';
 import { formatTicker } from '../lib/tickers';
 
 const RESULT_TABS = [
@@ -133,6 +134,13 @@ export default function SearchPage({
   }, [q]);
 
   const activeMarketResults = marketResults[resultTab] ?? [];
+  const liveTopStocks = useNseEquityLiveItems(topStocks, 'stocks', topStocks.length > 0);
+  const equityTab = resultTab === 'etf' ? 'etf' : 'stocks';
+  const streamEquity =
+    (resultTab === 'stocks' || resultTab === 'etf') && activeMarketResults.length > 0;
+  const liveMarketResults = useNseEquityLiveItems(activeMarketResults, equityTab, streamEquity);
+  const displayedMarketResults =
+    resultTab === 'stocks' || resultTab === 'etf' ? liveMarketResults : activeMarketResults;
 
   return (
     <div>
@@ -207,7 +215,7 @@ export default function SearchPage({
           <section>
             <SectionLabel>Top stock movers</SectionLabel>
             <div className="mt-1 divide-y divide-pe-border">
-              {topStocks.map((stock) => (
+              {liveTopStocks.map((stock) => (
                 <StockRow key={stock.symbol} stock={stock} onSelectStock={onSelectStock} />
               ))}
             </div>
@@ -282,8 +290,8 @@ export default function SearchPage({
                 <p className="py-14 text-center text-sm text-pe-text-secondary">
                   Type at least {MARKET_MIN_SEARCH_CHARS} characters to search markets
                 </p>
-              ) : activeMarketResults.length ? (
-                activeMarketResults.map((item) => (
+              ) : displayedMarketResults.length ? (
+                displayedMarketResults.map((item) => (
                   <MarketSearchRow
                     key={item.id ?? item.symbol ?? item.schemeCode}
                     tab={resultTab}
@@ -309,7 +317,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
     return (
       <button
         type="button"
-        onClick={() => onSelectStock?.(item.symbol)}
+        onClick={() => onSelectStock?.(item.symbol, { kind: tab === 'etf' ? 'etf' : 'stock' })}
         className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
       >
         <div>
@@ -432,7 +440,9 @@ function StockRow({ stock, onSelectStock }) {
       </div>
       <div className="text-right">
         <p className="text-[15px] font-semibold text-pe-text">
-          {stock.price != null ? formatPrice(stock.price) : '—'}
+          {stock.price != null || stock.ltp != null
+            ? formatPrice(stock.price ?? stock.ltp)
+            : '—'}
         </p>
         {stock.changePct != null ? (
           <p className={`text-sm font-semibold ${pnlClass(stock.changePct)}`}>

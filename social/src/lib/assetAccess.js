@@ -1,7 +1,12 @@
 import { FUND_HOLDERS, MY_FUND_WATCHLIST } from '../data/fundData';
 import { AUTHOR_POSITIONS, CURRENT_USER } from '../data/mockData';
-import { getReviewsForFund } from './reviewStore';
+import { getReviewsForFund, hasCommunityReviewsAccess } from './reviewStore';
 import { getWatchlists } from './watchlistStore';
+
+/** User has unlocked community features (e.g. indices, commodities). */
+export function hasMarketAssetAccess() {
+  return hasCommunityReviewsAccess();
+}
 
 /** User holds or watches this stock. */
 export function hasStockAccess(ticker) {

@@ -34,6 +34,17 @@ export function formatCount(n) {
   return String(n);
 }
 
+export function formatNewsDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(d);
+}
+
 export function timeAgo(iso) {
   const then = new Date(iso).getTime();
   const now = Date.now();

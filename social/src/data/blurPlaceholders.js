@@ -70,9 +70,34 @@ export const PREVIEW_HOLDERS = [
 ];
 
 export const PREVIEW_NEWS = [
-  { id: 'blur_n1', title: 'Brokerages maintain positive outlook after quarterly results', source: 'Mint', time: '2h' },
-  { id: 'blur_n2', title: 'Institutional investors increase stake in latest shareholding pattern', source: 'Economic Times', time: '5h' },
-  { id: 'blur_n3', title: 'Sector tailwinds remain intact, say analysts in preview notes', source: 'Moneycontrol', time: '8h' },
-  { id: 'blur_n4', title: 'Management guides for steady growth amid macro uncertainty', source: 'Business Standard', time: '1d' },
-  { id: 'blur_n5', title: 'Stock among top discussed names on social investing platforms this week', source: 'Reuters', time: '2d' },
+  {
+    id: 'blur_n1',
+    title: 'Brokerages maintain positive outlook after quarterly results',
+    publishedAt: '2026-07-10T08:00:00.000Z',
+    summary: 'Analysts cite steady execution and margin resilience in the latest quarter, with most houses keeping buy or accumulate ratings.',
+  },
+  {
+    id: 'blur_n2',
+    title: 'Institutional investors increase stake in latest shareholding pattern',
+    publishedAt: '2026-07-09T12:00:00.000Z',
+    summary: 'Mutual funds and foreign portfolio investors raised holdings modestly in the June quarter filing, signaling continued conviction.',
+  },
+  {
+    id: 'blur_n3',
+    title: 'Sector tailwinds remain intact, say analysts in preview notes',
+    publishedAt: '2026-07-08T09:30:00.000Z',
+    summary: 'Preview reports highlight demand visibility and pricing power as key supports despite near-term macro uncertainty.',
+  },
+  {
+    id: 'blur_n4',
+    title: 'Management guides for steady growth amid macro uncertainty',
+    publishedAt: '2026-07-06T14:00:00.000Z',
+    summary: 'Leadership reiterated medium-term growth targets on the earnings call while flagging cautious consumer sentiment in select geographies.',
+  },
+  {
+    id: 'blur_n5',
+    title: 'Stock among top discussed names on social investing platforms this week',
+    publishedAt: '2026-07-05T10:00:00.000Z',
+    summary: 'Retail investor chatter picked up after the results print, with debate focused on valuation versus long-term compounding potential.',
+  },
 ];

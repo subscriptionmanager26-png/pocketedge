@@ -41,7 +41,7 @@ import { ensureSocialProfile } from './lib/socialProfileApi';
 import { isProductionApp } from './lib/appMode';
 import { flushDemoLocalData } from './lib/flushDemoLocalData';
 import { getAppCurrentUser, setSelfProfile } from './lib/socialIdentity';
-import { parseAppPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, stockPath, tabPath } from './lib/routes';
 import {
   navigateToProfile,
   navigateToTab,
@@ -59,6 +59,7 @@ export default function App() {
   const [composePortfolioShare, setComposePortfolioShare] = useState(null);
   const [posts, setPosts] = useState([]);
   const [selectedTicker, setSelectedTicker] = useState(null);
+  const [selectedTickerKind, setSelectedTickerKind] = useState('stock');
   const [selectedFundId, setSelectedFundId] = useState(null);
   const [selectedIndexId, setSelectedIndexId] = useState(null);
   const [selectedCommodityId, setSelectedCommodityId] = useState(null);
@@ -116,10 +117,22 @@ export default function App() {
     tab,
     profileUserId,
     profilePortfolioId,
+    selectedPostId,
+    selectedTicker,
+    selectedTickerKind,
+    selectedFundId,
+    selectedIndexId,
+    selectedCommodityId,
     setTab,
     setProfileUserId,
     setProfilePortfolioId,
     setProfileMode,
+    setSelectedPostId,
+    setSelectedTicker,
+    setSelectedTickerKind,
+    setSelectedFundId,
+    setSelectedIndexId,
+    setSelectedCommodityId,
   });
 
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
@@ -259,17 +272,20 @@ export default function App() {
 
   const clearMarketSelection = () => {
     setSelectedTicker(null);
+    setSelectedTickerKind('stock');
     setSelectedFundId(null);
     setSelectedIndexId(null);
     setSelectedCommodityId(null);
   };
 
-  const openStock = (ticker) => {
+  const openStock = (ticker, { kind = 'stock' } = {}) => {
     resetScroll();
     clearMarketSelection();
     setSelectedTicker(ticker);
+    setSelectedTickerKind(kind);
     setSelectedPostId(null);
     setTab('markets');
+    navigate(kind === 'etf' ? etfPath(ticker) : stockPath(ticker));
   };
 
   const openFund = (fundId) => {
@@ -278,6 +294,7 @@ export default function App() {
     setSelectedFundId(fundId);
     setSelectedPostId(null);
     setTab('markets');
+    navigate(fundPath(fundId));
   };
 
   const openIndex = (indexId) => {
@@ -286,6 +303,7 @@ export default function App() {
     setSelectedIndexId(indexId);
     setSelectedPostId(null);
     setTab('markets');
+    navigate(indexPath(indexId));
   };
 
   const openCommodity = (commodityId) => {
@@ -294,12 +312,15 @@ export default function App() {
     setSelectedCommodityId(commodityId);
     setSelectedPostId(null);
     setTab('markets');
+    navigate(commodityPath(commodityId));
   };
 
   const openPost = (postId) => {
     resetScroll();
+    clearMarketSelection();
     setSelectedPostId(postId);
     setTab('feed');
+    navigate(postPath(postId));
   };
 
   const openSettings = () => {
@@ -406,19 +427,19 @@ export default function App() {
   const mobileBack = useMemo(() => {
     if (authView !== 'app') return null;
     if (selectedPostId && tab === 'feed') {
-      return { label: 'Back', onBack: () => { backScroll(); setSelectedPostId(null); } };
+      return { label: 'Back', onBack: () => { backScroll(); navigate(tabPath('feed')); } };
     }
     if (tab === 'markets' && selectedCommodityId) {
-      return { label: 'Markets', onBack: () => { backScroll(); setSelectedCommodityId(null); } };
+      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
     }
     if (tab === 'markets' && selectedIndexId) {
-      return { label: 'Markets', onBack: () => { backScroll(); setSelectedIndexId(null); } };
+      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
     }
     if (tab === 'markets' && selectedFundId) {
-      return { label: 'Markets', onBack: () => { backScroll(); setSelectedFundId(null); } };
+      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
     }
     if (tab === 'markets' && selectedTicker) {
-      return { label: 'Markets', onBack: () => { backScroll(); setSelectedTicker(null); } };
+      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
     }
     if (tab === 'profile' && profilePortfolioId) {
       return {
@@ -427,12 +448,12 @@ export default function App() {
           if (portfolioBackRef.current) {
             portfolioBackRef.current(() => {
               backScroll();
-              setProfilePortfolioId(null);
+              navigateToProfile(navigate, profileUserId);
             });
             return;
           }
           backScroll();
-          setProfilePortfolioId(null);
+          navigateToProfile(navigate, profileUserId);
         },
       };
     }
@@ -462,6 +483,7 @@ export default function App() {
     profileReturnTab,
     profilePortfolioId,
     backScroll,
+    navigate,
   ]);
 
   useEffect(() => {
@@ -529,7 +551,7 @@ export default function App() {
               posts={posts}
               onBack={() => {
                 backScroll();
-                setSelectedPostId(null);
+                navigate(tabPath('feed'));
               }}
               onOpenProfile={openProfile}
               onAddComment={(text) => handleAddComment(selectedPostId, text)}
@@ -584,7 +606,7 @@ export default function App() {
               commodityId={selectedCommodityId}
               onBack={() => {
                 backScroll();
-                setSelectedCommodityId(null);
+                navigate(tabPath('markets'));
               }}
               onOpenProfile={openProfile}
               onPromptReview={() => {
@@ -597,7 +619,7 @@ export default function App() {
               indexId={selectedIndexId}
               onBack={() => {
                 backScroll();
-                setSelectedIndexId(null);
+                navigate(tabPath('markets'));
               }}
               onOpenProfile={openProfile}
               onPromptReview={() => {
@@ -610,7 +632,7 @@ export default function App() {
               fundId={selectedFundId}
               onBack={() => {
                 backScroll();
-                setSelectedFundId(null);
+                navigate(tabPath('markets'));
               }}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}
@@ -624,7 +646,7 @@ export default function App() {
               ticker={selectedTicker}
               onBack={() => {
                 backScroll();
-                setSelectedTicker(null);
+                navigate(tabPath('markets'));
               }}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}

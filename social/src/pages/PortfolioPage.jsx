@@ -17,6 +17,8 @@ import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchli
 import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { isDevMockMode } from '../lib/appMode';
+import { fetchStockNewsForTickers, isStockNewsConfigured } from '../lib/stockNewsApi';
 import { skipAuthForDev } from '../lib/sessionStore';
 import {
   PortfolioKindMetaTags,
@@ -124,7 +126,48 @@ export default function PortfolioPage({
     }));
   }, [activeList]);
 
-  const tickers = holdingsRows.map((h) => h.ticker);
+  const tickers = useMemo(() => holdingsRows.map((h) => h.ticker), [holdingsRows]);
+  const [portfolioNews, setPortfolioNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!tickers.length) {
+      setPortfolioNews([]);
+      return undefined;
+    }
+
+    if (isStockNewsConfigured()) {
+      let cancelled = false;
+      setNewsLoading(true);
+      fetchStockNewsForTickers(tickers)
+        .then((items) => {
+          if (!cancelled) setPortfolioNews(items);
+        })
+        .finally(() => {
+          if (!cancelled) setNewsLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (isDevMockMode()) {
+      setPortfolioNews(collectActivity(tickers).news);
+      return undefined;
+    }
+
+    setPortfolioNews([]);
+    return undefined;
+  }, [tickers]);
+
+  const activity = useMemo(() => {
+    const base = collectActivity(tickers);
+    if (isStockNewsConfigured() || !isDevMockMode()) {
+      return { ...base, news: portfolioNews };
+    }
+    return base;
+  }, [tickers, portfolioNews]);
 
   const metrics = useMemo(() => {
     if (!activeList) return null;
@@ -137,8 +180,6 @@ export default function PortfolioPage({
       holdings: MY_PORTFOLIO.holdings,
     });
   }, [activeList]);
-
-  const activity = useMemo(() => collectActivity(tickers), [tickers]);
 
   const overallRow = useMemo(() => {
     if (!metrics || metrics.kind !== 'portfolio') return null;
@@ -300,7 +341,13 @@ export default function PortfolioPage({
           onSelectStock={onSelectStock}
         />
       )}
-      {contentTab === 'news' && <NewsFeed items={activity.news} />}
+      {contentTab === 'news' && (
+        newsLoading ? (
+          <p className="px-6 py-14 text-center text-sm text-pe-text-secondary">Loading news…</p>
+        ) : (
+          <NewsFeed items={activity.news} />
+        )
+      )}
       {contentTab === 'trades' && (
         <TradesFeed items={activity.trades} onOpenProfile={onOpenProfile} />
       )}

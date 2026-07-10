@@ -1,4 +1,4 @@
-import { Newspaper } from 'lucide-react';
+import NewsList from './NewsList';
 import Avatar from './Avatar';
 import { isDevMockMode } from '../lib/appMode';
 import {
@@ -49,26 +49,7 @@ export function collectActivity(tickers) {
 
 export function NewsFeed({ items }) {
   if (!items.length) return <Empty label="No news for this list yet." />;
-  return (
-    <div className="divide-y divide-pe-border">
-      {items.map((item) => (
-        <div key={item.id} className="flex gap-3 px-4 py-4">
-          <Newspaper className="mt-0.5 h-4 w-4 shrink-0 text-pe-link" />
-          <div className="min-w-0">
-            {item.ticker && (
-              <p className="text-xs font-semibold text-pe-text-secondary">
-                {formatTicker(item.ticker)}
-              </p>
-            )}
-            <p className="text-[15px] leading-6 text-pe-text">{item.title}</p>
-            <p className="mt-0.5 text-xs text-pe-text-muted">
-              {item.source} · {item.time}
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <NewsList items={items} showTicker />;
 }
 
 export function TradesFeed({ items, onOpenProfile }) {

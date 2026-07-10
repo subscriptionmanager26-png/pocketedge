@@ -1,5 +1,6 @@
 import Avatar from './Avatar';
 import ReviewCard from './ReviewCard';
+import NewsList from './NewsList';
 import { getPerson } from '../data/mockData';
 import {
   PREVIEW_DISCUSSIONS,
@@ -17,8 +18,8 @@ export const INVESTMENT_TABS = [
 
 export const REVIEW_LOCK = {
   title: 'Unlock community reviews',
-  detail: 'Rate one mutual fund during signup to read investor reviews on stocks and funds.',
-  ctaLabel: 'Write a fund review',
+  detail: 'Community is built on sharing. Review a stock/ETF/MF to unlock community benefits.',
+  ctaLabel: 'Write a review',
 };
 
 export const TRACK_STOCK_LOCK = {
@@ -34,6 +35,16 @@ export const TRACK_STOCK_NEWS_LOCK = {
 export const TRACK_FUND_LOCK = {
   title: 'Unlock fund community data',
   detail: 'Add this fund to your holdings or watchlist to view holders, news, and posts.',
+};
+
+export const TRACK_MARKET_LOCK = {
+  title: 'Unlock market community data',
+  detail: 'Share one review during signup to read posts, holders, and news across market assets.',
+};
+
+export const TRACK_MARKET_NEWS_LOCK = {
+  title: 'Unlock market news',
+  detail: 'Complete onboarding to read curated updates for this market asset.',
 };
 
 /** Locked: message banner first, then shared preview content blurred underneath. */
@@ -105,18 +116,7 @@ export function HoldersBlurPreview({ onOpenProfile }) {
 }
 
 export function NewsBlurPreview() {
-  return (
-    <div className="divide-y divide-pe-border">
-      {PREVIEW_NEWS.map((item) => (
-        <div key={item.id} className="px-4 py-4">
-          <p className="text-[15px] font-semibold leading-snug text-pe-text">{item.title}</p>
-          <p className="mt-1 text-sm text-pe-text-muted">
-            {item.source} · {item.time}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
+  return <NewsList items={PREVIEW_NEWS} />;
 }
 
 /** Discussions are posts — same row on stock and fund pages. */

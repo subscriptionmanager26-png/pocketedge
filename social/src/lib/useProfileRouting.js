@@ -1,10 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { parseAppPath, profilePath, tabPath } from './routes';
+import { parseAppPath, pathFromAppState, profilePath, tabPath } from './routes';
 import { getAppCurrentUserId, getHandleForUserIdSync, resolvePersonByHandle } from './socialIdentity';
 
+function clearMarketSelection(setters) {
+  setters.setSelectedTicker(null);
+  setters.setSelectedTickerKind('stock');
+  setters.setSelectedFundId(null);
+  setters.setSelectedIndexId(null);
+  setters.setSelectedCommodityId(null);
+}
+
 /**
- * Keeps App tab/profile state in sync with /@username URLs.
+ * Keeps App tab/profile/asset state in sync with shareable URLs.
  */
 export function useProfileRouting({
   authView,
@@ -12,14 +20,39 @@ export function useProfileRouting({
   tab,
   profileUserId,
   profilePortfolioId,
+  selectedPostId,
+  selectedTicker,
+  selectedTickerKind,
+  selectedFundId,
+  selectedIndexId,
+  selectedCommodityId,
   setTab,
   setProfileUserId,
   setProfilePortfolioId,
   setProfileMode,
+  setSelectedPostId,
+  setSelectedTicker,
+  setSelectedTickerKind,
+  setSelectedFundId,
+  setSelectedIndexId,
+  setSelectedCommodityId,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
   const applyingUrl = useRef(false);
+
+  const setters = {
+    setTab,
+    setProfileUserId,
+    setProfilePortfolioId,
+    setProfileMode,
+    setSelectedPostId,
+    setSelectedTicker,
+    setSelectedTickerKind,
+    setSelectedFundId,
+    setSelectedIndexId,
+    setSelectedCommodityId,
+  };
 
   // URL -> state
   useEffect(() => {
@@ -28,30 +61,99 @@ export function useProfileRouting({
     const parsed = parseAppPath(location.pathname);
     applyingUrl.current = true;
 
+    const finish = () => {
+      queueMicrotask(() => {
+        applyingUrl.current = false;
+      });
+    };
+
     if (parsed.kind === 'profile') {
       resolvePersonByHandle(parsed.username).then((person) => {
-        if (!person) return;
+        if (!person) {
+          finish();
+          return;
+        }
+        clearMarketSelection(setters);
+        setSelectedPostId(null);
         setProfileUserId(person.id);
         setProfileMode(person.id === getAppCurrentUserId() ? 'own' : 'public');
         setProfilePortfolioId(parsed.portfolioId);
         setTab('profile');
-        queueMicrotask(() => {
-          applyingUrl.current = false;
-        });
+        finish();
       });
       return;
     }
 
+    if (parsed.kind === 'post') {
+      clearMarketSelection(setters);
+      setProfilePortfolioId(null);
+      setSelectedPostId(parsed.postId);
+      setTab('feed');
+      finish();
+      return;
+    }
+
+    if (parsed.kind === 'stock' || parsed.kind === 'etf') {
+      setProfilePortfolioId(null);
+      setSelectedPostId(null);
+      setSelectedFundId(null);
+      setSelectedIndexId(null);
+      setSelectedCommodityId(null);
+      setSelectedTicker(parsed.symbol);
+      setSelectedTickerKind(parsed.kind === 'etf' ? 'etf' : 'stock');
+      setTab('markets');
+      finish();
+      return;
+    }
+
+    if (parsed.kind === 'fund') {
+      setProfilePortfolioId(null);
+      setSelectedPostId(null);
+      setSelectedTicker(null);
+      setSelectedTickerKind('stock');
+      setSelectedIndexId(null);
+      setSelectedCommodityId(null);
+      setSelectedFundId(parsed.schemeCode);
+      setTab('markets');
+      finish();
+      return;
+    }
+
+    if (parsed.kind === 'index') {
+      setProfilePortfolioId(null);
+      setSelectedPostId(null);
+      setSelectedTicker(null);
+      setSelectedTickerKind('stock');
+      setSelectedFundId(null);
+      setSelectedCommodityId(null);
+      setSelectedIndexId(parsed.indexId);
+      setTab('markets');
+      finish();
+      return;
+    }
+
+    if (parsed.kind === 'commodity') {
+      setProfilePortfolioId(null);
+      setSelectedPostId(null);
+      setSelectedTicker(null);
+      setSelectedTickerKind('stock');
+      setSelectedFundId(null);
+      setSelectedIndexId(null);
+      setSelectedCommodityId(parsed.commodityId);
+      setTab('markets');
+      finish();
+      return;
+    }
+
     if (parsed.kind === 'tab') {
+      clearMarketSelection(setters);
+      setSelectedPostId(null);
       setTab(parsed.tab);
       if (parsed.tab !== 'profile') {
         setProfilePortfolioId(null);
       }
+      finish();
     }
-
-    queueMicrotask(() => {
-      applyingUrl.current = false;
-    });
   }, [
     authView,
     profileReady,
@@ -59,6 +161,12 @@ export function useProfileRouting({
     setProfileMode,
     setProfilePortfolioId,
     setProfileUserId,
+    setSelectedCommodityId,
+    setSelectedFundId,
+    setSelectedIndexId,
+    setSelectedPostId,
+    setSelectedTicker,
+    setSelectedTickerKind,
     setTab,
   ]);
 
@@ -66,13 +174,18 @@ export function useProfileRouting({
   useEffect(() => {
     if (authView !== 'app' || !profileReady || applyingUrl.current) return;
 
-    let target = tabPath(tab);
-    if (tab === 'profile') {
-      const handle = getHandleForUserIdSync(profileUserId);
-      if (handle) {
-        target = profilePath(handle, { portfolioId: profilePortfolioId });
-      }
-    }
+    const target = pathFromAppState({
+      tab,
+      profileUserId,
+      profilePortfolioId,
+      selectedPostId,
+      selectedTicker,
+      selectedTickerKind,
+      selectedFundId,
+      selectedIndexId,
+      selectedCommodityId,
+      getHandleForUserId: getHandleForUserIdSync,
+    });
 
     if (location.pathname !== target) {
       navigate(target, { replace: true });
@@ -83,6 +196,12 @@ export function useProfileRouting({
     tab,
     profileUserId,
     profilePortfolioId,
+    selectedPostId,
+    selectedTicker,
+    selectedTickerKind,
+    selectedFundId,
+    selectedIndexId,
+    selectedCommodityId,
     location.pathname,
     navigate,
   ]);

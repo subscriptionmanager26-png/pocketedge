@@ -85,6 +85,20 @@ async function loadSearchIndex(tab) {
   return payload.items ?? [];
 }
 
+function scoreMarketSearchItem(item, fields, needle) {
+  const symbol = String(item.symbol ?? item.id ?? '').toLowerCase();
+  const name = String(item.name ?? '').toLowerCase();
+
+  if (symbol === needle) return 100;
+  if (symbol.startsWith(needle)) return 80;
+  if (name.startsWith(needle)) return 60;
+
+  const fieldHit = fields.some((field) =>
+    String(item[field] ?? '').toLowerCase().includes(needle)
+  );
+  return fieldHit ? 40 : 0;
+}
+
 export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
   const q = query.trim();
   if (q.length < MARKET_MIN_SEARCH_CHARS) {
@@ -95,18 +109,21 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
   const fields = SEARCH_FIELDS[tab] ?? ['name'];
   const needle = q.toLowerCase();
 
-  const matches = [];
+  const scored = [];
   for (const item of items) {
-    const hit = fields.some((field) =>
-      String(item[field] ?? '').toLowerCase().includes(needle)
-    );
-    if (hit) {
-      matches.push(item);
-      if (matches.length >= limit) break;
-    }
+    const score = scoreMarketSearchItem(item, fields, needle);
+    if (score > 0) scored.push({ item, score });
   }
 
-  return { items: matches, total: matches.length };
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return String(a.item.symbol ?? a.item.id ?? '').localeCompare(
+      String(b.item.symbol ?? b.item.id ?? '')
+    );
+  });
+
+  const matches = scored.slice(0, limit).map((entry) => entry.item);
+  return { items: matches, total: scored.length };
 }
 
 export async function searchAllMarkets(query, limitPerTab = 12) {
@@ -206,6 +223,7 @@ export function marketStockToDetail(stock) {
   if (!stock) return null;
   return {
     ticker: stock.symbol,
+    symbol: stock.symbol,
     name: stock.name,
     price: stock.price ?? stock.ltp,
     changePct: stock.changePct,
