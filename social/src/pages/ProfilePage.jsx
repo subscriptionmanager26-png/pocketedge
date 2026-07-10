@@ -227,17 +227,23 @@ export default function ProfilePage({
     [portfolios, selectedPortfolioId]
   );
 
-  if (!person) {
-    return (
-      <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading profile…</p>
-    );
-  }
-
   useEffect(() => {
     setTab(selectedPortfolioId ? 'portfolios' : 'about');
     setAboutEditing(false);
     setFollowListMode(null);
   }, [userId, mode, selectedPortfolioId]);
+
+  const followCounts = useMemo(() => {
+    void graphTick;
+    if (!person?.id) return { followers: 0, following: 0 };
+    return getFollowCounts(person.id);
+  }, [person?.id, graphTick]);
+
+  if (!person) {
+    return (
+      <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading profile…</p>
+    );
+  }
 
   const handleAddPortfolio = async () => {
     const created = await createDraftPortfolio(person.id);
@@ -300,11 +306,6 @@ export default function ProfilePage({
     setFollowListMode(null);
     onClearPortfolio?.();
   };
-
-  const followCounts = useMemo(() => {
-    void graphTick;
-    return getFollowCounts(person.id);
-  }, [person.id, graphTick]);
 
   if (followListMode) {
     return (

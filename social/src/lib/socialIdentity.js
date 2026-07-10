@@ -1,7 +1,6 @@
 import { CURRENT_USER, getPerson, getPersonByHandle } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { skipAuthForDev } from './sessionStore';
-import { fetchSocialProfile } from './socialProfileApi';
 
 let selfProfile = null;
 const byUserId = new Map();
@@ -59,6 +58,13 @@ function cacheProfile(profile) {
   if (profile.username) byUsername.set(profile.username.toLowerCase(), profile);
 }
 
+async function fetchProfileByUsername(username) {
+  if (!useLiveIdentity()) return null;
+  const { data, error } = await supabase.rpc('get_social_profile', { p_username: username });
+  if (error) throw error;
+  return data;
+}
+
 export async function resolvePersonByHandle(handle) {
   const normalized = handle?.toLowerCase?.().replace(/^@/, '');
   if (!normalized) return null;
@@ -71,7 +77,7 @@ export async function resolvePersonByHandle(handle) {
     return profileToPerson(byUsername.get(normalized));
   }
 
-  const profile = await fetchSocialProfile(normalized);
+  const profile = await fetchProfileByUsername(normalized);
   if (profile) {
     cacheProfile(profile);
     return profileToPerson(profile);
