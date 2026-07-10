@@ -1,4 +1,4 @@
-import { STOCKS, recalcHolding } from '../data/mockData';
+import { recalcHolding } from '../data/mockData';
 
 export const WATCHLIST_BASE_INVESTMENT = 10_000;
 
@@ -12,25 +12,27 @@ export function isWatchlistKind(kind) {
   return kind === 'watchlist';
 }
 
-export function buildWatchlistHoldings(rows) {
+export function buildWatchlistHoldings(rows, assetsByKey = new Map()) {
   return rows.map((row) => {
-    const ticker = row.ticker.trim().toUpperCase();
+    const ticker = row.ticker.trim();
+    const asset = assetsByKey.get(ticker);
     const weightPct = Number(row.weight) || 0;
-    const price = STOCKS[ticker]?.price ?? 0;
+    const price = asset?.price ?? 0;
     const invested = WATCHLIST_BASE_INVESTMENT * (weightPct / 100);
     const qty = price > 0 ? invested / price : 0;
-    return recalcHolding({ ticker, qty, avg: price, price, weightPct });
+    return recalcHolding({ ticker: asset?.key ?? ticker, qty, avg: price, price, weightPct });
   });
 }
 
-export function buildLiveHoldings(rows) {
+export function buildLiveHoldings(rows, assetsByKey = new Map()) {
   return rows.map((row) => {
-    const ticker = row.ticker.trim().toUpperCase();
+    const ticker = row.ticker.trim();
+    const asset = assetsByKey.get(ticker);
     const qty = Number(row.qty) || 0;
     const invested = Number(row.invested) || 0;
     const avg = qty > 0 ? invested / qty : 0;
-    const price = STOCKS[ticker]?.price ?? 0;
-    return recalcHolding({ ticker, qty, avg, price });
+    const price = asset?.price ?? 0;
+    return recalcHolding({ ticker: asset?.key ?? ticker, qty, avg, price });
   });
 }
 
@@ -60,9 +62,9 @@ export function validatePortfolioDraft({ kind, name, objective, thesis, rows }) 
     if (!rowHasInput(row, isWatchlist)) continue;
 
     const rowErrors = {};
-    const ticker = row.ticker.trim().toUpperCase();
+    const ticker = row.ticker.trim();
 
-    if (!ticker || !STOCKS[ticker]) rowErrors.ticker = true;
+    if (!ticker) rowErrors.ticker = true;
 
     if (isWatchlist) {
       const weight = Number(row.weight);

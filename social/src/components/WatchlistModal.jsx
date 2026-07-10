@@ -1,20 +1,63 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { STOCKS } from '../data/mockData';
 import { formatTicker } from '../lib/tickers';
+import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
+import { resolvePortfolioAsset, searchPortfolioAssets } from '../lib/portfolioAssetUniverse';
 
 export default function WatchlistModal({ open, onClose, onSave }) {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [tickers, setTickers] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setSuggestions([]);
+      setSearching(false);
+      return undefined;
+    }
+
+    const query = symbol.trim();
+    if (query.length < MARKET_MIN_SEARCH_CHARS) {
+      setSuggestions([]);
+      setSearching(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      searchPortfolioAssets(query, { exclude: tickers, limit: 6 })
+        .then((items) => {
+          if (!cancelled) setSuggestions(items);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, symbol, tickers]);
 
   if (!open) return null;
 
-  const addSymbol = () => {
-    const t = symbol.trim().toUpperCase();
-    if (!t || !STOCKS[t] || tickers.includes(t)) return;
-    setTickers((prev) => [...prev, t]);
+  const addAsset = async (assetKey) => {
+    const asset = assetKey
+      ? suggestions.find((entry) => entry.key === assetKey) ?? (await resolvePortfolioAsset(assetKey))
+      : await resolvePortfolioAsset(symbol.trim());
+
+    if (!asset || tickers.includes(asset.key)) return;
+
+    setTickers((prev) => [...prev, asset.key]);
     setSymbol('');
+    setSuggestions([]);
   };
 
   const save = () => {
@@ -50,21 +93,54 @@ export default function WatchlistModal({ open, onClose, onSave }) {
             placeholder="List name"
             className="w-full rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-[15px] outline-none focus:border-pe-accent"
           />
-          <div className="flex gap-2">
-            <input
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSymbol())}
-              placeholder="Add symbol (e.g. TCS)"
-              className="min-w-0 flex-1 rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-[15px] outline-none focus:border-pe-accent"
-            />
-            <button
-              type="button"
-              onClick={addSymbol}
-              className="shrink-0 rounded-md border border-pe-border-strong px-3 py-2 text-sm font-bold text-pe-text"
-            >
-              Add
-            </button>
+          <div className="relative">
+            <div className="flex gap-2">
+              <input
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addAsset();
+                  }
+                }}
+                placeholder="Search stock, ETF, or fund"
+                className="min-w-0 flex-1 rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-[15px] outline-none focus:border-pe-accent"
+              />
+              <button
+                type="button"
+                onClick={() => addAsset()}
+                className="shrink-0 rounded-md border border-pe-border-strong px-3 py-2 text-sm font-bold text-pe-text"
+              >
+                Add
+              </button>
+            </div>
+            {searching ? (
+              <p className="mt-2 text-xs text-pe-text-muted">Searching…</p>
+            ) : null}
+            {suggestions.length > 0 ? (
+              <div className="absolute left-0 right-0 z-20 mt-1 overflow-hidden rounded-md border border-pe-border-strong bg-pe-canvas shadow-lg">
+                {suggestions.map((asset) => (
+                  <button
+                    key={`${asset.kind}-${asset.key}`}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addAsset(asset.key)}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-pe-surface"
+                  >
+                    <span className="min-w-0">
+                      <span className="text-sm font-semibold text-pe-text">
+                        {asset.kind === 'fund' ? asset.key : formatTicker(asset.key)}
+                      </span>
+                      <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-pe-text-muted">
+                        {asset.kindLabel}
+                      </span>
+                    </span>
+                    <span className="truncate text-xs text-pe-text-muted">{asset.name}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           {tickers.length > 0 && (
             <div className="flex flex-wrap gap-2">

@@ -9,7 +9,6 @@ import { isDevMockMode } from '../lib/appMode';
 import {
   CURRENT_USER,
   POSTS,
-  STOCKS,
   getPortfolioReturn,
   getUserTrades,
 } from '../data/mockData';
@@ -29,7 +28,7 @@ import PortfolioCard from '../components/PortfolioCard';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
 import ReviewCard from '../components/ReviewCard';
-import { getReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
+import { getReviewsByAuthor, loadReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
 import {
   addPortfolioComment,
   getPortfolioEngagementSync,
@@ -48,6 +47,13 @@ import {
   portfolioHasDraftWork,
   validatePortfolioDraft,
 } from '../lib/portfolioEdit';
+import {
+  MARKET_MIN_SEARCH_CHARS,
+} from '../lib/marketDataApi';
+import {
+  resolvePortfolioAssets,
+  searchPortfolioAssets,
+} from '../lib/portfolioAssetUniverse';
 import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
@@ -157,6 +163,19 @@ export default function ProfilePage({
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
   useEffect(() => subscribeReviews(() => setReviewsVersion((n) => n + 1)), []);
   useEffect(() => subscribePortfolioEngagement(() => setPortfolioSocialTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    if (!person?.id) return undefined;
+    let cancelled = false;
+    loadReviewsByAuthor(person.id)
+      .then(() => {
+        if (!cancelled) setReviewsVersion((n) => n + 1);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [person?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -779,6 +798,8 @@ function PortfolioDetailView({
   const [editRows, setEditRows] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
   const [tickerSuggestionsFor, setTickerSuggestionsFor] = useState(null);
+  const [tickerSuggestions, setTickerSuggestions] = useState([]);
+  const [tickerSuggestionsLoading, setTickerSuggestionsLoading] = useState(false);
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
 
@@ -874,6 +895,48 @@ function PortfolioDetailView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.id, startInEditMode]);
 
+  useEffect(() => {
+    if (!tickerSuggestionsFor) {
+      setTickerSuggestions([]);
+      setTickerSuggestionsLoading(false);
+      return undefined;
+    }
+
+    const row = editRows.find((entry) => entry.id === tickerSuggestionsFor);
+    const query = row?.ticker?.trim() ?? '';
+    if (query.length < MARKET_MIN_SEARCH_CHARS) {
+      setTickerSuggestions([]);
+      setTickerSuggestionsLoading(false);
+      return undefined;
+    }
+
+    const used = editRows
+      .filter((entry) => entry.id !== tickerSuggestionsFor)
+      .map((entry) => entry.ticker.trim())
+      .filter(Boolean);
+
+    let cancelled = false;
+    setTickerSuggestionsLoading(true);
+
+    const timer = setTimeout(() => {
+      searchPortfolioAssets(query, { exclude: used, limit: 6 })
+        .then((items) => {
+          if (!cancelled) setTickerSuggestions(items);
+        })
+        .catch(() => {
+          if (!cancelled) setTickerSuggestions([]);
+        })
+        .finally(() => {
+          if (!cancelled) setTickerSuggestionsLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tickerSuggestionsFor, editRows]);
+
   const saveEdits = async () => {
     const validation = validatePortfolioDraft({
       kind: portfolioKind,
@@ -885,9 +948,28 @@ function PortfolioDetailView({
     setFieldErrors(validation.errors);
     if (!validation.valid) return;
 
+    const assetsByKey = await resolvePortfolioAssets(
+      validation.completeRows.map((row) => row.ticker.trim())
+    );
+
+    const rowErrors = { ...validation.errors.rows };
+    let assetsValid = true;
+    for (const row of validation.completeRows) {
+      const ticker = row.ticker.trim();
+      if (!assetsByKey.has(ticker)) {
+        rowErrors[row.id] = { ...(rowErrors[row.id] ?? {}), ticker: true };
+        assetsValid = false;
+      }
+    }
+
+    if (!assetsValid) {
+      setFieldErrors({ ...validation.errors, rows: rowErrors });
+      return;
+    }
+
     const holdings = isWatchlist
-      ? buildWatchlistHoldings(validation.completeRows)
-      : buildLiveHoldings(validation.completeRows);
+      ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
+      : buildLiveHoldings(validation.completeRows, assetsByKey);
 
     const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
       name: name.trim(),
@@ -1026,23 +1108,7 @@ function PortfolioDetailView({
     setEditRows((prev) => [...prev, makeBlankRow()]);
   };
 
-  const tickerMatches = (query, excludeRowId) => {
-    const q = query.trim().toUpperCase();
-    if (!q) return [];
-    const used = new Set(
-      editRows
-        .filter((row) => row.id !== excludeRowId)
-        .map((row) => row.ticker.trim().toUpperCase())
-        .filter(Boolean)
-    );
-    return Object.keys(STOCKS)
-      .filter((ticker) => {
-        if (used.has(ticker)) return false;
-        const stockName = (STOCKS[ticker]?.name ?? '').toUpperCase();
-        return ticker.includes(q) || stockName.includes(q);
-      })
-      .slice(0, 6);
-  };
+  const tickerMatches = tickerSuggestionsFor ? tickerSuggestions : [];
 
   const compactInputClass =
     'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[14px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
@@ -1181,8 +1247,8 @@ function PortfolioDetailView({
           </p>
           <p className="mt-1 text-sm text-pe-text-secondary">
             {isWatchlist
-              ? 'Search a ticker and enter its share of total holdings (%). Weights must add up to 100%.'
-              : 'Search a ticker, then enter your total investment and quantity.'}
+              ? 'Search a stock, ETF, or fund and enter its share of total holdings (%). Weights must add up to 100%.'
+              : 'Search a stock, ETF, or fund, then enter your total investment and quantity.'}
           </p>
 
           <div className="mt-4 space-y-2">
@@ -1208,8 +1274,7 @@ function PortfolioDetailView({
             </div>
 
             {editRows.map((row) => {
-              const suggestions =
-                tickerSuggestionsFor === row.id ? tickerMatches(row.ticker, row.id) : [];
+              const suggestions = tickerSuggestionsFor === row.id ? tickerMatches : [];
               const rowErr = fieldErrors.rows[row.id] ?? {};
               return (
                 <div key={row.id} className={rowGridClass}>
@@ -1229,29 +1294,40 @@ function PortfolioDetailView({
                           );
                         }, 120);
                       }}
-                      placeholder="Search ticker"
+                      placeholder="Search stock, ETF, or fund"
                       aria-label="Ticker"
                       autoComplete="off"
                       className={fieldClass(compactInputClass, rowErr.ticker)}
                     />
+                    {tickerSuggestionsLoading && tickerSuggestionsFor === row.id ? (
+                      <div className="absolute left-0 right-0 z-20 mt-1 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[12px] text-pe-text-muted shadow-lg">
+                        Searching…
+                      </div>
+                    ) : null}
                     {suggestions.length > 0 && (
                       <div className="absolute left-0 right-0 z-20 mt-1 overflow-hidden rounded-md border border-pe-border-strong bg-pe-canvas shadow-lg">
-                        {suggestions.map((ticker) => (
+                        {suggestions.map((asset) => (
                           <button
-                            key={ticker}
+                            key={`${asset.kind}-${asset.key}`}
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
-                              updateRow(row.id, { ticker });
+                              updateRow(row.id, { ticker: asset.key });
                               setTickerSuggestionsFor(null);
+                              setTickerSuggestions([]);
                             }}
                             className="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left hover:bg-pe-surface"
                           >
-                            <span className="text-[14px] font-semibold text-pe-text">
-                              {formatTicker(ticker)}
+                            <span className="min-w-0">
+                              <span className="text-[14px] font-semibold text-pe-text">
+                                {asset.kind === 'fund' ? asset.key : formatTicker(asset.key)}
+                              </span>
+                              <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-pe-text-muted">
+                                {asset.kindLabel}
+                              </span>
                             </span>
                             <span className="truncate text-[12px] text-pe-text-muted">
-                              {STOCKS[ticker]?.name}
+                              {asset.name}
                             </span>
                           </button>
                         ))}
@@ -1561,18 +1637,42 @@ function PortfolioDiscussion({
 function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
+  const [assetsByKey, setAssetsByKey] = useState({});
   const overallReturn = getPortfolioReturn(portfolio, returnPeriod);
 
   useEffect(() => {
     setPage(0);
   }, [portfolio.id, returnPeriod]);
+
+  useEffect(() => {
+    const keys = [
+      ...(portfolio.holdings ?? []).map((holding) => holding.ticker),
+      ...(portfolio.tickers ?? []),
+    ].filter(Boolean);
+
+    if (!keys.length) {
+      setAssetsByKey({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    resolvePortfolioAssets(keys).then((map) => {
+      if (cancelled) return;
+      const next = {};
+      for (const [key, asset] of map.entries()) next[key] = asset;
+      setAssetsByKey(next);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [portfolio.id, portfolio.holdings, portfolio.tickers]);
+
   const rows = useMemo(() => {
-    const periodReturnForTicker = (ticker, fallbackPnl) => {
-      const stock = STOCKS[ticker];
-      if (!stock) return fallbackPnl ?? 0;
-      const day = stock.changePct ?? 0;
-      const month =
-        typeof stock.return3M === 'number' ? Number((stock.return3M / 3).toFixed(1)) : Number((day * 8).toFixed(1));
+    const periodReturnForTicker = (ticker, fallbackPnl, asset) => {
+      const changePct = asset?.item?.changePct ?? fallbackPnl ?? 0;
+      const day = changePct ?? 0;
+      const month = Number((day * 8).toFixed(1));
       if (returnPeriod === '1D') return day;
       if (returnPeriod === '1W') return Number((day * 5).toFixed(1));
       if (returnPeriod === '1Y') return Number((month * 8).toFixed(1));
@@ -1582,20 +1682,22 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     const liveHoldings = (portfolio.holdings ?? []).filter(Boolean);
     if (liveHoldings.length) {
       const totalValue = liveHoldings.reduce((sum, h) => {
-        const price = h.price ?? STOCKS[h.ticker]?.price ?? 0;
+        const asset = assetsByKey[h.ticker];
+        const price = h.price ?? asset?.price ?? 0;
         const value = h.value ?? (h.qty ?? 0) * price;
         return sum + value;
       }, 0);
       return liveHoldings.map((h) => {
-        const price = h.price ?? STOCKS[h.ticker]?.price ?? 0;
+        const asset = assetsByKey[h.ticker];
+        const price = h.price ?? asset?.price ?? 0;
         const value = h.value ?? (h.qty ?? 0) * price;
         const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
         return {
           key: h.ticker,
-          title: formatTicker(h.ticker),
-          subtitle: STOCKS[h.ticker]?.name ?? '',
+          title: asset?.kind === 'fund' ? h.ticker : formatTicker(h.ticker),
+          subtitle: asset?.name ?? '',
           weight,
-          itemReturn: periodReturnForTicker(h.ticker, h.pnlPct),
+          itemReturn: periodReturnForTicker(h.ticker, h.pnlPct, asset),
         };
       });
     }
@@ -1603,14 +1705,17 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     const tickers = portfolio.tickers ?? [];
     if (!tickers.length) return [];
     const equal = 100 / tickers.length;
-    return tickers.map((ticker) => ({
-      key: ticker,
-      title: formatTicker(ticker),
-      subtitle: STOCKS[ticker]?.name ?? '',
-      weight: equal,
-      itemReturn: periodReturnForTicker(ticker),
-    }));
-  }, [portfolio, returnPeriod]);
+    return tickers.map((ticker) => {
+      const asset = assetsByKey[ticker];
+      return {
+        key: ticker,
+        title: asset?.kind === 'fund' ? ticker : formatTicker(ticker),
+        subtitle: asset?.name ?? '',
+        weight: equal,
+        itemReturn: periodReturnForTicker(ticker, undefined, asset),
+      };
+    });
+  }, [portfolio, returnPeriod, assetsByKey]);
 
   const sortedRows = useMemo(
     () => [...rows].sort((a, b) => b.weight - a.weight),
