@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import CommentComposer from '../components/CommentComposer';
+import { isDevMockMode } from '../lib/appMode';
 import { POSTS } from '../data/mockData';
 
 export default function PostDetailPage({
@@ -11,7 +12,7 @@ export default function PostDetailPage({
   onOpenProfile,
   onAddComment,
 }) {
-  const post = (posts ?? POSTS).find((p) => p.id === postId);
+  const post = (posts ?? (isDevMockMode() ? POSTS : [])).find((p) => p.id === postId);
 
   if (!post) {
     return (

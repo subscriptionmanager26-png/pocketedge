@@ -1,9 +1,9 @@
 /** Fund & stock reviews, votes, comments, community-access unlock. */
 
-import { CURRENT_USER } from '../data/mockData';
 import { SEED_FUND_REVIEWS } from '../data/fundData';
 import { SEED_STOCK_REVIEWS } from '../data/stockData';
-import { skipAuthForDev } from './sessionStore';
+import { isDevMockMode } from './appMode';
+import { getAppCurrentUserId } from './socialIdentity';
 
 const STORE_KEY = 'pe_social_fund_reviews';
 const UNLOCK_KEY = 'pe_social_community_reviews_unlocked';
@@ -34,6 +34,9 @@ function readStore() {
   } catch {
     /* fall through */
   }
+  if (!isDevMockMode()) {
+    return { reviews: [], votes: {} };
+  }
   return { reviews: seedReviews(), votes: {} };
 }
 
@@ -48,10 +51,10 @@ export function subscribeReviews(listener) {
 }
 
 export function hasCommunityReviewsAccess() {
-  if (skipAuthForDev()) return true;
+  if (isDevMockMode()) return true;
   if (localStorage.getItem(UNLOCK_KEY) === '1') return true;
   const { reviews } = readStore();
-  return reviews.some((r) => r.authorId === CURRENT_USER.id);
+  return reviews.some((r) => r.authorId === getAppCurrentUserId());
 }
 
 export function unlockCommunityReviews() {
@@ -79,13 +82,13 @@ export function getReviewsByAuthor(userId) {
 
 export function getUserReviewForFund(fundId) {
   return readStore().reviews.find(
-    (r) => r.authorId === CURRENT_USER.id && r.fundId === fundId
+    (r) => r.authorId === getAppCurrentUserId() && r.fundId === fundId
   ) ?? null;
 }
 
 export function getUserReviewForStock(ticker) {
   return readStore().reviews.find(
-    (r) => r.authorId === CURRENT_USER.id && r.stockTicker === ticker
+    (r) => r.authorId === getAppCurrentUserId() && r.stockTicker === ticker
   ) ?? null;
 }
 
@@ -94,7 +97,7 @@ export function upsertReview({ fundId, stockTicker, rating, body = '' }) {
   const store = readStore();
   const existingIdx = store.reviews.findIndex(
     (r) =>
-      r.authorId === CURRENT_USER.id &&
+      r.authorId === getAppCurrentUserId() &&
       ((fundId && r.fundId === fundId) || (stockTicker && r.stockTicker === stockTicker))
   );
 
@@ -115,7 +118,7 @@ export function upsertReview({ fundId, stockTicker, rating, body = '' }) {
     id: `rev_${Date.now()}`,
     ...(fundId ? { fundId } : {}),
     ...(stockTicker ? { stockTicker } : {}),
-    authorId: CURRENT_USER.id,
+    authorId: getAppCurrentUserId(),
     rating,
     body: body.trim(),
     createdAt: new Date().toISOString(),
@@ -179,7 +182,7 @@ export function addReviewComment(reviewId, body, parentId = null) {
 
   const comment = {
     id: `rc_${Date.now()}`,
-    authorId: CURRENT_USER.id,
+    authorId: getAppCurrentUserId(),
     body: body.trim(),
     parentId,
     createdAt: new Date().toISOString(),

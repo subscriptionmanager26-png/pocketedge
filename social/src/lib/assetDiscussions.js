@@ -1,5 +1,6 @@
 import { FUNDS } from '../data/fundData';
 import { POSTS } from '../data/mockData';
+import { isDevMockMode } from './appMode';
 import { bodyMentionsTicker } from './tickers';
 
 /** Fund-specific discussion posts (discussions = posts). */
@@ -63,6 +64,7 @@ function sortByDate(posts) {
 }
 
 export function getStockDiscussions(ticker) {
+  if (!isDevMockMode()) return [];
   const fromFeed = POSTS.filter(
     (post) => post.trade?.ticker === ticker || bodyMentionsTicker(post.body, ticker)
   );
@@ -70,6 +72,7 @@ export function getStockDiscussions(ticker) {
 }
 
 export function getFundDiscussions(fundId) {
+  if (!isDevMockMode()) return [];
   const fund = FUNDS[fundId];
   const fromFundPosts = FUND_DISCUSSION_POSTS.filter((post) =>
     post.fundIds?.includes(fundId)
@@ -86,4 +89,31 @@ export function getFundDiscussions(fundId) {
   });
 
   return sortByDate(fromFeed.length ? fromFeed : fromFundPosts).slice(0, 12);
+}
+
+function bodyMentionsLabel(body, label) {
+  if (!body || !label) return false;
+  const needle = String(label).toLowerCase();
+  return body.toLowerCase().includes(needle);
+}
+
+export function getIndexDiscussions(indexId, indexName) {
+  if (!isDevMockMode()) return [];
+  const fromFeed = POSTS.filter(
+    (post) =>
+      bodyMentionsTicker(post.body, indexId) ||
+      bodyMentionsLabel(post.body, indexName) ||
+      bodyMentionsLabel(post.body, indexId)
+  );
+  return sortByDate(fromFeed).slice(0, 12);
+}
+
+export function getCommodityDiscussions(commodityId, commodityName) {
+  if (!isDevMockMode()) return [];
+  const fromFeed = POSTS.filter(
+    (post) =>
+      bodyMentionsLabel(post.body, commodityName) ||
+      bodyMentionsLabel(post.body, commodityId)
+  );
+  return sortByDate(fromFeed).slice(0, 12);
 }

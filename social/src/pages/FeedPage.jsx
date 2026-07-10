@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isDevMockMode } from '../lib/appMode';
 import PostCard from '../components/PostCard';
 import { POSTS } from '../data/mockData';
 import { getFollowedTopicSlugs, getFollowingIds } from '../lib/socialGraphStore';
@@ -14,7 +15,7 @@ export default function FeedPage({
   const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
 
   const feedPosts = useMemo(() => {
-    const list = posts ?? POSTS;
+    const list = posts ?? (isDevMockMode() ? POSTS : []);
     if (feedMode === 'following') {
       return list.filter(
         (p) =>

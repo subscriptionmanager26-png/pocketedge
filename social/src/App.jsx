@@ -38,7 +38,9 @@ import { CURRENT_USER, POSTS, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
 import PublicProfilePage from './pages/PublicProfilePage';
 import { ensureSocialProfile } from './lib/socialProfileApi';
-import { setSelfProfile } from './lib/socialIdentity';
+import { isProductionApp } from './lib/appMode';
+import { flushDemoLocalData } from './lib/flushDemoLocalData';
+import { getAppCurrentUser } from './lib/socialIdentity';
 import { parseAppPath } from './lib/routes';
 import {
   navigateToProfile,
@@ -55,7 +57,7 @@ export default function App() {
   const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePortfolioShare, setComposePortfolioShare] = useState(null);
-  const [posts, setPosts] = useState(POSTS);
+  const [posts, setPosts] = useState([]);
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedFundId, setSelectedFundId] = useState(null);
   const [selectedIndexId, setSelectedIndexId] = useState(null);
@@ -167,6 +169,7 @@ export default function App() {
     ensureSocialProfile()
       .then((profile) => {
         if (cancelled) return;
+        if (isProductionApp()) flushDemoLocalData();
         setSocialProfile(profile);
         setSelfProfile(profile);
       })
@@ -196,9 +199,10 @@ export default function App() {
   }, [tab, activityItems]);
 
   const handlePost = ({ body, image, portfolioShare }) => {
+    const me = getAppCurrentUser();
     const post = {
       id: `p_local_${Date.now()}`,
-      authorId: CURRENT_USER.id,
+      authorId: currentUserId,
       type: portfolioShare ? 'portfolio' : image ? 'image' : 'text',
       body: body || '',
       image: image ?? null,
@@ -208,7 +212,7 @@ export default function App() {
       comments: [],
       via: {
         kind: 'person',
-        label: `@${CURRENT_USER.handle}`,
+        label: `@${me.handle}`,
         reason: portfolioShare ? 'shared a portfolio' : 'you posted',
       },
       topics: [],
@@ -237,7 +241,7 @@ export default function App() {
         if (p.id !== postId) return p;
         const comment = {
           id: `c_${Date.now()}`,
-          authorId: CURRENT_USER.id,
+          authorId: currentUserId,
           body: text,
           createdAt: new Date().toISOString(),
         };
@@ -377,7 +381,7 @@ export default function App() {
     setAuthUser(null);
     setAuthView('landing');
     setTab('feed');
-    setPosts(POSTS);
+    setPosts([]);
   };
 
   const pageTitleOverride =

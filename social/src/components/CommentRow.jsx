@@ -1,10 +1,11 @@
 import Avatar from './Avatar';
 import TickerText from './TickerText';
-import { getPerson, primaryHoldingsLabel } from '../data/mockData';
+import { primaryHoldingsLabel } from '../data/mockData';
+import { getPersonSync } from '../lib/socialIdentity';
 import { formatCount, formatPct, timeAgo } from '../lib/format';
 
 export default function CommentRow({ comment, onOpenProfile }) {
-  const person = getPerson(comment.authorId);
+  const person = getPersonSync(comment.authorId);
   const holdings = primaryHoldingsLabel(comment.authorId);
   const openAuthor = () => onOpenProfile?.(comment.authorId);
 

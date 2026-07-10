@@ -3,6 +3,9 @@ import { TrendingUp, Users } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import { PEOPLE, TOPICS } from '../data/mockData';
+import { isDevMockMode } from '../lib/appMode';
+import { profileToPerson } from '../lib/socialIdentity';
+import { searchSocialProfiles } from '../lib/socialProfileApi';
 import {
   getFollowedTopicSlugs,
   isFollowing,
@@ -49,9 +52,12 @@ export default function SearchPage({
   const [topStocks, setTopStocks] = useState([]);
   const [marketResults, setMarketResults] = useState({});
   const [marketSearching, setMarketSearching] = useState(false);
+  const [peopleResults, setPeopleResults] = useState([]);
+  const [peopleSearching, setPeopleSearching] = useState(false);
 
   const debouncedQuery = useDebouncedValue(query.trim());
   const isMarketSearch = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
+  const q = query.trim().toLowerCase();
 
   const bumpGraph = () => {
     setGraphTick((n) => n + 1);
@@ -86,18 +92,42 @@ export default function SearchPage({
     };
   }, [debouncedQuery, isMarketSearch, resultTab]);
 
-  const q = query.trim().toLowerCase();
+  useEffect(() => {
+    if (!q || resultTab !== 'people') return undefined;
+
+    let cancelled = false;
+    setPeopleSearching(true);
+
+    if (isDevMockMode()) {
+      const ranked = [...PEOPLE].sort((a, b) => b.xirr - a.xirr);
+      const filtered = ranked.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)
+      );
+      setPeopleResults(filtered);
+      setPeopleSearching(false);
+      return undefined;
+    }
+
+    searchSocialProfiles(q)
+      .then((rows) => {
+        if (!cancelled) setPeopleResults(rows.map(profileToPerson));
+      })
+      .catch(() => {
+        if (!cancelled) setPeopleResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPeopleSearching(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [q, resultTab]);
+
   const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
 
-  const peopleResults = useMemo(() => {
-    const ranked = [...PEOPLE].sort((a, b) => b.xirr - a.xirr);
-    if (!q) return ranked;
-    return ranked.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)
-    );
-  }, [q]);
-
   const topicResults = useMemo(() => {
+    if (!isDevMockMode()) return [];
     if (!q) return TOPICS;
     return TOPICS.filter((t) => t.name.toLowerCase().includes(q));
   }, [q]);
@@ -117,52 +147,62 @@ export default function SearchPage({
 
       {!q ? (
         <div className="space-y-8 px-4 py-6">
-          <section>
-            <SectionLabel icon={TrendingUp}>Trending topics</SectionLabel>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {TOPICS.map((topic) => {
-                const followed = followedTopics.has(topic.slug);
-                return (
-                  <button
-                    key={topic.id}
-                    type="button"
-                    onClick={() => {
-                      toggleTopicFollow(topic.slug);
-                      bumpGraph();
-                    }}
-                    className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${
-                      followed
-                        ? 'border-pe-accent bg-pe-accent-wash text-pe-accent'
-                        : 'border-pe-border-strong text-pe-text-secondary hover:border-pe-text-muted hover:text-pe-text'
-                    }`}
-                  >
-                    #{topic.name}
-                    <span className="ml-1.5 font-medium text-pe-text-muted">
-                      {topic.postsThisWeek}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          {isDevMockMode() ? (
+            <>
+              <section>
+                <SectionLabel icon={TrendingUp}>Trending topics</SectionLabel>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {TOPICS.map((topic) => {
+                    const followed = followedTopics.has(topic.slug);
+                    return (
+                      <button
+                        key={topic.id}
+                        type="button"
+                        onClick={() => {
+                          toggleTopicFollow(topic.slug);
+                          bumpGraph();
+                        }}
+                        className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${
+                          followed
+                            ? 'border-pe-accent bg-pe-accent-wash text-pe-accent'
+                            : 'border-pe-border-strong text-pe-text-secondary hover:border-pe-text-muted hover:text-pe-text'
+                        }`}
+                      >
+                        #{topic.name}
+                        <span className="ml-1.5 font-medium text-pe-text-muted">
+                          {topic.postsThisWeek}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
 
-          <section>
-            <SectionLabel icon={Users}>Suggested people</SectionLabel>
-            <div className="mt-1 divide-y divide-pe-border">
-              {[...PEOPLE]
-                .sort((a, b) => b.xirr - a.xirr)
-                .slice(0, 4)
-                .map((person) => (
-                  <PersonRow
-                    key={person.id}
-                    person={person}
-                    graphTick={graphTick}
-                    onOpenProfile={onOpenProfile}
-                    onFollowChange={bumpGraph}
-                  />
-                ))}
-            </div>
-          </section>
+              <section>
+                <SectionLabel icon={Users}>Suggested people</SectionLabel>
+                <div className="mt-1 divide-y divide-pe-border">
+                  {[...PEOPLE]
+                    .sort((a, b) => b.xirr - a.xirr)
+                    .slice(0, 4)
+                    .map((person) => (
+                      <PersonRow
+                        key={person.id}
+                        person={person}
+                        graphTick={graphTick}
+                        onOpenProfile={onOpenProfile}
+                        onFollowChange={bumpGraph}
+                      />
+                    ))}
+                </div>
+              </section>
+            </>
+          ) : (
+            <section className="py-4 text-center">
+              <p className="text-sm text-pe-text-secondary">
+                Search by name or @username to find people on PocketEdge Social.
+              </p>
+            </section>
+          )}
 
           <section>
             <SectionLabel>Top stock movers</SectionLabel>

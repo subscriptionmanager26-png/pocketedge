@@ -1,11 +1,13 @@
 import { CURRENT_USER, PEOPLE, USER_FOLLOWING_SEED } from '../data/mockData';
+import { isDevMockMode } from './appMode';
+import { getAppCurrentUserId } from './socialIdentity';
 
 const FOLLOWING_KEY = 'pe_social_following';
 const TOPICS_KEY = 'pe_social_topics';
 
-const DEFAULT_FOLLOWING = USER_FOLLOWING_SEED.u_me;
-const ALL_USER_IDS = [CURRENT_USER.id, ...PEOPLE.map((p) => p.id)];
-const DEFAULT_TOPICS = ['Banking', 'ITServices', 'Macro'];
+const DEFAULT_FOLLOWING = isDevMockMode() ? USER_FOLLOWING_SEED.u_me : [];
+const ALL_USER_IDS = isDevMockMode() ? [CURRENT_USER.id, ...PEOPLE.map((p) => p.id)] : [];
+const DEFAULT_TOPICS = isDevMockMode() ? ['Banking', 'ITServices', 'Macro'] : [];
 
 const listeners = new Set();
 
@@ -79,12 +81,19 @@ export function clearSocialGraph() {
 }
 
 function followingMap() {
+  if (!isDevMockMode()) {
+    return { [getAppCurrentUserId()]: [...getFollowingIds()] };
+  }
   const map = { ...USER_FOLLOWING_SEED };
   map[CURRENT_USER.id] = [...getFollowingIds()];
   return map;
 }
 
 export function getFollowingForUser(userId) {
+  if (!isDevMockMode()) {
+    if (userId === getAppCurrentUserId()) return [...getFollowingIds()];
+    return [];
+  }
   if (userId === CURRENT_USER.id) return [...getFollowingIds()];
   return [...(USER_FOLLOWING_SEED[userId] ?? [])];
 }

@@ -6,7 +6,7 @@ import DisclosureStrip from './DisclosureStrip';
 import TickerText from './TickerText';
 import TradePill from './TradePill';
 import { PortfolioSharePreview } from './ComposeModal';
-import { getPerson } from '../data/mockData';
+import { getPersonSync } from '../lib/socialIdentity';
 import { formatCount, formatPct, timeAgo } from '../lib/format';
 import { extractTickers } from '../lib/tickers';
 
@@ -33,7 +33,7 @@ export default function PostCard({
   onOpenPost,
 }) {
   const isDetail = variant === 'detail';
-  const person = getPerson(post.authorId);
+  const person = getPersonSync(post.authorId);
   const displayBody = isDetail ? post.body : previewBody(post.body).text;
   const truncated = !isDetail && previewBody(post.body).truncated;
   const tickers = extractTickers(post.body);

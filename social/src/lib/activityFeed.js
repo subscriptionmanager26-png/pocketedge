@@ -1,3 +1,4 @@
+import { isDevMockMode } from './appMode';
 import {
   getFollowedTopicSlugs,
   getFollowingIds,
@@ -133,6 +134,8 @@ function portfolioStockItems() {
 
 /** Activity from followed people + community moves on portfolio stocks. */
 export function getActivityFeed() {
+  if (!isDevMockMode()) return [];
+
   const followingIds = getFollowingIds();
   const items = [
     ...followingPostItems(followingIds),

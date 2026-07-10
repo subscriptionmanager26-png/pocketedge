@@ -1,5 +1,7 @@
 /** Local mock engagement state for portfolios-as-content (profile UI preview). */
 
+import { isDevMockMode } from './appMode';
+
 const KEY = 'pe_portfolio_social_v2';
 const READ_KEY = 'pe_portfolio_comments_read_v2';
 
@@ -115,6 +117,7 @@ function seedForPortfolio(portfolioId) {
 }
 
 function mergeDemoSeed(portfolioId, entry) {
+  if (!isDevMockMode()) return entry;
   const seeded = seedForPortfolio(portfolioId);
   if (!seeded.comments?.length) return entry;
 
@@ -133,7 +136,7 @@ function mergeDemoSeed(portfolioId, entry) {
 function getEntry(portfolioId) {
   const all = readAll();
   if (!all[portfolioId]) {
-    all[portfolioId] = seedForPortfolio(portfolioId);
+    all[portfolioId] = isDevMockMode() ? seedForPortfolio(portfolioId) : { ...DEFAULTS };
     writeAll(all);
     return all[portfolioId];
   }
@@ -148,7 +151,7 @@ function getEntry(portfolioId) {
 
 function patch(portfolioId, updater) {
   const all = readAll();
-  const current = all[portfolioId] ?? seedForPortfolio(portfolioId);
+  const current = all[portfolioId] ?? (isDevMockMode() ? seedForPortfolio(portfolioId) : { ...DEFAULTS });
   all[portfolioId] = updater({ ...current });
   writeAll(all);
   notify();

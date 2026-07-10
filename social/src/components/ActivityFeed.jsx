@@ -1,5 +1,6 @@
 import { Newspaper } from 'lucide-react';
 import Avatar from './Avatar';
+import { isDevMockMode } from '../lib/appMode';
 import {
   PORTFOLIO_UPDATES,
   POSTS,
@@ -11,6 +12,10 @@ import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 
 /** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
 export function collectActivity(tickers) {
+  if (!isDevMockMode()) {
+    return { news: [], trades: [], posts: [] };
+  }
+
   const news = [];
   const trades = [];
   const posts = [];

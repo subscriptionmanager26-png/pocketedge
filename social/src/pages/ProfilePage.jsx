@@ -5,6 +5,7 @@ import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
 import FollowListView from '../components/FollowListView';
 import UnderlineTabs from '../components/UnderlineTabs';
+import { isDevMockMode } from '../lib/appMode';
 import {
   CURRENT_USER,
   POSTS,
@@ -210,7 +211,7 @@ export default function ProfilePage({
     }
   }, [person?.id, isOwn, isMePublic]);
 
-  const authorPosts = (posts ?? POSTS).filter((p) => p.authorId === person?.id);
+  const authorPosts = (posts ?? (isDevMockMode() ? POSTS : [])).filter((p) => p.authorId === person?.id);
   const tabs = PROFILE_TABS;
   const authoredReviews = useMemo(
     () => getReviewsByAuthor(person?.id),

@@ -114,6 +114,34 @@ export function getHandleForUserIdSync(userId) {
     if (selfProfile?.user_id === userId) return selfProfile.username;
     const cached = byUserId.get(userId);
     if (cached?.username) return cached.username;
+    return null;
   }
   return getPerson(userId).handle;
+}
+
+/** Sync person lookup for feed/comments — avoids mock PEOPLE in production. */
+export function getPersonSync(userId) {
+  if (!userId) return null;
+  if (!useLiveIdentity()) return getPerson(userId);
+
+  if (selfProfile?.user_id === userId) return profileToPerson(selfProfile);
+  const cached = byUserId.get(userId);
+  if (cached) return profileToPerson(cached);
+
+  return {
+    id: userId,
+    name: 'Member',
+    handle: 'member',
+    avatar: 'M',
+    bio: '',
+    location: '',
+    focus: '',
+    xirr: 0,
+    followers: 0,
+    following: 0,
+    assetsInfluenced: 0,
+    portfolioPublic: true,
+    showHoldingsPublic: true,
+    showXirrPublic: true,
+  };
 }

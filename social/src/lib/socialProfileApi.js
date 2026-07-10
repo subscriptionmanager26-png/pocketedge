@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { CURRENT_USER, getPersonByHandle } from '../data/mockData';
+import { CURRENT_USER, getPersonByHandle, PEOPLE } from '../data/mockData';
 import { skipAuthForDev } from './sessionStore';
 import { setSelfProfile, getSelfProfile } from './socialIdentity';
 
@@ -114,4 +114,34 @@ export async function updateSocialProfile(patch) {
   const profile = { ...data, is_self: true };
   setSelfProfile(profile);
   return profile;
+}
+
+export async function searchSocialProfiles(query, { limit = 20 } = {}) {
+  const needle = query?.trim();
+  if (!needle) return [];
+
+  if (!useBackend()) {
+    const q = needle.toLowerCase();
+    return PEOPLE.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)
+    ).map((p) => ({
+      user_id: p.id,
+      username: p.handle,
+      display_name: p.name,
+      bio: p.bio,
+      avatar_url: null,
+      location: p.location,
+      focus: p.focus,
+    }));
+  }
+
+  const { data, error } = await supabase
+    .from('social_profiles')
+    .select('user_id, username, display_name, bio, avatar_url, location, focus')
+    .or(`username.ilike.%${needle}%,display_name.ilike.%${needle}%`)
+    .order('display_name')
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
 }
