@@ -27,9 +27,9 @@ export default function FundReviewModal({ open, prefillFundId, onClose, onSubmit
 
   const canSubmit = fundId && rating >= 1;
 
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
-    addReview({ fundId, rating, body: reviewLine });
+    await addReview({ fundId, rating, body: reviewLine });
     onSubmitted?.();
     onClose?.();
   };

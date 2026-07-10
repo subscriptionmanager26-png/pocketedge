@@ -41,6 +41,16 @@ import { ensureSocialProfile } from './lib/socialProfileApi';
 import { isProductionApp } from './lib/appMode';
 import { flushDemoLocalData } from './lib/flushDemoLocalData';
 import { getAppCurrentUser, setSelfProfile } from './lib/socialIdentity';
+import {
+  addPostComment,
+  buildOptimisticPostComment,
+  createPost,
+  fetchFeedPosts,
+  fetchPost,
+  togglePostLike,
+  usePostBackend,
+} from './lib/socialPostApi';
+import { hydrateCommunityAccess } from './lib/reviewStore';
 import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, stockPath, tabPath } from './lib/routes';
 import {
   navigateToProfile,
@@ -211,8 +221,54 @@ export default function App() {
     if (tab === 'activity') markAllActivityRead(activityItems);
   }, [tab, activityItems]);
 
-  const handlePost = ({ body, image, portfolioShare }) => {
+  useEffect(() => {
+    if (authView !== 'app' || !profileReady) return undefined;
+
+    hydrateCommunityAccess().catch(() => {});
+
+    if (!usePostBackend()) return undefined;
+
+    let cancelled = false;
+    fetchFeedPosts()
+      .then((items) => {
+        if (!cancelled) setPosts(items);
+      })
+      .catch(() => {
+        if (!cancelled) setPosts([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authView, profileReady]);
+
+  const handlePost = async ({ body, image, portfolioShare }) => {
     const me = getAppCurrentUser();
+
+    if (usePostBackend()) {
+      try {
+        const post = await createPost({
+          body: body || '',
+          image,
+          portfolioShare,
+          via: {
+            kind: 'person',
+            label: `@${me.handle}`,
+            reason: portfolioShare ? 'shared a portfolio' : 'you posted',
+          },
+          topics: [],
+        });
+        setPosts((prev) => [post, ...prev]);
+        setSelectedPostId(null);
+        setComposePortfolioShare(null);
+        setTab('feed');
+        navigate(tabPath('feed'));
+      } catch (err) {
+        console.error('createPost failed', err);
+      }
+      return;
+    }
+
     const post = {
       id: `p_local_${Date.now()}`,
       authorId: currentUserId,
@@ -248,17 +304,62 @@ export default function App() {
     setComposeOpen(true);
   };
 
-  const handleAddComment = (postId, text) => {
+  const handleAddComment = async (postId, text) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    if (usePostBackend()) {
+      const optimistic = buildOptimisticPostComment(trimmed);
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, comments: [...(p.comments ?? []), optimistic], commentCount: (p.commentCount ?? p.comments?.length ?? 0) + 1 }
+            : p
+        )
+      );
+      try {
+        const updated = await addPostComment(postId, trimmed);
+        setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+      } catch (err) {
+        console.error('addPostComment failed', err);
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  comments: (p.comments ?? []).filter((c) => c.id !== optimistic.id),
+                  commentCount: Math.max(0, (p.commentCount ?? p.comments?.length ?? 1) - 1),
+                }
+              : p
+          )
+        );
+      }
+      return;
+    }
+
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
         const comment = {
           id: `c_${Date.now()}`,
           authorId: currentUserId,
-          body: text,
+          body: trimmed,
           createdAt: new Date().toISOString(),
         };
         return { ...p, comments: [...(p.comments ?? []), comment] };
+      })
+    );
+  };
+
+  const handleTogglePostLike = (postId) => {
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const { liked, likes } = togglePostLike(postId, {
+          liked: p.liked ?? false,
+          likes: p.likes ?? 0,
+        });
+        return { ...p, liked, likes };
       })
     );
   };
@@ -555,6 +656,8 @@ export default function App() {
               }}
               onOpenProfile={openProfile}
               onAddComment={(text) => handleAddComment(selectedPostId, text)}
+              onToggleLike={handleTogglePostLike}
+              fetchPost={usePostBackend() ? fetchPost : null}
             />
           ) : (
             <FeedPage
@@ -564,6 +667,7 @@ export default function App() {
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
+              onToggleLike={handleTogglePostLike}
             />
           ))}
         {tab === 'search' && (

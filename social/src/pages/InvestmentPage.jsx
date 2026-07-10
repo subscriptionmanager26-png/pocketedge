@@ -39,6 +39,8 @@ import {
   getReviewsForFund,
   getUserReviewForFund,
   hasCommunityReviewsAccess,
+  hydrateCommunityAccess,
+  loadReviewsForFund,
   subscribeReviews,
 } from '../lib/reviewStore';
 
@@ -57,6 +59,11 @@ export default function InvestmentPage({
   const [reviewTick, setReviewTick] = useState(0);
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    hydrateCommunityAccess();
+    loadReviewsForFund(fundId).catch(() => {});
+  }, [fundId]);
 
   useEffect(() => {
     if (seedFund) return undefined;
@@ -110,8 +117,8 @@ export default function InvestmentPage({
     );
   }
 
-  const handleAddComment = (reviewId, body) => {
-    addReviewComment(reviewId, body);
+  const handleAddComment = async (reviewId, body) => {
+    await addReviewComment(reviewId, body);
     setReviewTick((n) => n + 1);
   };
 

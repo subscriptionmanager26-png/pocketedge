@@ -31,6 +31,8 @@ import {
   getReviewsForStock,
   getUserReviewForStock,
   hasCommunityReviewsAccess,
+  hydrateCommunityAccess,
+  loadReviewsForStock,
   subscribeReviews,
 } from '../lib/reviewStore';
 import { subscribeWatchlists } from '../lib/watchlistStore';
@@ -74,6 +76,11 @@ export default function StockInvestmentPage({
   useEffect(() => subscribeWatchlists(() => setAccessTick((n) => n + 1)), []);
 
   useEffect(() => {
+    hydrateCommunityAccess();
+    loadReviewsForStock(ticker, { isEtf }).catch(() => {});
+  }, [ticker, isEtf]);
+
+  useEffect(() => {
     let cancelled = false;
     setMarketLoading(true);
     Promise.all([fetchMarketPreview('etf'), resolveMarketStock(ticker)])
@@ -107,8 +114,8 @@ export default function StockInvestmentPage({
     [reviews]
   );
   const userReview = useMemo(
-    () => getUserReviewForStock(ticker),
-    [ticker, reviewTick]
+    () => getUserReviewForStock(ticker, { isEtf }),
+    [ticker, isEtf, reviewTick]
   );
   const discussions = useMemo(() => getStockDiscussions(ticker), [ticker]);
   const holders = getStockHolders(ticker);
@@ -157,8 +164,8 @@ export default function StockInvestmentPage({
     );
   }
 
-  const handleAddComment = (reviewId, body) => {
-    addReviewComment(reviewId, body);
+  const handleAddComment = async (reviewId, body) => {
+    await addReviewComment(reviewId, body);
     setReviewTick((n) => n + 1);
   };
 
@@ -188,9 +195,10 @@ export default function StockInvestmentPage({
         <>
           {unlocked && userReview && (
             <AssetReviewComposer
-              assetType="stock"
+              assetType={isEtf ? 'etf' : 'stock'}
               ticker={ticker}
               assetLabel={formatTicker(ticker)}
+              isEtf={isEtf}
               onSubmitted={() => setReviewTick((n) => n + 1)}
             />
           )}

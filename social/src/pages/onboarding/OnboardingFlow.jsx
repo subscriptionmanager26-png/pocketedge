@@ -15,9 +15,9 @@ export default function OnboardingFlow({ userId, onComplete }) {
 
   const canSubmit = Boolean(fundId) && fundRating >= 1;
 
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
-    addReview({ fundId, rating: fundRating, body: fundReviewLine });
+    await addReview({ fundId, rating: fundRating, body: fundReviewLine });
     setOnboardingComplete(userId);
     onComplete?.();
   };

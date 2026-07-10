@@ -1,13 +1,18 @@
-import { useState } from 'react';
-import { MessageCircle, Share2, ThumbsUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
 import { StarDisplay } from './StarRating';
 import { formatTicker } from '../lib/tickers';
 import { getPerson, STOCKS } from '../data/mockData';
 import { getFund } from '../data/fundData';
-import { getUserVote, incrementReviewShare, voteReview } from '../lib/reviewStore';
+import {
+  getUserVote,
+  incrementReviewShare,
+  subscribeReviews,
+  toggleReviewLike,
+} from '../lib/reviewStore';
 import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
-import { timeAgo } from '../lib/format';
+import { formatCount, timeAgo } from '../lib/format';
 
 export default function ReviewCard({
   review,
@@ -19,8 +24,11 @@ export default function ReviewCard({
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [voteTick, setVoteTick] = useState(0);
+  const [reviewTick, setReviewTick] = useState(0);
   const [following, setFollowing] = useState(() => isFollowing(review.authorId));
+
+  useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
+  void reviewTick;
 
   const person = getPerson(review.authorId);
   const fund = review.fundId ? getFund(review.fundId) : null;
@@ -28,13 +36,12 @@ export default function ReviewCard({
   const assetLabel = stock
     ? `${formatTicker(review.stockTicker)} · ${stock.name}`
     : fund?.name;
-  const userVote = getUserVote(review.id);
-  void voteTick;
+  const liked = getUserVote(review.id) === 'agree';
+  const likeCount = review.agreeCount ?? 0;
 
-  const handleVote = (vote) => {
+  const handleLike = () => {
     if (locked) return;
-    voteReview(review.id, vote);
-    setVoteTick((n) => n + 1);
+    toggleReviewLike(review.id);
     onReviewChange?.();
   };
 
@@ -56,16 +63,16 @@ export default function ReviewCard({
       } else {
         await navigator.clipboard.writeText(`${text}\n${url}`);
       }
-      incrementReviewShare(review.id);
+      await incrementReviewShare(review.id);
       onReviewChange?.();
     } catch {
       /* user cancelled */
     }
   };
 
-  const submitComment = () => {
+  const submitComment = async () => {
     if (!commentText.trim() || locked) return;
-    onAddComment?.(review.id, commentText.trim());
+    await onAddComment?.(review.id, commentText.trim());
     setCommentText('');
     setShowComments(true);
   };
@@ -124,13 +131,14 @@ export default function ReviewCard({
           <div className="mt-4 flex flex-wrap items-center gap-4 text-pe-text-secondary">
             <button
               type="button"
-              onClick={() => handleVote('agree')}
-              className={`inline-flex items-center gap-1.5 text-sm font-semibold transition ${
-                userVote === 'agree' ? 'text-pe-positive' : 'hover:text-pe-text'
+              onClick={handleLike}
+              aria-pressed={liked}
+              className={`inline-flex items-center gap-1.5 text-sm transition ${
+                liked ? 'text-pe-accent' : 'hover:text-pe-accent'
               }`}
             >
-              <ThumbsUp className={`h-4 w-4 ${userVote === 'agree' ? 'fill-current' : ''}`} />
-              Agree {review.agreeCount > 0 && `· ${review.agreeCount}`}
+              <Heart className={`h-4 w-4 ${liked ? 'fill-current text-pe-accent' : ''}`} />
+              {formatCount(likeCount)}
             </button>
             <button
               type="button"

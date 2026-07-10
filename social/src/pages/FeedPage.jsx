@@ -10,6 +10,7 @@ export default function FeedPage({
   graphTick,
   onOpenProfile,
   onOpenPost,
+  onToggleLike,
 }) {
   const followingIds = useMemo(() => getFollowingIds(), [graphTick]);
   const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
@@ -46,6 +47,7 @@ export default function FeedPage({
           variant="feed"
           onOpenProfile={onOpenProfile}
           onOpenPost={onOpenPost}
+          onToggleLike={onToggleLike}
         />
       ))}
     </div>

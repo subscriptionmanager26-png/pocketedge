@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import StarRating, { StarDisplay } from './StarRating';
 import {
+  getUserReviewForCommodity,
   getUserReviewForFund,
+  getUserReviewForIndex,
   getUserReviewForStock,
   subscribeReviews,
   upsertReview,
@@ -10,18 +12,39 @@ import {
 const inputClass =
   'w-full rounded-lg border border-pe-border-strong bg-pe-canvas px-3 py-2.5 text-[15px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
 
-export default function AssetReviewComposer({ assetType, fundId, ticker, assetLabel, onSubmitted }) {
+function resolveExistingReview({ assetType, fundId, ticker, indexId, commodityId, isEtf }) {
+  if (assetType === 'fund') return getUserReviewForFund(fundId);
+  if (assetType === 'index') return getUserReviewForIndex(indexId);
+  if (assetType === 'commodity') return getUserReviewForCommodity(commodityId);
+  return getUserReviewForStock(ticker, { isEtf });
+}
+
+export default function AssetReviewComposer({
+  assetType,
+  fundId,
+  ticker,
+  indexId,
+  commodityId,
+  assetLabel,
+  isEtf = false,
+  onSubmitted,
+}) {
   const [reviewTick, setReviewTick] = useState(0);
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(0);
   const [reviewLine, setReviewLine] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
 
-  const existing =
-    assetType === 'fund'
-      ? getUserReviewForFund(fundId)
-      : getUserReviewForStock(ticker);
+  const existing = resolveExistingReview({
+    assetType,
+    fundId,
+    ticker,
+    indexId,
+    commodityId,
+    isEtf,
+  });
 
   void reviewTick;
 
@@ -52,16 +75,30 @@ export default function AssetReviewComposer({ assetType, fundId, ticker, assetLa
     setEditing(false);
   };
 
-  const submit = () => {
-    if (rating < 1) return;
-    upsertReview({
-      fundId: assetType === 'fund' ? fundId : undefined,
-      stockTicker: assetType === 'stock' ? ticker : undefined,
-      rating,
-      body: reviewLine,
-    });
-    setEditing(false);
-    onSubmitted?.();
+  const submit = async () => {
+    if (rating < 1 || submitting) return;
+    setSubmitting(true);
+    try {
+      await upsertReview({
+        fundId: assetType === 'fund' ? fundId : undefined,
+        stockTicker:
+          assetType === 'stock' || assetType === 'etf' ? ticker : undefined,
+        assetType,
+        assetId:
+          assetType === 'index'
+            ? indexId
+            : assetType === 'commodity'
+              ? commodityId
+              : undefined,
+        isEtf,
+        rating,
+        body: reviewLine,
+      });
+      setEditing(false);
+      onSubmitted?.();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (existing && !editing) {
@@ -112,7 +149,7 @@ export default function AssetReviewComposer({ assetType, fundId, ticker, assetLa
         <button
           type="button"
           onClick={submit}
-          disabled={rating < 1}
+          disabled={rating < 1 || submitting}
           className="rounded-md bg-pe-accent px-4 py-2 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-40"
         >
           {existing ? 'Save changes' : 'Submit review'}

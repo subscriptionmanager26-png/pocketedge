@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ClipboardCheck, Copy, Heart, Share2 } from 'lucide-react';
 import { CURRENT_USER, STOCKS, copyPortfolioForUser, getHandleForUserId } from '../data/mockData';
 import { formatCount, formatPct, pnlClass } from '../lib/format';
@@ -7,10 +7,12 @@ import { profilePath } from '../lib/routes';
 import CommentEngagementButton from './CommentEngagementButton';
 import { PortfolioKindMetaTags } from './PortfolioMetaTag';
 import {
+  confirmPortfolioCopy,
   recordPortfolioShare,
   togglePortfolioCopy,
   togglePortfolioLike,
 } from '../lib/portfolioEngagementApi';
+import { getAppCurrentUserId } from '../lib/socialIdentity';
 
 const TOP_N = 4;
 
@@ -52,28 +54,40 @@ export default function PortfolioCard({
   const [copies, setCopies] = useState(social?.copies ?? 0);
   const [shares, setShares] = useState(social?.shares ?? 0);
 
+  useEffect(() => {
+    setLiked(social?.liked ?? false);
+    setCopied(social?.copied ?? false);
+    setLikes(social?.likes ?? 0);
+    setCopies(social?.copies ?? 0);
+    setShares(social?.shares ?? 0);
+  }, [social?.liked, social?.copied, social?.likes, social?.copies, social?.shares, portfolio.id]);
+
   const topHoldings = getPositions(portfolio).sort((a, b) => b.weight - a.weight).slice(0, TOP_N);
   const commentCount = social?.comments?.length ?? 0;
 
   const handleLike = (event) => {
     event.stopPropagation();
-    const next = togglePortfolioLike(portfolio.id);
-    setLiked(next.liked);
-    setLikes(next.likes);
+    togglePortfolioLike(portfolio.id);
   };
 
-  const handleCopy = (event) => {
+  const handleCopy = async (event) => {
     event.stopPropagation();
     if (!canCopy) return;
-    const next = togglePortfolioCopy(portfolio.id);
-    setCopied(next.copied);
-    setCopies(next.copies);
-    if (next.copied) {
-      copyPortfolioForUser(CURRENT_USER.id, portfolio, {
-        sourceUserId: sourceOwnerId,
-        sourceUserName: sourceOwnerName,
-      });
-      onPortfolioCopied?.();
+    const wasCopied = copied;
+    togglePortfolioCopy(portfolio.id);
+    if (!wasCopied) {
+      try {
+        const next = await confirmPortfolioCopy(portfolio.id);
+        if (next.copied) {
+          copyPortfolioForUser(getAppCurrentUserId(), portfolio, {
+            sourceUserId: sourceOwnerId,
+            sourceUserName: sourceOwnerName,
+          });
+          onPortfolioCopied?.();
+        }
+      } catch (err) {
+        console.error('confirmPortfolioCopy failed', err);
+      }
     }
   };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
 import CommentRow from './CommentRow';
@@ -31,6 +31,7 @@ export default function PostCard({
   variant = 'feed',
   onOpenProfile,
   onOpenPost,
+  onToggleLike,
 }) {
   const isDetail = variant === 'detail';
   const person = getPersonSync(post.authorId);
@@ -43,10 +44,15 @@ export default function PostCard({
   for (const ticker of post.portfolioShare?.tickers ?? []) {
     if (!tickers.includes(ticker)) tickers.push(ticker);
   }
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(post.liked ?? false);
+  const [likes, setLikes] = useState(post.likes ?? 0);
   const [activeTicker, setActiveTicker] = useState(null);
-  const likes = post.likes + (liked ? 1 : 0);
-  const commentCount = post.comments?.length ?? 0;
+  const commentCount = post.comments?.length ?? post.commentCount ?? 0;
+
+  useEffect(() => {
+    setLiked(post.liked ?? false);
+    setLikes(post.likes ?? 0);
+  }, [post.id, post.liked, post.likes]);
 
   const openAuthor = () => onOpenProfile?.(post.authorId);
   const openPost = () => onOpenPost?.(post.id);
@@ -191,7 +197,14 @@ export default function PostCard({
           >
             <button
               type="button"
-              onClick={() => setLiked((v) => !v)}
+              onClick={() => {
+                if (onToggleLike) {
+                  onToggleLike(post.id);
+                  return;
+                }
+                setLiked((v) => !v);
+                setLikes((n) => Math.max(0, n + (liked ? -1 : 1)));
+              }}
               className={`inline-flex items-center gap-1.5 text-sm transition hover:text-pe-accent ${liked ? 'text-pe-accent' : ''}`}
             >
               <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />

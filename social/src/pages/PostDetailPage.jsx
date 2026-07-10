@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
@@ -11,8 +12,38 @@ export default function PostDetailPage({
   onBack,
   onOpenProfile,
   onAddComment,
+  onToggleLike,
+  fetchPost,
 }) {
-  const post = (posts ?? (isDevMockMode() ? POSTS : [])).find((p) => p.id === postId);
+  const [detailPost, setDetailPost] = useState(null);
+  const cached = (posts ?? (isDevMockMode() ? POSTS : [])).find((p) => p.id === postId);
+
+  useEffect(() => {
+    if (!postId) {
+      setDetailPost(null);
+      return undefined;
+    }
+
+    if (fetchPost) {
+      let cancelled = false;
+      setDetailPost(cached ?? null);
+      fetchPost(postId)
+        .then((row) => {
+          if (!cancelled) setDetailPost(row);
+        })
+        .catch(() => {
+          if (!cancelled && cached) setDetailPost(cached);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setDetailPost(cached ?? null);
+    return undefined;
+  }, [postId, cached, fetchPost]);
+
+  const post = detailPost ?? cached;
 
   if (!post) {
     return (
@@ -42,7 +73,12 @@ export default function PostDetailPage({
         </button>
       </PageHeader>
 
-      <PostCard post={post} variant="detail" onOpenProfile={onOpenProfile} />
+      <PostCard
+        post={post}
+        variant="detail"
+        onOpenProfile={onOpenProfile}
+        onToggleLike={onToggleLike}
+      />
 
       {onAddComment && <CommentComposer onSubmit={onAddComment} />}
     </div>

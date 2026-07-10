@@ -47,13 +47,8 @@ import {
   portfolioHasDraftWork,
   validatePortfolioDraft,
 } from '../lib/portfolioEdit';
-import {
-  MARKET_MIN_SEARCH_CHARS,
-} from '../lib/marketDataApi';
-import {
-  resolvePortfolioAssets,
-  searchPortfolioAssets,
-} from '../lib/portfolioAssetUniverse';
+import PortfolioAssetSearchField from '../components/PortfolioAssetSearchField';
+import { resolvePortfolioAssets } from '../lib/portfolioAssetUniverse';
 import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
@@ -784,9 +779,6 @@ function PortfolioDetailView({
   const [portfolioKind, setPortfolioKind] = useState(portfolio.kind ?? 'live');
   const [editRows, setEditRows] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
-  const [tickerSuggestionsFor, setTickerSuggestionsFor] = useState(null);
-  const [tickerSuggestions, setTickerSuggestions] = useState([]);
-  const [tickerSuggestionsLoading, setTickerSuggestionsLoading] = useState(false);
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
 
@@ -811,6 +803,7 @@ function PortfolioDetailView({
   const makeBlankRow = () => ({
     id: `draft_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     ticker: '',
+    assetName: '',
     invested: '',
     qty: '',
     weight: '',
@@ -827,6 +820,7 @@ function PortfolioDetailView({
       return {
         id: `hold_${h.ticker}`,
         ticker: h.ticker,
+        assetName: '',
         weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
         invested: '',
         qty: '',
@@ -835,6 +829,7 @@ function PortfolioDetailView({
     return {
       id: `hold_${h.ticker}`,
       ticker: h.ticker,
+      assetName: '',
       invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
       qty: String(h.qty ?? ''),
       weight: '',
@@ -853,6 +848,7 @@ function PortfolioDetailView({
         ? {
             id: `hold_${h.ticker}`,
             ticker: h.ticker,
+            assetName: '',
             weight:
               h.weightPct != null
                 ? String(h.weightPct)
@@ -865,7 +861,6 @@ function PortfolioDetailView({
         : holdingToRow(h)
     );
     setEditRows([...rows, makeBlankRow()]);
-    setTickerSuggestionsFor(null);
   };
 
   const startEditing = () => {
@@ -881,48 +876,6 @@ function PortfolioDetailView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.id, startInEditMode]);
-
-  useEffect(() => {
-    if (!tickerSuggestionsFor) {
-      setTickerSuggestions([]);
-      setTickerSuggestionsLoading(false);
-      return undefined;
-    }
-
-    const row = editRows.find((entry) => entry.id === tickerSuggestionsFor);
-    const query = row?.ticker?.trim() ?? '';
-    if (query.length < MARKET_MIN_SEARCH_CHARS) {
-      setTickerSuggestions([]);
-      setTickerSuggestionsLoading(false);
-      return undefined;
-    }
-
-    const used = editRows
-      .filter((entry) => entry.id !== tickerSuggestionsFor)
-      .map((entry) => entry.ticker.trim())
-      .filter(Boolean);
-
-    let cancelled = false;
-    setTickerSuggestionsLoading(true);
-
-    const timer = setTimeout(() => {
-      searchPortfolioAssets(query, { exclude: used, limit: 6 })
-        .then((items) => {
-          if (!cancelled) setTickerSuggestions(items);
-        })
-        .catch(() => {
-          if (!cancelled) setTickerSuggestions([]);
-        })
-        .finally(() => {
-          if (!cancelled) setTickerSuggestionsLoading(false);
-        });
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [tickerSuggestionsFor, editRows]);
 
   const saveEdits = async () => {
     const validation = validatePortfolioDraft({
@@ -1088,21 +1041,14 @@ function PortfolioDetailView({
       const next = prev.filter((row) => row.id !== rowId);
       return next.length ? next : [makeBlankRow()];
     });
-    setTickerSuggestionsFor((current) => (current === rowId ? null : current));
   };
 
   const addBlankRow = () => {
     setEditRows((prev) => [...prev, makeBlankRow()]);
   };
 
-  const tickerMatches = tickerSuggestionsFor ? tickerSuggestions : [];
-
   const compactInputClass =
     'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[14px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
-
-  const rowGridClass = isWatchlist
-    ? 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2'
-    : 'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
 
   return (
     <div>
@@ -1238,134 +1184,98 @@ function PortfolioDetailView({
               : 'Search a stock, ETF, or fund, then enter your total investment and quantity.'}
           </p>
 
-          <div className="mt-4 space-y-2">
-            <div className={`hidden items-center gap-2 px-0.5 md:flex ${isWatchlist ? 'grid-cols-[minmax(0,1fr)_5.5rem_auto]' : ''}`}>
-              <p className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Ticker
-              </p>
-              {isWatchlist ? (
-                <p className="w-[5.5rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Weight %
-                </p>
-              ) : (
-                <>
-                  <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Total invested
-                  </p>
-                  <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Qty
-                  </p>
-                </>
-              )}
-              <span className="h-9 w-9 shrink-0" aria-hidden="true" />
-            </div>
-
+          <div className="mt-4 space-y-3">
             {editRows.map((row) => {
-              const suggestions = tickerSuggestionsFor === row.id ? tickerMatches : [];
               const rowErr = fieldErrors.rows[row.id] ?? {};
+              const usedTickers = editRows
+                .filter((entry) => entry.id !== row.id)
+                .map((entry) => entry.ticker.trim())
+                .filter(Boolean);
+
               return (
-                <div key={row.id} className={rowGridClass}>
-                  <div className="relative min-w-0">
-                    <input
-                      type="text"
-                      value={row.ticker}
-                      onChange={(e) => {
-                        updateRow(row.id, { ticker: e.target.value.toUpperCase() });
-                        setTickerSuggestionsFor(row.id);
-                      }}
-                      onFocus={() => setTickerSuggestionsFor(row.id)}
-                      onBlur={() => {
-                        window.setTimeout(() => {
-                          setTickerSuggestionsFor((current) =>
-                            current === row.id ? null : current
-                          );
-                        }, 120);
-                      }}
-                      placeholder="Search stock, ETF, or fund"
-                      aria-label="Ticker"
-                      autoComplete="off"
-                      className={fieldClass(compactInputClass, rowErr.ticker)}
-                    />
-                    {tickerSuggestionsLoading && tickerSuggestionsFor === row.id ? (
-                      <div className="absolute left-0 right-0 z-20 mt-1 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[12px] text-pe-text-muted shadow-lg">
-                        Searching…
-                      </div>
-                    ) : null}
-                    {suggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 z-20 mt-1 overflow-hidden rounded-md border border-pe-border-strong bg-pe-canvas shadow-lg">
-                        {suggestions.map((asset) => (
-                          <button
-                            key={`${asset.kind}-${asset.key}`}
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              updateRow(row.id, { ticker: asset.key });
-                              setTickerSuggestionsFor(null);
-                              setTickerSuggestions([]);
-                            }}
-                            className="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left hover:bg-pe-surface"
-                          >
-                            <span className="min-w-0">
-                              <span className="text-[14px] font-semibold text-pe-text">
-                                {asset.kind === 'fund' ? asset.key : formatTicker(asset.key)}
-                              </span>
-                              <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-pe-text-muted">
-                                {asset.kindLabel}
-                              </span>
-                            </span>
-                            <span className="truncate text-[12px] text-pe-text-muted">
-                              {asset.name}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                <div
+                  key={row.id}
+                  className="rounded-lg border border-pe-border bg-pe-surface/40 p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                        Asset
+                      </p>
+                      <PortfolioAssetSearchField
+                        value={row.ticker}
+                        selectedName={row.assetName}
+                        exclude={usedTickers}
+                        hasError={Boolean(rowErr.ticker)}
+                        onValueChange={(next) =>
+                          updateRow(row.id, { ticker: next.toUpperCase(), assetName: '' })
+                        }
+                        onSelect={(asset) =>
+                          updateRow(row.id, { ticker: asset.key, assetName: asset.name })
+                        }
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeRow(row.id)}
+                      className="mt-5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
+                      aria-label="Delete holding row"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
 
                   {isWatchlist ? (
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={row.weight}
-                      onChange={(e) => updateRow(row.id, { weight: e.target.value })}
-                      placeholder="Weight %"
-                      aria-label="Weight percentage"
-                      className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.weight)}
-                    />
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                        Weight %
+                      </p>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={row.weight}
+                        onChange={(e) => updateRow(row.id, { weight: e.target.value })}
+                        placeholder="e.g. 25"
+                        aria-label="Weight percentage"
+                        className={fieldClass(`${compactInputClass} tabular-nums`, rowErr.weight)}
+                      />
+                    </div>
                   ) : (
-                    <>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={row.invested}
-                        onChange={(e) => updateRow(row.id, { invested: e.target.value })}
-                        placeholder="Total invested"
-                        aria-label="Total amount you invested"
-                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.invested)}
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={row.qty}
-                        onChange={(e) => updateRow(row.id, { qty: e.target.value })}
-                        placeholder="Qty"
-                        aria-label="Quantity"
-                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.qty)}
-                      />
-                    </>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                          Total invested
+                        </p>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={row.invested}
+                          onChange={(e) => updateRow(row.id, { invested: e.target.value })}
+                          placeholder="Amount"
+                          aria-label="Total amount you invested"
+                          className={fieldClass(`${compactInputClass} tabular-nums`, rowErr.invested)}
+                        />
+                      </div>
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                          Qty
+                        </p>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={row.qty}
+                          onChange={(e) => updateRow(row.id, { qty: e.target.value })}
+                          placeholder="Units"
+                          aria-label="Quantity"
+                          className={fieldClass(`${compactInputClass} tabular-nums`, rowErr.qty)}
+                        />
+                      </div>
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => removeRow(row.id)}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
-                    aria-label="Delete holding row"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               );
             })}
