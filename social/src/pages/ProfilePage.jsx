@@ -15,9 +15,11 @@ import {
 import {
   discardLocalDraft,
   createDraftPortfolio,
+  fetchUserPortfolio,
   fetchUserPortfolios,
   saveSocialPortfolio,
 } from '../lib/socialPortfolioApi';
+import { updateSocialProfile } from '../lib/socialProfileApi';
 import { getAppCurrentUser, getHandleForUserIdSync, resolvePerson } from '../lib/socialIdentity';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
@@ -181,6 +183,28 @@ export default function ProfilePage({
   }, [person?.id, portfolioVersion]);
 
   useEffect(() => {
+    if (!person?.id || !selectedPortfolioId) return;
+    if (portfolios.some((p) => p.id === selectedPortfolioId)) return;
+    let cancelled = false;
+    fetchUserPortfolio(person.id, selectedPortfolioId)
+      .then((row) => {
+        if (!cancelled && row) setPortfolios((prev) => [...prev, row]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [person?.id, selectedPortfolioId, portfolios, portfolioVersion]);
+
+  useEffect(() => {
+    if (!person || !isOwn) return;
+    setName(person.name ?? '');
+    setBio(person.bio ?? '');
+    setLocation(person.location ?? '');
+    setFocus(person.focus ?? '');
+  }, [person, isOwn]);
+
+  useEffect(() => {
     if (!isOwn && person?.id) {
       setFollowingState(isFollowing(person.id));
     }
@@ -192,6 +216,11 @@ export default function ProfilePage({
     () => getReviewsByAuthor(person?.id),
     [person?.id, reviewsVersion]
   );
+  const publishedPortfolios = useMemo(
+    () => portfolios.filter((p) => !p.isDraft),
+    [portfolios]
+  );
+
   const selectedPortfolio = useMemo(
     () => (selectedPortfolioId ? portfolios.find((p) => p.id === selectedPortfolioId) ?? null : null),
     [portfolios, selectedPortfolioId]
@@ -221,20 +250,37 @@ export default function ProfilePage({
     setTimeout(() => setSavedFlash(null), 1600);
   };
 
-  const saveAbout = () => {
-    CURRENT_USER.name = name.trim() || CURRENT_USER.name;
-    CURRENT_USER.bio = bio;
-    CURRENT_USER.location = location;
-    CURRENT_USER.focus = focus;
-    setAboutEditing(false);
-    flashSaved('about');
+  const saveAbout = async () => {
+    try {
+      const updated = await updateSocialProfile({
+        display_name: name.trim() || person.name,
+        bio,
+        location,
+        focus,
+      });
+      setPerson((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: updated.display_name ?? prev.name,
+              bio: updated.bio ?? '',
+              location: updated.location ?? '',
+              focus: updated.focus ?? '',
+            }
+          : prev
+      );
+      setAboutEditing(false);
+      flashSaved('about');
+    } catch {
+      /* keep editing open on failure */
+    }
   };
 
   const cancelAbout = () => {
-    setName(CURRENT_USER.name ?? '');
-    setBio(CURRENT_USER.bio ?? '');
-    setLocation(CURRENT_USER.location ?? '');
-    setFocus(CURRENT_USER.focus ?? '');
+    setName(person.name ?? '');
+    setBio(person.bio ?? '');
+    setLocation(person.location ?? '');
+    setFocus(person.focus ?? '');
     setAboutEditing(false);
   };
 
@@ -388,7 +434,7 @@ export default function ProfilePage({
 
       {tab === 'portfolios' && (
         <PortfoliosListPanel
-          portfolios={portfolios}
+          portfolios={publishedPortfolios}
           person={person}
           canEdit={canEdit}
           portfolioSocialTick={portfolioSocialTick}

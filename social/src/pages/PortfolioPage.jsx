@@ -10,14 +10,22 @@ import {
   TradesFeed,
   collectActivity,
 } from '../components/ActivityFeed';
-import { CURRENT_USER, MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
+import { MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
+import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
+import { getAppCurrentUserId } from '../lib/socialIdentity';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { skipAuthForDev } from '../lib/sessionStore';
 import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
+
+function useBackend() {
+  return isSupabaseConfigured() && !skipAuthForDev();
+}
 
 export default function PortfolioPage({
   onSelectStock,
@@ -30,17 +38,49 @@ export default function PortfolioPage({
   const [contentTab, setContentTab] = useState('performance');
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [watchlistTick, setWatchlistTick] = useState(0);
+  const [portfolioTick, setPortfolioTick] = useState(0);
+  const [remotePortfolios, setRemotePortfolios] = useState([]);
+
+  const ownerId = getAppCurrentUserId();
 
   useEffect(() => subscribeWatchlists(() => setWatchlistTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (useBackend()) {
+      fetchUserPortfolios(ownerId)
+        .then((rows) => {
+          if (!cancelled) setRemotePortfolios(rows.filter((p) => !p.isDraft));
+        })
+        .catch(() => {
+          if (!cancelled) setRemotePortfolios([]);
+        });
+    } else {
+      setRemotePortfolios(getUserPortfolios(ownerId).filter((p) => !p.isDraft));
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, portfolioTick]);
 
   const watchlists = useMemo(() => getWatchlists(), [watchlistTick]);
 
   const lists = useMemo(() => {
-    const portfolios = getUserPortfolios(CURRENT_USER.id);
-    const livePortfolios = portfolios.filter((p) => p.kind !== 'watchlist');
-    const watchlistPortfolios = portfolios.filter((p) => p.kind === 'watchlist');
-    const portfolioLists = livePortfolios.length
-      ? livePortfolios.map((p) => ({ ...p, kind: 'portfolio' }))
+    if (useBackend()) {
+      const livePortfolios = remotePortfolios.filter((p) => p.kind !== 'watchlist');
+      const watchlistPortfolios = remotePortfolios.filter((p) => p.kind === 'watchlist');
+      return [
+        ...livePortfolios.map((p) => ({ ...p, kind: 'portfolio' })),
+        ...watchlistPortfolios.map((w) => ({ ...w, kind: 'watchlist' })),
+      ];
+    }
+
+    const portfolioLists = remotePortfolios.length
+      ? remotePortfolios
+          .filter((p) => p.kind !== 'watchlist')
+          .map((p) => ({ ...p, kind: 'portfolio' }))
       : [
           {
             id: 'fallback_portfolio',
@@ -50,14 +90,18 @@ export default function PortfolioPage({
             ...MY_PORTFOLIO,
           },
         ];
+
     return [
       ...portfolioLists,
-      ...watchlistPortfolios.map((w) => ({
-        ...w,
+      ...watchlists.map((w) => ({
+        id: w.id,
+        name: w.name,
         kind: 'watchlist',
+        tickers: w.tickers,
+        holdings: [],
       })),
     ];
-  }, [watchlists]);
+  }, [remotePortfolios, watchlists]);
 
   useEffect(() => {
     if (!lists.length) return;
@@ -111,9 +155,26 @@ export default function PortfolioPage({
     [metrics]
   );
 
+  if (useBackend() && !lists.length) {
+    return (
+      <div className="px-4 py-16 text-center">
+        <p className="text-lg font-semibold text-pe-text">No portfolios yet</p>
+        <p className="mt-2 text-sm text-pe-text-secondary">
+          Add a portfolio from your profile to track holdings here.
+        </p>
+        <button
+          type="button"
+          onClick={() => onOpenProfile?.(ownerId)}
+          className="mt-6 inline-flex items-center justify-center rounded-lg bg-pe-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+        >
+          Go to profile
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Primary control: which portfolio / watchlist (replaces page title on desktop) */}
       <PageHeader>
         <UnderlineTabs
           embedded
@@ -124,21 +185,22 @@ export default function PortfolioPage({
             setContentTab('performance');
           }}
           trailing={
-            <div className="flex h-full shrink-0 items-center gap-1 pr-2">
-              <button
-                type="button"
-                onClick={() => setWatchlistOpen(true)}
-                className="inline-flex h-full items-center gap-1 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
-              >
-                <Plus className="h-4 w-4" />
-                New list
-              </button>
-            </div>
+            !useBackend() ? (
+              <div className="flex h-full shrink-0 items-center gap-1 pr-2">
+                <button
+                  type="button"
+                  onClick={() => setWatchlistOpen(true)}
+                  className="inline-flex h-full items-center gap-1 text-[15px] font-semibold text-pe-text-muted hover:text-pe-accent"
+                >
+                  <Plus className="h-4 w-4" />
+                  New list
+                </button>
+              </div>
+            ) : null
           }
         />
       </PageHeader>
 
-      {/* Metrics for selected list */}
       <section className="border-b border-pe-border px-4 py-5">
         {metrics?.kind === 'portfolio' ? (
           <>
@@ -173,7 +235,6 @@ export default function PortfolioPage({
           </>
         ) : null}
 
-        {/* Distribution — Top N + Others so large portfolios stay readable */}
         <div className="mt-5">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
             Distribution
@@ -231,7 +292,6 @@ export default function PortfolioPage({
         </div>
       </section>
 
-      {/* Portfolio-level content tabs */}
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
 
       {contentTab === 'performance' && (
@@ -273,7 +333,6 @@ const DIST_COLORS = ['#ff6719', '#1a8917', '#4a6fe3', '#c47b0a', '#6b6b6b', '#d9
 const DIST_TOP_N = 5;
 const OTHERS_COLOR = '#c7c7c7';
 
-/** Collapse a long weight list into Top N + Others for the distribution chart. */
 function compressDistribution(distribution, topN = DIST_TOP_N) {
   const sorted = [...(distribution ?? [])].sort((a, b) => b.weight - a.weight);
   if (sorted.length <= topN) {

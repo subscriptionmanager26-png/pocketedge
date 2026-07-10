@@ -77,7 +77,7 @@ export async function resolvePersonByHandle(handle) {
     return profileToPerson(profile);
   }
 
-  return getPersonByHandle(normalized);
+  return null;
 }
 
 export async function resolvePerson(userId) {
@@ -106,7 +106,7 @@ export async function resolvePerson(userId) {
     return profileToPerson(data);
   }
 
-  return getPerson(userId);
+  return null;
 }
 
 export function getHandleForUserIdSync(userId) {

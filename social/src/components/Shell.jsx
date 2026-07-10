@@ -15,7 +15,7 @@ import {
 import Avatar from './Avatar';
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
-import { CURRENT_USER } from '../data/mockData';
+import { getAppCurrentUser } from '../lib/socialIdentity';
 import {
   getScrollPosition,
   readScrollTop,
@@ -143,6 +143,8 @@ export default function Shell({
     else onTabChange(id);
   };
 
+  const currentUser = getAppCurrentUser();
+
   return (
     <div className="min-h-dvh bg-pe-canvas text-pe-text md:flex md:h-dvh md:overflow-hidden">
       <aside className="hidden md:flex md:h-full md:w-[232px] md:shrink-0 md:flex-col md:overflow-y-auto md:overscroll-y-contain md:border-r md:border-pe-border md:p-2">
@@ -209,14 +211,14 @@ export default function Shell({
             }`}
           >
             <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
-              <Avatar person={CURRENT_USER} size="sm" />
+              <Avatar person={currentUser} size="sm" />
             </span>
             <span className="min-w-0 flex-1 pr-2">
               <span className="block truncate text-[15px] font-medium leading-5 text-pe-text">
-                {CURRENT_USER.name}
+                {currentUser.name}
               </span>
               <span className="block truncate text-[13px] text-pe-text-muted">
-                @{CURRENT_USER.handle}
+                @{currentUser.handle}
               </span>
             </span>
           </button>

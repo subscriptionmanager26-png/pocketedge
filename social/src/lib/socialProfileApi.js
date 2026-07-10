@@ -1,6 +1,11 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { CURRENT_USER, getPersonByHandle } from '../data/mockData';
 import { skipAuthForDev } from './sessionStore';
+import { setSelfProfile, getSelfProfile } from './socialIdentity';
+
+function useBackend() {
+  return isSupabaseConfigured() && !skipAuthForDev();
+}
 
 function mockPublicProfile(username) {
   const person = getPersonByHandle(username);
@@ -17,7 +22,7 @@ export async function fetchPublicProfile(username) {
   const handle = username?.toLowerCase?.().replace(/^@/, '');
   if (!handle) return null;
 
-  if (!isSupabaseConfigured() || skipAuthForDev()) {
+  if (!useBackend()) {
     return mockPublicProfile(handle);
   }
 
@@ -29,7 +34,7 @@ export async function fetchPublicProfile(username) {
 }
 
 export async function ensureSocialProfile() {
-  if (!isSupabaseConfigured() || skipAuthForDev()) {
+  if (!useBackend()) {
     return {
       user_id: CURRENT_USER.id,
       username: CURRENT_USER.handle,
@@ -51,7 +56,7 @@ export async function fetchSocialProfile(username) {
   const handle = username?.toLowerCase?.().replace(/^@/, '');
   if (!handle) return null;
 
-  if (!isSupabaseConfigured() || skipAuthForDev()) {
+  if (!useBackend()) {
     const person = getPersonByHandle(handle);
     if (!person) return null;
     return {
@@ -69,4 +74,44 @@ export async function fetchSocialProfile(username) {
   const { data, error } = await supabase.rpc('get_social_profile', { p_username: handle });
   if (error) throw error;
   return data;
+}
+
+export async function updateSocialProfile(patch) {
+  if (!useBackend()) {
+    CURRENT_USER.name = patch.display_name ?? CURRENT_USER.name;
+    CURRENT_USER.bio = patch.bio ?? CURRENT_USER.bio;
+    CURRENT_USER.location = patch.location ?? CURRENT_USER.location;
+    CURRENT_USER.focus = patch.focus ?? CURRENT_USER.focus;
+    return {
+      user_id: CURRENT_USER.id,
+      username: CURRENT_USER.handle,
+      display_name: CURRENT_USER.name,
+      bio: CURRENT_USER.bio,
+      location: CURRENT_USER.location,
+      focus: CURRENT_USER.focus,
+      is_self: true,
+    };
+  }
+
+  const userId = getSelfProfile()?.user_id;
+  if (!userId) throw new Error('Profile not loaded');
+
+  const { data, error } = await supabase
+    .from('social_profiles')
+    .update({
+      display_name: patch.display_name,
+      bio: patch.bio,
+      location: patch.location,
+      focus: patch.focus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .select('user_id, username, display_name, bio, avatar_url, location, focus, created_at, updated_at')
+    .single();
+
+  if (error) throw error;
+
+  const profile = { ...data, is_self: true };
+  setSelfProfile(profile);
+  return profile;
 }
