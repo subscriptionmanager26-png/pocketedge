@@ -3,6 +3,7 @@ import { ChevronDown, X } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { formatNewsDate } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
+import NewsSummaryMarkdown from './NewsSummaryMarkdown';
 
 function newsItemDate(item) {
   return formatNewsDate(item.publishedAt) || item.time || '';
@@ -32,9 +33,7 @@ function NewsSummarySheet({ item, onClose }) {
           </button>
         </div>
         <div className="px-4 py-4">
-          <p className="text-sm leading-relaxed text-pe-text-secondary">
-            {item.summary?.trim() || 'No summary available.'}
-          </p>
+          <NewsSummaryMarkdown content={item.summary} />
         </div>
       </div>
     </div>
@@ -88,9 +87,7 @@ export default function NewsList({ items, showTicker = false }) {
               </button>
               {isDesktop && expanded ? (
                 <div className="border-t border-pe-border bg-pe-surface/40 px-4 pb-4 pt-3">
-                  <p className="text-sm leading-relaxed text-pe-text-secondary">
-                    {item.summary?.trim() || 'No summary available.'}
-                  </p>
+                  <NewsSummaryMarkdown content={item.summary} />
                 </div>
               ) : null}
             </div>
