@@ -71,7 +71,8 @@
     "probe:server-ibkr": "node scripts/invoke-server-ibkr-probes.mjs --sample=50",
     "probe:server-yahoo": "node scripts/invoke-server-ibkr-probes.mjs --yahoo --sample=10",
     "simulate:basket-nav": "node scripts/simulate-basket-nav.mjs",
-    "sync:indian-markets": "node scripts/sync-indian-markets.mjs"
+    "sync:indian-markets": "node scripts/sync-indian-markets.mjs",
+    "sync:social-market-assets": "node --env-file=.env scripts/sync-social-market-assets.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.10.1",

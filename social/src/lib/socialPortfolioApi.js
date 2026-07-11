@@ -49,23 +49,7 @@ function mapRpcRow(row) {
 }
 
 function mapTableRow(row) {
-  return mapRpcRow({
-    id: row.id,
-    kind: row.kind,
-    is_archived: row.is_archived,
-    name: row.name,
-    objective: row.objective,
-    thesis: row.thesis,
-    source_portfolio_id: row.source_portfolio_id,
-    source_user_id: row.source_user_id,
-    source_portfolio_name: row.source_portfolio_name,
-    source_user_name: row.source_user_name,
-    watchlist_base_investment: row.watchlist_base_investment,
-    tickers: row.tickers,
-    holdings: row.holdings,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  });
+  return mapRpcRow(row);
 }
 
 function blankDraft(ownerId) {
@@ -93,16 +77,13 @@ export async function fetchUserPortfolios(ownerId) {
 
   const drafts = getLocalDrafts(ownerId).map(enrichUserPortfolio);
 
-  const { data, error } = await supabase
-    .from('social_portfolios')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .eq('is_archived', false)
-    .eq('is_draft', false)
-    .order('updated_at', { ascending: false });
+  const { data, error } = await supabase.rpc('list_user_portfolios', {
+    p_owner_id: ownerId,
+  });
 
   if (error) throw error;
-  return [...drafts, ...(data ?? []).map(mapTableRow)];
+  const rows = Array.isArray(data) ? data : [];
+  return [...drafts, ...rows.map(mapRpcRow)];
 }
 
 export async function fetchUserPortfolio(ownerId, portfolioId) {
@@ -115,17 +96,13 @@ export async function fetchUserPortfolio(ownerId, portfolioId) {
     return getUserPortfolio(ownerId, portfolioId);
   }
 
-  const { data, error } = await supabase
-    .from('social_portfolios')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .eq('id', portfolioId)
-    .eq('is_archived', false)
-    .eq('is_draft', false)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('get_user_portfolio', {
+    p_owner_id: ownerId,
+    p_portfolio_id: portfolioId,
+  });
 
   if (error) throw error;
-  return data ? mapTableRow(data) : null;
+  return data ? mapRpcRow(data) : null;
 }
 
 /** Drafts live in the browser only — never written to Supabase until published. */

@@ -1609,6 +1609,12 @@ function PortfolioDiscussion({
   );
 }
 
+function portfolioHoldingsNeedClientResolve(portfolio) {
+  const holdings = portfolio.holdings ?? [];
+  if (!holdings.length && (portfolio.tickers ?? []).length) return true;
+  return holdings.some((h) => h.ticker && !h.assetName);
+}
+
 function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
@@ -1625,12 +1631,17 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     [portfolio.holdings, portfolio.tickers]
   );
 
+  const needsClientResolve = useMemo(
+    () => portfolioHoldingsNeedClientResolve(portfolio),
+    [portfolio.holdings, portfolio.tickers]
+  );
+
   useEffect(() => {
     setPage(0);
   }, [portfolio.id, returnPeriod]);
 
   useEffect(() => {
-    if (!holdingKeys.length) {
+    if (!holdingKeys.length || !needsClientResolve) {
       setAssetsByKey({});
       setAssetsLoading(false);
       return undefined;
@@ -1652,12 +1663,11 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     return () => {
       cancelled = true;
     };
-  }, [portfolio.id, holdingKeys]);
+  }, [portfolio.id, holdingKeys, needsClientResolve]);
 
   const rows = useMemo(() => {
-    const periodReturnForTicker = (ticker, fallbackPnl, asset) => {
-      const changePct = asset?.item?.changePct ?? fallbackPnl ?? 0;
-      const day = changePct ?? 0;
+    const periodReturnForChangePct = (changePct, fallbackPnl = 0) => {
+      const day = changePct ?? fallbackPnl ?? 0;
       const month = Number((day * 8).toFixed(1));
       if (returnPeriod === '1D') return day;
       if (returnPeriod === '1W') return Number((day * 5).toFixed(1));
@@ -1678,12 +1688,13 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
         const price = h.price ?? asset?.price ?? 0;
         const value = h.value ?? (h.qty ?? 0) * price;
         const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
+        const assetType = h.assetType ?? asset?.kind;
         return {
           key: h.ticker,
-          title: asset?.kind === 'fund' ? h.ticker : formatTicker(h.ticker),
-          subtitle: asset?.name ?? '',
+          title: assetType === 'fund' ? h.ticker : formatTicker(h.ticker),
+          subtitle: h.assetName ?? asset?.name ?? '',
           weight,
-          itemReturn: periodReturnForTicker(h.ticker, h.pnlPct, asset),
+          itemReturn: periodReturnForChangePct(h.changePct ?? asset?.item?.changePct, h.pnlPct),
         };
       });
     }
@@ -1698,7 +1709,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
         title: asset?.kind === 'fund' ? ticker : formatTicker(ticker),
         subtitle: asset?.name ?? '',
         weight: equal,
-        itemReturn: periodReturnForTicker(ticker, undefined, asset),
+        itemReturn: periodReturnForChangePct(asset?.item?.changePct),
       };
     });
   }, [portfolio, returnPeriod, assetsByKey]);
