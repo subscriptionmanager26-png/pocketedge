@@ -53,6 +53,20 @@ const markdownComponents = {
     ),
   pre: ({ children }) => <pre className="mb-3 last:mb-0">{children}</pre>,
   hr: () => <hr className="my-4 border-pe-border" />,
+  table: ({ children }) => (
+    <div className="mb-3 overflow-x-auto rounded-md border border-pe-border last:mb-0">
+      <table className="min-w-full border-collapse text-left text-[13px]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-pe-surface">{children}</thead>,
+  tbody: ({ children }) => <tbody className="divide-y divide-pe-border">{children}</tbody>,
+  tr: ({ children }) => <tr>{children}</tr>,
+  th: ({ children }) => (
+    <th className="whitespace-nowrap px-3 py-2 font-semibold text-pe-text">{children}</th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 align-top text-pe-text-secondary">{children}</td>
+  ),
 };
 
 export default function NewsSummaryMarkdown({ content, emptyLabel = 'No summary available.' }) {
