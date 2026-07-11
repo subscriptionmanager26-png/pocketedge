@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { normalizeNewsSummaryMarkdown } from '../lib/normalizeNewsSummaryMarkdown';
 
 const markdownComponents = {
   p: ({ children }) => (
@@ -60,9 +61,11 @@ export default function NewsSummaryMarkdown({ content, emptyLabel = 'No summary 
     return <p className="text-sm leading-relaxed text-pe-text-secondary">{emptyLabel}</p>;
   }
 
+  const markdown = normalizeNewsSummaryMarkdown(trimmed);
+
   return (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-      {trimmed}
+      {markdown}
     </ReactMarkdown>
   );
 }
