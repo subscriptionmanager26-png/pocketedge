@@ -803,7 +803,6 @@ function PortfolioDetailView({
   const makeBlankRow = () => ({
     id: `draft_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     ticker: '',
-    assetName: '',
     invested: '',
     qty: '',
     weight: '',
@@ -820,7 +819,6 @@ function PortfolioDetailView({
       return {
         id: `hold_${h.ticker}`,
         ticker: h.ticker,
-        assetName: '',
         weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
         invested: '',
         qty: '',
@@ -829,7 +827,6 @@ function PortfolioDetailView({
     return {
       id: `hold_${h.ticker}`,
       ticker: h.ticker,
-      assetName: '',
       invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
       qty: String(h.qty ?? ''),
       weight: '',
@@ -848,7 +845,6 @@ function PortfolioDetailView({
         ? {
             id: `hold_${h.ticker}`,
             ticker: h.ticker,
-            assetName: '',
             weight:
               h.weightPct != null
                 ? String(h.weightPct)
@@ -1050,6 +1046,10 @@ function PortfolioDetailView({
   const compactInputClass =
     'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[14px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
 
+  const rowGridClass = isWatchlist
+    ? 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2'
+    : 'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
+
   return (
     <div>
       <PageHeader desktopOnly>
@@ -1184,7 +1184,28 @@ function PortfolioDetailView({
               : 'Search a stock, ETF, or fund, then enter your total investment and quantity.'}
           </p>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-2">
+            <div className={`hidden items-center gap-2 px-0.5 md:flex ${isWatchlist ? 'grid-cols-[minmax(0,1fr)_5.5rem_auto]' : ''}`}>
+              <p className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Ticker
+              </p>
+              {isWatchlist ? (
+                <p className="w-[5.5rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Weight %
+                </p>
+              ) : (
+                <>
+                  <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    Total invested
+                  </p>
+                  <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    Qty
+                  </p>
+                </>
+              )}
+              <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+            </div>
+
             {editRows.map((row) => {
               const rowErr = fieldErrors.rows[row.id] ?? {};
               const usedTickers = editRows
@@ -1193,89 +1214,60 @@ function PortfolioDetailView({
                 .filter(Boolean);
 
               return (
-                <div
-                  key={row.id}
-                  className="rounded-lg border border-pe-border bg-pe-surface/40 p-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                        Asset
-                      </p>
-                      <PortfolioAssetSearchField
-                        value={row.ticker}
-                        selectedName={row.assetName}
-                        exclude={usedTickers}
-                        hasError={Boolean(rowErr.ticker)}
-                        onValueChange={(next) =>
-                          updateRow(row.id, { ticker: next.toUpperCase(), assetName: '' })
-                        }
-                        onSelect={(asset) =>
-                          updateRow(row.id, { ticker: asset.key, assetName: asset.name })
-                        }
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeRow(row.id)}
-                      className="mt-5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
-                      aria-label="Delete holding row"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                <div key={row.id} className={rowGridClass}>
+                  <PortfolioAssetSearchField
+                    value={row.ticker}
+                    exclude={usedTickers}
+                    placeholder="Search stock, ETF, or fund"
+                    inputClassName={fieldClass(compactInputClass, rowErr.ticker)}
+                    onValueChange={(next) => updateRow(row.id, { ticker: next.toUpperCase() })}
+                    onSelect={(asset) => updateRow(row.id, { ticker: asset.key })}
+                  />
 
                   {isWatchlist ? (
-                    <div className="mt-3">
-                      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                        Weight %
-                      </p>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={row.weight}
+                      onChange={(e) => updateRow(row.id, { weight: e.target.value })}
+                      placeholder="Weight %"
+                      aria-label="Weight percentage"
+                      className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.weight)}
+                    />
+                  ) : (
+                    <>
                       <input
                         type="number"
                         min="0"
-                        max="100"
-                        step="0.1"
-                        value={row.weight}
-                        onChange={(e) => updateRow(row.id, { weight: e.target.value })}
-                        placeholder="e.g. 25"
-                        aria-label="Weight percentage"
-                        className={fieldClass(`${compactInputClass} tabular-nums`, rowErr.weight)}
+                        step="0.01"
+                        value={row.invested}
+                        onChange={(e) => updateRow(row.id, { invested: e.target.value })}
+                        placeholder="Total invested"
+                        aria-label="Total amount you invested"
+                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.invested)}
                       />
-                    </div>
-                  ) : (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                          Total invested
-                        </p>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={row.invested}
-                          onChange={(e) => updateRow(row.id, { invested: e.target.value })}
-                          placeholder="Amount"
-                          aria-label="Total amount you invested"
-                          className={fieldClass(`${compactInputClass} tabular-nums`, rowErr.invested)}
-                        />
-                      </div>
-                      <div>
-                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                          Qty
-                        </p>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={row.qty}
-                          onChange={(e) => updateRow(row.id, { qty: e.target.value })}
-                          placeholder="Units"
-                          aria-label="Quantity"
-                          className={fieldClass(`${compactInputClass} tabular-nums`, rowErr.qty)}
-                        />
-                      </div>
-                    </div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={row.qty}
+                        onChange={(e) => updateRow(row.id, { qty: e.target.value })}
+                        placeholder="Qty"
+                        aria-label="Quantity"
+                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.qty)}
+                      />
+                    </>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => removeRow(row.id)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
+                    aria-label="Delete holding row"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               );
             })}

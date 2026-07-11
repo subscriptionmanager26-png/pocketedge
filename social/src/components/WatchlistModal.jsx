@@ -61,6 +61,7 @@ export default function WatchlistModal({ open, onClose, onSave }) {
                 value={symbol}
                 exclude={tickers}
                 placeholder="Search stock, ETF, or fund"
+                inputClassName="min-w-0 flex-1 rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-[15px] outline-none focus:border-pe-accent"
                 onValueChange={setSymbol}
                 onSelect={(asset) => addAsset(asset.key)}
               />
