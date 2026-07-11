@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -353,6 +353,7 @@ export default function PortfolioPage({
 
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
 
+      {contentTab === 'summary' && <PortfolioSummaryComingSoon portfolioName={activeList?.name} />}
       {contentTab === 'performance' && (
         <HoldingsSummary
           holdings={overallRow ? [overallRow, ...holdingsRows] : holdingsRows}
@@ -388,6 +389,7 @@ export default function PortfolioPage({
 
 const PERIODS = ['1D', '1W', '1M', '1Y'];
 const CONTENT_TABS = [
+  { id: 'summary', label: 'Summary' },
   { id: 'performance', label: 'Performance' },
   { id: 'news', label: 'News' },
   { id: 'trades', label: 'Trades' },
@@ -422,6 +424,35 @@ function compressDistribution(distribution, topN = DIST_TOP_N) {
       restCount: rest.length,
     },
   ];
+}
+
+function PortfolioSummaryComingSoon({ portfolioName }) {
+  return (
+    <div className="px-4 py-10">
+      <div className="rounded-2xl border border-pe-border bg-pe-surface px-5 py-8 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent-wash">
+          <Sparkles className="h-5 w-5 text-pe-accent" aria-hidden="true" />
+        </div>
+        <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">
+          Coming soon
+        </p>
+        <h3 className="mt-2 text-lg font-semibold text-pe-text">AI portfolio summary</h3>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-pe-text-secondary">
+          {portfolioName ? (
+            <>
+              A concise AI read on <span className="font-semibold text-pe-text">{portfolioName}</span>
+              — allocation, recent moves, and what to watch.
+            </>
+          ) : (
+            'A concise AI read on your holdings — allocation, recent moves, and what to watch.'
+          )}
+        </p>
+        <p className="mx-auto mt-4 max-w-xs text-xs text-pe-text-muted">
+          We&apos;re building this now. You&apos;ll see it here once it&apos;s ready.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function MetricCard({ label, value, sub, tone }) {

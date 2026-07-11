@@ -83,6 +83,7 @@ export default function App() {
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const portfolioBackRef = useRef(null);
+  const marketReturnContextRef = useRef(null);
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
   const [scrollAction, setScrollAction] = useState('reset');
@@ -379,7 +380,82 @@ export default function App() {
     setSelectedCommodityId(null);
   };
 
+  const MARKET_RETURN_LABELS = {
+    feed: 'Feed',
+    search: 'Search',
+    activity: 'Activity',
+    portfolio: 'Portfolio',
+    markets: 'Markets',
+  };
+
+  const captureMarketReturnContext = useCallback(() => {
+    const onMarketDetail =
+      tab === 'markets' &&
+      Boolean(selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId);
+
+    marketReturnContextRef.current = onMarketDetail
+      ? { tab: 'markets' }
+      : {
+          tab,
+          profileUserId,
+          profilePortfolioId,
+          profileMode,
+          selectedPostId,
+        };
+  }, [
+    tab,
+    selectedTicker,
+    selectedFundId,
+    selectedIndexId,
+    selectedCommodityId,
+    profileUserId,
+    profilePortfolioId,
+    profileMode,
+    selectedPostId,
+  ]);
+
+  const getMarketBackLabel = useCallback(() => {
+    const ctx = marketReturnContextRef.current;
+    if (!ctx || ctx.tab === 'markets') return 'Markets';
+    return MARKET_RETURN_LABELS[ctx.tab] ?? 'Back';
+  }, []);
+
+  const closeMarketDetail = useCallback(() => {
+    backScroll();
+    clearMarketSelection();
+
+    const ctx = marketReturnContextRef.current;
+    marketReturnContextRef.current = null;
+
+    if (!ctx || ctx.tab === 'markets') {
+      setTab('markets');
+      navigate(tabPath('markets'));
+      return;
+    }
+
+    setTab(ctx.tab);
+    setProfileUserId(ctx.profileUserId ?? currentUserId);
+    setProfileMode(ctx.profileMode ?? 'own');
+    setProfilePortfolioId(ctx.profilePortfolioId ?? null);
+    setSelectedPostId(ctx.selectedPostId ?? null);
+
+    if (ctx.tab === 'profile') {
+      navigateToProfile(navigate, ctx.profileUserId ?? currentUserId, {
+        portfolioId: ctx.profilePortfolioId ?? undefined,
+      });
+      return;
+    }
+
+    if (ctx.tab === 'feed' && ctx.selectedPostId) {
+      navigate(postPath(ctx.selectedPostId));
+      return;
+    }
+
+    navigate(tabPath(ctx.tab));
+  }, [backScroll, navigate, currentUserId]);
+
   const openStock = (ticker, { kind = 'stock' } = {}) => {
+    captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
     setSelectedTicker(ticker);
@@ -390,6 +466,7 @@ export default function App() {
   };
 
   const openFund = (fundId) => {
+    captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
     setSelectedFundId(fundId);
@@ -399,6 +476,7 @@ export default function App() {
   };
 
   const openIndex = (indexId) => {
+    captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
     setSelectedIndexId(indexId);
@@ -408,6 +486,7 @@ export default function App() {
   };
 
   const openCommodity = (commodityId) => {
+    captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
     setSelectedCommodityId(commodityId);
@@ -531,16 +610,16 @@ export default function App() {
       return { label: 'Back', onBack: () => { backScroll(); navigate(tabPath('feed')); } };
     }
     if (tab === 'markets' && selectedCommodityId) {
-      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
+      return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
     if (tab === 'markets' && selectedIndexId) {
-      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
+      return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
     if (tab === 'markets' && selectedFundId) {
-      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
+      return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
     if (tab === 'markets' && selectedTicker) {
-      return { label: 'Markets', onBack: () => { backScroll(); navigate(tabPath('markets')); } };
+      return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
     if (tab === 'profile' && profilePortfolioId) {
       return {
@@ -585,6 +664,8 @@ export default function App() {
     profilePortfolioId,
     backScroll,
     navigate,
+    closeMarketDetail,
+    getMarketBackLabel,
   ]);
 
   useEffect(() => {
@@ -708,10 +789,7 @@ export default function App() {
           (selectedCommodityId ? (
             <CommodityDetailPage
               commodityId={selectedCommodityId}
-              onBack={() => {
-                backScroll();
-                navigate(tabPath('markets'));
-              }}
+              onBack={closeMarketDetail}
               onOpenProfile={openProfile}
               onPromptReview={() => {
                 setFundReviewPrefill(null);
@@ -721,10 +799,7 @@ export default function App() {
           ) : selectedIndexId ? (
             <IndexDetailPage
               indexId={selectedIndexId}
-              onBack={() => {
-                backScroll();
-                navigate(tabPath('markets'));
-              }}
+              onBack={closeMarketDetail}
               onOpenProfile={openProfile}
               onPromptReview={() => {
                 setFundReviewPrefill(null);
@@ -734,10 +809,7 @@ export default function App() {
           ) : selectedFundId ? (
             <InvestmentPage
               fundId={selectedFundId}
-              onBack={() => {
-                backScroll();
-                navigate(tabPath('markets'));
-              }}
+              onBack={closeMarketDetail}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onPromptReview={() => {
@@ -748,10 +820,7 @@ export default function App() {
           ) : selectedTicker ? (
             <StockInvestmentPage
               ticker={selectedTicker}
-              onBack={() => {
-                backScroll();
-                navigate(tabPath('markets'));
-              }}
+              onBack={closeMarketDetail}
               onOpenProfile={openProfile}
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onPromptReview={() => {
