@@ -78,7 +78,7 @@ export async function fetchMarketPreview(tab) {
   };
 }
 
-async function loadSearchIndex(tab) {
+export async function loadSearchIndex(tab) {
   const file = TAB_SEARCH[tab];
   if (!file) return [];
   const payload = await fetchJson(file);

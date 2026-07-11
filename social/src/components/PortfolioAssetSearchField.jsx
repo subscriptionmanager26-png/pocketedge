@@ -39,12 +39,13 @@ export default function PortfolioAssetSearchField({
 }) {
   const anchorRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [editedSinceFocus, setEditedSinceFocus] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [menuStyle, setMenuStyle] = useState(null);
 
   const query = value.trim();
-  const showResults = open && query.length >= MARKET_MIN_SEARCH_CHARS;
+  const showResults = open && editedSinceFocus && query.length >= MARKET_MIN_SEARCH_CHARS;
 
   useEffect(() => {
     if (!showResults) {
@@ -115,10 +116,12 @@ export default function PortfolioAssetSearchField({
         type="text"
         value={value}
         onChange={(event) => {
+          setEditedSinceFocus(true);
           onValueChange?.(event.target.value);
           setOpen(true);
         }}
         onFocus={() => {
+          setEditedSinceFocus(false);
           setOpen(true);
           onFocus?.();
         }}

@@ -91,7 +91,21 @@ export function validatePortfolioDraft({ kind, name, objective, thesis, rows }) 
         ...(isWatchlist ? { weight: true } : { invested: true, qty: true }),
       };
     }
-  } else if (isWatchlist) {
+  } else {
+    const seenTickers = new Map();
+    for (const row of completeRows) {
+      const ticker = row.ticker.trim();
+      const prior = seenTickers.get(ticker);
+      if (prior) {
+        errors.rows[row.id] = { ...(errors.rows[row.id] ?? {}), ticker: true };
+        errors.rows[prior] = { ...(errors.rows[prior] ?? {}), ticker: true };
+      } else {
+        seenTickers.set(ticker, row.id);
+      }
+    }
+  }
+
+  if (completeRows.length >= 1 && isWatchlist) {
     const totalWeight = completeRows.reduce((sum, row) => sum + (Number(row.weight) || 0), 0);
     if (Math.abs(totalWeight - 100) > 0.5) {
       for (const row of completeRows) {

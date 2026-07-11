@@ -14,6 +14,7 @@ import { MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios
 import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
+import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
 import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -42,6 +43,7 @@ export default function PortfolioPage({
   const [watchlistTick, setWatchlistTick] = useState(0);
   const [portfolioTick, setPortfolioTick] = useState(0);
   const [remotePortfolios, setRemotePortfolios] = useState([]);
+  const [portfoliosLoading, setPortfoliosLoading] = useState(false);
 
   const ownerId = getAppCurrentUserId();
 
@@ -51,15 +53,20 @@ export default function PortfolioPage({
     let cancelled = false;
 
     if (useBackend()) {
+      setPortfoliosLoading(true);
       fetchUserPortfolios(ownerId)
         .then((rows) => {
           if (!cancelled) setRemotePortfolios(rows.filter((p) => !p.isDraft));
         })
         .catch(() => {
           if (!cancelled) setRemotePortfolios([]);
+        })
+        .finally(() => {
+          if (!cancelled) setPortfoliosLoading(false);
         });
     } else {
       setRemotePortfolios(getUserPortfolios(ownerId).filter((p) => !p.isDraft));
+      setPortfoliosLoading(false);
     }
 
     return () => {
@@ -195,6 +202,17 @@ export default function PortfolioPage({
     () => compressDistribution(metrics?.distribution ?? []),
     [metrics]
   );
+
+  if (useBackend() && portfoliosLoading) {
+    return (
+      <div>
+        <PageHeader>
+          <div className="h-10 animate-pulse rounded-md bg-pe-surface" aria-hidden="true" />
+        </PageHeader>
+        <PortfolioPageSkeleton />
+      </div>
+    );
+  }
 
   if (useBackend() && !lists.length) {
     return (

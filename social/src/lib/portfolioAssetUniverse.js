@@ -1,4 +1,6 @@
 import {
+  findCachedMarketItem,
+  loadSearchIndex,
   MARKET_MIN_SEARCH_CHARS,
   searchMarketTab,
 } from './marketDataApi';
@@ -76,15 +78,25 @@ export async function searchPortfolioAssets(query, { limit = 6, exclude = [] } =
   return scored.slice(0, limit).map(({ entry }) => entry);
 }
 
+async function findPortfolioAssetExact(meta, needle) {
+  const cached = findCachedMarketItem(meta.tab, needle);
+  if (cached && portfolioAssetKey(cached, meta.kind) === needle) {
+    return toEntry(cached, meta);
+  }
+
+  const items = await loadSearchIndex(meta.tab);
+  const found = items.find((item) => portfolioAssetKey(item, meta.kind) === needle);
+  return found ? toEntry(found, meta) : null;
+}
+
 export async function resolvePortfolioAsset(key) {
   const raw = String(key ?? '').trim();
   if (!raw) return null;
 
   for (const meta of PORTFOLIO_TABS) {
     const needle = meta.kind === 'fund' ? raw : raw.toUpperCase();
-    const { items } = await searchMarketTab(meta.tab, needle, 20);
-    const found = items.find((item) => portfolioAssetKey(item, meta.kind) === needle);
-    if (found) return toEntry(found, meta);
+    const found = await findPortfolioAssetExact(meta, needle);
+    if (found) return found;
   }
 
   return null;

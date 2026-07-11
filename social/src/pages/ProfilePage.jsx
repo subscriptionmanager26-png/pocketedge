@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronRight, ClipboardCheck, Copy, Heart, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
@@ -25,6 +25,10 @@ import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 import PortfolioCard from '../components/PortfolioCard';
+import {
+  PortfoliosListSkeleton,
+  PortfolioHoldingsSkeleton,
+} from '../components/PortfolioSkeletons';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
 import ReviewCard from '../components/ReviewCard';
@@ -139,6 +143,7 @@ export default function ProfilePage({
   const [savedFlash, setSavedFlash] = useState(null);
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [portfolios, setPortfolios] = useState([]);
+  const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [tradesVersion, setTradesVersion] = useState(0);
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
@@ -174,11 +179,15 @@ export default function ProfilePage({
   useEffect(() => {
     if (!person?.id) return;
     let cancelled = false;
+    setPortfoliosLoading(true);
     fetchUserPortfolios(person.id)
       .then((rows) => {
         if (!cancelled) setPortfolios(rows);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPortfoliosLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -438,6 +447,7 @@ export default function ProfilePage({
       {tab === 'portfolios' && (
         <PortfoliosListPanel
           portfolios={publishedPortfolios}
+          loading={portfoliosLoading}
           person={person}
           canEdit={canEdit}
           portfolioSocialTick={portfolioSocialTick}
@@ -657,6 +667,7 @@ function ReviewsPanel({ reviews, onOpenProfile, onGraphChange }) {
 
 function PortfoliosListPanel({
   portfolios,
+  loading = false,
   person,
   canEdit,
   portfolioSocialTick,
@@ -672,7 +683,9 @@ function PortfoliosListPanel({
     <div>
       <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
 
-      {!portfolios.length ? (
+      {loading ? (
+        <PortfoliosListSkeleton count={2} />
+      ) : !portfolios.length ? (
         <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
           {canEdit ? 'No portfolios yet.' : 'No portfolios published yet.'}
         </p>
@@ -781,6 +794,9 @@ function PortfolioDetailView({
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
+  const editSessionRef = useRef(0);
+  const saveEditsRef = useRef(async () => {});
+  const cancelEditsRef = useRef(() => {});
 
   const isWatchlist = isWatchlistKind(portfolioKind);
 
@@ -792,16 +808,19 @@ function PortfolioDetailView({
   );
 
   useEffect(() => {
+    if (editing) return;
     setName(portfolio.name);
     setObjective(portfolio.objective ?? '');
     setThesis(portfolio.thesis ?? '');
     setPortfolioKind(portfolio.kind ?? 'live');
     setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
     if (!startInEditMode) setEditing(false);
-  }, [portfolio.id, portfolio.name, portfolio.objective, portfolio.thesis, portfolio.kind, startInEditMode]);
+  }, [portfolio.id, portfolio.name, portfolio.objective, portfolio.thesis, portfolio.kind, startInEditMode, editing]);
+
+  const makeRowId = () => `row_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   const makeBlankRow = () => ({
-    id: `draft_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: makeRowId(),
     ticker: '',
     invested: '',
     qty: '',
@@ -809,6 +828,7 @@ function PortfolioDetailView({
   });
 
   const holdingToRow = (h) => {
+    const rowId = makeRowId();
     if (isWatchlistKind(portfolio.kind)) {
       const weightPct =
         h.weightPct ??
@@ -817,7 +837,7 @@ function PortfolioDetailView({
           return total > 0 ? ((h.value ?? 0) / total) * 100 : '';
         })();
       return {
-        id: `hold_${h.ticker}`,
+        id: rowId,
         ticker: h.ticker,
         weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
         invested: '',
@@ -825,7 +845,7 @@ function PortfolioDetailView({
       };
     }
     return {
-      id: `hold_${h.ticker}`,
+      id: rowId,
       ticker: h.ticker,
       invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
       qty: String(h.qty ?? ''),
@@ -833,7 +853,7 @@ function PortfolioDetailView({
     };
   };
 
-  const initEditRows = (kind = portfolioKind) => {
+  const buildEditRows = (kind = portfolioKind) => {
     const watchlist = isWatchlistKind(kind);
     const source = watchlist
       ? portfolio.holdings?.length
@@ -843,7 +863,7 @@ function PortfolioDetailView({
     const rows = source.map((h) =>
       watchlist
         ? {
-            id: `hold_${h.ticker}`,
+            id: makeRowId(),
             ticker: h.ticker,
             weight:
               h.weightPct != null
@@ -856,19 +876,50 @@ function PortfolioDetailView({
           }
         : holdingToRow(h)
     );
-    setEditRows([...rows, makeBlankRow()]);
+    return [...rows, makeBlankRow()];
+  };
+
+  const markUnknownTickerErrors = async (rows, session) => {
+    const tickers = rows.map((row) => row.ticker.trim()).filter(Boolean);
+    if (!tickers.length) return;
+
+    const assetsByKey = await resolvePortfolioAssets(tickers);
+    if (session !== editSessionRef.current) return;
+
+    const rowErrors = {};
+    for (const row of rows) {
+      const ticker = row.ticker.trim();
+      if (ticker && !assetsByKey.has(ticker)) {
+        rowErrors[row.id] = { ticker: true };
+      }
+    }
+
+    if (Object.keys(rowErrors).length) {
+      setFieldErrors((prev) => ({ ...prev, rows: { ...prev.rows, ...rowErrors } }));
+    }
+  };
+
+  const initEditRows = (kind = portfolioKind) => {
+    editSessionRef.current += 1;
+    setEditRows(buildEditRows(kind));
   };
 
   const startEditing = () => {
-    initEditRows(portfolioKind);
+    const session = ++editSessionRef.current;
+    const rows = buildEditRows(portfolioKind);
+    setEditRows(rows);
     setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
     setEditing(true);
+    markUnknownTickerErrors(rows, session);
   };
 
   useEffect(() => {
     if (startInEditMode) {
-      initEditRows(portfolio.kind ?? 'live');
+      const session = ++editSessionRef.current;
+      const rows = buildEditRows(portfolio.kind ?? 'live');
+      setEditRows(rows);
       setEditing(true);
+      markUnknownTickerErrors(rows, session);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.id, startInEditMode]);
@@ -907,27 +958,33 @@ function PortfolioDetailView({
       ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
       : buildLiveHoldings(validation.completeRows, assetsByKey);
 
-    const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
-      name: name.trim(),
-      objective: objective.trim(),
-      thesis: thesis.trim(),
-      kind: portfolioKind,
-      isDraft: false,
-      tickers: holdings.map((h) => h.ticker),
-      holdings,
-      ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
-    });
-    onPortfolioUpdated?.();
-    if (savedPortfolio?.id && savedPortfolio.id !== portfolio.id) {
-      onSelectPortfolio?.(savedPortfolio.id);
+    try {
+      const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
+        name: name.trim(),
+        objective: objective.trim(),
+        thesis: thesis.trim(),
+        kind: portfolioKind,
+        isDraft: false,
+        tickers: holdings.map((h) => h.ticker),
+        holdings,
+        ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
+      });
+      onPortfolioUpdated?.();
+      if (savedPortfolio?.id && savedPortfolio.id !== portfolio.id) {
+        onSelectPortfolio?.(savedPortfolio.id);
+      }
+      setEditing(false);
+      setEditRows([]);
+      setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1600);
+    } catch (error) {
+      console.error('Failed to save portfolio', error);
+      window.alert(error?.message ?? 'Could not save portfolio. Please try again.');
     }
-    setEditing(false);
-    setEditRows([]);
-    setTickerSuggestionsFor(null);
-    setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
   };
+
+  saveEditsRef.current = saveEdits;
 
   const discardAndExit = async (proceed) => {
     if (isDraft) {
@@ -950,6 +1007,8 @@ function PortfolioDetailView({
       if (isDraft) onBack();
     });
   };
+
+  cancelEditsRef.current = cancelEdits;
 
   const requestBack = (proceed) => {
     if (!editing && !isDraft) {
@@ -1009,8 +1068,10 @@ function PortfolioDetailView({
         <PortfolioDetailMobileActions
           editing
           saved={saved}
-          onCancel={cancelEdits}
-          onSave={saveEdits}
+          onCancel={() => cancelEditsRef.current()}
+          onSave={() => {
+            void saveEditsRef.current();
+          }}
         />
       ) : (
         <PortfolioDetailMobileActions onEdit={startEditing} />
@@ -1027,9 +1088,25 @@ function PortfolioDetailView({
   };
 
   const updateRow = (rowId, patch) => {
+    if (patch.ticker !== undefined) {
+      editSessionRef.current += 1;
+    }
+
     setEditRows((prev) =>
       prev.map((row) => (row.id === rowId ? { ...row, ...patch } : row))
     );
+
+    if (patch.ticker !== undefined) {
+      setFieldErrors((prev) => {
+        const rows = { ...prev.rows };
+        if (!rows[rowId]) return prev;
+        const next = { ...rows[rowId] };
+        delete next.ticker;
+        if (Object.keys(next).length) rows[rowId] = next;
+        else delete rows[rowId];
+        return { ...prev, rows };
+      });
+    }
   };
 
   const removeRow = (rowId) => {
@@ -1214,60 +1291,69 @@ function PortfolioDetailView({
                 .filter(Boolean);
 
               return (
-                <div key={row.id} className={rowGridClass}>
-                  <PortfolioAssetSearchField
-                    value={row.ticker}
-                    exclude={usedTickers}
-                    placeholder="Search stock, ETF, or fund"
-                    inputClassName={fieldClass(compactInputClass, rowErr.ticker)}
-                    onValueChange={(next) => updateRow(row.id, { ticker: next.toUpperCase() })}
-                    onSelect={(asset) => updateRow(row.id, { ticker: asset.key })}
-                  />
-
-                  {isWatchlist ? (
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={row.weight}
-                      onChange={(e) => updateRow(row.id, { weight: e.target.value })}
-                      placeholder="Weight %"
-                      aria-label="Weight percentage"
-                      className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.weight)}
+                <div key={row.id} className="space-y-1">
+                  <div className={rowGridClass}>
+                    <PortfolioAssetSearchField
+                      value={row.ticker}
+                      exclude={usedTickers}
+                      placeholder="Search stock, ETF, or fund"
+                      inputClassName={fieldClass(compactInputClass, rowErr.ticker)}
+                      onValueChange={(next) => updateRow(row.id, { ticker: next.toUpperCase() })}
+                      onSelect={(asset) => updateRow(row.id, { ticker: asset.key })}
                     />
-                  ) : (
-                    <>
+
+                    {isWatchlist ? (
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
-                        value={row.invested}
-                        onChange={(e) => updateRow(row.id, { invested: e.target.value })}
-                        placeholder="Total invested"
-                        aria-label="Total amount you invested"
-                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.invested)}
+                        max="100"
+                        step="0.1"
+                        value={row.weight}
+                        onChange={(e) => updateRow(row.id, { weight: e.target.value })}
+                        placeholder="Weight %"
+                        aria-label="Weight percentage"
+                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.weight)}
                       />
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={row.qty}
-                        onChange={(e) => updateRow(row.id, { qty: e.target.value })}
-                        placeholder="Qty"
-                        aria-label="Quantity"
-                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.qty)}
-                      />
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeRow(row.id)}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
-                    aria-label="Delete holding row"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                    ) : (
+                      <>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={row.invested}
+                          onChange={(e) => updateRow(row.id, { invested: e.target.value })}
+                          placeholder="Total invested"
+                          aria-label="Total amount you invested"
+                          className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.invested)}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={row.qty}
+                          onChange={(e) => updateRow(row.id, { qty: e.target.value })}
+                          placeholder="Qty"
+                          aria-label="Quantity"
+                          className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.qty)}
+                        />
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeRow(row.id)}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-pe-text-muted transition hover:bg-pe-surface hover:text-pe-negative"
+                      aria-label="Delete holding row"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {rowErr.ticker ? (
+                    <p className="px-0.5 text-[12px] text-pe-negative">
+                      {row.ticker.trim()
+                        ? `${row.ticker.trim()} is not a valid stock, ETF, or fund — search to replace it.`
+                        : 'Pick a stock, ETF, or fund from search results.'}
+                    </p>
+                  ) : null}
                 </div>
               );
             })}
@@ -1527,35 +1613,46 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState({});
+  const [assetsLoading, setAssetsLoading] = useState(false);
   const overallReturn = getPortfolioReturn(portfolio, returnPeriod);
+
+  const holdingKeys = useMemo(
+    () =>
+      [
+        ...(portfolio.holdings ?? []).map((holding) => holding.ticker),
+        ...(portfolio.tickers ?? []),
+      ].filter(Boolean),
+    [portfolio.holdings, portfolio.tickers]
+  );
 
   useEffect(() => {
     setPage(0);
   }, [portfolio.id, returnPeriod]);
 
   useEffect(() => {
-    const keys = [
-      ...(portfolio.holdings ?? []).map((holding) => holding.ticker),
-      ...(portfolio.tickers ?? []),
-    ].filter(Boolean);
-
-    if (!keys.length) {
+    if (!holdingKeys.length) {
       setAssetsByKey({});
+      setAssetsLoading(false);
       return undefined;
     }
 
     let cancelled = false;
-    resolvePortfolioAssets(keys).then((map) => {
-      if (cancelled) return;
-      const next = {};
-      for (const [key, asset] of map.entries()) next[key] = asset;
-      setAssetsByKey(next);
-    });
+    setAssetsLoading(true);
+    resolvePortfolioAssets(holdingKeys)
+      .then((map) => {
+        if (cancelled) return;
+        const next = {};
+        for (const [key, asset] of map.entries()) next[key] = asset;
+        setAssetsByKey(next);
+      })
+      .finally(() => {
+        if (!cancelled) setAssetsLoading(false);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [portfolio.id, portfolio.holdings, portfolio.tickers]);
+  }, [portfolio.id, holdingKeys]);
 
   const rows = useMemo(() => {
     const periodReturnForTicker = (ticker, fallbackPnl, asset) => {
@@ -1616,6 +1713,12 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     safePage * HOLDINGS_PAGE_SIZE,
     safePage * HOLDINGS_PAGE_SIZE + HOLDINGS_PAGE_SIZE
   );
+
+  if (assetsLoading && holdingKeys.length) {
+    return (
+      <PortfolioHoldingsSkeleton rows={Math.min(holdingKeys.length, HOLDINGS_PAGE_SIZE)} />
+    );
+  }
 
   if (!rows.length) {
     return (
