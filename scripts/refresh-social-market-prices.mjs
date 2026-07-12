@@ -10,10 +10,9 @@
  *
  * Env:
  *   VITE_SUPABASE_URL / SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY (preferred) or VITE_SUPABASE_ANON_KEY with service RPC grants
+ *   SUPABASE_SERVICE_ROLE_KEY (preferred)
  */
 
-import { createClient } from '@supabase/supabase-js';
 import { parseNavAll } from './lib/indian-markets/amfi.js';
 import { SOURCES, UA } from './lib/indian-markets/constants.js';
 import {
@@ -59,6 +58,44 @@ function istDateString(date = new Date()) {
     month: '2-digit',
     day: '2-digit',
   }).format(date);
+}
+
+function restHeaders(apiKey) {
+  return {
+    apikey: apiKey,
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+}
+
+async function insertFetchRun(url, apiKey, row) {
+  const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/social_market_price_fetch_runs`, {
+    method: 'POST',
+    headers: restHeaders(apiKey),
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`insert fetch run HTTP ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function updateFetchRun(url, apiKey, id, patch) {
+  const res = await fetch(
+    `${url.replace(/\/$/, '')}/rest/v1/social_market_price_fetch_runs?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: restHeaders(apiKey),
+      body: JSON.stringify(patch),
+    }
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`update fetch run HTTP ${res.status}: ${text}`);
+  }
 }
 
 async function rpcBatch(url, apiKey, fnName, rows) {
@@ -253,19 +290,17 @@ async function main() {
   const asOfDate = istDateString();
   console.log(`Mode=${args.mode} as_of=${asOfDate} history=${args.writeHistory}`);
 
-  const supabase = createClient(url, apiKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: run, error: runErr } = await supabase
-    .from('social_market_price_fetch_runs')
-    .insert({ mode: args.mode, status: 'running', meta: { as_of_date: asOfDate } })
-    .select('id')
-    .single();
-  if (runErr) {
-    console.warn('Could not create fetch run row:', runErr.message);
+  let runId = null;
+  try {
+    const run = await insertFetchRun(url, apiKey, {
+      mode: args.mode,
+      status: 'running',
+      meta: { as_of_date: asOfDate },
+    });
+    runId = run?.id ?? null;
+  } catch (err) {
+    console.warn('Could not create fetch run row:', err.message);
   }
-  const runId = run?.id ?? null;
 
   let equityUpdated = 0;
   let fundUpdated = 0;
@@ -300,17 +335,14 @@ async function main() {
     }
 
     if (runId) {
-      await supabase
-        .from('social_market_price_fetch_runs')
-        .update({
-          status: 'completed',
-          finished_at: new Date().toISOString(),
-          equity_updated: equityUpdated,
-          fund_updated: fundUpdated,
-          history_upserted: historyUpserted,
-          meta,
-        })
-        .eq('id', runId);
+      await updateFetchRun(url, apiKey, runId, {
+        status: 'completed',
+        finished_at: new Date().toISOString(),
+        equity_updated: equityUpdated,
+        fund_updated: fundUpdated,
+        history_upserted: historyUpserted,
+        meta,
+      });
     }
 
     console.log(
@@ -318,18 +350,15 @@ async function main() {
     );
   } catch (err) {
     if (runId) {
-      await supabase
-        .from('social_market_price_fetch_runs')
-        .update({
-          status: 'failed',
-          finished_at: new Date().toISOString(),
-          equity_updated: equityUpdated,
-          fund_updated: fundUpdated,
-          history_upserted: historyUpserted,
-          error_message: err?.message ?? String(err),
-          meta,
-        })
-        .eq('id', runId);
+      await updateFetchRun(url, apiKey, runId, {
+        status: 'failed',
+        finished_at: new Date().toISOString(),
+        equity_updated: equityUpdated,
+        fund_updated: fundUpdated,
+        history_upserted: historyUpserted,
+        error_message: err?.message ?? String(err),
+        meta,
+      }).catch(() => {});
     }
     throw err;
   }

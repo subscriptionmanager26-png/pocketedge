@@ -27,8 +27,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install script deps
-        run: npm install --no-save @supabase/supabase-js
       - name: Refresh equity quotes
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
