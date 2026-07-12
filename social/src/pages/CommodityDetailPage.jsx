@@ -53,6 +53,14 @@ export default function CommodityDetailPage({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setCommodity({
+      id: commodityId,
+      name: commodityId,
+      symbol: commodityId,
+      spotPrice: null,
+      unit: null,
+      location: null,
+    });
 
     (async () => {
       const preview = await fetchMarketPreview('commodity');
@@ -99,10 +107,10 @@ export default function CommodityDetailPage({
     setReviewTick((n) => n + 1);
   };
 
-  if (loading) {
+  if (!loading && !commodity) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">
-        Loading commodity…
+        Commodity not found.
       </div>
     );
   }
@@ -110,7 +118,7 @@ export default function CommodityDetailPage({
   if (!commodity) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">
-        Commodity not found.
+        Loading commodity…
       </div>
     );
   }
@@ -135,7 +143,13 @@ export default function CommodityDetailPage({
         ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
         subtitle={subtitle}
         type="Commodity"
-        price={commodity.spotPrice != null ? formatPrice(commodity.spotPrice) : '—'}
+        price={
+          loading && commodity.spotPrice == null
+            ? '…'
+            : commodity.spotPrice != null
+              ? formatPrice(commodity.spotPrice)
+              : '—'
+        }
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

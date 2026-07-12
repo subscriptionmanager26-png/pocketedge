@@ -52,6 +52,23 @@ export async function ensureSocialProfile() {
   return data;
 }
 
+/** Profile + feed in one round-trip. */
+export async function bootstrapSocialApp({ feedLimit = 50 } = {}) {
+  if (!useBackend()) {
+    const profile = await ensureSocialProfile();
+    return { profile, feed: { items: [] } };
+  }
+
+  const { data, error } = await supabase.rpc('bootstrap_social_app', {
+    p_feed_limit: feedLimit,
+  });
+  if (error) throw error;
+  return {
+    profile: data?.profile ?? null,
+    feed: data?.feed ?? { items: [] },
+  };
+}
+
 export async function fetchSocialProfile(username) {
   const handle = username?.toLowerCase?.().replace(/^@/, '');
   if (!handle) return null;

@@ -1,22 +1,39 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { isDevMockMode } from '../lib/appMode';
 import PostCard from '../components/PostCard';
-import { POSTS } from '../data/mockData';
+import { FeedSkeleton } from '../components/PageSkeletons';
 import { getFollowedTopicSlugs, getFollowingIds } from '../lib/socialGraphStore';
 
 export default function FeedPage({
   posts,
   feedMode = 'forYou',
   graphTick,
+  loading = false,
   onOpenProfile,
   onOpenPost,
   onToggleLike,
 }) {
   const followingIds = useMemo(() => getFollowingIds(), [graphTick]);
   const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
+  const [mockPosts, setMockPosts] = useState(null);
+
+  useEffect(() => {
+    if (!isDevMockMode() || posts != null) return undefined;
+    let cancelled = false;
+    import('../data/mockData')
+      .then((mod) => {
+        if (!cancelled) setMockPosts(mod.POSTS);
+      })
+      .catch(() => {
+        if (!cancelled) setMockPosts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [posts]);
 
   const feedPosts = useMemo(() => {
-    const list = posts ?? (isDevMockMode() ? POSTS : []);
+    const list = posts ?? mockPosts ?? [];
     if (feedMode === 'following') {
       return list.filter(
         (p) =>
@@ -25,7 +42,13 @@ export default function FeedPage({
       );
     }
     return list;
-  }, [feedMode, posts, followingIds, followedTopics]);
+  }, [feedMode, posts, mockPosts, followingIds, followedTopics]);
+
+  const awaitingMock = isDevMockMode() && posts == null && mockPosts == null;
+
+  if ((loading || awaitingMock) && feedPosts.length === 0) {
+    return <FeedSkeleton />;
+  }
 
   if (feedPosts.length === 0) {
     return (

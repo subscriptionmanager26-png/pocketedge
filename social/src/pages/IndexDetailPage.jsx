@@ -59,6 +59,13 @@ export default function IndexDetailPage({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setIndex({
+      id: indexId,
+      name: indexId,
+      symbol: indexId,
+      value: null,
+      group: null,
+    });
 
     (async () => {
       const preview = await fetchMarketPreview('indices');
@@ -80,7 +87,7 @@ export default function IndexDetailPage({
     };
   }, [indexId]);
 
-  const liveIndex = useNseIndexLiveQuote(index, Boolean(index));
+  const liveIndex = useNseIndexLiveQuote(index, Boolean(index && !loading));
   const displayIndex = liveIndex ?? index;
 
   const unlocked = hasCommunityReviewsAccess();
@@ -108,15 +115,15 @@ export default function IndexDetailPage({
     setReviewTick((n) => n + 1);
   };
 
-  if (loading) {
+  if (!loading && !index) {
     return (
-      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading index…</div>
+      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Index not found.</div>
     );
   }
 
-  if (!index) {
+  if (!displayIndex) {
     return (
-      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Index not found.</div>
+      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading index…</div>
     );
   }
 
@@ -138,7 +145,11 @@ export default function IndexDetailPage({
         ticker={displayIndex.symbol !== displayIndex.name ? displayIndex.symbol : null}
         subtitle={formatIndexGroup(displayIndex.group)}
         type="Index"
-        price={formatIndexValue(displayIndex.value)}
+        price={
+          loading && displayIndex.value == null
+            ? '…'
+            : formatIndexValue(displayIndex.value)
+        }
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

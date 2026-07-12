@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { formatNewsDate } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
-import NewsSummaryMarkdown from './NewsSummaryMarkdown';
+
+const NewsSummaryMarkdown = lazy(() => import('./NewsSummaryMarkdown'));
 
 function newsItemDate(item) {
   return formatNewsDate(item.publishedAt) || item.time || '';
+}
+
+function MarkdownFallback() {
+  return <p className="text-sm text-pe-text-muted">Loading summary…</p>;
 }
 
 function NewsSummarySheet({ item, onClose }) {
@@ -33,7 +38,9 @@ function NewsSummarySheet({ item, onClose }) {
           </button>
         </div>
         <div className="px-4 py-4">
-          <NewsSummaryMarkdown content={item.summary} />
+          <Suspense fallback={<MarkdownFallback />}>
+            <NewsSummaryMarkdown content={item.summary} />
+          </Suspense>
         </div>
       </div>
     </div>
@@ -87,7 +94,9 @@ export default function NewsList({ items, showTicker = false }) {
               </button>
               {isDesktop && expanded ? (
                 <div className="border-t border-pe-border bg-pe-surface/40 px-4 pb-4 pt-3">
-                  <NewsSummaryMarkdown content={item.summary} />
+                  <Suspense fallback={<MarkdownFallback />}>
+                    <NewsSummaryMarkdown content={item.summary} />
+                  </Suspense>
                 </div>
               ) : null}
             </div>

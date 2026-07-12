@@ -20,7 +20,7 @@ import {
   saveSocialPortfolio,
 } from '../lib/socialPortfolioApi';
 import { updateSocialProfile } from '../lib/socialProfileApi';
-import { getAppCurrentUser, getHandleForUserIdSync, resolvePerson } from '../lib/socialIdentity';
+import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } from '../lib/socialIdentity';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
@@ -29,6 +29,7 @@ import {
   PortfoliosListSkeleton,
   PortfolioHoldingsSkeleton,
 } from '../components/PortfolioSkeletons';
+import { ProfilePageSkeleton } from '../components/PageSkeletons';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
 import ReviewCard from '../components/ReviewCard';
@@ -134,7 +135,10 @@ export default function ProfilePage({
 }) {
   const appUser = getAppCurrentUser();
   const isOwn = mode === 'own';
-  const [person, setPerson] = useState(() => (isOwn ? appUser : null));
+  const [person, setPerson] = useState(() => {
+    if (isOwn) return appUser;
+    return peekPerson(userId);
+  });
   const isMePublic = !isOwn && person?.id === appUser.id;
   const canEdit = isOwn && !isMePublic;
 
@@ -166,6 +170,9 @@ export default function ProfilePage({
 
   useEffect(() => {
     let cancelled = false;
+    const cached = peekPerson(userId);
+    if (cached) setPerson(cached);
+
     resolvePerson(userId)
       .then((resolved) => {
         if (!cancelled && resolved) setPerson(resolved);
@@ -250,9 +257,7 @@ export default function ProfilePage({
   }, [person?.id, graphTick]);
 
   if (!person) {
-    return (
-      <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading profile…</p>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   const handleAddPortfolio = async () => {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
+import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { useMarketTabData } from '../hooks/useMarketTabData';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
@@ -83,7 +84,7 @@ export default function MarketsPage({
         ) : null}
 
         {loading ? (
-          <p className="py-10 text-center text-sm text-pe-text-secondary">Loading market data…</p>
+          <MarketsListSkeleton />
         ) : error ? (
           <p className="py-10 text-center text-sm text-pe-negative">{error}</p>
         ) : null}

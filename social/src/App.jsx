@@ -1,22 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
-import ActivityPage from './pages/ActivityPage';
 import FeedPage from './pages/FeedPage';
 import HomePage from './pages/HomePage';
-import OnboardingFlow from './pages/onboarding/OnboardingFlow';
-import SettingsPage from './pages/SettingsPage';
-import MarketsPage from './pages/MarketsPage';
-import InvestmentPage from './pages/InvestmentPage';
-import StockInvestmentPage from './pages/StockInvestmentPage';
-import IndexDetailPage from './pages/IndexDetailPage';
-import CommodityDetailPage from './pages/CommodityDetailPage';
 import FundReviewModal from './components/FundReviewModal';
-import PortfolioPage from './pages/PortfolioPage';
-import PostDetailPage from './pages/PostDetailPage';
-import ProfilePage from './pages/ProfilePage';
-import SearchPage from './pages/SearchPage';
+import { RouteFallbackSkeleton } from './components/PageSkeletons';
 import { getActivityFeed } from './lib/activityFeed';
 import {
   getUnreadActivityCount,
@@ -34,10 +23,9 @@ import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supa
 import { clearWatchlists } from './lib/watchlistStore';
 import { clearReviewStore } from './lib/reviewStore';
 import { buildPortfolioShare } from './lib/portfolioShare';
-import { CURRENT_USER, POSTS, getPerson, STOCKS } from './data/mockData';
+import { CURRENT_USER, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
-import PublicProfilePage from './pages/PublicProfilePage';
-import { ensureSocialProfile } from './lib/socialProfileApi';
+import { bootstrapSocialApp, ensureSocialProfile } from './lib/socialProfileApi';
 import { isProductionApp } from './lib/appMode';
 import { flushDemoLocalData } from './lib/flushDemoLocalData';
 import { getAppCurrentUser, setSelfProfile } from './lib/socialIdentity';
@@ -47,6 +35,8 @@ import {
   createPost,
   fetchFeedPosts,
   fetchPost,
+  mapPostRow,
+  notePostLikeSynced,
   togglePostLike,
   usePostBackend,
 } from './lib/socialPostApi';
@@ -58,6 +48,24 @@ import {
   useProfileRouting,
 } from './lib/useProfileRouting';
 
+const ActivityPage = lazy(() => import('./pages/ActivityPage'));
+const OnboardingFlow = lazy(() => import('./pages/onboarding/OnboardingFlow'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const MarketsPage = lazy(() => import('./pages/MarketsPage'));
+const InvestmentPage = lazy(() => import('./pages/InvestmentPage'));
+const StockInvestmentPage = lazy(() => import('./pages/StockInvestmentPage'));
+const IndexDetailPage = lazy(() => import('./pages/IndexDetailPage'));
+const CommodityDetailPage = lazy(() => import('./pages/CommodityDetailPage'));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
+const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+
+function RouteSuspense({ children }) {
+  return <Suspense fallback={<RouteFallbackSkeleton />}>{children}</Suspense>;
+}
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,6 +76,7 @@ export default function App() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePortfolioShare, setComposePortfolioShare] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedTickerKind, setSelectedTickerKind] = useState('stock');
   const [selectedFundId, setSelectedFundId] = useState(null);
@@ -184,28 +193,72 @@ export default function App() {
     if (authView !== 'app' || !authUser?.id) {
       setSelfProfile(null);
       setProfileReady(true);
+      setPostsLoading(false);
       return;
     }
 
     let cancelled = false;
     setProfileReady(false);
+    setPostsLoading(true);
 
-    ensureSocialProfile()
-      .then((profile) => {
-        if (cancelled) return;
-        if (isProductionApp()) flushDemoLocalData();
-        setSocialProfile(profile);
-        setSelfProfile(profile);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setSocialProfile(null);
-          setSelfProfile(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setProfileReady(true);
-      });
+    hydrateCommunityAccess().catch(() => {});
+
+    const applyProfile = (profile) => {
+      if (cancelled) return;
+      if (isProductionApp()) flushDemoLocalData();
+      setSocialProfile(profile);
+      setSelfProfile(profile);
+      setProfileReady(true);
+    };
+
+    const applyFeed = (items) => {
+      if (cancelled) return;
+      setPosts(items);
+      setPostsLoading(false);
+    };
+
+    if (usePostBackend()) {
+      bootstrapSocialApp({ feedLimit: 50 })
+        .then(({ profile, feed }) => {
+          applyProfile(profile);
+          const posts = (feed?.items ?? []).map((row) => {
+            const post = mapPostRow(row);
+            notePostLikeSynced(post.id, post.liked);
+            return post;
+          });
+          applyFeed(posts);
+        })
+        .catch(async () => {
+          // Fallback to separate calls if bootstrap RPC is unavailable.
+          try {
+            const profile = await ensureSocialProfile();
+            applyProfile(profile);
+          } catch {
+            if (!cancelled) {
+              setSocialProfile(null);
+              setSelfProfile(null);
+              setProfileReady(true);
+            }
+          }
+          try {
+            const items = await fetchFeedPosts();
+            applyFeed(items);
+          } catch {
+            applyFeed([]);
+          }
+        });
+    } else {
+      ensureSocialProfile()
+        .then(applyProfile)
+        .catch(() => {
+          if (!cancelled) {
+            setSocialProfile(null);
+            setSelfProfile(null);
+            setProfileReady(true);
+          }
+        });
+      setPostsLoading(false);
+    }
 
     return () => {
       cancelled = true;
@@ -221,27 +274,6 @@ export default function App() {
   useEffect(() => {
     if (tab === 'activity') markAllActivityRead(activityItems);
   }, [tab, activityItems]);
-
-  useEffect(() => {
-    if (authView !== 'app' || !profileReady) return undefined;
-
-    hydrateCommunityAccess().catch(() => {});
-
-    if (!usePostBackend()) return undefined;
-
-    let cancelled = false;
-    fetchFeedPosts()
-      .then((items) => {
-        if (!cancelled) setPosts(items);
-      })
-      .catch(() => {
-        if (!cancelled) setPosts([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authView, profileReady]);
 
   const handlePost = async ({ body, image, portfolioShare }) => {
     const me = getAppCurrentUser();
@@ -685,17 +717,23 @@ export default function App() {
   if (authView === 'landing') {
     const parsed = parseAppPath(location.pathname);
     if (parsed.kind === 'profile' && parsed.username) {
-      return <PublicProfilePage username={parsed.username} />;
+      return (
+        <RouteSuspense>
+          <PublicProfilePage username={parsed.username} />
+        </RouteSuspense>
+      );
     }
     return <HomePage />;
   }
 
   if (authView === 'onboarding') {
     return (
-      <OnboardingFlow
-        userId={authUser?.id}
-        onComplete={() => setAuthView('app')}
-      />
+      <RouteSuspense>
+        <OnboardingFlow
+          userId={authUser?.id}
+          onComplete={() => setAuthView('app')}
+        />
+      </RouteSuspense>
     );
   }
 
@@ -728,23 +766,26 @@ export default function App() {
       >
         {tab === 'feed' &&
           (selectedPostId ? (
-            <PostDetailPage
-              postId={selectedPostId}
-              posts={posts}
-              onBack={() => {
-                backScroll();
-                navigate(tabPath('feed'));
-              }}
-              onOpenProfile={openProfile}
-              onAddComment={(text) => handleAddComment(selectedPostId, text)}
-              onToggleLike={handleTogglePostLike}
-              fetchPost={usePostBackend() ? fetchPost : null}
-            />
+            <RouteSuspense>
+              <PostDetailPage
+                postId={selectedPostId}
+                posts={posts}
+                onBack={() => {
+                  backScroll();
+                  navigate(tabPath('feed'));
+                }}
+                onOpenProfile={openProfile}
+                onAddComment={(text) => handleAddComment(selectedPostId, text)}
+                onToggleLike={handleTogglePostLike}
+                fetchPost={usePostBackend() ? fetchPost : null}
+              />
+            </RouteSuspense>
           ) : (
             <FeedPage
               posts={posts}
               feedMode={feedMode}
               graphTick={graphTick}
+              loading={postsLoading}
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
@@ -752,128 +793,148 @@ export default function App() {
             />
           ))}
         {tab === 'search' && (
-          <SearchPage
-            onOpenProfile={openProfile}
-            onSelectStock={openStock}
-            onSelectFund={openFund}
-            onSelectIndex={openIndex}
-            onGraphChange={() => setGraphTick((n) => n + 1)}
-          />
-        )}
-        {tab === 'activity' && (
-          <ActivityPage
-            items={activityItems}
-            onOpenProfile={openProfile}
-            onOpenPost={(postId) => {
-              markActivityRead(
-                activityItems.find((item) => item.meta?.postId === postId)?.id ?? ''
-              );
-              openPost(postId);
-            }}
-            onOpenStock={(ticker) => {
-              const item = activityItems.find((i) => i.ticker === ticker);
-              if (item) markActivityRead(item.id);
-              openStock(ticker);
-            }}
-          />
-        )}
-        {tab === 'portfolio' && (
-          <PortfolioPage
-            onSelectStock={openStock}
-            onOpenProfile={openProfile}
-            onOpenPost={openPost}
-            onOpenSourcePortfolio={openProfilePortfolio}
-          />
-        )}
-        {tab === 'markets' &&
-          (selectedCommodityId ? (
-            <CommodityDetailPage
-              commodityId={selectedCommodityId}
-              onBack={closeMarketDetail}
+          <RouteSuspense>
+            <SearchPage
               onOpenProfile={openProfile}
-              onPromptReview={() => {
-                setFundReviewPrefill(null);
-                setFundReviewOpen(true);
-              }}
-            />
-          ) : selectedIndexId ? (
-            <IndexDetailPage
-              indexId={selectedIndexId}
-              onBack={closeMarketDetail}
-              onOpenProfile={openProfile}
-              onPromptReview={() => {
-                setFundReviewPrefill(null);
-                setFundReviewOpen(true);
-              }}
-            />
-          ) : selectedFundId ? (
-            <InvestmentPage
-              fundId={selectedFundId}
-              onBack={closeMarketDetail}
-              onOpenProfile={openProfile}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-              onPromptReview={() => {
-                setFundReviewPrefill(selectedFundId);
-                setFundReviewOpen(true);
-              }}
-            />
-          ) : selectedTicker ? (
-            <StockInvestmentPage
-              ticker={selectedTicker}
-              onBack={closeMarketDetail}
-              onOpenProfile={openProfile}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-              onPromptReview={() => {
-                setFundReviewPrefill(null);
-                setFundReviewOpen(true);
-              }}
-            />
-          ) : (
-            <MarketsPage
               onSelectStock={openStock}
               onSelectFund={openFund}
               onSelectIndex={openIndex}
-              onSelectCommodity={openCommodity}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
             />
+          </RouteSuspense>
+        )}
+        {tab === 'activity' && (
+          <RouteSuspense>
+            <ActivityPage
+              items={activityItems}
+              onOpenProfile={openProfile}
+              onOpenPost={(postId) => {
+                markActivityRead(
+                  activityItems.find((item) => item.meta?.postId === postId)?.id ?? ''
+                );
+                openPost(postId);
+              }}
+              onOpenStock={(ticker) => {
+                const item = activityItems.find((i) => i.ticker === ticker);
+                if (item) markActivityRead(item.id);
+                openStock(ticker);
+              }}
+            />
+          </RouteSuspense>
+        )}
+        {tab === 'portfolio' && (
+          <RouteSuspense>
+            <PortfolioPage
+              onSelectStock={openStock}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+              onOpenSourcePortfolio={openProfilePortfolio}
+            />
+          </RouteSuspense>
+        )}
+        {tab === 'markets' &&
+          (selectedCommodityId ? (
+            <RouteSuspense>
+              <CommodityDetailPage
+                commodityId={selectedCommodityId}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onPromptReview={() => {
+                  setFundReviewPrefill(null);
+                  setFundReviewOpen(true);
+                }}
+              />
+            </RouteSuspense>
+          ) : selectedIndexId ? (
+            <RouteSuspense>
+              <IndexDetailPage
+                indexId={selectedIndexId}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onPromptReview={() => {
+                  setFundReviewPrefill(null);
+                  setFundReviewOpen(true);
+                }}
+              />
+            </RouteSuspense>
+          ) : selectedFundId ? (
+            <RouteSuspense>
+              <InvestmentPage
+                fundId={selectedFundId}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onGraphChange={() => setGraphTick((n) => n + 1)}
+                onPromptReview={() => {
+                  setFundReviewPrefill(selectedFundId);
+                  setFundReviewOpen(true);
+                }}
+              />
+            </RouteSuspense>
+          ) : selectedTicker ? (
+            <RouteSuspense>
+              <StockInvestmentPage
+                ticker={selectedTicker}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onGraphChange={() => setGraphTick((n) => n + 1)}
+                onPromptReview={() => {
+                  setFundReviewPrefill(null);
+                  setFundReviewOpen(true);
+                }}
+              />
+            </RouteSuspense>
+          ) : (
+            <RouteSuspense>
+              <MarketsPage
+                onSelectStock={openStock}
+                onSelectFund={openFund}
+                onSelectIndex={openIndex}
+                onSelectCommodity={openCommodity}
+              />
+            </RouteSuspense>
           ))}
         {tab === 'profile' && (
-          <ProfilePage
-            mode={profileMode}
-            userId={profileUserId}
-            posts={posts}
-            selectedPortfolioId={profilePortfolioId}
-            onSelectPortfolio={(id) => {
-              resetScroll();
-              setProfilePortfolioId(id);
-            }}
-            onClearPortfolio={() => {
-              backScroll();
-              setProfilePortfolioId(null);
-            }}
-            onBack={() => {
-              backScroll();
-              setTab(profileReturnTab || 'feed');
-            }}
-            onOpenPublicPreview={() => {
-              setProfileUserId(currentUserId);
-              setProfileMode('public');
-            }}
-            onExitPublicPreview={() => {
-              setProfileUserId(currentUserId);
-              setProfileMode('own');
-            }}
-            onOpenProfile={openProfile}
-            onOpenPost={openPost}
-            onGraphChange={() => setGraphTick((n) => n + 1)}
-            onMobileHeaderActionsChange={setMobileHeaderActions}
-            onRegisterPortfolioBackHandler={(handler) => {
-              portfolioBackRef.current = handler;
-            }}
-            onOpenSourcePortfolio={openProfilePortfolio}
-          />
+          <RouteSuspense>
+            <ProfilePage
+              mode={profileMode}
+              userId={profileUserId}
+              posts={posts}
+              selectedPortfolioId={profilePortfolioId}
+              onSelectPortfolio={(id) => {
+                resetScroll();
+                setProfilePortfolioId(id);
+              }}
+              onClearPortfolio={() => {
+                backScroll();
+                setProfilePortfolioId(null);
+              }}
+              onBack={() => {
+                backScroll();
+                setTab(profileReturnTab || 'feed');
+              }}
+              onOpenPublicPreview={() => {
+                setProfileUserId(currentUserId);
+                setProfileMode('public');
+              }}
+              onExitPublicPreview={() => {
+                setProfileUserId(currentUserId);
+                setProfileMode('own');
+              }}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
+              onMobileHeaderActionsChange={setMobileHeaderActions}
+              onRegisterPortfolioBackHandler={(handler) => {
+                portfolioBackRef.current = handler;
+              }}
+              onOpenSourcePortfolio={openProfilePortfolio}
+            />
+          </RouteSuspense>
         )}
         {tab === 'settings' && (
-          <SettingsPage onLogout={handleLogout} />
+          <RouteSuspense>
+            <SettingsPage onLogout={handleLogout} />
+          </RouteSuspense>
         )}
       </Shell>
 

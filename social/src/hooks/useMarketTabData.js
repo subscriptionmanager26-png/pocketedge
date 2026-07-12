@@ -90,8 +90,27 @@ export function useMarketTabData(tab, query = '') {
 
   const isSearching = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
   const baseItems = isSearching ? searchItems : previewItems;
-  const streamIndices = tab === 'indices' && !loading && !error;
-  const streamEquity = (tab === 'stocks' || tab === 'etf') && !loading && !error;
+  const [liveReady, setLiveReady] = useState(false);
+
+  useEffect(() => {
+    if (loading || error) {
+      setLiveReady(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setLiveReady(true);
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [loading, error, tab]);
+
+  const streamIndices = tab === 'indices' && !loading && !error && liveReady;
+  const streamEquity = (tab === 'stocks' || tab === 'etf') && !loading && !error && liveReady;
   const indexItems = useNseIndexLiveItems(baseItems, streamIndices);
   const items = useNseEquityLiveItems(indexItems, tab, streamEquity);
 

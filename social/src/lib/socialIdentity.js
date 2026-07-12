@@ -52,6 +52,16 @@ export function getAppCurrentUser() {
   return CURRENT_USER;
 }
 
+/** Sync peek from cache — avoids a second network hop after deep-link resolve. */
+export function peekPerson(userId) {
+  if (!userId) return null;
+  if (!useLiveIdentity()) return getPerson(userId);
+
+  if (selfProfile?.user_id === userId) return profileToPerson(selfProfile);
+  const cached = byUserId.get(userId);
+  return cached ? profileToPerson(cached) : null;
+}
+
 function cacheProfile(profile) {
   if (!profile?.user_id) return;
   byUserId.set(profile.user_id, profile);

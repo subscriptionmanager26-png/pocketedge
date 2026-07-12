@@ -3,8 +3,8 @@ import { ArrowLeft } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import CommentComposer from '../components/CommentComposer';
+import { PostDetailSkeleton } from '../components/PageSkeletons';
 import { isDevMockMode } from '../lib/appMode';
-import { POSTS } from '../data/mockData';
 
 export default function PostDetailPage({
   postId,
@@ -16,16 +16,34 @@ export default function PostDetailPage({
   fetchPost,
 }) {
   const [detailPost, setDetailPost] = useState(null);
-  const cached = (posts ?? (isDevMockMode() ? POSTS : [])).find((p) => p.id === postId);
+  const [loading, setLoading] = useState(true);
+  const [mockFallback, setMockFallback] = useState(null);
+  const cached = (posts ?? []).find((p) => p.id === postId) ?? mockFallback;
+
+  useEffect(() => {
+    if (!isDevMockMode() || cached || !postId) return undefined;
+    let cancelled = false;
+    import('../data/mockData')
+      .then((mod) => {
+        if (cancelled) return;
+        setMockFallback(mod.POSTS.find((p) => p.id === postId) ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [postId, cached]);
 
   useEffect(() => {
     if (!postId) {
       setDetailPost(null);
+      setLoading(false);
       return undefined;
     }
 
     if (fetchPost) {
       let cancelled = false;
+      setLoading(!cached);
       setDetailPost(cached ?? null);
       fetchPost(postId)
         .then((row) => {
@@ -33,6 +51,9 @@ export default function PostDetailPage({
         })
         .catch(() => {
           if (!cancelled && cached) setDetailPost(cached);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
         });
       return () => {
         cancelled = true;
@@ -40,10 +61,15 @@ export default function PostDetailPage({
     }
 
     setDetailPost(cached ?? null);
+    setLoading(false);
     return undefined;
   }, [postId, cached, fetchPost]);
 
   const post = detailPost ?? cached;
+
+  if (loading && !post) {
+    return <PostDetailSkeleton />;
+  }
 
   if (!post) {
     return (

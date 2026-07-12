@@ -1,4 +1,4 @@
-function Bone({ className = '' }) {
+export function Bone({ className = '' }) {
   return <div className={`animate-pulse rounded-md bg-pe-surface ${className}`} aria-hidden="true" />;
 }
 

@@ -28,9 +28,7 @@ import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
 import {
-  fetchMarketPreview,
   marketFundToDetail,
-  marketStockToDetail,
   resolveMarketFund,
 } from '../lib/marketDataApi';
 import { formatPrice } from '../lib/format';
@@ -53,8 +51,16 @@ export default function InvestmentPage({
 }) {
   const seedFund = getFund(fundId);
   const [marketFund, setMarketFund] = useState(null);
-  const [marketLoading, setMarketLoading] = useState(!seedFund);
-  const fund = seedFund ?? marketFund;
+  const [marketLoading, setMarketLoading] = useState(true);
+  const fund =
+    seedFund ??
+    marketFund ??
+    ({
+      id: fundId,
+      name: fundId,
+      category: 'Mutual Fund',
+      nav: null,
+    });
   const [tab, setTab] = useState('reviews');
   const [reviewTick, setReviewTick] = useState(0);
 
@@ -66,15 +72,16 @@ export default function InvestmentPage({
   }, [fundId]);
 
   useEffect(() => {
-    if (seedFund) return undefined;
     let cancelled = false;
     setMarketLoading(true);
 
     (async () => {
       try {
-        const preview = await fetchMarketPreview('mutual_funds');
-        let found = preview.items.find((item) => item.schemeCode === fundId);
-        if (!found) found = await resolveMarketFund(fundId);
+        if (seedFund) {
+          if (!cancelled) setMarketLoading(false);
+          return;
+        }
+        const found = await resolveMarketFund(fundId);
         if (!cancelled) setMarketFund(found ? marketFundToDetail(found) : null);
       } finally {
         if (!cancelled) setMarketLoading(false);
@@ -104,14 +111,9 @@ export default function InvestmentPage({
   const reviewsLocked = !unlocked;
   const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
+  const hasResolvedFund = Boolean(seedFund || marketFund);
 
-  if (marketLoading) {
-    return (
-      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading fund…</div>
-    );
-  }
-
-  if (!fund) {
+  if (!marketLoading && !hasResolvedFund) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Fund not found.</div>
     );
@@ -138,7 +140,13 @@ export default function InvestmentPage({
       <AssetProductHeader
         name={fund.name}
         type={getFundAssetType()}
-        price={fund.nav != null ? formatPrice(fund.nav) : null}
+        price={
+          marketLoading && fund.nav == null
+            ? '…'
+            : fund.nav != null
+              ? formatPrice(fund.nav)
+              : null
+        }
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

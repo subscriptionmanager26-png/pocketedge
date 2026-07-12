@@ -39,7 +39,6 @@ import {
 import { subscribeWatchlists } from '../lib/watchlistStore';
 import { useNseEquityLiveQuote } from '../hooks/useNseEquityStream';
 import {
-  fetchMarketPreview,
   marketStockToDetail,
   resolveMarketStock,
 } from '../lib/marketDataApi';
@@ -59,12 +58,20 @@ export default function StockInvestmentPage({
   const [marketLoading, setMarketLoading] = useState(true);
   const stock = useMemo(() => {
     if (marketStock) return marketStock;
-    if (!seedStock) return null;
+    if (seedStock) {
+      return marketStockToDetail({
+        symbol: ticker,
+        name: seedStock.name,
+        price: seedStock.price,
+        changePct: seedStock.changePct,
+      });
+    }
+    // Paint immediately from URL while market metadata resolves.
     return marketStockToDetail({
       symbol: ticker,
-      name: seedStock.name,
-      price: seedStock.price,
-      changePct: seedStock.changePct,
+      name: formatTicker(ticker),
+      price: null,
+      changePct: null,
     });
   }, [marketStock, seedStock, ticker]);
   const liveStock = useNseEquityLiveQuote(stock, Boolean(stock && !marketLoading), { isEtf });
@@ -84,20 +91,12 @@ export default function StockInvestmentPage({
   useEffect(() => {
     let cancelled = false;
     setMarketLoading(true);
-    Promise.all([fetchMarketPreview('etf'), resolveMarketStock(ticker)])
-      .then(([etfPayload, resolved]) => {
-        if (cancelled) return null;
-        const etfMatch = etfPayload.items.find((item) => item.symbol === ticker);
-        if (etfMatch) {
-          setIsEtf(true);
-          return etfMatch;
-        }
-        setIsEtf(false);
-        return resolved;
-      })
-      .then((found) => {
+    resolveMarketStock(ticker)
+      .then((resolved) => {
         if (cancelled) return;
-        setMarketStock(found ? marketStockToDetail(found) : null);
+        if (resolved?.assetType === 'etf') setIsEtf(true);
+        else setIsEtf(false);
+        setMarketStock(resolved ? marketStockToDetail(resolved) : null);
       })
       .finally(() => {
         if (!cancelled) setMarketLoading(false);
@@ -153,13 +152,7 @@ export default function StockInvestmentPage({
   const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
 
-  if (marketLoading) {
-    return (
-      <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Loading stock…</div>
-    );
-  }
-
-  if (!stock) {
+  if (!marketLoading && !marketStock && !seedStock) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Stock not found.</div>
     );
@@ -187,7 +180,11 @@ export default function StockInvestmentPage({
         name={displayStock.name}
         ticker={formatTicker(ticker)}
         type={getStockAssetType(ticker, displayStock)}
-        price={formatPrice(displayStock.price)}
+        price={
+          marketLoading && displayStock.price == null
+            ? '…'
+            : formatPrice(displayStock.price)
+        }
       />
 
       <UnderlineTabs

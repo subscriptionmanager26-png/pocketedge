@@ -54,11 +54,14 @@ export function useProfileRouting({
     setSelectedCommodityId,
   };
 
-  // URL -> state
+  // URL -> state (apply non-profile routes immediately; profile routes wait for profileReady)
   useEffect(() => {
-    if (authView !== 'app' || !profileReady) return;
+    if (authView !== 'app') return;
 
     const parsed = parseAppPath(location.pathname);
+    const needsProfile = parsed.kind === 'profile';
+    if (needsProfile && !profileReady) return;
+
     applyingUrl.current = true;
 
     const finish = () => {
