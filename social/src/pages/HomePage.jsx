@@ -145,7 +145,7 @@ function MobileVisuals() {
       />
       <img
         src={`${ASSETS}/iphone-fund-reviews.png`}
-        alt="PocketEdge app showing HDFC Flexi Cap Fund reviews on iPhone"
+        alt="PocketEdge app showing portfolio holdings and AI insights on iPhone"
         className="absolute bottom-0 right-0 h-[28rem] w-auto object-contain object-bottom-right drop-shadow-[0_16px_32px_rgba(0,0,0,0.2)]"
       />
     </div>
@@ -262,7 +262,7 @@ export default function HomePage() {
             />
             <img
               src={`${ASSETS}/iphone-fund-reviews.png`}
-              alt="PocketEdge app showing HDFC Flexi Cap Fund reviews on iPhone"
+              alt="PocketEdge app showing portfolio holdings and AI insights on iPhone"
               className="absolute bottom-0 right-0 h-[92%] max-w-[72%] object-contain object-bottom-right drop-shadow-lg"
             />
           </div>
