@@ -62,6 +62,10 @@ export function marketAssetRowToItem(row) {
   const name = row.name;
   const price = row.price ?? null;
   const changePct = row.change_pct ?? row.changePct ?? null;
+  const previousClose = row.previous_close ?? row.previousClose ?? null;
+  const asOfDate = row.as_of_date ?? row.asOfDate ?? null;
+  const priceSource = row.price_source ?? row.priceSource ?? null;
+  const syncedAt = row.synced_at ?? row.syncedAt ?? null;
 
   if (type === 'fund') {
     return {
@@ -71,6 +75,11 @@ export function marketAssetRowToItem(row) {
       nav: price,
       price,
       changePct,
+      previousClose,
+      asOfDate,
+      navDate: asOfDate,
+      priceSource,
+      syncedAt,
       assetType: 'fund',
     };
   }
@@ -82,6 +91,10 @@ export function marketAssetRowToItem(row) {
     price,
     ltp: price,
     changePct,
+    previousClose,
+    asOfDate,
+    priceSource,
+    syncedAt,
     assetType: type,
   };
 }
@@ -115,6 +128,26 @@ export async function fetchMarketManifest() {
 }
 
 export async function fetchMarketPreview(tab) {
+  const assetType = tabToAssetType(tab);
+  if (assetType && useMarketRpc()) {
+    try {
+      const { data, error } = await supabase.rpc('list_social_market_preview', {
+        p_asset_type: assetType,
+        p_limit: MARKET_PREVIEW_LIMIT,
+      });
+      if (error) throw error;
+      const rows = Array.isArray(data?.items) ? data.items : [];
+      return {
+        syncedAt: data?.synced_at ?? null,
+        items: rows.map(marketAssetRowToItem).filter(Boolean),
+        asOn: null,
+        isPreview: true,
+      };
+    } catch (err) {
+      console.warn('list_social_market_preview failed, falling back to JSON', err);
+    }
+  }
+
   const file = TAB_PREVIEW[tab] ?? TAB_FULL[tab];
   if (!file) throw new Error(`Unknown market tab: ${tab}`);
   const payload = await fetchJson(file);
@@ -353,7 +386,11 @@ export function marketFundToDetail(fund) {
     category: category || fund.schemeType || 'Mutual Fund',
     amc: fund.amc,
     nav: fund.nav ?? fund.price,
-    navDate: fund.navDate,
+    navDate: fund.navDate ?? fund.asOfDate,
+    asOfDate: fund.asOfDate ?? fund.navDate,
+    previousClose: fund.previousClose,
+    syncedAt: fund.syncedAt,
+    priceSource: fund.priceSource,
     schemeType: fund.schemeType,
     subCategory: fund.subCategory,
   };
@@ -367,10 +404,26 @@ export function marketStockToDetail(stock) {
     name: stock.name,
     price: stock.price ?? stock.ltp,
     changePct: stock.changePct,
+    previousClose: stock.previousClose,
+    asOfDate: stock.asOfDate,
+    syncedAt: stock.syncedAt,
+    priceSource: stock.priceSource,
     isin: stock.isin,
     series: stock.series,
     segment: stock.segment,
   };
+}
+
+/** Daily close / NAV history for analytics charts. */
+export async function getSocialMarketPriceHistory(assetType, assetKey, limit = 120) {
+  if (!useMarketRpc() || !assetType || !assetKey) return [];
+  const { data, error } = await supabase.rpc('get_social_market_price_history', {
+    p_asset_type: assetType,
+    p_asset_key: assetKey,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
 }
 
 // Legacy alias used by detail pages during migration.

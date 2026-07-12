@@ -19,7 +19,6 @@ import {
   fetchMarketPreview,
   searchMarketTab,
 } from '../lib/marketDataApi';
-import { useNseEquityLiveItems } from '../hooks/useNseEquityStream';
 import { formatTicker } from '../lib/tickers';
 
 const RESULT_TABS = [
@@ -134,13 +133,7 @@ export default function SearchPage({
   }, [q]);
 
   const activeMarketResults = marketResults[resultTab] ?? [];
-  const liveTopStocks = useNseEquityLiveItems(topStocks, 'stocks', topStocks.length > 0);
-  const equityTab = resultTab === 'etf' ? 'etf' : 'stocks';
-  const streamEquity =
-    (resultTab === 'stocks' || resultTab === 'etf') && activeMarketResults.length > 0;
-  const liveMarketResults = useNseEquityLiveItems(activeMarketResults, equityTab, streamEquity);
-  const displayedMarketResults =
-    resultTab === 'stocks' || resultTab === 'etf' ? liveMarketResults : activeMarketResults;
+  const displayedMarketResults = activeMarketResults;
 
   return (
     <div>
@@ -215,7 +208,7 @@ export default function SearchPage({
           <section>
             <SectionLabel>Top stock movers</SectionLabel>
             <div className="mt-1 divide-y divide-pe-border">
-              {liveTopStocks.map((stock) => (
+              {topStocks.map((stock) => (
                 <StockRow key={stock.symbol} stock={stock} onSelectStock={onSelectStock} />
               ))}
             </div>

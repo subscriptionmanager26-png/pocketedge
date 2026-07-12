@@ -37,7 +37,6 @@ import {
   subscribeReviews,
 } from '../lib/reviewStore';
 import { subscribeWatchlists } from '../lib/watchlistStore';
-import { useNseEquityLiveQuote } from '../hooks/useNseEquityStream';
 import {
   marketStockToDetail,
   resolveMarketStock,
@@ -74,8 +73,7 @@ export default function StockInvestmentPage({
       changePct: null,
     });
   }, [marketStock, seedStock, ticker]);
-  const liveStock = useNseEquityLiveQuote(stock, Boolean(stock && !marketLoading), { isEtf });
-  const displayStock = liveStock ?? stock;
+  const displayStock = stock;
   const [tab, setTab] = useState('reviews');
   const [reviewTick, setReviewTick] = useState(0);
   const [accessTick, setAccessTick] = useState(0);

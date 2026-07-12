@@ -1,0 +1,35 @@
+name: Social market price refresh (equity)
+
+# PocketEdge is the quote source for search/detail.
+# Refresh NSE stocks + ETFs into social_market_assets (+ daily history point).
+
+on:
+  schedule:
+    # Every 15 min during NSE cash session (approx 09:15–15:30 IST = 03:45–10:00 UTC)
+    - cron: '0,15,30,45 4-10 * * 1-5'
+    # One post-close snapshot so the day closes into history
+    - cron: '15 10 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: social-market-price-equity
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Refresh equity quotes
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/refresh-social-market-prices.mjs --mode=equity

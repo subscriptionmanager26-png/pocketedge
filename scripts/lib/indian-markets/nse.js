@@ -80,6 +80,34 @@ export async function fetchEtfList(nseFetch) {
 }
 
 /**
+ * Bulk live equity snapshot for PocketEdge catalog refresh.
+ * Shape mirrors /api/live-analysis-stocksTraded on the stocks-traded page.
+ */
+export async function fetchStocksTraded(nseFetch) {
+  const payload = await nseFetch('/api/live-analysis-stocksTraded', {
+    headers: { Referer: 'https://www.nseindia.com/market-data/stocks-traded' },
+  });
+  const rows = payload?.total?.data ?? payload?.data ?? [];
+  return rows
+    .map((row) => {
+      const symbol = row.symbol ? String(row.symbol).trim().toUpperCase() : null;
+      if (!symbol) return null;
+      const ltp = row.lastPrice != null ? Number(row.lastPrice) : null;
+      const previousClose = row.previousClose != null ? Number(row.previousClose) : null;
+      const changePct = row.pchange != null ? Number(row.pchange) : null;
+      return {
+        symbol,
+        name: row.meta?.companyName ?? row.companyName ?? symbol,
+        ltp: Number.isFinite(ltp) ? ltp : null,
+        previousClose: Number.isFinite(previousClose) ? previousClose : null,
+        changePct: Number.isFinite(changePct) ? changePct : null,
+        series: row.series ?? null,
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
  * Snapshot indices via REST. Live ticks use NSE WebSocket:
  * wss://streamer.nseindia.com/streams/indices/high/{segment}
  * Segments: drdMkt, brdMkt, fixMkt, secMkt, strMkt, thmMkt (map from row.key).

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNseEquityLiveItems } from './useNseEquityStream';
 import { useNseIndexLiveItems } from './useNseIndexStream';
 import {
   MARKET_MIN_SEARCH_CHARS,
@@ -110,9 +109,7 @@ export function useMarketTabData(tab, query = '') {
   }, [loading, error, tab]);
 
   const streamIndices = tab === 'indices' && !loading && !error && liveReady;
-  const streamEquity = (tab === 'stocks' || tab === 'etf') && !loading && !error && liveReady;
-  const indexItems = useNseIndexLiveItems(baseItems, streamIndices);
-  const items = useNseEquityLiveItems(indexItems, tab, streamEquity);
+  const items = useNseIndexLiveItems(baseItems, streamIndices);
 
   const statusMessage = useMemo(() => {
     if (loading) return null;
