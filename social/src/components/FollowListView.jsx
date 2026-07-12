@@ -1,15 +1,24 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Avatar from './Avatar';
 import PageHeader from './PageHeader';
-import { getPerson } from '../data/mockData';
+import {
+  getAppCurrentUserId,
+  getPersonSync,
+  resolvePerson,
+} from '../lib/socialIdentity';
 import {
   getFollowersForUser,
   getFollowingForUser,
   isFollowing,
   toggleFollow,
 } from '../lib/socialGraphStore';
-import { formatCount, formatPct } from '../lib/format';
+import { isDevMockMode } from '../lib/appMode';
+
+function isMockUserId(id) {
+  const value = String(id ?? '');
+  return value === 'u_me' || /^u\d+$/.test(value) || /^u_[a-z0-9]+$/i.test(value);
+}
 
 export default function FollowListView({
   userId,
@@ -19,14 +28,36 @@ export default function FollowListView({
   onOpenProfile,
   onGraphChange,
 }) {
-  const person = getPerson(userId);
+  const title = mode === 'followers' ? 'Followers' : 'Following';
   const ids = useMemo(() => {
     void graphTick;
-    return mode === 'followers' ? getFollowersForUser(userId) : getFollowingForUser(userId);
+    const raw =
+      mode === 'followers' ? getFollowersForUser(userId) : getFollowingForUser(userId);
+    if (isDevMockMode()) return raw;
+    // Drop leftover demo IDs so production lists never show mock people.
+    return raw.filter((id) => !isMockUserId(id));
   }, [userId, mode, graphTick]);
 
-  const people = ids.map((id) => getPerson(id)).filter(Boolean);
-  const title = mode === 'followers' ? 'Followers' : 'Following';
+  const idsKey = ids.join(',');
+  const [people, setPeople] = useState(() =>
+    ids.map((id) => getPersonSync(id)).filter(Boolean)
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const nextIds = idsKey ? idsKey.split(',') : [];
+    setPeople(nextIds.map((id) => getPersonSync(id)).filter(Boolean));
+
+    Promise.all(nextIds.map((id) => resolvePerson(id).catch(() => getPersonSync(id))))
+      .then((resolved) => {
+        if (cancelled) return;
+        setPeople(resolved.filter(Boolean));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
 
   return (
     <div>
@@ -37,15 +68,12 @@ export default function FollowListView({
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
         >
           <ArrowLeft className="h-4 w-4" />
-          {person.name}
+          {title}
         </button>
       </PageHeader>
 
-      <div className="border-b border-pe-border px-4 py-5">
-        <h2 className="text-2xl font-bold text-pe-text">@{person.handle}</h2>
-        <p className="mt-1 text-sm text-pe-text-secondary">
-          {formatCount(people.length)} {title.toLowerCase()}
-        </p>
+      <div className="border-b border-pe-border px-4 py-4">
+        <h2 className="text-xl font-bold text-pe-text">{title}</h2>
       </div>
 
       {people.length === 0 ? (
@@ -54,10 +82,10 @@ export default function FollowListView({
         </p>
       ) : (
         <div className="divide-y divide-pe-border px-4">
-          {people.map((p) => (
+          {people.map((person) => (
             <PersonRow
-              key={p.id}
-              person={p}
+              key={person.id}
+              person={person}
               graphTick={graphTick}
               onOpenProfile={onOpenProfile}
               onGraphChange={onGraphChange}
@@ -71,7 +99,9 @@ export default function FollowListView({
 
 function PersonRow({ person, graphTick, onOpenProfile, onGraphChange }) {
   void graphTick;
+  const currentUserId = getAppCurrentUserId();
   const following = isFollowing(person.id);
+  const isSelf = person.id === currentUserId;
 
   return (
     <div className="flex items-center gap-3 py-3.5">
@@ -84,15 +114,11 @@ function PersonRow({ person, graphTick, onOpenProfile, onGraphChange }) {
         <p className="truncate text-[15px] font-semibold text-pe-text hover:underline">
           {person.name}
         </p>
-        <p className="text-sm text-pe-text-muted">@{person.handle}</p>
-        <p className="mt-0.5 text-xs text-pe-text-secondary">
-          <span className="font-semibold text-pe-positive">
-            XIRR {formatPct(person.xirr, { signed: false })}
-          </span>
-          <span> · {formatCount(person.followers)} followers</span>
-        </p>
+        {person.handle ? (
+          <p className="truncate text-sm text-pe-text-muted">@{person.handle}</p>
+        ) : null}
       </button>
-      {person.id !== 'u_me' && (
+      {!isSelf && (
         <button
           type="button"
           onClick={() => {

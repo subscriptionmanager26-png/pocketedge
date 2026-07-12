@@ -1,6 +1,10 @@
 /** Remove demo localStorage written before production-only mode. */
 
-const MOCK_AUTHOR_RE = /^u\d+$/;
+const MOCK_USER_ID_RE = /^(u_me|u_\w+|u\d+)$/i;
+
+function isMockUserId(id) {
+  return MOCK_USER_ID_RE.test(String(id ?? ''));
+}
 
 function storeHasMockAuthors(key, listKey = 'reviews') {
   try {
@@ -9,7 +13,7 @@ function storeHasMockAuthors(key, listKey = 'reviews') {
     const parsed = JSON.parse(raw);
     const items = Array.isArray(parsed) ? parsed : parsed?.[listKey];
     if (!Array.isArray(items)) return false;
-    return items.some((item) => MOCK_AUTHOR_RE.test(String(item?.authorId ?? '')));
+    return items.some((item) => isMockUserId(item?.authorId));
   } catch {
     return false;
   }
@@ -20,7 +24,7 @@ function followingHasMockIds() {
     const raw = localStorage.getItem('pe_social_following');
     if (!raw) return false;
     const ids = JSON.parse(raw);
-    return Array.isArray(ids) && ids.some((id) => MOCK_AUTHOR_RE.test(String(id)));
+    return Array.isArray(ids) && ids.some((id) => isMockUserId(id));
   } catch {
     return false;
   }

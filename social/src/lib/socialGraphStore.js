@@ -35,7 +35,10 @@ export function subscribeSocialGraph(listener) {
 }
 
 export function getFollowingIds() {
-  return new Set(readJson(FOLLOWING_KEY, DEFAULT_FOLLOWING));
+  const ids = readJson(FOLLOWING_KEY, DEFAULT_FOLLOWING);
+  if (isDevMockMode()) return new Set(ids);
+  // Production: never surface leftover demo follow targets.
+  return new Set((ids ?? []).filter((id) => !/^(u_me|u_\w+|u\d+)$/i.test(String(id ?? ''))));
 }
 
 export function isFollowing(userId) {
