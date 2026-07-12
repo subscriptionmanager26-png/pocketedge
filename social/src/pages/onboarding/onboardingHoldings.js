@@ -21,21 +21,37 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
 
   for (let i = 0; i < images.length; i += 1) {
     const file = images[i];
-    const base = Math.round((i / images.length) * 100);
-    const span = Math.round(100 / images.length);
+    const index = i;
+    const report = (pctWithinFile) => {
+      const clamped = Math.max(0, Math.min(100, Number(pctWithinFile) || 0));
+      const percent = Math.min(
+        99,
+        Math.round(((index + clamped / 100) / images.length) * 100)
+      );
+      onProgress?.({
+        percent,
+        current: index + 1,
+        total: images.length,
+        fileName: file.name || `Screenshot ${index + 1}`,
+      });
+    };
+
+    // Always announce the new milestone before OCR starts so the UI advances
+    // even if the worker logger is quiet briefly.
+    report(0);
+    // Yield so React can paint "Screenshot N of M" before heavy OCR work.
+    await new Promise((resolve) => setTimeout(resolve, 32));
 
     try {
       const raw = await parseScreenshot(file, {
-        onProgress: (pct) => {
-          const clamped = Math.max(0, Math.min(100, Number(pct) || 0));
-          onProgress?.(Math.min(99, base + Math.round((clamped / 100) * span)));
-        },
+        onProgress: (pct) => report(pct),
       });
       const normalized = toPlaygroundHoldings(raw);
       if (normalized?.source && normalized.source !== 'kite') {
         lastError = new Error(
           `“${file.name || 'screenshot'}” does not look like a Zerodha Kite holdings screen.`
         );
+        report(100);
         continue;
       }
       const rows = playgroundHoldingsToExtracted(normalized);
@@ -43,15 +59,23 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
         lastError = new Error(
           `No holdings found in “${file.name || 'screenshot'}”. Use a clear Zerodha Kite holdings screen.`
         );
+        report(100);
         continue;
       }
       extracted.push(...rows);
+      report(100);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
+      report(100);
     }
   }
 
-  onProgress?.(100);
+  onProgress?.({
+    percent: 100,
+    current: images.length,
+    total: images.length,
+    fileName: '',
+  });
 
   try {
     await terminateOcrWorker();
@@ -144,11 +168,15 @@ export function mergeHoldingsToEditRows(rows) {
     });
   }
 
-  return [...byTicker.values()].map((row) => ({
-    id: crypto.randomUUID(),
-    ticker: row.ticker,
-    name: row.name,
-    qty: String(row.qty),
-    invested: String(Math.round(row.invested * 100) / 100),
-  }));
+  return [...byTicker.values()].map((row) => {
+    const avg = row.qty > 0 ? row.invested / row.qty : 0;
+    return {
+      id: crypto.randomUUID(),
+      ticker: row.ticker,
+      name: row.name,
+      qty: String(row.qty),
+      invested: String(Math.round(row.invested * 100) / 100),
+      avg: String(Math.round(avg * 10000) / 10000),
+    };
+  });
 }

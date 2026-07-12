@@ -70,15 +70,18 @@ function isLabel(text) {
 
 const TESSERACT_CDN = 'https://cdn.jsdelivr.net/npm';
 
-async function ensureWorker(onProgress) {
+/** Latest OCR progress sink — worker is reused across screenshots. */
+let activeOcrProgress = null;
+
+async function ensureWorker() {
   if (tesseractWorker) return tesseractWorker;
   // Pin worker/core to CDN (same as mcp-playground) so Vite bundles don't break WASM paths.
   tesseractWorker = await createWorker('eng', 1, {
     workerPath: `${TESSERACT_CDN}/tesseract.js@5.1.1/dist/worker.min.js`,
     corePath: `${TESSERACT_CDN}/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js`,
     logger: (m) => {
-      if (onProgress && m.status === 'recognizing text') {
-        onProgress(Math.round((m.progress || 0) * 100));
+      if (activeOcrProgress && m.status === 'recognizing text') {
+        activeOcrProgress(Math.round((m.progress || 0) * 100));
       }
     },
   });
@@ -86,24 +89,29 @@ async function ensureWorker(onProgress) {
 }
 
 async function ocrTokens(imageSource, onProgress) {
-  const worker = await ensureWorker(onProgress);
-  const { data } = await worker.recognize(imageSource);
-  const tokens = [];
-  for (const word of data.words || []) {
-    const text = (word.text || '').trim();
-    const conf = Math.round(word.confidence || 0);
-    if (!text || conf < 25) continue;
-    const b = word.bbox;
-    tokens.push({
-      text,
-      left: b.x0,
-      top: b.y0,
-      width: b.x1 - b.x0,
-      height: b.y1 - b.y0,
-      conf,
-    });
+  const worker = await ensureWorker();
+  activeOcrProgress = typeof onProgress === 'function' ? onProgress : null;
+  try {
+    const { data } = await worker.recognize(imageSource);
+    const tokens = [];
+    for (const word of data.words || []) {
+      const text = (word.text || '').trim();
+      const conf = Math.round(word.confidence || 0);
+      if (!text || conf < 25) continue;
+      const b = word.bbox;
+      tokens.push({
+        text,
+        left: b.x0,
+        top: b.y0,
+        width: b.x1 - b.x0,
+        height: b.y1 - b.y0,
+        conf,
+      });
+    }
+    return tokens;
+  } finally {
+    activeOcrProgress = null;
   }
-  return tokens;
 }
 
 function fullText(tokens) {

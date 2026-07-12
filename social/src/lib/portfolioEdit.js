@@ -12,6 +12,80 @@ export function isWatchlistKind(kind) {
   return kind === 'watchlist';
 }
 
+/** Live holdings cost column: broker apps show either total invested or avg buy price. */
+export const COST_MODES = {
+  invested: 'invested',
+  avg: 'avg',
+};
+
+export function formatCostInput(value) {
+  if (value === '' || value == null) return '';
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  // Keep enough precision for avg prices without trailing noise.
+  const rounded = Math.round(n * 10000) / 10000;
+  return String(rounded);
+}
+
+export function avgFromInvestedQty(invested, qty) {
+  const i = Number(invested);
+  const q = Number(qty);
+  if (!Number.isFinite(i) || !Number.isFinite(q) || q <= 0) return '';
+  return formatCostInput(i / q);
+}
+
+export function investedFromAvgQty(avg, qty) {
+  const a = Number(avg);
+  const q = Number(qty);
+  if (!Number.isFinite(a) || !Number.isFinite(q) || q <= 0) return '';
+  return formatCostInput(a * q);
+}
+
+/** Keep invested ↔ avg in sync when editing live holding rows. */
+export function patchLiveCostFields(row, patch, costMode = COST_MODES.invested) {
+  const next = { ...row, ...patch };
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'avg')) {
+    next.avg = patch.avg;
+    if (next.qty !== '' && patch.avg !== '') {
+      const invested = investedFromAvgQty(patch.avg, next.qty);
+      if (invested !== '') next.invested = invested;
+    }
+    return next;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'invested')) {
+    next.invested = patch.invested;
+    if (next.qty !== '' && patch.invested !== '') {
+      const avg = avgFromInvestedQty(patch.invested, next.qty);
+      if (avg !== '') next.avg = avg;
+    }
+    return next;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'qty')) {
+    next.qty = patch.qty;
+    if (costMode === COST_MODES.avg) {
+      if (next.avg !== '' && patch.qty !== '') {
+        const invested = investedFromAvgQty(next.avg, patch.qty);
+        if (invested !== '') next.invested = invested;
+      }
+    } else if (next.invested !== '' && patch.qty !== '') {
+      const avg = avgFromInvestedQty(next.invested, patch.qty);
+      if (avg !== '') next.avg = avg;
+    }
+    return next;
+  }
+
+  return next;
+}
+
+export function withSyncedAvg(row) {
+  if (row.avg !== '' && row.avg != null) return row;
+  const avg = avgFromInvestedQty(row.invested, row.qty);
+  return avg === '' ? row : { ...row, avg };
+}
+
 export function buildWatchlistHoldings(rows, assetsByKey = new Map()) {
   return rows.map((row) => {
     const ticker = row.ticker.trim();

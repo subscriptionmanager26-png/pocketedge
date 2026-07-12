@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ImagePlus, Loader2, Trash2, X } from 'lucide-react';
+import { ArrowRight, ImagePlus, Trash2, X } from 'lucide-react';
 import HoldingsEditTable, {
   emptyHoldingRow,
   validateHoldingsRows,
@@ -20,7 +20,12 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
   const inputRef = useRef(null);
   const [shots, setShots] = useState([]);
   const [phase, setPhase] = useState('upload');
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState({
+    percent: 0,
+    current: 0,
+    total: 0,
+    fileName: '',
+  });
   const [rows, setRows] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
@@ -56,7 +61,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
     setRows([]);
     setFieldErrors({});
     setError('');
-    setProgress(0);
+    setProgress({ percent: 0, current: 0, total: 0, fileName: '' });
   };
 
   const handleNext = async () => {
@@ -67,12 +72,30 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
 
     setError('');
     setPhase('reading');
-    setProgress(0);
+    setProgress({
+      percent: 0,
+      current: 1,
+      total: shots.length,
+      fileName: shots[0]?.name || '',
+    });
 
     try {
       const parsed = await parseZerodhaHoldingsScreenshots(
         shots.map((shot) => shot.file),
-        { onProgress: setProgress }
+        {
+          onProgress: (next) => {
+            if (typeof next === 'number') {
+              setProgress((prev) => ({ ...prev, percent: next }));
+              return;
+            }
+            setProgress({
+              percent: next.percent ?? 0,
+              current: next.current ?? 0,
+              total: next.total ?? shots.length,
+              fileName: next.fileName ?? '',
+            });
+          },
+        }
       );
       if (!parsed.length) {
         throw new Error('No holdings found. Use clear Zerodha Kite holdings screenshots.');
@@ -116,14 +139,45 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
           Parsing {shots.length} Zerodha screenshot{shots.length === 1 ? '' : 's'} on your
           device into one holdings summary…
         </p>
-        <div className="mt-10 text-center">
-          <Loader2 className="mx-auto h-5 w-5 animate-spin text-pe-accent" />
-          <div className="mx-auto mt-4 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-pe-surface">
-            <div
-              className="h-full rounded-full bg-pe-accent transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+        <div className="mt-10">
+          <div className="flex items-center justify-between gap-3 text-[13px]">
+            <p className="font-semibold text-pe-text">
+              Screenshot {Math.max(1, progress.current)} of {Math.max(1, progress.total || shots.length)}
+            </p>
+            <p className="tabular-nums text-pe-text-muted">{Math.round(progress.percent)}%</p>
           </div>
+          {progress.fileName ? (
+            <p className="mt-1 truncate text-[12px] text-pe-text-muted">{progress.fileName}</p>
+          ) : null}
+
+          <div className="relative mt-4">
+            <div className="h-2 overflow-hidden rounded-full bg-pe-surface">
+              <div
+                className="h-full rounded-full bg-pe-accent transition-all duration-300"
+                style={{ width: `${Math.max(2, progress.percent)}%` }}
+              />
+            </div>
+            {(progress.total || shots.length) > 1 ? (
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-0.5">
+                {Array.from({ length: progress.total || shots.length }).map((_, index) => {
+                  const done = progress.percent >= ((index + 1) / (progress.total || shots.length)) * 100;
+                  const active = progress.current === index + 1;
+                  return (
+                    <span
+                      key={`mile-${index}`}
+                      className={`h-2.5 w-2.5 rounded-full border-2 border-pe-canvas ${
+                        done || active ? 'bg-pe-accent' : 'bg-pe-border-strong'
+                      }`}
+                      aria-hidden
+                    />
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+          <p className="mt-3 text-center text-[12px] text-pe-text-muted">
+            Each marker is one screenshot — progress moves forward across the batch.
+          </p>
         </div>
       </OnboardingShell>
     );

@@ -45,15 +45,19 @@ import {
   togglePortfolioLike,
 } from '../lib/portfolioEngagementApi';
 import {
+  COST_MODES,
   WATCHLIST_BASE_INVESTMENT,
   buildLiveHoldings,
   buildWatchlistHoldings,
   fieldClass,
   isWatchlistKind,
+  patchLiveCostFields,
   portfolioHasDraftWork,
   validatePortfolioDraft,
+  withSyncedAvg,
 } from '../lib/portfolioEdit';
 import PortfolioAssetSearchField from '../components/PortfolioAssetSearchField';
+import CostModeToggle from '../components/CostModeToggle';
 import { resolvePortfolioAssets } from '../lib/portfolioAssetUniverse';
 import {
   PortfolioKindMetaTags,
@@ -765,6 +769,7 @@ function PortfolioDetailView({
   const [thesis, setThesis] = useState(portfolio.thesis ?? '');
   const [portfolioKind, setPortfolioKind] = useState(portfolio.kind ?? 'live');
   const [editRows, setEditRows] = useState([]);
+  const [costMode, setCostMode] = useState(COST_MODES.invested);
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
@@ -798,6 +803,7 @@ function PortfolioDetailView({
     ticker: '',
     invested: '',
     qty: '',
+    avg: '',
     weight: '',
   });
 
@@ -816,13 +822,18 @@ function PortfolioDetailView({
         weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
         invested: '',
         qty: '',
+        avg: '',
       };
     }
+    const qty = Number(h.qty) || 0;
+    const avg = Number(h.avg) || 0;
+    const invested = qty * avg;
     return {
       id: rowId,
       ticker: h.ticker,
-      invested: String((Number(h.qty) || 0) * (Number(h.avg) || 0) || ''),
+      invested: invested ? String(invested) : '',
       qty: String(h.qty ?? ''),
+      avg: avg ? String(avg) : '',
       weight: '',
     };
   };
@@ -1067,7 +1078,11 @@ function PortfolioDetailView({
     }
 
     setEditRows((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, ...patch } : row))
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        if (isWatchlist) return { ...row, ...patch };
+        return patchLiveCostFields(row, patch, costMode);
+      })
     );
 
     if (patch.ticker !== undefined) {
@@ -1080,6 +1095,13 @@ function PortfolioDetailView({
         else delete rows[rowId];
         return { ...prev, rows };
       });
+    }
+  };
+
+  const handleCostModeChange = (mode) => {
+    setCostMode(mode);
+    if (mode === COST_MODES.avg) {
+      setEditRows((prev) => prev.map((row) => withSyncedAvg(row)));
     }
   };
 
@@ -1222,35 +1244,42 @@ function PortfolioDetailView({
 
       {editing ? (
         <div className="px-4 py-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-            Holdings
-          </p>
-          <p className="mt-1 text-sm text-pe-text-secondary">
-            {isWatchlist
-              ? 'Search a stock, ETF, or fund and enter its share of total holdings (%). Weights must add up to 100%.'
-              : 'Search a stock, ETF, or fund, then enter your total investment and quantity.'}
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+                Holdings
+              </p>
+              <p className="mt-1 text-sm text-pe-text-secondary">
+                {isWatchlist
+                  ? 'Search a stock, ETF, or fund and enter its share of total holdings (%). Weights must add up to 100%.'
+                  : 'Search a stock, ETF, or fund, then enter cost and quantity. Switch between total invested and avg price depending on what your broker shows.'}
+              </p>
+            </div>
+            {!isWatchlist ? (
+              <CostModeToggle value={costMode} onChange={handleCostModeChange} />
+            ) : null}
+          </div>
 
           <div className="mt-4 space-y-2">
-            <div className={`hidden items-center gap-2 px-0.5 md:flex ${isWatchlist ? 'grid-cols-[minmax(0,1fr)_5.5rem_auto]' : ''}`}>
-              <p className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+            <div className={`${rowGridClass} px-0.5`}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Ticker
               </p>
               {isWatchlist ? (
-                <p className="w-[5.5rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                   Weight %
                 </p>
               ) : (
                 <>
-                  <p className="w-[8.75rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Total invested
+                  <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    {costMode === COST_MODES.avg ? 'Avg price' : 'Total invested'}
                   </p>
-                  <p className="w-[5.25rem] shrink-0 text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                     Qty
                   </p>
                 </>
               )}
-              <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+              <span className="h-4 w-9 shrink-0" aria-hidden="true" />
             </div>
 
             {editRows.map((row) => {
@@ -1259,6 +1288,9 @@ function PortfolioDetailView({
                 .filter((entry) => entry.id !== row.id)
                 .map((entry) => entry.ticker.trim())
                 .filter(Boolean);
+              const costLabel = costMode === COST_MODES.avg ? 'Avg price' : 'Total invested';
+              const costValue = costMode === COST_MODES.avg ? row.avg ?? '' : row.invested;
+              const costHasError = Boolean(rowErr.invested || rowErr.avg);
 
               return (
                 <div key={row.id} className="space-y-1">
@@ -1290,11 +1322,21 @@ function PortfolioDetailView({
                           type="number"
                           min="0"
                           step="0.01"
-                          value={row.invested}
-                          onChange={(e) => updateRow(row.id, { invested: e.target.value })}
-                          placeholder="Total invested"
-                          aria-label="Total amount you invested"
-                          className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.invested)}
+                          value={costValue}
+                          onChange={(e) =>
+                            updateRow(
+                              row.id,
+                              costMode === COST_MODES.avg
+                                ? { avg: e.target.value }
+                                : { invested: e.target.value }
+                            )
+                          }
+                          placeholder={costLabel}
+                          aria-label={costLabel}
+                          className={fieldClass(
+                            `${compactInputClass} text-right tabular-nums`,
+                            costHasError
+                          )}
                         />
                         <input
                           type="number"

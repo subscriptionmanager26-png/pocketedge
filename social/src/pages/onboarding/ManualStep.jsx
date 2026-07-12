@@ -48,8 +48,9 @@ export default function ManualStep({ onBack, onSubmit }) {
     >
       <p className="text-2xl font-bold text-pe-text md:text-3xl">Add your holdings</p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Enter ticker, total investment, and quantity — same as editing a portfolio in
-        PocketEdge. Works for any broker, including Zerodha.
+        Enter ticker, cost, and quantity — same as editing a portfolio in PocketEdge.
+        Switch between total invested and avg price to match your broker. Works for any
+        broker, including Zerodha.
       </p>
 
       <div className="mt-8 border-t border-pe-border pt-8">
