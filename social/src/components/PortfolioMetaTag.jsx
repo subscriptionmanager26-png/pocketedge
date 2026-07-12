@@ -1,7 +1,8 @@
 import { Binoculars, Copy } from 'lucide-react';
 
+/** Shared circular badge for Live / Watchlist / OG / Copied. */
 const iconBadgeClass =
-  'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-pe-text-secondary';
+  'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-pe-border bg-white text-pe-text-secondary';
 
 export function PortfolioKindIcon({ kind }) {
   const isWatchlist = kind === 'watchlist';
@@ -9,7 +10,7 @@ export function PortfolioKindIcon({ kind }) {
   if (isWatchlist) {
     return (
       <span className={iconBadgeClass} title="Watchlist" aria-label="Watchlist">
-        <Binoculars className="h-3.5 w-3.5" strokeWidth={2.25} />
+        <Binoculars className="h-3 w-3" strokeWidth={2.25} />
       </span>
     );
   }
@@ -27,14 +28,14 @@ export function PortfolioOriginIcon({ portfolio }) {
   if (isCopied) {
     return (
       <span className={iconBadgeClass} title="Copied" aria-label="Copied">
-        <Copy className="h-3.5 w-3.5" strokeWidth={2.25} />
+        <Copy className="h-3 w-3" strokeWidth={2.25} />
       </span>
     );
   }
 
   return (
     <span
-      className={`${iconBadgeClass} text-[9px] font-extrabold tracking-tight text-pe-text-muted`}
+      className={`${iconBadgeClass} text-[8px] font-extrabold tracking-tight text-pe-text-muted`}
       title="Original"
       aria-label="Original"
     >
@@ -47,7 +48,7 @@ export function PortfolioKindMetaTags({ portfolio }) {
   const kind = portfolio?.kind === 'watchlist' ? 'watchlist' : 'live';
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1">
       <PortfolioKindIcon kind={kind} />
       <PortfolioOriginIcon portfolio={portfolio} />
     </div>

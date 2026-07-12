@@ -1,5 +1,6 @@
 import NewsList from './NewsList';
 import Avatar from './Avatar';
+import { FormStatusTag } from './FormStatusIcons';
 import { isDevMockMode } from '../lib/appMode';
 import {
   PORTFOLIO_UPDATES,
@@ -7,7 +8,7 @@ import {
   STOCKS,
   getPerson,
 } from '../data/mockData';
-import { formatInr, formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatPct, formatPrice, pnlClass } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 
 /** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
@@ -141,7 +142,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
   );
 }
 
-export function HoldingsSummary({ holdings, onSelectStock }) {
+export function HoldingsSummary({ holdings, onSelectStock, formByTicker = {} }) {
   if (!holdings.length) return <Empty label="No positions in this list." />;
 
   return (
@@ -150,15 +151,10 @@ export function HoldingsSummary({ holdings, onSelectStock }) {
         const isOverall = h.overall;
         const stock = isOverall ? null : STOCKS[h.ticker];
         const isWatch = h.watchlistOnly;
-        const price = stock?.price ?? h.price ?? 0;
-        const invested = isOverall
-          ? h.invested ?? 0
-          : !isWatch
-            ? (h.qty ?? 0) * (h.avg ?? price)
-            : null;
         const changePct = h.pnlPct ?? stock?.changePct ?? 0;
         const weightLabel =
           typeof h.weight === 'number' ? `${h.weight.toFixed(1)}% of holdings` : null;
+        const form = !isOverall ? formByTicker[h.ticker] ?? h.form : null;
 
         return (
           <button
@@ -176,27 +172,25 @@ export function HoldingsSummary({ holdings, onSelectStock }) {
                 <p className="text-xs font-semibold text-pe-text-secondary">
                   {isOverall ? weightLabel : `${h.qty} units · ${weightLabel}`}
                 </p>
-                {invested != null ? (
-                  <p className="text-right text-xs font-semibold text-pe-text-secondary">
-                    Invested {formatInr(invested, { compact: true })}
-                  </p>
-                ) : (
-                  <span />
-                )}
+                <span />
               </>
             ) : null}
 
-            <p className="text-[15px] font-semibold text-pe-text">
-              {isOverall ? 'Overall' : formatTicker(h.ticker)}
-            </p>
-            <p className={`text-right text-[15px] font-bold ${pnlClass(changePct)}`}>
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold text-pe-text">
+                {isOverall ? 'Overall' : formatTicker(h.ticker)}
+              </p>
+              {form ? (
+                <div className="mt-1">
+                  <FormStatusTag form={form} />
+                </div>
+              ) : isOverall ? (
+                <p className="mt-0.5 text-sm font-normal text-pe-text-muted">Portfolio return</p>
+              ) : null}
+            </div>
+            <p className={`self-start text-right text-[15px] font-bold ${pnlClass(changePct)}`}>
               {formatPct(changePct)}
             </p>
-
-            <p className="truncate text-sm font-normal text-pe-text-muted">
-              {isOverall ? 'Portfolio return' : stock?.name}
-            </p>
-            <span />
           </button>
         );
       })}

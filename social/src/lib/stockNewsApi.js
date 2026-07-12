@@ -70,3 +70,71 @@ export async function fetchStockNewsForTickers(tickers, { limit = 50 } = {}) {
 
   return (data ?? []).map(mapNewsRow);
 }
+
+function parseEventDateMs(raw) {
+  if (!raw) return 0;
+  const ms = Date.parse(String(raw));
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
+function mapCorporateActionRow(row) {
+  const eventDateRaw = row.event_date_raw ?? '';
+  const eventDateMs = parseEventDateMs(eventDateRaw);
+  return {
+    id: row.id,
+    ticker: row.ticker,
+    eventType: row.event_type ?? 'Other',
+    eventDateRaw,
+    eventDateMs,
+    dateLabel: row.date_label || '',
+    details: row.details ?? '',
+    documentUrl: row.document_url ?? '',
+    displayDate:
+      (eventDateMs ? formatNewsDate(new Date(eventDateMs).toISOString()) : '') ||
+      eventDateRaw ||
+      '',
+  };
+}
+
+function sortCorporateActions(rows) {
+  return [...rows].sort((a, b) => {
+    if (b.eventDateMs !== a.eventDateMs) return b.eventDateMs - a.eventDateMs;
+    return String(a.ticker).localeCompare(String(b.ticker));
+  });
+}
+
+export async function fetchCorporateActions(ticker, { limit = 40 } = {}) {
+  const symbol = normalizeTicker(ticker);
+  if (!symbol || !stockNewsClient) return [];
+
+  const { data, error } = await stockNewsClient
+    .from('mn_corporate_actions')
+    .select('id, ticker, event_type, event_date_raw, date_label, details, document_url, last_seen_at')
+    .eq('ticker', symbol)
+    .limit(Math.min(limit * 3, 200));
+
+  if (error) {
+    console.error('fetchCorporateActions failed', error);
+    return [];
+  }
+
+  return sortCorporateActions((data ?? []).map(mapCorporateActionRow)).slice(0, limit);
+}
+
+export async function fetchCorporateActionsForTickers(tickers, { limit = 80 } = {}) {
+  const symbols = [...new Set(tickers.map(normalizeTicker).filter(Boolean))];
+  if (!symbols.length || !stockNewsClient) return [];
+
+  const { data, error } = await stockNewsClient
+    .from('mn_corporate_actions')
+    .select('id, ticker, event_type, event_date_raw, date_label, details, document_url, last_seen_at')
+    .in('ticker', symbols)
+    .limit(Math.min(limit * 4, 400));
+
+  if (error) {
+    console.error('fetchCorporateActionsForTickers failed', error);
+    return [];
+  }
+
+  return sortCorporateActions((data ?? []).map(mapCorporateActionRow)).slice(0, limit);
+}

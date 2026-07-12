@@ -142,7 +142,7 @@ export default function PortfolioCard({
           onClick={() => onOpen?.(portfolio.id)}
           className="mt-4 block w-full text-left"
         >
-          <div className="rounded-[12px] border border-pe-border bg-pe-surface px-3.5 py-3.5">
+          <div className="rounded-[12px] border border-pe-border bg-white px-3.5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
             <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
               Top {TOP_N} holdings & allocations
             </p>

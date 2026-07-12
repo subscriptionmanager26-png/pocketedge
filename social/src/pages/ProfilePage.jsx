@@ -24,6 +24,8 @@ import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } 
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
+import { FormStatusTag } from '../components/FormStatusIcons';
+import { fetchPortfolioFormByTicker } from '../lib/portfolioForm';
 import PortfolioCard from '../components/PortfolioCard';
 import {
   PortfoliosListSkeleton,
@@ -132,6 +134,8 @@ export default function ProfilePage({
   onMobileHeaderActionsChange,
   onRegisterPortfolioBackHandler,
   onOpenSourcePortfolio,
+  onFollowListModeChange,
+  onRegisterFollowListBackHandler,
 }) {
   const appUser = getAppCurrentUser();
   const isOwn = mode === 'own';
@@ -162,6 +166,26 @@ export default function ProfilePage({
   const [focus, setFocus] = useState(CURRENT_USER.focus ?? '');
   const [following, setFollowingState] = useState(false);
   const [followListMode, setFollowListMode] = useState(null);
+
+  useEffect(() => {
+    onFollowListModeChange?.(followListMode);
+    if (followListMode) {
+      onRegisterFollowListBackHandler?.(() => setFollowListMode(null));
+      onMobileHeaderActionsChange?.(<span className="sr-only">Follow list</span>);
+    } else {
+      onRegisterFollowListBackHandler?.(null);
+    }
+    return () => {
+      onFollowListModeChange?.(null);
+      onRegisterFollowListBackHandler?.(null);
+      if (followListMode) onMobileHeaderActionsChange?.(null);
+    };
+  }, [
+    followListMode,
+    onFollowListModeChange,
+    onRegisterFollowListBackHandler,
+    onMobileHeaderActionsChange,
+  ]);
   const [graphTick, setGraphTick] = useState(0);
 
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
@@ -681,7 +705,9 @@ function PortfoliosListPanel({
 
   return (
     <div>
+      {/* Return period picker hidden for now — always show 1D returns.
       <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
+      */}
 
       {loading ? (
         <PortfoliosListSkeleton count={2} />
@@ -695,7 +721,7 @@ function PortfoliosListPanel({
             <PortfolioCard
               key={portfolio.id}
               portfolio={portfolio}
-              returnPct={getPortfolioReturn(portfolio, returnPeriod)}
+              returnPct={getPortfolioReturn(portfolio, '1D')}
               social={getPortfolioEngagementSync(portfolio.id)}
               canCopy={!canEdit}
               showUnreadComments={canEdit}
@@ -1246,10 +1272,6 @@ function PortfolioDetailView({
         />
       ) : null}
 
-      {!editing ? (
-        <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
-      ) : null}
-
       {editing ? (
         <div className="px-4 py-5">
           <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
@@ -1369,7 +1391,7 @@ function PortfolioDetailView({
           </div>
         </div>
       ) : (
-        <PortfolioHoldingsList portfolio={portfolio} returnPeriod={returnPeriod} />
+        <PortfolioHoldingsList portfolio={portfolio} returnPeriod="1D" />
       )}
 
       {!editing ? (
@@ -1620,6 +1642,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState({});
   const [assetsLoading, setAssetsLoading] = useState(false);
+  const [formByTicker, setFormByTicker] = useState({});
   const overallReturn = getPortfolioReturn(portfolio, returnPeriod);
 
   const holdingKeys = useMemo(
@@ -1639,6 +1662,22 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   useEffect(() => {
     setPage(0);
   }, [portfolio.id, returnPeriod]);
+
+  useEffect(() => {
+    if (!holdingKeys.length) {
+      setFormByTicker({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchPortfolioFormByTicker(holdingKeys).then((map) => {
+      if (!cancelled) setFormByTicker(map);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [holdingKeys]);
 
   useEffect(() => {
     if (!holdingKeys.length || !needsClientResolve) {
@@ -1754,9 +1793,9 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
         <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
-            {row.subtitle ? (
-              <p className="mt-0.5 truncate text-sm font-normal text-pe-text-muted">{row.subtitle}</p>
-            ) : null}
+            <div className="mt-1">
+              <FormStatusTag form={formByTicker[row.key] ?? 'unsure'} />
+            </div>
           </div>
           <p className="w-[88px] text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
             {row.weight.toFixed(1)}%

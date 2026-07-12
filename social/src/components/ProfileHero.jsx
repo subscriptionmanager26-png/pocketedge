@@ -1,4 +1,3 @@
-import { BadgeCheck } from 'lucide-react';
 import Avatar from './Avatar';
 import { formatCount, formatInr } from '../lib/format';
 
@@ -27,12 +26,9 @@ export default function ProfileHero({
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <h1 className="truncate text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
-                {displayName}
-              </h1>
-              <BadgeCheck className="h-4 w-4 shrink-0 text-pe-link" aria-label="Verified" />
-            </div>
+            <h1 className="min-w-0 truncate text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
+              {displayName}
+            </h1>
 
             {showFollowButton && (
               <button

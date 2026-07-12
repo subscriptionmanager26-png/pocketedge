@@ -58,7 +58,6 @@ export default function NewsList({ items, showTicker = false }) {
         {items.map((item) => {
           const expanded = isDesktop && expandedId === item.id;
           const date = newsItemDate(item);
-          const hasSummary = Boolean(item.summary?.trim());
 
           return (
             <div key={item.id}>
@@ -88,9 +87,6 @@ export default function NewsList({ items, showTicker = false }) {
                   ) : null}
                 </div>
                 {date ? <p className="mt-1 text-sm text-pe-text-muted">{date}</p> : null}
-                {!isDesktop && hasSummary ? (
-                  <p className="mt-1 text-xs text-pe-text-muted">Tap to read summary</p>
-                ) : null}
               </button>
               {isDesktop && expanded ? (
                 <div className="border-t border-pe-border bg-pe-surface/40 px-4 pb-4 pt-3">

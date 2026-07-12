@@ -117,8 +117,10 @@ export default function App() {
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [fundReviewPrefill, setFundReviewPrefill] = useState(null);
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
+  const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const portfolioBackRef = useRef(null);
+  const followListBackRef = useRef(null);
   const marketReturnContextRef = useRef(null);
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
@@ -707,6 +709,15 @@ export default function App() {
     if (tab === 'markets' && selectedTicker) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
+    if (tab === 'profile' && profileFollowListMode) {
+      return {
+        label: 'Back',
+        onBack: () => {
+          backScroll();
+          followListBackRef.current?.();
+        },
+      };
+    }
     if (tab === 'profile' && profilePortfolioId) {
       return {
         label: 'Portfolios',
@@ -748,6 +759,7 @@ export default function App() {
     profileUserId,
     profileReturnTab,
     profilePortfolioId,
+    profileFollowListMode,
     backScroll,
     navigate,
     closeMarketDetail,
@@ -757,6 +769,7 @@ export default function App() {
   useEffect(() => {
     if (tab !== 'profile') {
       setMobileHeaderActions(null);
+      setProfileFollowListMode(null);
     }
   }, [tab]);
 
@@ -984,6 +997,10 @@ export default function App() {
               onMobileHeaderActionsChange={setMobileHeaderActions}
               onRegisterPortfolioBackHandler={(handler) => {
                 portfolioBackRef.current = handler;
+              }}
+              onFollowListModeChange={setProfileFollowListMode}
+              onRegisterFollowListBackHandler={(handler) => {
+                followListBackRef.current = handler;
               }}
               onOpenSourcePortfolio={openProfilePortfolio}
             />

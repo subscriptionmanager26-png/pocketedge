@@ -107,12 +107,6 @@ export default function PostCard({
             </button>
           </div>
 
-          {person.followers != null ? (
-            <div className="mt-0.5 text-[12px] text-pe-text-secondary">
-              <span>{formatCount(person.followers)} followers</span>
-            </div>
-          ) : null}
-
           <div
             className={`mt-3 ${!isDetail ? 'cursor-pointer' : ''}`}
             onClick={!isDetail ? openPost : undefined}

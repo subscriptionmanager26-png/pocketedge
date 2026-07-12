@@ -61,14 +61,14 @@ export default function FollowListView({
 
   return (
     <div>
-      <PageHeader>
+      <PageHeader desktopOnly>
         <button
           type="button"
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
         >
           <ArrowLeft className="h-4 w-4" />
-          {title}
+          Back
         </button>
       </PageHeader>
 

@@ -22,7 +22,8 @@ import {
 } from '../components/InvestmentSections';
 import { getStock, getStockHolders, getStockNews } from '../data/stockData';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchStockNews, isStockNewsConfigured } from '../lib/stockNewsApi';
+import { fetchStockNews, fetchCorporateActions, isStockNewsConfigured } from '../lib/stockNewsApi';
+import CorporateActionsList from '../components/CorporateActionsList';
 import { AUTHOR_POSITIONS, CURRENT_USER, getPerson } from '../data/mockData';
 import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions } from '../lib/assetDiscussions';
@@ -119,6 +120,8 @@ export default function StockInvestmentPage({
   const holders = getStockHolders(ticker);
   const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
   const [newsLoading, setNewsLoading] = useState(false);
+  const [corporateActions, setCorporateActions] = useState([]);
+  const [corpActionsLoading, setCorpActionsLoading] = useState(false);
 
   useEffect(() => {
     if (isStockNewsConfigured()) {
@@ -145,6 +148,27 @@ export default function StockInvestmentPage({
     setNews([]);
     return undefined;
   }, [ticker]);
+
+  useEffect(() => {
+    if (!isStockNewsConfigured() || isEtf) {
+      setCorporateActions([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setCorpActionsLoading(true);
+    fetchCorporateActions(ticker)
+      .then((items) => {
+        if (!cancelled) setCorporateActions(items);
+      })
+      .finally(() => {
+        if (!cancelled) setCorpActionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, isEtf]);
 
   const reviewsLocked = !unlocked;
   const discussionsLocked = !unlocked || !hasAccess;
@@ -311,18 +335,13 @@ export default function StockInvestmentPage({
       )}
 
       {tab === 'corporate_actions' && (
-        <div className="px-4 py-10">
-          <div className="rounded-2xl border border-pe-border bg-pe-surface px-5 py-8 text-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">
-              Coming soon
-            </p>
-            <h3 className="mt-2 text-lg font-semibold text-pe-text">Corporate actions</h3>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-pe-text-secondary">
-              Dividends, splits, bonuses, and other corporate actions for{' '}
-              <span className="font-semibold text-pe-text">{formatTicker(ticker)}</span> will appear here.
-            </p>
-          </div>
-        </div>
+        corpActionsLoading ? (
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            Loading corporate actions…
+          </p>
+        ) : (
+          <CorporateActionsList items={corporateActions} />
+        )
       )}
 
     </div>

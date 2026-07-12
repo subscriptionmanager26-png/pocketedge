@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -10,6 +10,7 @@ import {
   TradesFeed,
   collectActivity,
 } from '../components/ActivityFeed';
+import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
@@ -19,8 +20,10 @@ import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchStockNewsForTickers, isStockNewsConfigured } from '../lib/stockNewsApi';
+import { fetchStockNewsForTickers, fetchCorporateActionsForTickers, isStockNewsConfigured } from '../lib/stockNewsApi';
+import CorporateActionsList from '../components/CorporateActionsList';
 import { skipAuthForDev } from '../lib/sessionStore';
+import { fetchPortfolioFormByTicker, FORM_META } from '../lib/portfolioForm';
 import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
@@ -37,13 +40,14 @@ export default function PortfolioPage({
   onOpenSourcePortfolio,
 }) {
   const [listId, setListId] = useState(null);
-  const [period, setPeriod] = useState('1D');
   const [contentTab, setContentTab] = useState('performance');
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [watchlistTick, setWatchlistTick] = useState(0);
   const [portfolioTick, setPortfolioTick] = useState(0);
   const [remotePortfolios, setRemotePortfolios] = useState([]);
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
+  const [formByTicker, setFormByTicker] = useState({});
+  const [formSheet, setFormSheet] = useState(null);
 
   const ownerId = getAppCurrentUserId();
 
@@ -136,6 +140,46 @@ export default function PortfolioPage({
   const tickers = useMemo(() => holdingsRows.map((h) => h.ticker), [holdingsRows]);
   const [portfolioNews, setPortfolioNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
+  const [corporateActions, setCorporateActions] = useState([]);
+  const [corpActionsLoading, setCorpActionsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!tickers.length) {
+      setFormByTicker({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchPortfolioFormByTicker(tickers).then((map) => {
+      if (!cancelled) setFormByTicker(map);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tickers]);
+
+  const formBuckets = useMemo(() => {
+    const buckets = {
+      in_form: [],
+      out_of_form: [],
+      unsure: [],
+    };
+
+    for (const holding of holdingsRows) {
+      const form = formByTicker[holding.ticker] ?? 'unsure';
+      const name =
+        holding.assetName ??
+        STOCKS[holding.ticker]?.name ??
+        formatTicker(holding.ticker);
+      buckets[form]?.push({
+        ticker: holding.ticker,
+        name,
+      });
+    }
+
+    return buckets;
+  }, [holdingsRows, formByTicker]);
 
   useEffect(() => {
     if (!tickers.length) {
@@ -166,6 +210,32 @@ export default function PortfolioPage({
 
     setPortfolioNews([]);
     return undefined;
+  }, [tickers]);
+
+  useEffect(() => {
+    if (!tickers.length) {
+      setCorporateActions([]);
+      return undefined;
+    }
+
+    if (!isStockNewsConfigured()) {
+      setCorporateActions([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setCorpActionsLoading(true);
+    fetchCorporateActionsForTickers(tickers)
+      .then((items) => {
+        if (!cancelled) setCorporateActions(items);
+      })
+      .finally(() => {
+        if (!cancelled) setCorpActionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [tickers]);
 
   const activity = useMemo(() => {
@@ -274,25 +344,38 @@ export default function PortfolioPage({
             <p className="mt-1 text-3xl font-bold tracking-tight text-pe-text">
               {formatInr(metrics.totalValue)}
             </p>
-
-            <div className="mt-4 grid grid-cols-3 gap-2.5">
-              <MetricCard
-                label="Invested"
-                value={formatInr(metrics.invested, { compact: true })}
-              />
-              <MetricCard
-                label="Total P&L"
-                value={formatInr(metrics.totalPnl, { compact: true })}
-                tone={metrics.totalPnl}
-              />
-              <MetricCard
-                label="Day's P&L"
-                value={formatInr(metrics.todayPnl, { compact: true })}
-                tone={metrics.todayPnl}
-              />
-            </div>
+            <p className="mt-2 text-sm font-normal text-pe-text-muted">
+              Day&apos;s P&L{' '}
+              <span className={`font-semibold ${pnlClass(metrics.todayPnl)}`}>
+                {formatInr(metrics.todayPnl, { compact: true })}
+                {metrics.todayPnlPct != null ? ` (${formatPct(metrics.todayPnlPct)})` : ''}
+              </span>
+            </p>
           </>
         ) : null}
+
+        <div className="mt-5 grid grid-cols-3 gap-2.5">
+          {FORM_METRIC_ORDER.map((formId) => {
+            const meta = FORM_META[formId];
+            const count = formBuckets[formId]?.length ?? 0;
+            return (
+              <button
+                key={formId}
+                type="button"
+                onClick={() => setFormSheet(formId)}
+                className="rounded-[12px] border border-pe-border bg-white px-3 py-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)] transition hover:border-pe-border-strong hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_6px_16px_rgba(0,0,0,0.08)]"
+              >
+                <div className="flex items-center gap-1.5">
+                  <FormStatusIcon form={formId} className="h-4 w-4" />
+                  <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    {meta.label}
+                  </p>
+                </div>
+                <p className="mt-1.5 text-[18px] font-bold tabular-nums text-pe-text">{count}</p>
+              </button>
+            );
+          })}
+        </div>
 
         <div className="mt-5">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
@@ -333,22 +416,15 @@ export default function PortfolioPage({
           </div>
         </div>
 
+        {/* Return period picker hidden for now — default 1D only.
         <div className="mt-5 flex gap-1 rounded-lg bg-pe-surface p-1">
-          {PERIODS.map((per) => (
-            <button
-              key={per}
-              type="button"
-              onClick={() => setPeriod(per)}
-              className={`flex-1 rounded-md py-2 text-sm font-semibold transition ${
-                period === per
-                  ? 'bg-pe-canvas text-pe-text shadow-sm'
-                  : 'text-pe-text-secondary hover:text-pe-text'
-              }`}
-            >
+          {['1D', '1W', '1M', '1Y'].map((per) => (
+            <button key={per} type="button" className="flex-1 rounded-md py-2 text-sm font-semibold">
               {per}
             </button>
           ))}
         </div>
+        */}
       </section>
 
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
@@ -358,6 +434,7 @@ export default function PortfolioPage({
         <HoldingsSummary
           holdings={overallRow ? [overallRow, ...holdingsRows] : holdingsRows}
           onSelectStock={onSelectStock}
+          formByTicker={formByTicker}
         />
       )}
       {contentTab === 'news' && (
@@ -365,6 +442,19 @@ export default function PortfolioPage({
           <p className="px-6 py-14 text-center text-sm text-pe-text-secondary">Loading news…</p>
         ) : (
           <NewsFeed items={activity.news} />
+        )
+      )}
+      {contentTab === 'corporate_actions' && (
+        corpActionsLoading ? (
+          <p className="px-6 py-14 text-center text-sm text-pe-text-secondary">
+            Loading corporate actions…
+          </p>
+        ) : (
+          <CorporateActionsList
+            items={corporateActions}
+            showTicker
+            onSelectStock={onSelectStock}
+          />
         )
       )}
       {contentTab === 'trades' && (
@@ -383,15 +473,28 @@ export default function PortfolioPage({
           setContentTab('performance');
         }}
       />
+
+      {formSheet ? (
+        <FormBucketSheet
+          formId={formSheet}
+          items={formBuckets[formSheet] ?? []}
+          onClose={() => setFormSheet(null)}
+          onSelectStock={(ticker) => {
+            setFormSheet(null);
+            onSelectStock?.(ticker);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
-const PERIODS = ['1D', '1W', '1M', '1Y'];
+const FORM_METRIC_ORDER = ['in_form', 'out_of_form', 'unsure'];
 const CONTENT_TABS = [
   { id: 'summary', label: 'Summary' },
   { id: 'performance', label: 'Performance' },
   { id: 'news', label: 'News' },
+  { id: 'corporate_actions', label: 'Corporate Actions' },
   { id: 'trades', label: 'Trades' },
   { id: 'posts', label: 'Posts' },
 ];
@@ -426,26 +529,21 @@ function compressDistribution(distribution, topN = DIST_TOP_N) {
   ];
 }
 
-function PortfolioSummaryComingSoon({ portfolioName }) {
+function PortfolioComingSoonCard({ title, description, showIcon = false }) {
   return (
     <div className="px-4 py-10">
       <div className="rounded-2xl border border-pe-border bg-pe-surface px-5 py-8 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent-wash">
-          <Sparkles className="h-5 w-5 text-pe-accent" aria-hidden="true" />
-        </div>
-        <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">
+        {showIcon ? (
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent-wash">
+            <Sparkles className="h-5 w-5 text-pe-accent" aria-hidden="true" />
+          </div>
+        ) : null}
+        <p className={`text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent ${showIcon ? 'mt-4' : ''}`}>
           Coming soon
         </p>
-        <h3 className="mt-2 text-lg font-semibold text-pe-text">AI portfolio summary</h3>
+        <h3 className="mt-2 text-lg font-semibold text-pe-text">{title}</h3>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-pe-text-secondary">
-          {portfolioName ? (
-            <>
-              A concise AI read on <span className="font-semibold text-pe-text">{portfolioName}</span>
-              — allocation, recent moves, and what to watch.
-            </>
-          ) : (
-            'A concise AI read on your holdings — allocation, recent moves, and what to watch.'
-          )}
+          {description}
         </p>
         <p className="mx-auto mt-4 max-w-xs text-xs text-pe-text-muted">
           We&apos;re building this now. You&apos;ll see it here once it&apos;s ready.
@@ -455,16 +553,75 @@ function PortfolioSummaryComingSoon({ portfolioName }) {
   );
 }
 
-function MetricCard({ label, value, sub, tone }) {
+function PortfolioSummaryComingSoon({ portfolioName }) {
   return (
-    <div className="rounded-[10px] border border-pe-border bg-pe-surface px-3 py-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-        {label}
-      </p>
-      <p className={`mt-1.5 text-[15px] font-semibold ${tone != null ? pnlClass(tone) : 'text-pe-text'}`}>
-        {value}
-      </p>
-      {sub && <p className={`text-xs font-semibold ${pnlClass(tone)}`}>{sub}</p>}
+    <PortfolioComingSoonCard
+      showIcon
+      title="AI portfolio summary"
+      description={
+        portfolioName ? (
+          <>
+            A concise AI read on <span className="font-semibold text-pe-text">{portfolioName}</span>
+            — allocation, recent moves, and what to watch.
+          </>
+        ) : (
+          'A concise AI read on your holdings — allocation, recent moves, and what to watch.'
+        )
+      }
+    />
+  );
+}
+
+function FormBucketSheet({ formId, items, onClose, onSelectStock }) {
+  const meta = FORM_META[formId];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center sm:p-4" onClick={onClose}>
+      <div
+        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-pe-border bg-pe-canvas sm:rounded-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-pe-border bg-pe-canvas px-4 py-3.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <FormStatusIcon form={formId} className="h-5 w-5" />
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold text-pe-text">{meta.label}</p>
+              <p className="text-xs text-pe-text-muted">
+                {items.length} {items.length === 1 ? 'security' : 'securities'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {items.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
+            No securities in this category yet.
+          </p>
+        ) : (
+          <div className="divide-y divide-pe-border">
+            {items.map((item) => (
+              <button
+                key={item.ticker}
+                type="button"
+                onClick={() => onSelectStock?.(item.ticker)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
+              >
+                <p className="truncate text-[15px] font-semibold text-pe-text">
+                  {formatTicker(item.ticker)}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
