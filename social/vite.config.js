@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchNseAllIndices } from './lib/nse-indices-fetch.mjs';
 import { fetchNseStocksTraded } from './lib/nse-stocks-fetch.mjs';
+import { socialServiceWorkerPlugin } from './vite.sw-plugin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -47,30 +48,44 @@ function nseApiPlugin() {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), nseApiPlugin()],
-  envDir: path.resolve(__dirname, '..'),
-  server: { port: 5175, strictPort: true, open: false },
-  build: {
-    target: 'es2020',
-    cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined;
-          if (id.includes('@supabase')) return 'supabase';
-          if (
-            id.includes('/react/') ||
-            id.includes('/react-dom/') ||
-            id.includes('react-router') ||
-            id.includes('/scheduler/')
-          ) {
-            return 'react-vendor';
+export default defineConfig(({ mode }) => {
+  const isProd = mode === 'production';
+
+  return {
+    plugins: [react(), nseApiPlugin(), socialServiceWorkerPlugin()],
+    envDir: path.resolve(__dirname, '..'),
+    resolve: {
+      alias: isProd
+        ? {
+            [path.resolve(__dirname, 'src/data/mockData.js')]: path.resolve(
+              __dirname,
+              'src/data/mockData.prod.js'
+            ),
           }
-          if (id.includes('lucide-react')) return 'icons';
-          return 'vendor';
+        : {},
+    },
+    server: { port: 5175, strictPort: true, open: false },
+    build: {
+      target: 'es2020',
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('@supabase')) return 'supabase';
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('react-router') ||
+              id.includes('/scheduler/')
+            ) {
+              return 'react-vendor';
+            }
+            if (id.includes('lucide-react')) return 'icons';
+            return 'vendor';
+          },
         },
       },
     },
-  },
+  };
 });

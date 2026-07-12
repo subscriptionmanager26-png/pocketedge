@@ -41,7 +41,9 @@ import {
   usePostBackend,
 } from './lib/socialPostApi';
 import { hydrateCommunityAccess } from './lib/reviewStore';
-import { readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
+import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
+import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
+import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, stockPath, tabPath } from './lib/routes';
 import {
   navigateToProfile,
@@ -67,20 +69,41 @@ function RouteSuspense({ children }) {
   return <Suspense fallback={<RouteFallbackSkeleton />}>{children}</Suspense>;
 }
 
+function initialAuthState() {
+  const cached = peekCachedAuthSession();
+  if (cached?.user && cached.view === 'app') {
+    return { authView: 'app', authUser: cached.user };
+  }
+  if (cached?.user && cached.view === 'onboarding') {
+    return { authView: 'onboarding', authUser: cached.user };
+  }
+  return { authView: 'bootstrapping', authUser: null };
+}
+
+function initialBootstrapState() {
+  const boot = readCachedBootstrap();
+  const feed = boot?.posts?.length ? boot.posts : readCachedFeedPosts();
+  return {
+    posts: feed ?? [],
+    postsLoading: !(feed && feed.length > 0),
+    socialProfile: boot?.profile ?? null,
+    profileReady: Boolean(boot?.profile),
+  };
+}
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [authView, setAuthView] = useState('bootstrapping');
-  const [authUser, setAuthUser] = useState(null);
+  const initialAuth = useMemo(() => initialAuthState(), []);
+  const initialBoot = useMemo(() => initialBootstrapState(), []);
+  const [authView, setAuthView] = useState(initialAuth.authView);
+  const [authUser, setAuthUser] = useState(initialAuth.authUser);
   const [tab, setTab] = useState('feed');
   const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePortfolioShare, setComposePortfolioShare] = useState(null);
-  const [posts, setPosts] = useState(() => readCachedFeedPosts() ?? []);
-  const [postsLoading, setPostsLoading] = useState(() => {
-    const cached = readCachedFeedPosts();
-    return !(cached && cached.length > 0);
-  });
+  const [posts, setPosts] = useState(initialBoot.posts);
+  const [postsLoading, setPostsLoading] = useState(initialBoot.postsLoading);
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedTickerKind, setSelectedTickerKind] = useState('stock');
   const [selectedFundId, setSelectedFundId] = useState(null);
@@ -100,8 +123,8 @@ export default function App() {
   const [activityTick, setActivityTick] = useState(0);
   const [graphTick, setGraphTick] = useState(0);
   const [scrollAction, setScrollAction] = useState('reset');
-  const [profileReady, setProfileReady] = useState(false);
-  const [socialProfile, setSocialProfile] = useState(null);
+  const [profileReady, setProfileReady] = useState(initialBoot.profileReady);
+  const [socialProfile, setSocialProfile] = useState(initialBoot.socialProfile);
   const currentUserId = socialProfile?.user_id ?? CURRENT_USER.id;
 
   const resetScroll = useCallback(() => setScrollAction('reset'), []);
@@ -202,9 +225,21 @@ export default function App() {
     }
 
     let cancelled = false;
-    setProfileReady(false);
-    const hasCachedFeed = (readCachedFeedPosts()?.length ?? 0) > 0;
+    const bootCache = readCachedBootstrap();
+    const hasCachedProfile = Boolean(bootCache?.profile);
+    const hasCachedFeed =
+      (bootCache?.posts?.length ?? 0) > 0 || (readCachedFeedPosts()?.length ?? 0) > 0;
+    if (!hasCachedProfile) setProfileReady(false);
     if (!hasCachedFeed) setPostsLoading(true);
+    if (bootCache?.profile) {
+      setSocialProfile(bootCache.profile);
+      setSelfProfile(bootCache.profile);
+      setProfileReady(true);
+    }
+    if (bootCache?.posts?.length) {
+      setPosts(bootCache.posts);
+      setPostsLoading(false);
+    }
 
     hydrateCommunityAccess().catch(() => {});
 
@@ -216,10 +251,13 @@ export default function App() {
       setProfileReady(true);
     };
 
-    const applyFeed = (items) => {
+    const applyFeed = (items, profileForCache) => {
       if (cancelled) return;
       setPosts(items);
       writeCachedFeedPosts(items);
+      if (profileForCache) {
+        writeCachedBootstrap({ profile: profileForCache, posts: items });
+      }
       setPostsLoading(false);
     };
 
@@ -227,17 +265,18 @@ export default function App() {
       bootstrapSocialApp({ feedLimit: 50 })
         .then(({ profile, feed }) => {
           applyProfile(profile);
-          const posts = (feed?.items ?? []).map((row) => {
+          const nextPosts = (feed?.items ?? []).map((row) => {
             const post = mapPostRow(row);
             notePostLikeSynced(post.id, post.liked);
             return post;
           });
-          applyFeed(posts);
+          applyFeed(nextPosts, profile);
         })
         .catch(async () => {
           // Fallback to separate calls if bootstrap RPC is unavailable.
+          let profile = null;
           try {
-            const profile = await ensureSocialProfile();
+            profile = await ensureSocialProfile();
             applyProfile(profile);
           } catch {
             if (!cancelled) {
@@ -248,14 +287,17 @@ export default function App() {
           }
           try {
             const items = await fetchFeedPosts();
-            applyFeed(items);
+            applyFeed(items, profile);
           } catch {
-            applyFeed([]);
+            applyFeed([], profile);
           }
         });
     } else {
       ensureSocialProfile()
-        .then(applyProfile)
+        .then((profile) => {
+          applyProfile(profile);
+          writeCachedBootstrap({ profile, posts: readCachedFeedPosts() ?? [] });
+        })
         .catch(() => {
           if (!cancelled) {
             setSocialProfile(null);
@@ -617,10 +659,16 @@ export default function App() {
     clearSocialGraph();
     clearWatchlists();
     clearReviewStore();
+    clearCachedBootstrap();
+    clearCachedFeedPosts();
+    setSocialProfile(null);
+    setSelfProfile(null);
+    setProfileReady(false);
     setAuthUser(null);
     setAuthView('landing');
     setTab('feed');
     setPosts([]);
+    setPostsLoading(false);
   };
 
   const pageTitleOverride =

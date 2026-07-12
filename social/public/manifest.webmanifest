@@ -1,0 +1,10 @@
+{
+  "name": "PocketEdge Social",
+  "short_name": "PocketEdge",
+  "description": "Investing social, with position disclosure on every take.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": []
+}
