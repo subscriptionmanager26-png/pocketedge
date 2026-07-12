@@ -1,8 +1,11 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Map momentum-screener regimes → portfolio form labels.
  * Bullish → In Form, Bearish → Off Track, Mixed/Insufficient → Unsure.
+ *
+ * Signals live in a dedicated Supabase project (momentum-screener),
+ * not the main social PocketEdge project.
  */
 export function mapDmaRegimeToForm(regime) {
   switch (String(regime ?? '').trim()) {
@@ -53,6 +56,20 @@ export const FORM_META = {
     shortLabel: 'Unsure',
   },
 };
+
+const dmaSupabaseUrl = import.meta.env.VITE_DMA_SUPABASE_URL;
+const dmaSupabaseAnonKey = import.meta.env.VITE_DMA_SUPABASE_ANON_KEY;
+
+const dmaClient =
+  dmaSupabaseUrl && dmaSupabaseAnonKey
+    ? createClient(dmaSupabaseUrl, dmaSupabaseAnonKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+    : null;
+
+export function isDmaSignalsConfigured() {
+  return Boolean(dmaClient);
+}
 
 const cache = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -120,7 +137,7 @@ export async function fetchDmaSignalsByTicker(tickers) {
 
   if (!missing.length) return byTicker;
 
-  if (!isSupabaseConfigured() || !supabase) {
+  if (!dmaClient) {
     for (const ticker of missing) {
       const signal = unsureSignal(ticker);
       cache.set(ticker, { signal, at: now });
@@ -132,7 +149,7 @@ export async function fetchDmaSignalsByTicker(tickers) {
   try {
     for (let i = 0; i < missing.length; i += IN_CHUNK) {
       const chunk = missing.slice(i, i + IN_CHUNK);
-      const { data, error } = await supabase
+      const { data, error } = await dmaClient
         .from('nse_dma_signals')
         .select(
           'symbol, regime, close, dma_50, dma_200, dma_200_slope, as_of_date, pct_vs_50, pct_vs_200'
