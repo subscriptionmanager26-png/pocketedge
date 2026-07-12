@@ -12,7 +12,7 @@
   --landing-nav-height: 61px;
   --landing-cta-height: 128px;
 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -292,7 +292,7 @@
 }
 
 .pe-site-landing .headline {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: ui-sans-serif, system-ui, sans-serif;
   font-weight: 600;
   font-size: 36px;
   line-height: 1.1;

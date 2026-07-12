@@ -9,28 +9,76 @@
       content="Investing social, with position disclosure on every take. Feed, portfolio updates, and markets — built for trust."
     />
     <meta name="theme-color" content="#ffffff" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
-    </noscript>
+    <link rel="preconnect" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" />
+    <style>
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+      }
+      body {
+        background: #ffffff;
+        color: #1a1a1a;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      .pe-boot {
+        display: flex;
+        min-height: 100dvh;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      .pe-boot__mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #ff6719;
+      }
+      .pe-boot__label {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #8a8a8a;
+      }
+      .pe-boot__bar {
+        width: 120px;
+        height: 3px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #f7f6f4;
+      }
+      .pe-boot__bar > span {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: inherit;
+        background: #ff6719;
+        animation: pe-boot-slide 1.1s ease-in-out infinite;
+      }
+      @keyframes pe-boot-slide {
+        0% {
+          transform: translateX(-120%);
+        }
+        100% {
+          transform: translateX(320%);
+        }
+      }
+    </style>
   </head>
-  <body class="font-sans antialiased">
-    <div id="root"></div>
+  <body>
+    <div id="root">
+      <div class="pe-boot" role="status" aria-live="polite" aria-label="Loading PocketEdge">
+        <div class="pe-boot__mark" aria-hidden="true"></div>
+        <div class="pe-boot__label">PocketEdge</div>
+        <div class="pe-boot__bar" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

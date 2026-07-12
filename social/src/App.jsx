@@ -41,6 +41,7 @@ import {
   usePostBackend,
 } from './lib/socialPostApi';
 import { hydrateCommunityAccess } from './lib/reviewStore';
+import { readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
 import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, stockPath, tabPath } from './lib/routes';
 import {
   navigateToProfile,
@@ -75,8 +76,11 @@ export default function App() {
   const [feedMode, setFeedMode] = useState('forYou');
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePortfolioShare, setComposePortfolioShare] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [postsLoading, setPostsLoading] = useState(false);
+  const [posts, setPosts] = useState(() => readCachedFeedPosts() ?? []);
+  const [postsLoading, setPostsLoading] = useState(() => {
+    const cached = readCachedFeedPosts();
+    return !(cached && cached.length > 0);
+  });
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedTickerKind, setSelectedTickerKind] = useState('stock');
   const [selectedFundId, setSelectedFundId] = useState(null);
@@ -199,7 +203,8 @@ export default function App() {
 
     let cancelled = false;
     setProfileReady(false);
-    setPostsLoading(true);
+    const hasCachedFeed = (readCachedFeedPosts()?.length ?? 0) > 0;
+    if (!hasCachedFeed) setPostsLoading(true);
 
     hydrateCommunityAccess().catch(() => {});
 
@@ -214,6 +219,7 @@ export default function App() {
     const applyFeed = (items) => {
       if (cancelled) return;
       setPosts(items);
+      writeCachedFeedPosts(items);
       setPostsLoading(false);
     };
 
@@ -708,8 +714,12 @@ export default function App() {
 
   if (authView === 'bootstrapping') {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-pe-canvas text-sm text-pe-text-secondary">
-        Loading…
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-pe-canvas px-6">
+        <div className="h-9 w-9 rounded-[10px] bg-pe-accent" aria-hidden="true" />
+        <p className="text-[13px] font-semibold tracking-wide text-pe-text-muted">PocketEdge</p>
+        <div className="h-0.5 w-[120px] overflow-hidden rounded-full bg-pe-surface" aria-hidden="true">
+          <div className="h-full w-2/5 animate-pulse rounded-full bg-pe-accent" />
+        </div>
       </div>
     );
   }
