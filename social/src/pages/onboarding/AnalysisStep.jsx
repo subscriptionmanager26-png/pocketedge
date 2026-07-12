@@ -12,7 +12,7 @@ export function AnalyzingStep({ holdings }) {
           Reading your portfolio form
         </p>
         <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-          Checking last close vs 50 DMA and 200 DMA for {holdings.length}{' '}
+          Looking up today&apos;s 50/200 DMA momentum screen for {holdings.length}{' '}
           {holdings.length === 1 ? 'holding' : 'holdings'}.
         </p>
 
@@ -27,7 +27,7 @@ export function AnalyzingStep({ holdings }) {
               className="flex items-center justify-between px-4 py-3 text-[13px]"
             >
               <span className="font-semibold text-pe-text">{h.ticker}</span>
-              <span className="text-pe-text-muted">comparing averages…</span>
+              <span className="text-pe-text-muted">checking momentum…</span>
             </li>
           ))}
         </ul>
@@ -159,8 +159,8 @@ export default function AnalysisStep({
       </div>
 
       <p className="mt-10 text-[12px] leading-relaxed text-pe-text-muted">
-        Form uses last close vs 50 and 200 day moving averages. This is not investment
-        advice.
+        Form uses the daily NSE 50/200 DMA momentum screen (Bullish → In Form, Bearish →
+        Off Track, Mixed/Insufficient → Unsure). This is not investment advice.
       </p>
     </OnboardingShell>
   );

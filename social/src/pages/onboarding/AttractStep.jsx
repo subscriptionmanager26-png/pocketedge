@@ -22,20 +22,28 @@ export default function AttractStep({ onContinue }) {
         Is your portfolio actually in form?
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Add your holdings once. We check each name against the 50 and 200 day averages —
-        so you know what is riding the trend, and what is slipping.
+        Add your holdings once. We classify each NSE name with the daily 50/200 DMA
+        momentum screen — so you know what is in form, and what is off track.
       </p>
 
       <div className="mt-8 border-t border-pe-border pt-8">
         <p className={sectionLabelClass}>What you&apos;ll see</p>
         <div className="mt-3 divide-y divide-pe-border rounded-lg border border-pe-border">
-          <SignalRow form="in_form" label="In Form" hint="Trading above both 50 and 200 DMA" />
+          <SignalRow
+            form="in_form"
+            label="In Form"
+            hint="Bullish — above both DMAs with a rising 200 DMA"
+          />
           <SignalRow
             form="out_of_form"
             label="Off Track"
-            hint="Trading below both averages"
+            hint="Bearish — below both DMAs with a falling 200 DMA"
           />
-          <SignalRow form="unsure" label="Unsure" hint="Mixed signal or incomplete data" />
+          <SignalRow
+            form="unsure"
+            label="Unsure"
+            hint="Mixed signal or insufficient price history"
+          />
         </div>
       </div>
 

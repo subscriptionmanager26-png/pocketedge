@@ -1,52 +1,30 @@
-import { classifySecurityForm } from '../../lib/portfolioForm';
-
-const FIXTURE_MAS = {
-  RELIANCE: { price: 2980, ma50: 2850, ma200: 2720 },
-  TCS: { price: 3920, ma50: 4010, ma200: 4100 },
-  INFY: { price: 1850, ma50: 1780, ma200: 1690 },
-  HDFCBANK: { price: 1720, ma50: 1750, ma200: 1680 },
-  ITC: { price: 430, ma50: 445, ma200: 460 },
-  SBIN: { price: 820, ma50: 790, ma200: 750 },
-  WIPRO: { price: 265, ma50: 275, ma200: 290 },
-  AXISBANK: { price: 1180, ma50: 1120, ma200: 1080 },
-  BHARTIARTL: { price: 1650, ma50: 1580, ma200: 1490 },
-  TATAMOTORS: { price: 720, ma50: 760, ma200: 790 },
-};
+import { fetchDmaSignalsByTicker } from '../../lib/portfolioForm';
 
 export async function analyzeHoldings(holdings) {
   const tickers = holdings.map((h) => h.ticker);
-  let bySymbol = {};
-
-  try {
-    const response = await fetch(
-      `/api/equity-moving-averages?symbols=${encodeURIComponent(tickers.join(','))}`
-    );
-    if (response.ok) {
-      const payload = await response.json();
-      bySymbol = payload?.bySymbol ?? {};
-    }
-  } catch {
-    // fixtures below
-  }
+  const signals = await fetchDmaSignalsByTicker(tickers);
 
   return holdings.map((holding) => {
-    const live = bySymbol[holding.ticker];
-    const mas =
-      live?.price != null
-        ? live
-        : FIXTURE_MAS[holding.ticker] ?? {
-            price: holding.price ?? holding.avg,
-            ma50: null,
-            ma200: null,
-          };
-    const form = classifySecurityForm(mas);
+    const ticker = String(holding.ticker ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/\.NS$/i, '');
+    const signal = signals[ticker];
+    const price = Number.isFinite(signal?.price)
+      ? signal.price
+      : holding.price ?? holding.avg;
+    const form = signal?.form ?? 'unsure';
     const invested = holding.qty * holding.avg;
-    const value = holding.qty * (mas.price ?? holding.avg);
+    const value = holding.qty * (price ?? holding.avg);
+
     return {
       ...holding,
-      price: mas.price ?? holding.avg,
-      ma50: mas.ma50,
-      ma200: mas.ma200,
+      ticker,
+      price: price ?? holding.avg,
+      ma50: signal?.ma50 ?? null,
+      ma200: signal?.ma200 ?? null,
+      regime: signal?.regime ?? null,
+      asOfDate: signal?.asOfDate ?? null,
       form,
       invested,
       value,
@@ -69,20 +47,20 @@ export function summarizeAnalysis(rows) {
 
   let headline = 'Mixed signals';
   let detail =
-    'Some names are riding the trend, others need a closer look. Start with Off Track weights.';
+    'Some names are in a bullish DMA regime, others need a closer look. Start with Off Track weights.';
 
   if (rows.length && totalValue > 0 && inFormValue / totalValue >= 0.65) {
     headline = 'Mostly in form';
     detail =
-      'A large share of your portfolio is trading above both 50 and 200 day averages.';
+      'A large share of your portfolio is classified Bullish on the daily 50/200 DMA screen.';
   } else if (rows.length && totalValue > 0 && offTrackValue / totalValue >= 0.5) {
     headline = 'Under pressure';
     detail =
-      'Over half of your portfolio value sits below both moving averages. Review those names first.';
+      'Over half of your portfolio value is classified Bearish. Review those names first.';
   } else if (buckets.unsure.length === rows.length) {
     headline = 'Need clearer data';
     detail =
-      'We could not classify every holding yet. Search for NSE tickers or try again shortly.';
+      'We could not classify every holding yet. Use NSE equity tickers, or try again after today’s screen updates.';
   }
 
   return {
