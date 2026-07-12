@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import StarRating, { StarDisplay } from './StarRating';
+import SignalPicker, { SignalDisplay } from './SignalPicker';
 import {
   getUserReviewForCommodity,
   getUserReviewForFund,
@@ -106,15 +106,14 @@ export default function AssetReviewComposer({
       <div className="border-b border-pe-border bg-pe-surface/40 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-pe-text-muted">Your review</p>
-            <div className="mt-2 flex items-center gap-2">
-              <StarDisplay rating={existing.rating} />
-              <span className="text-sm font-semibold text-pe-text">{existing.rating}.0</span>
+            <p className="text-xs font-bold uppercase tracking-widest text-pe-text-muted">Your signal</p>
+            <div className="mt-2">
+              <SignalDisplay rating={existing.rating} />
             </div>
             {existing.body ? (
               <p className="mt-2 text-[15px] leading-relaxed text-pe-text">{existing.body}</p>
             ) : (
-              <p className="mt-2 text-sm text-pe-text-muted">No written review — rating only.</p>
+              <p className="mt-2 text-sm text-pe-text-muted">No written note — signal only.</p>
             )}
           </div>
           <button
@@ -132,10 +131,10 @@ export default function AssetReviewComposer({
   return (
     <div className="border-b border-pe-border px-4 py-4">
       <p className="text-xs font-bold uppercase tracking-widest text-pe-text-muted">
-        {existing ? 'Edit your review' : `Rate ${assetLabel}`}
+        {existing ? 'Edit your signal' : `Your signal on ${assetLabel}`}
       </p>
-      <div className="mt-2">
-        <StarRating value={rating} onChange={setRating} />
+      <div className="mt-3">
+        <SignalPicker value={rating} onChange={setRating} />
       </div>
       <input
         value={reviewLine}
@@ -152,7 +151,7 @@ export default function AssetReviewComposer({
           disabled={rating < 1 || submitting}
           className="rounded-md bg-pe-accent px-4 py-2 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-40"
         >
-          {existing ? 'Save changes' : 'Submit review'}
+          {existing ? 'Save changes' : 'Submit signal'}
         </button>
         {(existing || rating > 0 || reviewLine) && (
           <button

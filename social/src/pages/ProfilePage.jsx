@@ -62,7 +62,7 @@ import { profilePath } from '../lib/routes';
 const PROFILE_TABS = [
   { id: 'about', label: 'About me' },
   { id: 'posts', label: 'Posts' },
-  { id: 'reviews', label: 'Reviews' },
+  { id: 'reviews', label: 'Signals' },
   { id: 'portfolios', label: 'Portfolio' },
   { id: 'trades', label: 'Trades' },
 ];
@@ -356,8 +356,6 @@ export default function ProfilePage({
     );
   }
 
-  const showViewToggle = isOwn || isMePublic;
-
   return (
     <div>
       {!isOwn && !isMePublic && (
@@ -388,9 +386,6 @@ export default function ProfilePage({
           onGraphChange?.();
         }}
         showFollowButton={!isOwn && !isMePublic}
-        showViewToggle={showViewToggle}
-        isPublicPreview={isMePublic}
-        onToggleView={isMePublic ? onExitPublicPreview : onOpenPublicPreview}
       />
 
       <PageHeader>
@@ -643,7 +638,7 @@ function ReviewsPanel({ reviews, onOpenProfile, onGraphChange }) {
   if (!reviews.length) {
     return (
       <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-        Reviews and ratings you post on funds and stocks will show up here.
+        Signals you post on funds and stocks will show up here.
       </p>
     );
   }

@@ -169,8 +169,8 @@ export default function IndexDetailPage({
             ) : communityReviews.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
                 {userReview
-                  ? 'No other community reviews yet.'
-                  : `No community reviews yet — be the first to share your view on ${displayIndex.name}.`}
+                  ? 'No other community signals yet.'
+                  : `No community signals yet — be the first to share your view on ${displayIndex.name}.`}
               </p>
             ) : (
               communityReviews.map((review) => (

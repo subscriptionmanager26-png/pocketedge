@@ -1,4 +1,4 @@
-import { BadgeCheck, Eye, EyeOff } from 'lucide-react';
+import { BadgeCheck } from 'lucide-react';
 import Avatar from './Avatar';
 import { formatCount, formatInr } from '../lib/format';
 
@@ -13,9 +13,6 @@ export default function ProfileHero({
   onOpenFollowers,
   onOpenFollowing,
   showFollowButton = false,
-  showViewToggle = false,
-  isPublicPreview = false,
-  onToggleView,
 }) {
   const displayName = name ?? person.name;
   const displayBio = bio ?? person.bio;
@@ -29,33 +26,13 @@ export default function ProfileHero({
         <Avatar person={person} size="xl" className="mt-0.5" />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-              <h1 className="text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <h1 className="truncate text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
                 {displayName}
               </h1>
               <BadgeCheck className="h-4 w-4 shrink-0 text-pe-link" aria-label="Verified" />
             </div>
-
-            {showViewToggle && (
-              <button
-                type="button"
-                onClick={onToggleView}
-                className="inline-flex shrink-0 items-center gap-1.5 text-[15px] font-semibold text-pe-text-muted transition hover:text-pe-accent"
-              >
-                {isPublicPreview ? (
-                  <>
-                    <EyeOff className="h-4 w-4" />
-                    Private view
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-4 w-4" />
-                    Public view
-                  </>
-                )}
-              </button>
-            )}
 
             {showFollowButton && (
               <button
@@ -71,7 +48,7 @@ export default function ProfileHero({
               </button>
             )}
           </div>
-          <p className="mt-0.5 text-[15px] text-pe-text-muted">@{person.handle}</p>
+          <p className="mt-0.5 truncate text-[15px] text-pe-text-muted">@{person.handle}</p>
 
           <dl className="mt-4 flex gap-6">
             <Stat

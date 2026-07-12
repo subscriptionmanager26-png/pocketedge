@@ -1,4 +1,4 @@
-import StarRating from '../../components/StarRating';
+import SignalPicker from '../../components/SignalPicker';
 import { getFundsByCategory } from '../../data/fundData';
 
 const inputClass =
@@ -21,8 +21,8 @@ export default function FundReviewStep({
         Share your take
       </h2>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Rate one <span className="font-semibold text-pe-text">{category}</span> fund you know to
-        unlock community reviews across PocketEdge.
+        Signal one <span className="font-semibold text-pe-text">{category}</span> fund you know to
+        unlock community signals across PocketEdge.
       </p>
 
       <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
@@ -48,14 +48,14 @@ export default function FundReviewStep({
       </div>
 
       <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-        Your rating
+        Your signal
       </p>
       <div className="mt-3">
-        <StarRating value={rating} onChange={onRating} />
+        <SignalPicker value={rating} onChange={onRating} />
       </div>
 
       <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-        One-line review <span className="font-medium normal-case tracking-normal text-pe-text-muted">(optional)</span>
+        One-line note <span className="font-medium normal-case tracking-normal text-pe-text-muted">(optional)</span>
       </p>
       <input
         value={reviewLine}
@@ -67,7 +67,7 @@ export default function FundReviewStep({
       <p className="mt-1.5 text-xs text-pe-text-muted">{reviewLine.length}/160</p>
 
       <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-[15px] text-pe-text-secondary">
-        Submitting unlocks full community reviews and discussions across PocketEdge.
+        Submitting unlocks full community signals and discussions across PocketEdge.
       </div>
     </>
   );

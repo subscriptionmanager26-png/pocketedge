@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import StarRating from './StarRating';
+import SignalPicker from './SignalPicker';
 import FundReviewStep from '../pages/onboarding/FundReviewStep';
 import { getFund, pickRandomCategory } from '../data/fundData';
 import { addReview } from '../lib/reviewStore';
@@ -39,7 +39,7 @@ export default function FundReviewModal({ open, prefillFundId, onClose, onSubmit
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-pe-border bg-pe-canvas sm:rounded-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-pe-border bg-pe-canvas px-4 py-3.5">
           <span className="text-[15px] font-semibold text-pe-text">
-            {prefillFund ? `Rate ${prefillFund.name}` : 'Unlock reviews'}
+            {prefillFund ? `Signal on ${prefillFund.name}` : 'Unlock signals'}
           </span>
           <button type="button" onClick={onClose} className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface">
             <X className="h-5 w-5" />
@@ -49,14 +49,14 @@ export default function FundReviewModal({ open, prefillFundId, onClose, onSubmit
           {prefillFund ? (
             <>
               <p className="mt-4 text-[15px] leading-relaxed text-pe-text-secondary">
-                Rate this investment to unlock community reviews and posts across PocketEdge.
+                Share a Bullish, Neutral, or Bearish signal to unlock community signals and posts across PocketEdge.
               </p>
-              <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">Your rating</p>
+              <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">Your signal</p>
               <div className="mt-2">
-                <StarRating value={rating} onChange={setRating} />
+                <SignalPicker value={rating} onChange={setRating} />
               </div>
               <p className="mt-6 text-xs font-bold uppercase tracking-widest text-pe-text-muted">
-                One-line review (optional)
+                One-line note (optional)
               </p>
               <input
                 value={reviewLine}
@@ -84,7 +84,7 @@ export default function FundReviewModal({ open, prefillFundId, onClose, onSubmit
             disabled={!canSubmit}
             className="mt-6 w-full rounded-md bg-pe-accent py-3 text-[15px] font-bold text-white disabled:opacity-40"
           >
-            Submit review & unlock
+            Submit signal & unlock
           </button>
         </div>
       </div>

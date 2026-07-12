@@ -49,7 +49,7 @@ export default function MarketsPage({
 }) {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('stocks');
-  const { items, syncedAt, loading, error, statusMessage } = useMarketTabData(tab, query);
+  const { items, loading, error } = useMarketTabData(tab, query);
 
   const handleTabChange = (next) => {
     setTab(next);
@@ -78,14 +78,6 @@ export default function MarketsPage({
       </PageHeader>
 
       <div className="px-4 py-6">
-        {syncedAt ? (
-          <p className="mb-1 text-xs text-pe-text-muted">
-            Data synced {new Date(syncedAt).toLocaleString('en-IN')}
-          </p>
-        ) : null}
-        {statusMessage ? (
-          <p className="mb-4 text-xs font-medium text-pe-text-secondary">{statusMessage}</p>
-        ) : null}
         {searchHint ? (
           <p className="mb-4 text-xs text-pe-text-muted">{searchHint}</p>
         ) : null}

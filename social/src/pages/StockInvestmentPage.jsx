@@ -16,6 +16,7 @@ import {
   NewsBlurPreview,
   REVIEW_LOCK,
   ReviewsBlurPreview,
+  STOCK_INVESTMENT_TABS,
   TRACK_STOCK_LOCK,
   TRACK_STOCK_NEWS_LOCK,
 } from '../components/InvestmentSections';
@@ -189,7 +190,11 @@ export default function StockInvestmentPage({
         price={formatPrice(displayStock.price)}
       />
 
-      <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
+      <UnderlineTabs
+        tabs={isEtf ? INVESTMENT_TABS : STOCK_INVESTMENT_TABS}
+        active={tab}
+        onChange={setTab}
+      />
 
       {tab === 'reviews' && (
         <>
@@ -218,8 +223,8 @@ export default function StockInvestmentPage({
             ) : communityReviews.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
                 {userReview
-                  ? 'No other community reviews yet.'
-                  : `No community reviews yet — be the first to share your thesis on ${formatTicker(ticker)}.`}
+                  ? 'No other community signals yet.'
+                  : `No community signals yet — be the first to share your take on ${formatTicker(ticker)}.`}
               </p>
             ) : (
               communityReviews.map((review) => (
@@ -308,6 +313,21 @@ export default function StockInvestmentPage({
             )}
           </div>
         </BlurredSection>
+      )}
+
+      {tab === 'corporate_actions' && (
+        <div className="px-4 py-10">
+          <div className="rounded-2xl border border-pe-border bg-pe-surface px-5 py-8 text-center">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent">
+              Coming soon
+            </p>
+            <h3 className="mt-2 text-lg font-semibold text-pe-text">Corporate actions</h3>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-pe-text-secondary">
+              Dividends, splits, bonuses, and other corporate actions for{' '}
+              <span className="font-semibold text-pe-text">{formatTicker(ticker)}</span> will appear here.
+            </p>
+          </div>
+        </div>
       )}
 
     </div>

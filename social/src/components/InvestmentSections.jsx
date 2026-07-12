@@ -10,16 +10,22 @@ import {
 } from '../data/blurPlaceholders';
 
 export const INVESTMENT_TABS = [
-  { id: 'reviews', label: 'Reviews' },
+  { id: 'reviews', label: 'Signals' },
   { id: 'discussions', label: 'Posts' },
   { id: 'holders', label: 'Holders' },
   { id: 'news', label: 'News' },
 ];
 
+/** Stocks only — Corporate Actions sits after News. */
+export const STOCK_INVESTMENT_TABS = [
+  ...INVESTMENT_TABS,
+  { id: 'corporate_actions', label: 'Corporate Actions' },
+];
+
 export const REVIEW_LOCK = {
-  title: 'Unlock community reviews',
-  detail: 'Community is built on sharing. Review a stock/ETF/MF to unlock community benefits.',
-  ctaLabel: 'Write a review',
+  title: 'Unlock community signals',
+  detail: 'Community is built on sharing. Share a signal on a stock/ETF/MF to unlock community benefits.',
+  ctaLabel: 'Share a signal',
 };
 
 export const TRACK_STOCK_LOCK = {

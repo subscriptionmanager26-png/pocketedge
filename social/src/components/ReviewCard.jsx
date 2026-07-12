@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
-import { StarDisplay } from './StarRating';
+import { SignalDisplay, signalLabelFromRating } from './SignalPicker';
 import { formatTicker } from '../lib/tickers';
 import { getPerson, STOCKS } from '../data/mockData';
 import { getFund } from '../data/fundData';
@@ -56,7 +56,8 @@ export default function ReviewCard({
     const url = review.stockTicker
       ? `${window.location.origin}?stock=${review.stockTicker}&review=${review.id}`
       : `${window.location.origin}?fund=${review.fundId}&review=${review.id}`;
-    const text = `${person.name} rated ${assetLabel ?? 'an investment'} ${review.rating}★${review.body ? `: ${review.body}` : ''}`;
+    const signal = signalLabelFromRating(review.rating) ?? `${review.rating}★`;
+    const text = `${person.name} is ${signal.toLowerCase()} on ${assetLabel ?? 'an investment'}${review.body ? `: ${review.body}` : ''}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Investor review on PocketEdge', text, url });
@@ -115,7 +116,7 @@ export default function ReviewCard({
           </div>
 
           <div className="mt-2">
-            <StarDisplay rating={review.rating} />
+            <SignalDisplay rating={review.rating} />
           </div>
 
           {review.body ? (

@@ -7,7 +7,7 @@ import TickerText from './TickerText';
 import TradePill from './TradePill';
 import { PortfolioSharePreview } from './ComposeModal';
 import { getPersonSync } from '../lib/socialIdentity';
-import { formatCount, formatPct, timeAgo } from '../lib/format';
+import { formatCount, timeAgo } from '../lib/format';
 import { extractTickers } from '../lib/tickers';
 
 /** Feed cards truncate long bodies; full text + comments only on the open post. */
@@ -60,7 +60,7 @@ export default function PostCard({
 
   return (
     <article className="border-b border-pe-border px-4 py-5 md:py-6">
-      {post.via && (
+      {post.via && post.via.kind !== 'person' && (
         <p className="mb-2 text-[13px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>
           <span>
@@ -79,40 +79,39 @@ export default function PostCard({
           }}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-baseline gap-x-1.5">
+              <button
+                type="button"
+                onClick={(event) => {
+                  stopBubble(event);
+                  openAuthor();
+                }}
+                className="truncate text-[15px] font-semibold leading-5 text-pe-text hover:underline"
+              >
+                {person.name}
+              </button>
+              <span className="shrink-0 text-[13px] leading-5 text-pe-text-muted">
+                · {timeAgo(post.createdAt)}
+              </span>
+            </div>
             <button
               type="button"
               onClick={(event) => {
                 stopBubble(event);
                 openAuthor();
               }}
-              className="text-[15px] font-semibold leading-5 text-pe-text hover:underline"
-            >
-              {person.name}
-            </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                stopBubble(event);
-                openAuthor();
-              }}
-              className="text-[13px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
+              className="mt-0.5 block truncate text-[13px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
             >
               @{person.handle}
             </button>
-            <span className="text-pe-text-muted">·</span>
-            <span className="text-[13px] leading-5 text-pe-text-muted">
-              {timeAgo(post.createdAt)}
-            </span>
           </div>
 
-          <div className="mt-0.5 flex flex-wrap gap-x-2 text-[12px] text-pe-text-secondary">
-            <span className="font-semibold text-pe-positive">
-              XIRR {formatPct(person.xirr, { signed: false })}
-            </span>
-            <span>·</span>
-            <span>{formatCount(person.followers)} followers</span>
-          </div>
+          {person.followers != null ? (
+            <div className="mt-0.5 text-[12px] text-pe-text-secondary">
+              <span>{formatCount(person.followers)} followers</span>
+            </div>
+          ) : null}
 
           <div
             className={`mt-3 ${!isDetail ? 'cursor-pointer' : ''}`}
