@@ -1,11 +1,17 @@
 {
-  "generatedAt": "2026-07-05T11:37:26.022Z",
+  "generatedAt": "2026-07-12T07:20:30.751Z",
   "universeSize": 2957,
-  "enrichedCount": 2891,
+  "enrichedCount": 2892,
   "processedCount": 2957,
-  "failureCount": 66,
+  "failureCount": 65,
   "successRate": "98%",
   "failures": [
+    {
+      "id": "ESNB-XDUS",
+      "symbol": "ESNB",
+      "exchange": "XDUS",
+      "reason": "no_yahoo_data"
+    },
     {
       "id": "EUAI-XDUS",
       "symbol": "EUAI",
@@ -52,12 +58,6 @@
       "id": "HUBE-XETR",
       "symbol": "HUBE",
       "exchange": "XETR",
-      "reason": "no_yahoo_data"
-    },
-    {
-      "id": "HYEP-MTA",
-      "symbol": "HYEP",
-      "exchange": "MTA",
       "reason": "no_yahoo_data"
     },
     {
