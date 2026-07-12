@@ -1,70 +1,130 @@
-import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
-import AuthLayoutHeader from '../../components/AuthLayoutHeader';
-import { pickRandomCategory } from '../../data/fundData';
-import { addReview } from '../../lib/reviewStore';
+import { useCallback, useState } from 'react';
 import { setOnboardingComplete } from '../../lib/sessionStore';
-import FundReviewStep from './FundReviewStep';
+import { buildLiveHoldings } from '../../lib/portfolioEdit';
+import { resolvePortfolioAssets } from '../../lib/portfolioAssetUniverse';
+import {
+  createDraftPortfolio,
+  saveSocialPortfolio,
+} from '../../lib/socialPortfolioApi';
+import { analyzeHoldings, summarizeAnalysis } from './onboardingAnalysis';
+import AttractStep from './AttractStep';
+import MethodStep from './MethodStep';
+import ManualStep from './ManualStep';
+import ScreenshotStep from './ScreenshotStep';
+import AnalysisStep, { AnalyzingStep } from './AnalysisStep';
 
-/** Onboarding = fund rating + review. Unlocks community reviews on submit. */
+const STEPS = {
+  attract: 'attract',
+  method: 'method',
+  manual: 'manual',
+  screenshot: 'screenshot',
+  analyzing: 'analyzing',
+  analysis: 'analysis',
+};
+
+/** Portfolio form-check onboarding — replaces fund-review gate. */
 export default function OnboardingFlow({ userId, onComplete }) {
-  const [assignedCategory] = useState(() => pickRandomCategory());
-  const [fundId, setFundId] = useState('');
-  const [fundRating, setFundRating] = useState(0);
-  const [fundReviewLine, setFundReviewLine] = useState('');
+  const [step, setStep] = useState(STEPS.attract);
+  const [holdings, setHoldings] = useState([]);
+  const [source, setSource] = useState('manual');
+  const [rows, setRows] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState('');
 
-  const canSubmit = Boolean(fundId) && fundRating >= 1;
+  const runAnalysis = useCallback(async (nextHoldings, nextSource) => {
+    setHoldings(nextHoldings);
+    setSource(nextSource);
+    setStep(STEPS.analyzing);
+    const analysed = await analyzeHoldings(nextHoldings);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    setRows(analysed);
+    setSummary(summarizeAnalysis(analysed));
+    setStep(STEPS.analysis);
+  }, []);
 
-  const submit = async () => {
-    if (!canSubmit) return;
-    await addReview({ fundId, rating: fundRating, body: fundReviewLine });
-    setOnboardingComplete(userId);
-    onComplete?.();
+  const finish = async () => {
+    if (!userId || finishing) return;
+    setFinishing(true);
+    setFinishError('');
+
+    try {
+      const editRows = holdings.map((h) => ({
+        id: crypto.randomUUID(),
+        ticker: h.ticker,
+        invested: String(h.qty * h.avg),
+        qty: String(h.qty),
+      }));
+
+      const assetsByKey = await resolvePortfolioAssets(holdings.map((h) => h.ticker));
+      const built = buildLiveHoldings(editRows, assetsByKey);
+
+      const draft = await createDraftPortfolio(userId);
+      await saveSocialPortfolio(userId, draft.id, {
+        kind: 'live',
+        isDraft: false,
+        name: 'My portfolio',
+        objective: 'Built during onboarding',
+        thesis: 'Checking form vs 50 and 200 day moving averages.',
+        holdings: built,
+        tickers: built.map((h) => h.ticker),
+      });
+
+      setOnboardingComplete(userId);
+      onComplete?.();
+    } catch (err) {
+      // Still unlock the app if save fails — user can add portfolio later.
+      console.error(err);
+      setFinishError(
+        err?.message
+          ? `Could not save portfolio (${err.message}). Entering anyway — you can add it from Profile.`
+          : 'Could not save portfolio. Entering anyway — you can add it from Profile.'
+      );
+      setOnboardingComplete(userId);
+      window.setTimeout(() => onComplete?.(), 1200);
+    } finally {
+      setFinishing(false);
+    }
   };
 
+  if (step === STEPS.attract) {
+    return <AttractStep onContinue={() => setStep(STEPS.method)} />;
+  }
+
+  if (step === STEPS.method) {
+    return (
+      <MethodStep
+        onBack={() => setStep(STEPS.attract)}
+        onManual={() => setStep(STEPS.manual)}
+        onScreenshot={() => setStep(STEPS.screenshot)}
+      />
+    );
+  }
+
+  if (step === STEPS.manual) {
+    return (
+      <ManualStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />
+    );
+  }
+
+  if (step === STEPS.screenshot) {
+    return (
+      <ScreenshotStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />
+    );
+  }
+
+  if (step === STEPS.analyzing) {
+    return <AnalyzingStep holdings={holdings} />;
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col bg-pe-canvas text-pe-text">
-      <AuthLayoutHeader badge="Setup" />
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-feed px-4 py-6 md:py-8">
-          <p className="text-2xl font-bold text-pe-text md:text-3xl">
-            One review to join the community
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-            Share a quick rating on something you invest in to read what other investors own and say.
-          </p>
-
-          <div className="mt-8 border-t border-pe-border pt-8">
-            <FundReviewStep
-              category={assignedCategory}
-              selectedFundId={fundId}
-              onSelectFund={setFundId}
-              rating={fundRating}
-              onRating={setFundRating}
-              reviewLine={fundReviewLine}
-              onReviewLine={setFundReviewLine}
-            />
-          </div>
-        </div>
-      </div>
-
-      <footer className="shrink-0 border-t border-pe-border bg-pe-canvas px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto max-w-feed">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!canSubmit}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-pe-accent py-3 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40"
-          >
-            <span>Submit review & enter feed</span>
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <p className="mt-3 text-center text-[13px] text-pe-text-muted">
-            One quick review unlocks community insights across PocketEdge.
-          </p>
-        </div>
-      </footer>
-    </div>
+    <AnalysisStep
+      rows={rows}
+      summary={summary}
+      source={source}
+      finishing={finishing}
+      finishError={finishError}
+      onFinish={finish}
+    />
   );
 }

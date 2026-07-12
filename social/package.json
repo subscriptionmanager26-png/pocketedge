@@ -16,6 +16,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.30.4",
     "remark-gfm": "^4.0.1",
+    "tesseract.js": "^5.1.1",
     "three": "^0.170.0"
   },
   "devDependencies": {
