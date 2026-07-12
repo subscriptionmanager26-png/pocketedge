@@ -60,6 +60,26 @@ export async function fetchFeedPosts({ limit = 50, offset = 0 } = {}) {
   return posts;
 }
 
+/** Posts that mention any of the given tickers within the last `days` days. */
+export async function fetchPostsMentioningTickers(
+  tickers,
+  { days = 30, limit = 50 } = {}
+) {
+  const keys = [...new Set((tickers ?? []).map((t) => String(t ?? '').trim()).filter(Boolean))];
+  if (!keys.length) return [];
+  if (!usePostBackend()) return [];
+
+  const { data, error } = await supabase.rpc('list_posts_mentioning_tickers', {
+    p_tickers: keys,
+    p_days: days,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  const posts = (data?.items ?? []).map((row) => mapPostRow(row));
+  posts.forEach((post) => notePostLikeSynced(post.id, post.liked));
+  return posts;
+}
+
 export async function fetchPost(postId) {
   const { data, error } = await supabase.rpc('get_social_post', {
     p_post_id: postId,

@@ -7,8 +7,8 @@ import {
   HoldingsSummary,
   NewsFeed,
   PostsFeed,
-  TradesFeed,
   collectActivity,
+  postsToActivityItems,
 } from '../components/ActivityFeed';
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
@@ -21,6 +21,7 @@ import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchStockNewsForTickers, fetchCorporateActionsForTickers, isStockNewsConfigured } from '../lib/stockNewsApi';
+import { fetchPostsMentioningTickers, usePostBackend } from '../lib/socialPostApi';
 import CorporateActionsList from '../components/CorporateActionsList';
 import { skipAuthForDev } from '../lib/sessionStore';
 import { fetchPortfolioFormByTicker, FORM_META } from '../lib/portfolioForm';
@@ -29,6 +30,7 @@ import {
   PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
 
+const PORTFOLIO_POSTS_DAYS = 30;
 function useBackend() {
   return isSupabaseConfigured() && !skipAuthForDev();
 }
@@ -142,6 +144,8 @@ export default function PortfolioPage({
   const [newsLoading, setNewsLoading] = useState(false);
   const [corporateActions, setCorporateActions] = useState([]);
   const [corpActionsLoading, setCorpActionsLoading] = useState(false);
+  const [portfolioPosts, setPortfolioPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
   useEffect(() => {
     if (!tickers.length) {
@@ -238,14 +242,53 @@ export default function PortfolioPage({
     };
   }, [tickers]);
 
+  useEffect(() => {
+    if (!tickers.length) {
+      setPortfolioPosts([]);
+      return undefined;
+    }
+
+    if (usePostBackend()) {
+      let cancelled = false;
+      setPostsLoading(true);
+      fetchPostsMentioningTickers(tickers, { days: PORTFOLIO_POSTS_DAYS, limit: 50 })
+        .then((posts) => {
+          if (!cancelled) setPortfolioPosts(postsToActivityItems(posts, tickers));
+        })
+        .catch(() => {
+          if (!cancelled) setPortfolioPosts([]);
+        })
+        .finally(() => {
+          if (!cancelled) setPostsLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (isDevMockMode()) {
+      setPortfolioPosts(collectActivity(tickers).posts);
+      return undefined;
+    }
+
+    setPortfolioPosts([]);
+    return undefined;
+  }, [tickers]);
+
   const activity = useMemo(() => {
     const base = collectActivity(tickers);
-    if (isStockNewsConfigured() || !isDevMockMode()) {
-      return { ...base, news: portfolioNews };
-    }
-    return base;
-  }, [tickers, portfolioNews]);
+    return {
+      ...base,
+      news: isStockNewsConfigured() || !isDevMockMode() ? portfolioNews : base.news,
+      posts: usePostBackend() || !isDevMockMode() ? portfolioPosts : base.posts,
+      trades: [],
+    };
+  }, [tickers, portfolioNews, portfolioPosts]);
 
+  useEffect(() => {
+    if (contentTab === 'trades') setContentTab('posts');
+  }, [contentTab]);
   const metrics = useMemo(() => {
     if (!activeList) return null;
     if (activeList.kind === 'portfolio' || activeList.kind === 'watchlist') {
@@ -457,11 +500,12 @@ export default function PortfolioPage({
           />
         )
       )}
-      {contentTab === 'trades' && (
-        <TradesFeed items={activity.trades} onOpenProfile={onOpenProfile} />
-      )}
       {contentTab === 'posts' && (
-        <PostsFeed items={activity.posts} onOpenProfile={onOpenProfile} onOpenPost={onOpenPost} />
+        postsLoading ? (
+          <p className="px-6 py-14 text-center text-sm text-pe-text-secondary">Loading posts…</p>
+        ) : (
+          <PostsFeed items={activity.posts} onOpenProfile={onOpenProfile} onOpenPost={onOpenPost} />
+        )
       )}
 
       <WatchlistModal
@@ -495,7 +539,6 @@ const CONTENT_TABS = [
   { id: 'performance', label: 'Performance' },
   { id: 'news', label: 'News' },
   { id: 'corporate_actions', label: 'Corporate Actions' },
-  { id: 'trades', label: 'Trades' },
   { id: 'posts', label: 'Posts' },
 ];
 

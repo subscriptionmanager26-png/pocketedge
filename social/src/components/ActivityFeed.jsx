@@ -6,9 +6,9 @@ import {
   PORTFOLIO_UPDATES,
   POSTS,
   STOCKS,
-  getPerson,
 } from '../data/mockData';
-import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { getPersonSync } from '../lib/socialIdentity';
+import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 
 /** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
@@ -48,6 +48,27 @@ export function collectActivity(tickers) {
   return { news, trades, posts };
 }
 
+/** Map backend posts into the compact PostsFeed shape. */
+export function postsToActivityItems(posts, tickers = []) {
+  return (posts ?? []).map((post) => {
+    const ticker =
+      tickers.find((t) => bodyMentionsTicker(post.body, t) || post.trade?.ticker === t) ??
+      post.trade?.ticker ??
+      null;
+    const body = post.body ?? '';
+    return {
+      id: post.id,
+      type: 'post',
+      postId: post.id,
+      authorId: post.authorId,
+      snippet: body.slice(0, 120) + (body.length > 120 ? '…' : ''),
+      time: post.createdAt ? timeAgo(post.createdAt) : '',
+      createdAt: post.createdAt,
+      ticker,
+    };
+  });
+}
+
 export function NewsFeed({ items }) {
   if (!items.length) return <Empty label="No news for this list yet." />;
   return <NewsList items={items} showTicker />;
@@ -58,7 +79,7 @@ export function TradesFeed({ items, onOpenProfile }) {
   return (
     <div className="divide-y divide-pe-border">
       {items.map((item) => {
-        const person = getPerson(item.authorId);
+        const person = getPersonSync(item.authorId) ?? { name: 'Member', handle: 'member' };
         const isBuy = item.type === 'buy';
         return (
           <div key={item.id} className="flex gap-3 px-4 py-4">
@@ -105,7 +126,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
   return (
     <div className="divide-y divide-pe-border">
       {items.map((item) => {
-        const person = getPerson(item.authorId);
+        const person = getPersonSync(item.authorId) ?? { name: 'Member', handle: 'member' };
         const postId = item.postId ?? item.id;
         return (
           <button

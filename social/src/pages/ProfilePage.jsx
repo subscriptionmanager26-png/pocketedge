@@ -10,7 +10,6 @@ import {
   CURRENT_USER,
   POSTS,
   getPortfolioReturn,
-  getUserTrades,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -67,7 +66,6 @@ const PROFILE_TABS = [
   { id: 'posts', label: 'Posts' },
   { id: 'reviews', label: 'Signals' },
   { id: 'portfolios', label: 'Portfolio' },
-  { id: 'trades', label: 'Trades' },
 ];
 
 const RETURN_PERIODS = ['1D', '1W', '1M', '1Y'];
@@ -152,13 +150,11 @@ export default function ProfilePage({
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [portfolios, setPortfolios] = useState([]);
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
-  const [tradesVersion, setTradesVersion] = useState(0);
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
 
   const bumpPortfolios = () => setPortfolioVersion((v) => v + 1);
-  const bumpTrades = () => setTradesVersion((v) => v + 1);
 
   const [name, setName] = useState(CURRENT_USER.name ?? '');
   const [bio, setBio] = useState(CURRENT_USER.bio ?? '');
@@ -370,7 +366,6 @@ export default function ProfilePage({
         canEdit={canEdit}
         onPortfolioUpdated={() => {
           bumpPortfolios();
-          bumpTrades();
         }}
         onBack={onClearPortfolio}
         canCopy={!canEdit}
@@ -489,10 +484,6 @@ export default function ProfilePage({
           onOpenProfile={onOpenProfile}
           onGraphChange={onGraphChange}
         />
-      )}
-
-      {tab === 'trades' && (
-        <TradesPanel userId={person.id} tradesVersion={tradesVersion} />
       )}
     </div>
   );
@@ -747,49 +738,6 @@ function PortfoliosListPanel({
           </button>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function TradesPanel({ userId, tradesVersion }) {
-  void tradesVersion;
-  const trades = getUserTrades(userId);
-
-  if (!trades.length) {
-    return (
-      <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-        No trades yet. Portfolio changes will appear here automatically.
-      </p>
-    );
-  }
-
-  return (
-    <div className="divide-y divide-pe-border">
-      {trades.map((trade) => {
-        const isBuy = trade.action === 'buy';
-        return (
-          <div key={trade.id} className="px-4 py-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-pe-text">{trade.portfolioName}</p>
-              <span className="text-xs text-pe-text-muted">{timeAgo(trade.createdAt)}</span>
-            </div>
-            <p className="mt-2 text-sm text-pe-text">
-              <span className={`font-bold uppercase ${isBuy ? 'text-pe-positive' : 'text-pe-negative'}`}>
-                {trade.action}
-              </span>{' '}
-              <span className="font-semibold">{formatTicker(trade.ticker)}</span>{' '}
-              <span className="text-pe-text-secondary">
-                {trade.qty} @ {formatPrice(trade.price)}
-              </span>
-              {trade.pnlPct != null && (
-                <span className={`ml-2 font-semibold ${pnlClass(trade.pnlPct)}`}>
-                  {formatPct(trade.pnlPct)}
-                </span>
-              )}
-            </p>
-          </div>
-        );
-      })}
     </div>
   );
 }
