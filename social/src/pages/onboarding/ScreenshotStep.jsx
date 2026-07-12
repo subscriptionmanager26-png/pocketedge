@@ -61,7 +61,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
 
   const handleNext = async () => {
     if (!shots.length) {
-      setError('Add at least one Zerodha or Groww holdings screenshot.');
+      setError('Add at least one Zerodha Kite holdings screenshot.');
       return;
     }
 
@@ -75,7 +75,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
         { onProgress: setProgress }
       );
       if (!parsed.length) {
-        throw new Error('No holdings found. Use clear Zerodha Kite or Groww holdings screenshots.');
+        throw new Error('No holdings found. Use clear Zerodha Kite holdings screenshots.');
       }
       setRows(parsed);
       setPhase('review');
@@ -103,7 +103,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
       return;
     }
     setError('');
-    onSubmit(result.holdings, 'broker-screenshot');
+    onSubmit(result.holdings, 'zerodha-screenshot');
   };
 
   if (phase === 'reading') {
@@ -113,8 +113,8 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
           Reading your screenshots
         </p>
         <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-          Parsing {shots.length} screenshot{shots.length === 1 ? '' : 's'} on your device
-          (Zerodha or Groww) into one holdings summary…
+          Parsing {shots.length} Zerodha screenshot{shots.length === 1 ? '' : 's'} on your
+          device into one holdings summary…
         </p>
         <div className="mt-10 text-center">
           <Loader2 className="mx-auto h-5 w-5 animate-spin text-pe-accent" />
@@ -193,15 +193,15 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
         Upload holdings screenshots
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Add one or more Zerodha Kite or Groww holdings screenshots. Parsing runs on your
-        device — images are not uploaded to our servers.
+        Add one or more Zerodha Kite holdings screenshots. Parsing runs on your device —
+        images are not uploaded to our servers.
       </p>
 
       <div className="mt-8 border-t border-pe-border pt-8">
         <p className={sectionLabelClass}>How to capture</p>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[15px] text-pe-text-secondary">
-          <li>Zerodha Kite or Groww → Holdings</li>
-          <li>Capture each screen of the list (symbols/names, qty, invested visible)</li>
+          <li>Zerodha Kite → Holdings</li>
+          <li>Capture each screen of the list (symbols, qty, invested visible)</li>
           <li>Upload all screenshots below, then tap Next</li>
         </ol>
 
@@ -223,7 +223,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
               Drop screenshots or browse
             </p>
             <p className="mt-1 text-sm text-pe-text-muted">
-              Multiple PNG / JPG · Zerodha Kite or Groww
+              Multiple PNG / JPG · Zerodha Kite
             </p>
           </button>
           <input

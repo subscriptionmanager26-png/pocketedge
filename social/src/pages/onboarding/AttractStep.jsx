@@ -40,7 +40,7 @@ export default function AttractStep({ onContinue }) {
       </div>
 
       <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-[15px] text-pe-text-secondary">
-        Upload one or more Zerodha or Groww holdings screenshots, or add holdings manually —
+        Upload one or more Zerodha Kite holdings screenshots, or add holdings manually —
         your choice.
       </div>
     </OnboardingShell>

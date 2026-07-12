@@ -1,12 +1,9 @@
 /**
- * Broker holdings screenshot parsing for onboarding.
- * Uses the Zerodha Kite + Groww OCR pipeline from mcp-playground.
+ * Zerodha Kite holdings screenshot parsing for onboarding.
  */
 
-const SYMBOL_RE = /^[A-Z][A-Z0-9&-]{1,14}$/;
-
 /**
- * Parse one or more broker holdings screenshots and merge into edit rows
+ * Parse one or more Zerodha holdings screenshots and merge into edit rows
  * shaped like the in-app portfolio table: ticker, invested, qty.
  */
 export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}) {
@@ -35,10 +32,16 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
         },
       });
       const normalized = toPlaygroundHoldings(raw);
+      if (normalized?.source && normalized.source !== 'kite') {
+        lastError = new Error(
+          `“${file.name || 'screenshot'}” does not look like a Zerodha Kite holdings screen.`
+        );
+        continue;
+      }
       const rows = playgroundHoldingsToExtracted(normalized);
       if (!rows.length) {
         lastError = new Error(
-          `No holdings found in “${file.name || 'screenshot'}”. Use a clear Zerodha Kite or Groww holdings screen.`
+          `No holdings found in “${file.name || 'screenshot'}”. Use a clear Zerodha Kite holdings screen.`
         );
         continue;
       }
@@ -57,27 +60,20 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
   }
 
   if (!extracted.length) {
-    throw lastError ?? new Error('No holdings found. Use clear Zerodha or Groww holdings screenshots.');
+    throw lastError ?? new Error('No holdings found. Use clear Zerodha Kite holdings screenshots.');
   }
 
   return mergeHoldingsToEditRows(extracted);
 }
 
 function playgroundHoldingsToExtracted(parsed) {
-  const source = parsed?.source ?? '';
   const rows = [];
 
   for (const h of parsed?.holdings ?? []) {
     const name = String(h.name ?? h.raw?.tradingsymbol ?? '').trim();
     if (!name) continue;
 
-    let ticker = '';
-    if (source === 'kite' || SYMBOL_RE.test(name.toUpperCase())) {
-      ticker = name.toUpperCase();
-    } else {
-      // Groww often gives company / fund names — keep searchable text in ticker field.
-      ticker = name;
-    }
+    const ticker = name.toUpperCase();
 
     const qty = Number(h.units);
     let invested = Number(h.invested);
@@ -87,19 +83,7 @@ function playgroundHoldingsToExtracted(parsed) {
       invested = qty * avg;
     }
 
-    // Mutual funds may lack units; keep invested so user can fill qty in review.
-    const isMf = source === 'groww-mf' || h.assetType === 'MF';
-    if (!Number.isFinite(qty) || qty <= 0) {
-      if (!isMf) continue;
-      rows.push({
-        ticker,
-        name,
-        qty: 1,
-        avg: Number.isFinite(invested) && invested > 0 ? invested : 0,
-        invested: Number.isFinite(invested) ? invested : 0,
-      });
-      continue;
-    }
+    if (!Number.isFinite(qty) || qty <= 0) continue;
 
     if (!Number.isFinite(invested) || invested < 0) {
       if (!ticker) continue;

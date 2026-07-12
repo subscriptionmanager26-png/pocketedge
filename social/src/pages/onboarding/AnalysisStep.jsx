@@ -56,7 +56,7 @@ export default function AnalysisStep({
 
   const sourceLabel =
     source === 'broker-screenshot' || source === 'zerodha-screenshot'
-      ? 'broker screenshot'
+      ? 'Zerodha screenshot'
       : source === 'manual'
         ? 'manual entry'
         : source;

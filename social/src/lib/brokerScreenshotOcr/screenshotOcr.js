@@ -1,15 +1,9 @@
 /**
  * Portfolio screenshot OCR (browser).
- * Supports Zerodha Kite + Groww (Stocks / Mutual Funds).
+ * Supports Zerodha Kite holdings screens.
  * Uses Tesseract.js + fixed-layout template parsing.
  */
 
-import {
-  detectGrowwKind,
-  parseGrowwHoldings,
-  growwToPlaygroundHoldings,
-  applyMinChannel,
-} from './growwOcr.js';
 import { createWorker } from 'tesseract.js';
 
 const LABELS = new Set([
@@ -503,10 +497,6 @@ function extractDaysPnl(tokens, imgH) {
  * Incomplete rows keep nulls for missing fields — no invented market values.
  */
 export function toPlaygroundHoldings(parseResult) {
-  if (parseResult.screen_type === 'groww-stocks' || parseResult.screen_type === 'groww-mf') {
-    return growwToPlaygroundHoldings(parseResult);
-  }
-
   const holdings = [];
   for (const h of parseResult.holdings || []) {
     if (!h.symbol?.present) continue;
@@ -628,16 +618,6 @@ function findListRegion(tokens, h) {
 export async function parseScreenshot(file, { onProgress } = {}) {
   const canvas = await loadImageToCanvas(file);
   const tokens = await ocrTokens(canvas, onProgress);
-
-  let growwKind = detectGrowwKind(tokens);
-  if (growwKind) {
-    // Groww uses green/red amounts — re-OCR on min-channel so colored ₹ text is readable
-    const growwCanvas = applyMinChannel(canvas);
-    const growwTokens = await ocrTokens(growwCanvas, onProgress);
-    growwKind = detectGrowwKind(growwTokens) || growwKind;
-    const worker = await ensureWorker(onProgress);
-    return parseGrowwHoldings(growwTokens, growwCanvas, growwKind, worker);
-  }
 
   const { screenType, issues } = classifyScreen(tokens, canvas);
   const obscured = issues.includes('volume_slider_obscuring_right_column');
