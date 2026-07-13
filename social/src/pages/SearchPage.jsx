@@ -371,6 +371,7 @@ function SectionLabel({ children, icon: Icon }) {
 }
 
 function PersonRow({ person, graphTick, onOpenProfile, onFollowChange }) {
+  void graphTick;
   const following = isFollowing(person.id);
   return (
     <div className="flex items-center gap-3 py-3.5">
