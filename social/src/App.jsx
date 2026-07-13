@@ -536,25 +536,32 @@ export default function App() {
     navigate(tabPath(ctx.tab));
   }, [backScroll, navigate, currentUserId]);
 
-  const openStock = (ticker, { kind = 'stock' } = {}) => {
-    captureMarketReturnContext();
-    resetScroll();
-    clearMarketSelection();
-    setSelectedTicker(ticker);
-    setSelectedTickerKind(kind);
-    setSelectedPostId(null);
-    setTab('markets');
-    navigate(kind === 'etf' ? etfPath(ticker) : stockPath(ticker));
-  };
-
   const openFund = (fundId) => {
     captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
-    setSelectedFundId(fundId);
+    setSelectedFundId(String(fundId ?? '').trim());
     setSelectedPostId(null);
     setTab('markets');
     navigate(fundPath(fundId));
+  };
+
+  const openStock = (ticker, { kind = 'stock', assetType } = {}) => {
+    const key = String(ticker ?? '').trim();
+    const resolvedKind = assetType || kind;
+    // Portfolio holdings use AMFI scheme codes for mutual funds — never open as stocks.
+    if (resolvedKind === 'fund' || /^\d{6,}$/.test(key)) {
+      openFund(key);
+      return;
+    }
+    captureMarketReturnContext();
+    resetScroll();
+    clearMarketSelection();
+    setSelectedTicker(key);
+    setSelectedTickerKind(resolvedKind === 'etf' ? 'etf' : 'stock');
+    setSelectedPostId(null);
+    setTab('markets');
+    navigate(resolvedKind === 'etf' ? etfPath(key) : stockPath(key));
   };
 
   const openIndex = (indexId) => {
@@ -897,6 +904,7 @@ export default function App() {
           <RouteSuspense>
             <PortfolioPage
               onSelectStock={openStock}
+              onSelectFund={openFund}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
               onOpenSourcePortfolio={openProfilePortfolio}

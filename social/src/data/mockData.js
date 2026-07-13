@@ -1,5 +1,10 @@
 /** Demo data for PocketEdge Social — skin-in-the-game disclosure throughout. */
 
+import {
+  readCachedPosition,
+  readCachedPortfolioWeightPct,
+} from '../lib/authorPositionsCache';
+
 export const CURRENT_USER = {
   id: 'u_me',
   name: 'Kushagra',
@@ -922,11 +927,17 @@ export function getUserIdForHandle(handle) {
 }
 
 export function getPosition(authorId, ticker) {
+  // Live hydrate writes authorPositionsCache; demo AUTHOR_POSITIONS is fallback only.
+  const live = readCachedPosition(authorId, ticker);
+  if (live) return live;
   return AUTHOR_POSITIONS[authorId]?.[ticker] ?? { status: 'none' };
 }
 
 /** Author's weight in a ticker as % of their held portfolio value. Null if not held. */
 export function getPortfolioWeightPct(authorId, ticker) {
+  const live = readCachedPortfolioWeightPct(authorId, ticker);
+  if (live != null) return live;
+
   const positions = AUTHOR_POSITIONS[authorId] ?? {};
   const holdings = Object.entries(positions).filter(([, p]) => p.status === 'holds' && p.qty);
   if (!holdings.length) return null;

@@ -164,7 +164,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
   );
 }
 
-export function HoldingsSummary({ holdings, onSelectStock, formByTicker = {} }) {
+export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByTicker = {} }) {
   if (!holdings.length) return <Empty label="No positions in this list." />;
 
   return (
@@ -177,13 +177,24 @@ export function HoldingsSummary({ holdings, onSelectStock, formByTicker = {} }) 
         const weightLabel =
           typeof h.weight === 'number' ? `${h.weight.toFixed(1)}% of holdings` : null;
         const form = !isOverall ? formByTicker[h.ticker] ?? h.form : null;
+        const isFund =
+          h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
 
         return (
           <button
             key={isOverall ? 'overall' : h.ticker}
             type="button"
             onClick={() => {
-              if (!isOverall) onSelectStock?.(h.ticker);
+              if (isOverall) return;
+              if (isFund) {
+                if (onSelectFund) onSelectFund(h.ticker);
+                else onSelectStock?.(h.ticker, { assetType: 'fund' });
+                return;
+              }
+              onSelectStock?.(h.ticker, {
+                kind: h.assetType === 'etf' ? 'etf' : 'stock',
+                assetType: h.assetType,
+              });
             }}
             className={`grid w-full grid-cols-[minmax(0,1.4fr)_0.8fr] gap-x-3 gap-y-0.5 px-4 py-4 text-left transition ${
               isOverall ? 'cursor-default' : 'hover:bg-pe-surface'

@@ -92,10 +92,14 @@ export default function AnalysisStep({
 
       <div className="mt-8 grid grid-cols-2 gap-3 border-t border-pe-border pt-8 sm:grid-cols-4">
         <Stat label="Holdings" value={String(rows.length)} />
-        <Stat label="In Form" value={`${Math.round(summary.inFormShare)}%`} accent="positive" />
+        <Stat
+          label="In Form"
+          value={String(summary.buckets.in_form.length)}
+          accent="positive"
+        />
         <Stat
           label="Off Track"
-          value={`${Math.round(summary.offTrackShare)}%`}
+          value={String(summary.buckets.out_of_form.length)}
           accent="negative"
         />
         <Stat
@@ -129,7 +133,9 @@ export default function AnalysisStep({
                     className="flex items-center justify-between gap-3 px-4 py-3.5"
                   >
                     <div className="min-w-0">
-                      <p className="font-semibold text-pe-text">{row.ticker}</p>
+                      <p className="font-semibold text-pe-text">
+                        {row.assetName || row.name || row.ticker}
+                      </p>
                       <p className="truncate text-[12px] text-pe-text-muted">
                         {row.qty} shares · avg {formatInr(row.avg)}
                         {row.ma50 != null && row.ma200 != null

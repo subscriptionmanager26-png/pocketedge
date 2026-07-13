@@ -358,20 +358,25 @@ export async function resolveMarketStock(symbol) {
 }
 
 export async function resolveMarketFund(schemeCode) {
-  const cached = findCachedMarketItem('mutual_funds', schemeCode);
+  const code = String(schemeCode ?? '').trim();
+  if (!code) return null;
+
+  const cached = findCachedMarketItem('mutual_funds', code);
   if (cached) return cached;
 
   if (useMarketRpc()) {
     try {
-      const found = await lookupMarketAssetRpc(schemeCode);
+      const found = await lookupMarketAssetRpc(code);
       if (found && found.assetType === 'fund') return found;
     } catch (err) {
       console.warn('lookup_social_market_asset failed', err);
     }
   }
 
-  const { items } = await searchMarketTab('mutual_funds', schemeCode, 20);
-  return items.find((item) => item.schemeCode === schemeCode) ?? null;
+  const { items } = await searchMarketTab('mutual_funds', code, 20);
+  return (
+    items.find((item) => String(item.schemeCode ?? item.id ?? '') === code) ?? null
+  );
 }
 
 async function loadFullMarketTab(tab) {

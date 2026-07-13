@@ -1,28 +1,119 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import {
-  STOCKS,
-  getPerson,
-  getPortfolioWeightPct,
-  getPosition,
-} from '../data/mockData';
+import { getPortfolioWeightPct, getPosition } from '../data/mockData';
+import { hydrateAuthorPositions } from '../lib/authorPositionsStore';
+import { resolvePortfolioAsset, holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
+import { getPersonSync, resolvePerson } from '../lib/socialIdentity';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
 import { formatTicker, statusStyles } from '../lib/tickers';
 
+function resolveAuthorPosition(authorId, ticker, asset) {
+  const keys = [
+    ticker,
+    asset?.key,
+    asset?.name,
+    asset?.item?.symbol,
+    asset?.item?.schemeCode,
+    asset?.item?.name,
+  ]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
+
+  for (const key of keys) {
+    const position = getPosition(authorId, key);
+    if (position?.status && position.status !== 'none') {
+      return {
+        position,
+        weightPct: getPortfolioWeightPct(authorId, key),
+      };
+    }
+  }
+
+  return {
+    position: getPosition(authorId, ticker) ?? { status: 'none' },
+    weightPct: getPortfolioWeightPct(authorId, ticker),
+  };
+}
+
 function TickerCardContent({ ticker, authorId, onClose }) {
-  const stock = STOCKS[ticker];
-  const position = getPosition(authorId, ticker) ?? { status: 'none' };
+  const [asset, setAsset] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(true);
+  const [positionTick, setPositionTick] = useState(0);
+  const [author, setAuthor] = useState(() => getPersonSync(authorId));
+
+  useEffect(() => {
+    let cancelled = false;
+    setPriceLoading(true);
+    resolvePortfolioAsset(ticker)
+      .then((resolved) => {
+        if (!cancelled) setAsset(resolved);
+      })
+      .catch(() => {
+        if (!cancelled) setAsset(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPriceLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAuthor(getPersonSync(authorId));
+    if (!authorId) return undefined;
+
+    Promise.all([
+      resolvePerson(authorId).catch(() => null),
+      hydrateAuthorPositions([authorId]),
+    ]).then(([person]) => {
+      if (cancelled) return;
+      if (person) setAuthor(person);
+      setPositionTick((n) => n + 1);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authorId]);
+
+  void positionTick;
+  const { position, weightPct } = resolveAuthorPosition(authorId, ticker, asset);
   const styles = statusStyles(position.status);
-  const weightPct = getPortfolioWeightPct(authorId, ticker);
-  const author = getPerson(authorId);
+
+  const name =
+    asset?.name ||
+    holdingDisplayLabel({
+      ticker,
+      assetName: asset?.name,
+      assetType: asset?.kind,
+    });
+  const price = asset?.price ?? null;
+  const changePct =
+    asset?.item?.changePct != null
+      ? Number(asset.item.changePct)
+      : asset?.item?.change_pct != null
+        ? Number(asset.item.change_pct)
+        : null;
+  const displayKey =
+    asset?.kind === 'fund' ? name : formatTicker(asset?.key || ticker);
+
+  // No position → 0%. Held with known weight → that %. Held without value data → null (show "Holds").
+  const holdingPct =
+    position.status === 'holds' ? (weightPct != null ? weightPct : null) : 0;
 
   return (
     <>
       <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
-          <p className="text-[15px] font-semibold text-pe-text">{formatTicker(ticker)}</p>
-          <p className="text-[13px] text-pe-text-secondary">{stock?.name ?? ticker}</p>
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold text-pe-text">{displayKey}</p>
+          {asset?.kind === 'fund' ? (
+            <p className="mt-0.5 text-[12px] text-pe-text-muted">Mutual fund</p>
+          ) : name && name !== displayKey ? (
+            <p className="mt-0.5 truncate text-[13px] text-pe-text-secondary">{name}</p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -35,25 +126,49 @@ function TickerCardContent({ ticker, authorId, onClose }) {
       </div>
 
       <div className="mb-3">
-        <p className="text-lg font-semibold text-pe-text">{formatPrice(stock?.price)}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          Current price
+        </p>
+        {priceLoading ? (
+          <p className="mt-1 text-sm text-pe-text-muted">Loading…</p>
+        ) : (
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="text-lg font-semibold text-pe-text">{formatPrice(price)}</p>
+            {Number.isFinite(changePct) ? (
+              <p className={`text-sm font-semibold ${pnlClass(changePct)}`}>
+                {formatPct(changePct)}
+              </p>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-2.5">
         <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-          Portfolio
+          {author?.handle ? `@${author.handle}'s holding` : 'Author holding'}
         </p>
         <p className="mt-1 text-[17px] font-semibold text-pe-text">
-          {weightPct != null ? `${weightPct.toFixed(1)}%` : '—'}
+          {holdingPct != null ? `${holdingPct.toFixed(1)}% of book` : 'Holds'}
         </p>
-        <p className="mt-0.5 text-[11px] text-pe-text-secondary">
-          {weightPct != null
-            ? `of @${author.handle}'s book`
-            : position.status === 'watchlist'
+        {position.status === 'holds' ? (
+          <p className="mt-0.5 text-[12px] text-pe-text-secondary">
+            {[
+              position.qty != null ? `${position.qty} units` : null,
+              position.value != null ? formatPrice(position.value) : null,
+              position.pnlPct != null ? formatPct(position.pnlPct) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || 'In portfolio'}
+          </p>
+        ) : (
+          <p className="mt-0.5 text-[12px] text-pe-text-secondary">
+            {position.status === 'watchlist'
               ? 'On watchlist'
               : position.status === 'exited'
                 ? 'Exited'
                 : 'No position'}
-        </p>
+          </p>
+        )}
       </div>
 
       <div
@@ -98,17 +213,26 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
       };
     }
 
-    const onPointerDown = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) onClose?.();
-    };
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') onClose?.();
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
+    // Defer so the opening click doesn't immediately close the card.
+    let remove = () => {};
+    const timer = window.setTimeout(() => {
+      const onPointerDown = (event) => {
+        if (ref.current && !ref.current.contains(event.target)) onClose?.();
+      };
+      const onKeyDown = (event) => {
+        if (event.key === 'Escape') onClose?.();
+      };
+      document.addEventListener('mousedown', onPointerDown);
+      document.addEventListener('keydown', onKeyDown);
+      remove = () => {
+        document.removeEventListener('mousedown', onPointerDown);
+        document.removeEventListener('keydown', onKeyDown);
+      };
+    }, 0);
+
     return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
+      window.clearTimeout(timer);
+      remove();
     };
   }, [onClose, isMobile]);
 

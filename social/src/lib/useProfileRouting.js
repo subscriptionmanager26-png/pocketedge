@@ -97,6 +97,21 @@ export function useProfileRouting({
     }
 
     if (parsed.kind === 'stock' || parsed.kind === 'etf') {
+      // AMFI scheme codes are numeric — treat accidental /stock/<code> as fund.
+      if (parsed.kind === 'stock' && /^\d{6,}$/.test(String(parsed.symbol ?? ''))) {
+        setProfilePortfolioId(null);
+        setSelectedPostId(null);
+        setSelectedTicker(null);
+        setSelectedTickerKind('stock');
+        setSelectedIndexId(null);
+        setSelectedCommodityId(null);
+        setSelectedFundId(String(parsed.symbol));
+        setTab('markets');
+        navigate(`/fund/${encodeURIComponent(String(parsed.symbol))}`, { replace: true });
+        finish();
+        return;
+      }
+
       setProfilePortfolioId(null);
       setSelectedPostId(null);
       setSelectedFundId(null);

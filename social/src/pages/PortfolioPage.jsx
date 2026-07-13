@@ -37,6 +37,7 @@ function useBackend() {
 
 export default function PortfolioPage({
   onSelectStock,
+  onSelectFund,
   onOpenProfile,
   onOpenPost,
   onOpenSourcePortfolio,
@@ -179,6 +180,7 @@ export default function PortfolioPage({
       buckets[form]?.push({
         ticker: holding.ticker,
         name,
+        assetType: holding.assetType ?? null,
       });
     }
 
@@ -482,6 +484,7 @@ export default function PortfolioPage({
         <HoldingsSummary
           holdings={overallRow ? [overallRow, ...holdingsRows] : holdingsRows}
           onSelectStock={onSelectStock}
+          onSelectFund={onSelectFund}
           formByTicker={formByTicker}
         />
       )}
@@ -528,9 +531,13 @@ export default function PortfolioPage({
           formId={formSheet}
           items={formBuckets[formSheet] ?? []}
           onClose={() => setFormSheet(null)}
-          onSelectStock={(ticker) => {
+          onSelectStock={(ticker, meta) => {
             setFormSheet(null);
-            onSelectStock?.(ticker);
+            onSelectStock?.(ticker, meta);
+          }}
+          onSelectFund={(schemeCode) => {
+            setFormSheet(null);
+            onSelectFund?.(schemeCode);
           }}
         />
       ) : null}
@@ -628,7 +635,7 @@ function PortfolioSummaryComingSoon({ portfolioName }) {
   );
 }
 
-function FormBucketSheet({ formId, items, onClose, onSelectStock }) {
+function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }) {
   const meta = FORM_META[formId];
 
   return (
@@ -663,18 +670,29 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock }) {
           </p>
         ) : (
           <div className="divide-y divide-pe-border">
-            {items.map((item) => (
-              <button
-                key={item.ticker}
-                type="button"
-                onClick={() => onSelectStock?.(item.ticker)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
-              >
-                <p className="truncate text-[15px] font-semibold text-pe-text">
-                  {item.name || holdingDisplayLabel(item)}
-                </p>
-              </button>
-            ))}
+            {items.map((item) => {
+              const isFund =
+                item.assetType === 'fund' || /^\d{6,}$/.test(String(item.ticker ?? '').trim());
+              return (
+                <button
+                  key={item.ticker}
+                  type="button"
+                  onClick={() => {
+                    if (isFund) {
+                      if (onSelectFund) onSelectFund(item.ticker);
+                      else onSelectStock?.(item.ticker, { assetType: 'fund' });
+                      return;
+                    }
+                    onSelectStock?.(item.ticker, { assetType: item.assetType });
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
+                >
+                  <p className="truncate text-[15px] font-semibold text-pe-text">
+                    {item.name || holdingDisplayLabel(item)}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

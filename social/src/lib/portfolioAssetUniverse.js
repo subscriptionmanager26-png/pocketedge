@@ -121,8 +121,17 @@ async function findPortfolioAssetExactLocal(meta, needle) {
     return toEntry(cached, meta);
   }
 
-  const { items } = await searchMarketTab(meta.tab, needle, 5);
-  const found = items.find((item) => portfolioAssetKey(item, meta.kind) === needle);
+  const { items } = await searchMarketTab(meta.tab, needle, meta.kind === 'fund' ? 12 : 5);
+  const needleLower = needle.toLowerCase();
+  const found = items.find((item) => {
+    const key = portfolioAssetKey(item, meta.kind);
+    if (key === needle) return true;
+    if (meta.kind === 'fund') {
+      const name = String(item.name ?? '').trim().toLowerCase();
+      return name === needleLower || name.includes(needleLower);
+    }
+    return false;
+  });
   return found ? toEntry(found, meta) : null;
 }
 
@@ -143,7 +152,13 @@ export async function resolvePortfolioAsset(key) {
     }
   }
 
-  for (const meta of PORTFOLIO_TABS) {
+  // Prefer fund name search when the key looks like a name (has spaces / not a scheme code).
+  const looksLikeFundName = /\s/.test(raw) || (!/^\d{6,}$/.test(raw) && raw.length > 12);
+  const order = looksLikeFundName
+    ? [PORTFOLIO_TABS[2], PORTFOLIO_TABS[0], PORTFOLIO_TABS[1]]
+    : PORTFOLIO_TABS;
+
+  for (const meta of order) {
     const needle = meta.kind === 'fund' ? raw : raw.toUpperCase();
     const found = await findPortfolioAssetExactLocal(meta, needle);
     if (found) return found;
