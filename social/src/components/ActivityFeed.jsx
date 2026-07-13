@@ -177,19 +177,20 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
         const isFund =
           h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
         const isEtf = h.assetType === 'etf';
+        const qty = Number(h.qty);
+        const avg = Number(h.avg);
         const invested =
           h.invested != null
             ? Number(h.invested)
-            : (Number(h.qty) || 0) * (Number(h.avg) || 0);
+            : Number.isFinite(qty) && Number.isFinite(avg)
+              ? qty * avg
+              : null;
         const currentValue = h.value != null ? Number(h.value) : null;
         const todayPnl = h.todayPnl;
         const todayPnlPct =
           h.todayPnlPct ?? h.changePct ?? (!isOverall ? stock?.changePct : null);
-        const assetTypeLabel = isFund ? 'Fund' : isEtf ? 'ETF' : 'Stock';
-        const weightLabel =
-          typeof h.weight === 'number' && Number.isFinite(h.weight)
-            ? `${h.weight.toFixed(1)}%`
-            : null;
+        const weightPct =
+          typeof h.weight === 'number' && Number.isFinite(h.weight) ? h.weight : null;
 
         if (isOverall) {
           return (
@@ -199,20 +200,19 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             >
               <div className="min-w-0">
                 <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Total Invested
+                  Total — XYZ · YY% of Portfolio
                 </p>
                 <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">Security Name</p>
-                <p className="mt-1.5 text-[11px] font-semibold text-pe-text-muted">
-                  Tag 1 · Tag 2 · Tag 3
-                </p>
+                <p className="mt-1 text-[12px] font-semibold text-pe-text-muted">QTY · Avg Price</p>
               </div>
               <div className="min-w-0 text-right">
                 <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Current Value
+                  Current — XYZ
                 </p>
-                <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">
-                  Today&apos;s ↑ ABC ( XYZ% )
+                <p className="mt-1 text-[13px] font-semibold text-pe-text-muted">
+                  Today ↑ ABC ( XX% )
                 </p>
+                <p className="mt-1.5 text-[11px] font-semibold text-pe-text-muted">Tag</p>
               </div>
             </div>
           );
@@ -237,39 +237,40 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
           >
             <div className="min-w-0">
               <p className="text-[12px] font-semibold tabular-nums text-pe-text-secondary">
-                {Number.isFinite(invested) && invested > 0
+                Total —{' '}
+                {invested != null && Number.isFinite(invested) && invested > 0
                   ? formatInr(invested, { compact: true })
                   : '—'}
+                {weightPct != null ? ` · ${weightPct.toFixed(1)}% of Portfolio` : ''}
               </p>
               <p className="mt-0.5 truncate text-[15px] font-semibold text-pe-text">
                 {holdingDisplayLabel(h)}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                {form ? <FormStatusTag form={form} /> : null}
-                <HoldingMetaTag>{assetTypeLabel}</HoldingMetaTag>
-                {weightLabel ? <HoldingMetaTag>{weightLabel}</HoldingMetaTag> : null}
-              </div>
+              <p className="mt-1 text-[12px] font-semibold tabular-nums text-pe-text-muted">
+                {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '—'} QTY
+                {' · '}
+                Avg{' '}
+                {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '—'}
+              </p>
             </div>
             <div className="min-w-0 self-start text-right">
               <p className="text-[15px] font-bold tabular-nums text-pe-text">
+                Current —{' '}
                 {currentValue != null && Number.isFinite(currentValue)
                   ? formatInr(currentValue, { compact: true })
                   : '—'}
               </p>
               <HoldingTodayDelta amount={todayPnl} pct={todayPnlPct} />
+              {form ? (
+                <div className="mt-1.5 flex justify-end">
+                  <FormStatusTag form={form} />
+                </div>
+              ) : null}
             </div>
           </button>
         );
       })}
     </div>
-  );
-}
-
-function HoldingMetaTag({ children }) {
-  return (
-    <span className="inline-flex items-center rounded-md border border-pe-border-strong bg-pe-surface px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-text-muted">
-      {children}
-    </span>
   );
 }
 
@@ -286,7 +287,7 @@ function HoldingTodayDelta({ amount, pct }) {
   const hasAmount = amount != null && Number.isFinite(Number(amount));
   const hasPct = pct != null && Number.isFinite(Number(pct));
   if (!hasAmount && !hasPct) {
-    return <p className="mt-1 text-[13px] font-semibold text-pe-text-muted">Today&apos;s —</p>;
+    return <p className="mt-1 text-[13px] font-semibold text-pe-text-muted">Today —</p>;
   }
 
   const tone = hasAmount ? amount : pct;
@@ -303,7 +304,7 @@ function HoldingTodayDelta({ amount, pct }) {
         tone
       )}`}
     >
-      <span>Today&apos;s</span>
+      <span>Today</span>
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
       <span>
         {hasAmount ? formatHoldingDeltaAmount(amount) : '—'}
