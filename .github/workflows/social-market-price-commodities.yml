@@ -1,0 +1,34 @@
+name: Social market price refresh (commodities)
+
+# MCX spot prices into social_market_assets + social_market_price_history.
+
+on:
+  schedule:
+    # Hourly weekdays during MCX hours (approx 09:00–23:30 IST = 03:30–18:00 UTC)
+    - cron: '0 4-18 * * 1-5'
+    # End-of-day snapshot for history
+    - cron: '45 18 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: social-market-price-commodities
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Refresh commodity spots
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/refresh-social-market-prices.mjs --mode=commodities

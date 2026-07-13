@@ -43,6 +43,7 @@ const TAB_TO_ASSET_TYPE = {
   stocks: 'stock',
   etf: 'etf',
   mutual_funds: 'fund',
+  commodity: 'commodity',
 };
 
 const cache = new Map();
@@ -81,6 +82,27 @@ export function marketAssetRowToItem(row) {
       priceSource,
       syncedAt,
       assetType: 'fund',
+    };
+  }
+
+  if (type === 'commodity') {
+    const dash = String(key).lastIndexOf('-');
+    const symbol = dash > 0 ? String(key).slice(0, dash) : key;
+    const location = dash > 0 ? String(key).slice(dash + 1) : null;
+    return {
+      id: key,
+      symbol,
+      name: name ?? symbol,
+      location,
+      spotPrice: price,
+      price,
+      change: previousClose != null && price != null ? price - previousClose : null,
+      changePct,
+      previousClose,
+      asOfDate,
+      priceSource,
+      syncedAt,
+      assetType: 'commodity',
     };
   }
 
@@ -226,7 +248,7 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
     return { items: [], total: 0 };
   }
 
-  // Indices / commodities stay on static JSON (not in social_market_assets).
+  // Indices stay on static JSON (not in social_market_assets).
   if (!tabToAssetType(tab)) {
     return searchMarketTabLocal(tab, q, limit);
   }
@@ -370,11 +392,31 @@ export async function resolveMarketIndex(indexId) {
 }
 
 export async function resolveMarketCommodity(commodityId) {
-  const cached = findCachedMarketItem('commodity', commodityId);
+  const id = String(commodityId ?? '').trim();
+  if (!id) return null;
+
+  const cached = findCachedMarketItem('commodity', id);
   if (cached) return cached;
 
+  if (useMarketRpc()) {
+    try {
+      const live = await lookupMarketAssetRpc(id);
+      if (live?.assetType === 'commodity') return live;
+    } catch (err) {
+      console.warn('lookup commodity failed, falling back to JSON', err);
+    }
+  }
+
   const items = await loadFullMarketTab('commodity');
-  return items.find((item) => item.id === commodityId) ?? null;
+  return (
+    items.find(
+      (item) =>
+        item.id === id ||
+        item.symbol === id ||
+        `${item.symbol}-${item.location}` === id ||
+        String(item.id ?? '').toUpperCase() === id.toUpperCase()
+    ) ?? null
+  );
 }
 
 export function marketFundToDetail(fund) {

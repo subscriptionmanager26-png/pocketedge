@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * Refresh PocketEdge social market quotes from NSE (stocks/ETFs) and AMFI (funds).
- * Also upserts daily close / NAV rows into social_market_price_history.
+ * Refresh PocketEdge social market quotes from NSE (stocks/ETFs), AMFI (funds),
+ * and MCX (commodities). Also upserts daily close / NAV / spot rows into
+ * social_market_price_history.
  *
  * Usage:
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=all
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=equity
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=funds
+ *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=commodities
  *
  * Env:
  *   VITE_SUPABASE_URL / SUPABASE_URL
@@ -15,6 +17,7 @@
 
 import { parseNavAll } from './lib/indian-markets/amfi.js';
 import { SOURCES, UA } from './lib/indian-markets/constants.js';
+import { fetchMcxSpotPrices } from './lib/indian-markets/mcx.js';
 import {
   createNseSession,
   fetchEtfList,
@@ -44,8 +47,8 @@ function parseArgs(argv) {
     if (arg.startsWith('--mode=')) args.mode = arg.slice('--mode='.length);
     if (arg === '--no-history') args.writeHistory = false;
   }
-  if (!['all', 'equity', 'funds'].includes(args.mode)) {
-    throw new Error(`Invalid --mode=${args.mode}. Use all|equity|funds`);
+  if (!['all', 'equity', 'funds', 'commodities'].includes(args.mode)) {
+    throw new Error(`Invalid --mode=${args.mode}. Use all|equity|funds|commodities`);
   }
   return args;
 }
@@ -58,6 +61,14 @@ function istDateString(date = new Date()) {
     month: '2-digit',
     day: '2-digit',
   }).format(date);
+}
+
+/** Parse MCX FormattedDate like "13 Jul 2026" → YYYY-MM-DD, else fallback. */
+function parseMcxDate(formatted, fallback = istDateString()) {
+  if (!formatted) return fallback;
+  const parsed = Date.parse(`${formatted} UTC`);
+  if (!Number.isFinite(parsed)) return fallback;
+  return istDateString(new Date(parsed));
 }
 
 function restHeaders(apiKey) {
@@ -185,8 +196,6 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt }) 
     if (q.symbol) stockAssetTypeByKey.set(q.symbol, 'etf');
   }
 
-  // Prefer ETF typing when a symbol appears in the ETF list; otherwise stock.
-  // Dedupe by symbol within each type (NSE payloads can repeat keys).
   const stockByKey = new Map();
   for (const q of stocks) {
     if (!q.symbol || stockAssetTypeByKey.has(q.symbol)) continue;
@@ -278,6 +287,73 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   return { fundUpdated, historyUpserted, schemeCount: assetRows.length };
 }
 
+async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedAt }) {
+  console.log('Fetching MCX spot market prices...');
+  const { items } = await fetchMcxSpotPrices();
+
+  const assetByKey = new Map();
+  const historyByKey = new Map();
+
+  for (const item of items) {
+    const symbol = String(item.id ?? item.name ?? '').trim();
+    const location = String(item.location ?? 'NA').trim();
+    if (!symbol || item.spotPrice == null || !Number.isFinite(item.spotPrice)) continue;
+
+    const assetKey = `${symbol}-${location}`.toUpperCase();
+    const rowAsOf = parseMcxDate(item.date, asOfDate);
+    const change = Number.isFinite(item.change) ? item.change : null;
+    const previousClose =
+      change != null && Number.isFinite(item.spotPrice) ? item.spotPrice - change : null;
+    const changePct =
+      previousClose != null && previousClose !== 0
+        ? (change / previousClose) * 100
+        : null;
+
+    assetByKey.set(assetKey, {
+      asset_type: 'commodity',
+      asset_key: assetKey,
+      name: symbol,
+      price: item.spotPrice,
+      change_pct: changePct,
+      previous_close: previousClose,
+      as_of_date: rowAsOf,
+      price_source: 'mcx',
+      synced_at: syncedAt,
+    });
+
+    if (writeHistory && rowAsOf) {
+      historyByKey.set(`${assetKey}|${rowAsOf}`, {
+        asset_type: 'commodity',
+        asset_key: assetKey,
+        as_of_date: rowAsOf,
+        close_price: item.spotPrice,
+        previous_close: previousClose,
+        change_pct: changePct,
+        source: 'mcx',
+        synced_at: syncedAt,
+      });
+    }
+  }
+
+  const assetRows = [...assetByKey.values()];
+  const historyRows = [...historyByKey.values()];
+
+  console.log(`Upserting ${assetRows.length} commodity spots (as_of ${asOfDate})...`);
+  const commodityUpdated = await upsertAssets(url, apiKey, assetRows);
+
+  let historyUpserted = 0;
+  if (writeHistory && historyRows.length) {
+    console.log(`Upserting ${historyRows.length} commodity history points...`);
+    historyUpserted = await upsertHistory(url, apiKey, historyRows);
+  }
+
+  return {
+    commodityUpdated,
+    historyUpserted,
+    commodityCount: assetRows.length,
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const url = requireEnv('VITE_SUPABASE_URL', 'SUPABASE_URL');
@@ -304,6 +380,7 @@ async function main() {
 
   let equityUpdated = 0;
   let fundUpdated = 0;
+  let commodityUpdated = 0;
   let historyUpserted = 0;
   const meta = { as_of_date: asOfDate };
 
@@ -334,19 +411,33 @@ async function main() {
       meta.funds = fd.schemeCount;
     }
 
+    if (args.mode === 'all' || args.mode === 'commodities') {
+      const cm = await refreshCommodities({
+        url,
+        apiKey,
+        writeHistory: args.writeHistory,
+        asOfDate,
+        syncedAt,
+      });
+      commodityUpdated = cm.commodityUpdated;
+      historyUpserted += cm.historyUpserted;
+      meta.commodities = cm.commodityCount;
+    }
+
     if (runId) {
       await updateFetchRun(url, apiKey, runId, {
         status: 'completed',
         finished_at: new Date().toISOString(),
         equity_updated: equityUpdated,
         fund_updated: fundUpdated,
+        commodity_updated: commodityUpdated,
         history_upserted: historyUpserted,
         meta,
       });
     }
 
     console.log(
-      `Done. equity=${equityUpdated} funds=${fundUpdated} history=${historyUpserted}`
+      `Done. equity=${equityUpdated} funds=${fundUpdated} commodities=${commodityUpdated} history=${historyUpserted}`
     );
   } catch (err) {
     if (runId) {
@@ -355,6 +446,7 @@ async function main() {
         finished_at: new Date().toISOString(),
         equity_updated: equityUpdated,
         fund_updated: fundUpdated,
+        commodity_updated: commodityUpdated,
         history_upserted: historyUpserted,
         error_message: err?.message ?? String(err),
         meta,
