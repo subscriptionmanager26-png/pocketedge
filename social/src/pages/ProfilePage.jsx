@@ -1131,7 +1131,7 @@ function PortfolioDetailView({
   };
 
   const compactInputClass =
-    'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-[14px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
+    'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[14px]';
 
   const rowGridClass = isWatchlist
     ? 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2'

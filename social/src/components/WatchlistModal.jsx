@@ -53,7 +53,7 @@ export default function WatchlistModal({ open, onClose, onSave }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="List name"
-            className="w-full rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-[15px] outline-none focus:border-pe-accent"
+            className="w-full rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-base outline-none focus:border-pe-accent md:text-[15px]"
           />
           <div className="flex gap-2">
             <div className="min-w-0 flex-1">
@@ -61,7 +61,7 @@ export default function WatchlistModal({ open, onClose, onSave }) {
                 value={symbol}
                 exclude={tickers}
                 placeholder="Search stock, ETF, or fund"
-                inputClassName="min-w-0 flex-1 rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-[15px] outline-none focus:border-pe-accent"
+                inputClassName="min-w-0 flex-1 rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-base outline-none focus:border-pe-accent md:text-[15px]"
                 onValueChange={setSymbol}
                 onSelect={(asset) => addAsset(asset.key)}
               />

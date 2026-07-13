@@ -53,6 +53,23 @@ textarea {
   font: inherit;
 }
 
+/*
+ * iPhone Safari auto-zooms focused inputs when computed font-size < 16px.
+ * That scale shifts the visual viewport, so portal/fixed search menus float
+ * away from the field. Keep form controls at ≥16px on touch Safari.
+ */
+@supports (-webkit-touch-callout: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+      [type='button']
+    ):not([type='submit']):not([type='reset']):not([type='file']):not(
+      [type='image']
+    ):not([type='hidden']):not([type='color']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 ::selection {
   background: rgba(255, 103, 25, 0.16);
 }

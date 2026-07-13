@@ -44,7 +44,7 @@ export function PageHeaderSearch({ value, onChange, placeholder, autoFocus = fal
         onChange={onChange}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full min-w-0 bg-transparent text-[15px] text-pe-text outline-none placeholder:text-pe-text-muted"
+        className="w-full min-w-0 bg-transparent text-base text-pe-text outline-none placeholder:text-pe-text-muted md:text-[15px]"
       />
     </div>
   );
