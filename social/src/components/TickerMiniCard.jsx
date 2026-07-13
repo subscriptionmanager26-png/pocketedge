@@ -12,7 +12,7 @@ import { formatTicker, statusStyles } from '../lib/tickers';
 
 function TickerCardContent({ ticker, authorId, onClose }) {
   const stock = STOCKS[ticker];
-  const position = getPosition(authorId, ticker);
+  const position = getPosition(authorId, ticker) ?? { status: 'none' };
   const styles = statusStyles(position.status);
   const weightPct = getPortfolioWeightPct(authorId, ticker);
   const author = getPerson(authorId);

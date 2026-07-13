@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ClipboardCheck, Copy, Heart, Share2 } from 'lucide-react';
 import { CURRENT_USER, STOCKS, copyPortfolioForUser, getHandleForUserId } from '../data/mockData';
 import { formatCount, formatPct, pnlClass } from '../lib/format';
-import { formatTicker } from '../lib/tickers';
+import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { profilePath } from '../lib/routes';
 import CommentEngagementButton from './CommentEngagementButton';
 import { PortfolioKindMetaTags } from './PortfolioMetaTag';
@@ -22,7 +22,7 @@ function getPositions(portfolio) {
     const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
     return holdings.map((h) => ({
       ticker: h.ticker,
-      label: formatTicker(h.ticker),
+      label: holdingDisplayLabel(h),
       weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
     }));
   }
@@ -31,7 +31,7 @@ function getPositions(portfolio) {
   const weight = tickers.length ? 100 / tickers.length : 0;
   return tickers.map((ticker) => ({
     ticker,
-    label: formatTicker(ticker),
+    label: holdingDisplayLabel({ ticker }),
     weight,
   }));
 }

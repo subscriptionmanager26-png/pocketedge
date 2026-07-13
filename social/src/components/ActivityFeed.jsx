@@ -10,6 +10,7 @@ import {
 import { getPersonSync } from '../lib/socialIdentity';
 import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
+import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 
 /** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
 export function collectActivity(tickers) {
@@ -199,7 +200,7 @@ export function HoldingsSummary({ holdings, onSelectStock, formByTicker = {} }) 
 
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold text-pe-text">
-                {isOverall ? 'Overall' : formatTicker(h.ticker)}
+                {isOverall ? 'Overall' : holdingDisplayLabel(h)}
               </p>
               {form ? (
                 <div className="mt-1">

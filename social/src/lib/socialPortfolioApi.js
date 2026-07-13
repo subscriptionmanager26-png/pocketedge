@@ -16,6 +16,7 @@ import {
   getLocalDrafts,
   removeLocalDraft,
 } from './localPortfolioDraftStore';
+import { invalidateAuthorPositions } from './authorPositionsStore';
 
 function useBackend() {
   return isSupabaseConfigured() && !skipAuthForDev();
@@ -159,6 +160,7 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
 
     if (error) throw error;
     removeLocalDraft(ownerId, portfolioId);
+    invalidateAuthorPositions(ownerId);
     return mapRpcRow(data);
   }
 
@@ -182,6 +184,7 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
   });
 
   if (error) throw error;
+  invalidateAuthorPositions(ownerId);
   return mapRpcRow(data);
 }
 

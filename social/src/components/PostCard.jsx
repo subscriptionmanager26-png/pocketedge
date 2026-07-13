@@ -29,11 +29,13 @@ function previewBody(body) {
 export default function PostCard({
   post,
   variant = 'feed',
+  enrichmentTick = 0,
   onOpenProfile,
   onOpenPost,
   onToggleLike,
 }) {
   const isDetail = variant === 'detail';
+  void enrichmentTick;
   const person = getPersonSync(post.authorId);
   const displayBody = isDetail ? post.body : previewBody(post.body).text;
   const truncated = !isDetail && previewBody(post.body).truncated;
@@ -236,7 +238,12 @@ export default function PostCard({
             <p className="pb-4 text-sm text-pe-text-secondary">No comments yet.</p>
           ) : (
             post.comments.map((c) => (
-              <CommentRow key={c.id} comment={c} onOpenProfile={onOpenProfile} />
+              <CommentRow
+                key={c.id}
+                comment={c}
+                enrichmentTick={enrichmentTick}
+                onOpenProfile={onOpenProfile}
+              />
             ))
           )}
         </div>

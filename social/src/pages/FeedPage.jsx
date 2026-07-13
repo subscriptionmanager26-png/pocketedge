@@ -3,6 +3,7 @@ import { isDevMockMode } from '../lib/appMode';
 import PostCard from '../components/PostCard';
 import { FeedSkeleton } from '../components/PageSkeletons';
 import { getFollowedTopicSlugs, getFollowingIds } from '../lib/socialGraphStore';
+import { usePostEnrichment } from '../lib/usePostEnrichment';
 
 export default function FeedPage({
   posts,
@@ -44,6 +45,7 @@ export default function FeedPage({
     return list;
   }, [feedMode, posts, mockPosts, followingIds, followedTopics]);
 
+  const enrichmentTick = usePostEnrichment(feedPosts);
   const awaitingMock = isDevMockMode() && posts == null && mockPosts == null;
 
   if ((loading || awaitingMock) && feedPosts.length === 0) {
@@ -68,6 +70,7 @@ export default function FeedPage({
           key={post.id}
           post={post}
           variant="feed"
+          enrichmentTick={enrichmentTick}
           onOpenProfile={onOpenProfile}
           onOpenPost={onOpenPost}
           onToggleLike={onToggleLike}

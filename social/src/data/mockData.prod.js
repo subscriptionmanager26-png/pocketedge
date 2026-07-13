@@ -1,5 +1,10 @@
 /** Production stub — keeps API surface without shipping demo fixtures. */
 
+import {
+  readCachedPosition,
+  readCachedPortfolioWeightPct,
+} from '../lib/authorPositionsCache';
+
 export const CURRENT_USER = {
   id: 'u_me',
   name: 'Investor',
@@ -86,12 +91,12 @@ export function getUserIdForHandle(handle) {
   return getPersonByHandle(handle)?.id ?? null;
 }
 
-export function getPosition() {
-  return null;
+export function getPosition(authorId, ticker) {
+  return readCachedPosition(authorId, ticker) ?? { status: 'none' };
 }
 
-export function getPortfolioWeightPct() {
-  return null;
+export function getPortfolioWeightPct(authorId, ticker) {
+  return readCachedPortfolioWeightPct(authorId, ticker);
 }
 
 export function getUserTrades() {
@@ -197,11 +202,24 @@ export function resolveWatchlistHoldings(portfolio) {
 export function computePortfolioDisplayMetrics(portfolio) {
   const holdings = portfolio?.holdings ?? [];
   const { totalValue, invested, totalPnlPct } = recalcPortfolioTotals(holdings);
+  const value = portfolio?.totalValue ?? totalValue;
+  const distribution = holdings
+    .map((h) => ({
+      ticker: h.ticker,
+      assetName: h.assetName ?? h.name ?? null,
+      assetType: h.assetType ?? null,
+      name: h.assetName ?? h.name ?? null,
+      weight: value > 0 ? ((h.value ?? 0) / value) * 100 : 0,
+    }))
+    .sort((a, b) => b.weight - a.weight);
+
   return {
-    totalValue: portfolio?.totalValue ?? totalValue,
+    totalValue: value,
     invested: portfolio?.invested ?? invested,
     totalPnlPct: portfolio?.totalPnlPct ?? totalPnlPct,
     xirr: portfolio?.xirr ?? 0,
+    holdings,
+    distribution,
   };
 }
 

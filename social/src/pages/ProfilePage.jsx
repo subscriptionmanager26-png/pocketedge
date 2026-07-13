@@ -20,9 +20,10 @@ import {
 } from '../lib/socialPortfolioApi';
 import { updateSocialProfile } from '../lib/socialProfileApi';
 import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } from '../lib/socialIdentity';
+import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
-import { formatTicker } from '../lib/tickers';
+import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { FormStatusTag } from '../components/FormStatusIcons';
 import { fetchPortfolioFormByTicker } from '../lib/portfolioForm';
 import PortfolioCard from '../components/PortfolioCard';
@@ -253,6 +254,7 @@ export default function ProfilePage({
   }, [person?.id, isOwn, isMePublic]);
 
   const authorPosts = (posts ?? (isDevMockMode() ? POSTS : [])).filter((p) => p.authorId === person?.id);
+  const enrichmentTick = usePostEnrichment(authorPosts);
   const tabs = PROFILE_TABS;
   const authoredReviews = useMemo(
     () => getReviewsByAuthor(person?.id),
@@ -439,6 +441,7 @@ export default function ProfilePage({
                 key={post.id}
                 post={post}
                 variant="feed"
+                enrichmentTick={enrichmentTick}
                 onOpenProfile={onOpenProfile}
                 onOpenPost={onOpenPost}
               />
@@ -801,6 +804,7 @@ function PortfolioDetailView({
   const makeBlankRow = () => ({
     id: makeRowId(),
     ticker: '',
+    name: '',
     invested: '',
     qty: '',
     avg: '',
@@ -809,6 +813,10 @@ function PortfolioDetailView({
 
   const holdingToRow = (h) => {
     const rowId = makeRowId();
+    const fundName =
+      h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? ''))
+        ? h.assetName ?? ''
+        : '';
     if (isWatchlistKind(portfolio.kind)) {
       const weightPct =
         h.weightPct ??
@@ -819,6 +827,7 @@ function PortfolioDetailView({
       return {
         id: rowId,
         ticker: h.ticker,
+        name: fundName,
         weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
         invested: '',
         qty: '',
@@ -831,6 +840,7 @@ function PortfolioDetailView({
     return {
       id: rowId,
       ticker: h.ticker,
+      name: fundName,
       invested: invested ? String(invested) : '',
       qty: String(h.qty ?? ''),
       avg: avg ? String(avg) : '',
@@ -850,6 +860,10 @@ function PortfolioDetailView({
         ? {
             id: makeRowId(),
             ticker: h.ticker,
+            name:
+              h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? ''))
+                ? h.assetName ?? ''
+                : '',
             weight:
               h.weightPct != null
                 ? String(h.weightPct)
@@ -1296,12 +1310,19 @@ function PortfolioDetailView({
                 <div key={row.id} className="space-y-1">
                   <div className={rowGridClass}>
                     <PortfolioAssetSearchField
-                      value={row.ticker}
+                      value={row.name || row.ticker}
                       exclude={usedTickers}
                       placeholder="Search stock, ETF, or fund"
                       inputClassName={fieldClass(compactInputClass, rowErr.ticker)}
-                      onValueChange={(next) => updateRow(row.id, { ticker: next.toUpperCase() })}
-                      onSelect={(asset) => updateRow(row.id, { ticker: asset.key })}
+                      onValueChange={(next) =>
+                        updateRow(row.id, { ticker: next.toUpperCase(), name: '' })
+                      }
+                      onSelect={(asset) =>
+                        updateRow(row.id, {
+                          ticker: asset.key,
+                          name: asset.kind === 'fund' ? asset.name : '',
+                        })
+                      }
                     />
 
                     {isWatchlist ? (
@@ -1717,11 +1738,17 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
         const price = h.price ?? asset?.price ?? 0;
         const value = h.value ?? (h.qty ?? 0) * price;
         const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
-        const assetType = h.assetType ?? asset?.kind;
         return {
           key: h.ticker,
-          title: assetType === 'fund' ? h.ticker : formatTicker(h.ticker),
-          subtitle: h.assetName ?? asset?.name ?? '',
+          title: holdingDisplayLabel(h, asset),
+          subtitle:
+            (h.assetType ?? asset?.kind) === 'fund'
+              ? ''
+              : h.assetName && h.assetName !== holdingDisplayLabel(h, asset)
+                ? h.assetName
+                : asset?.name && asset.name !== holdingDisplayLabel(h, asset)
+                  ? asset.name
+                  : '',
           weight,
           itemReturn: periodReturnForChangePct(h.changePct ?? asset?.item?.changePct, h.pnlPct),
         };
@@ -1733,10 +1760,16 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     const equal = 100 / tickers.length;
     return tickers.map((ticker) => {
       const asset = assetsByKey[ticker];
+      const title = holdingDisplayLabel({ ticker, assetType: asset?.kind }, asset);
       return {
         key: ticker,
-        title: asset?.kind === 'fund' ? ticker : formatTicker(ticker),
-        subtitle: asset?.name ?? '',
+        title,
+        subtitle:
+          asset?.kind === 'fund'
+            ? ''
+            : asset?.name && asset.name !== title
+              ? asset.name
+              : '',
         weight: equal,
         itemReturn: periodReturnForChangePct(asset?.item?.changePct),
       };

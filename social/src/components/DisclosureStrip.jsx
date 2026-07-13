@@ -19,7 +19,7 @@ export default function DisclosureStrip({
     <div className="mt-3.5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-none">
       {tickers.map((ticker) => {
         const position = getPosition(authorId, ticker);
-        const styles = statusStyles(position.status);
+        const styles = statusStyles(position?.status);
         const isOpen = active === ticker;
 
         return (

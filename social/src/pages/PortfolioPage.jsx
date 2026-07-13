@@ -11,9 +11,9 @@ import {
   postsToActivityItems,
 } from '../components/ActivityFeed';
 import { FormStatusIcon } from '../components/FormStatusIcons';
-import { MY_PORTFOLIO, STOCKS, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
+import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { formatTicker } from '../lib/tickers';
+import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
 import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
@@ -172,10 +172,10 @@ export default function PortfolioPage({
 
     for (const holding of holdingsRows) {
       const form = formByTicker[holding.ticker] ?? 'unsure';
-      const name =
-        holding.assetName ??
-        STOCKS[holding.ticker]?.name ??
-        formatTicker(holding.ticker);
+      const name = holdingDisplayLabel(holding, {
+        kind: holding.assetType,
+        name: holding.assetName,
+      });
       buckets[form]?.push({
         ticker: holding.ticker,
         name,
@@ -397,7 +397,7 @@ export default function PortfolioPage({
           </>
         ) : null}
 
-        <div className="mt-5 grid grid-cols-3 gap-2.5">
+        <div className="mt-5 grid grid-cols-3 items-stretch gap-2">
           {FORM_METRIC_ORDER.map((formId) => {
             const meta = FORM_META[formId];
             const count = formBuckets[formId]?.length ?? 0;
@@ -406,15 +406,20 @@ export default function PortfolioPage({
                 key={formId}
                 type="button"
                 onClick={() => setFormSheet(formId)}
-                className="rounded-[12px] border border-pe-border bg-white px-3 py-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)] transition hover:border-pe-border-strong hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_6px_16px_rgba(0,0,0,0.08)]"
+                className="flex h-full min-w-0 flex-col rounded-[12px] border border-pe-border bg-white px-2.5 py-2.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)] transition hover:border-pe-border-strong hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_6px_16px_rgba(0,0,0,0.08)]"
               >
-                <div className="flex items-center gap-1.5">
-                  <FormStatusIcon form={formId} className="h-4 w-4" />
-                  <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                <div className="flex min-w-0 items-center gap-1">
+                  <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
+                  <p
+                    className="truncate text-[10px] font-bold uppercase tracking-[0.04em] text-pe-text-muted"
+                    title={meta.label}
+                  >
                     {meta.label}
                   </p>
                 </div>
-                <p className="mt-1.5 text-[18px] font-bold tabular-nums text-pe-text">{count}</p>
+                <p className="mt-1.5 text-[17px] font-bold tabular-nums leading-none text-pe-text">
+                  {count}
+                </p>
               </button>
             );
           })}
@@ -548,13 +553,21 @@ const OTHERS_COLOR = '#c7c7c7';
 
 function compressDistribution(distribution, topN = DIST_TOP_N) {
   const sorted = [...(distribution ?? [])].sort((a, b) => b.weight - a.weight);
+  const toLabel = (d) =>
+    d.label ||
+    holdingDisplayLabel({
+      ticker: d.ticker,
+      assetName: d.assetName ?? d.name,
+      assetType: d.assetType,
+    });
+
   if (sorted.length <= topN) {
-    return sorted.map((d) => ({ ...d, label: formatTicker(d.ticker), isOthers: false }));
+    return sorted.map((d) => ({ ...d, label: toLabel(d), isOthers: false }));
   }
 
   const top = sorted.slice(0, topN).map((d) => ({
     ...d,
-    label: formatTicker(d.ticker),
+    label: toLabel(d),
     isOthers: false,
   }));
   const rest = sorted.slice(topN);
@@ -658,7 +671,7 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock }) {
                 className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
               >
                 <p className="truncate text-[15px] font-semibold text-pe-text">
-                  {formatTicker(item.ticker)}
+                  {item.name || holdingDisplayLabel(item)}
                 </p>
               </button>
             ))}

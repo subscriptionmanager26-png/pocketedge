@@ -1249,6 +1249,9 @@ export function computePortfolioDisplayMetrics(portfolio) {
   const distribution = holdings
     .map((h) => ({
       ticker: h.ticker,
+      assetName: h.assetName ?? h.name ?? null,
+      assetType: h.assetType ?? null,
+      name: h.assetName ?? h.name ?? STOCKS[h.ticker]?.name ?? null,
       weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
     }))
     .sort((a, b) => b.weight - a.weight);

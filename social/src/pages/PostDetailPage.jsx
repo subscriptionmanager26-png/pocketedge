@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import CommentComposer from '../components/CommentComposer';
 import { PostDetailSkeleton } from '../components/PageSkeletons';
 import { isDevMockMode } from '../lib/appMode';
+import { usePostEnrichment } from '../lib/usePostEnrichment';
 
 export default function PostDetailPage({
   postId,
@@ -66,6 +67,8 @@ export default function PostDetailPage({
   }, [postId, cached, fetchPost]);
 
   const post = detailPost ?? cached;
+  const enrichmentPosts = useMemo(() => (post ? [post] : []), [post]);
+  const enrichmentTick = usePostEnrichment(enrichmentPosts);
 
   if (loading && !post) {
     return <PostDetailSkeleton />;
@@ -102,6 +105,7 @@ export default function PostDetailPage({
       <PostCard
         post={post}
         variant="detail"
+        enrichmentTick={enrichmentTick}
         onOpenProfile={onOpenProfile}
         onToggleLike={onToggleLike}
       />

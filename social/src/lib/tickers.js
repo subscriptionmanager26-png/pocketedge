@@ -113,10 +113,10 @@ export function statusStyles(status) {
       };
     default:
       return {
-        underline: 'decoration-pe-link text-pe-link',
-        chip: 'border-pe-link/20 bg-pe-link/8 text-pe-link',
+        underline: 'decoration-pe-accent text-pe-accent',
+        chip: 'border-pe-accent/25 bg-pe-accent/8 text-pe-accent',
         label: 'No position',
-        dot: 'bg-pe-link',
+        dot: 'bg-pe-accent',
       };
   }
 }

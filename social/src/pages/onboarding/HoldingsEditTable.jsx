@@ -16,7 +16,7 @@ const rowGridClass =
   'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
 
 export function emptyHoldingRow() {
-  return { id: crypto.randomUUID(), ticker: '', invested: '', qty: '', avg: '' };
+  return { id: crypto.randomUUID(), ticker: '', name: '', invested: '', qty: '', avg: '' };
 }
 
 function formatInr(value) {
@@ -201,15 +201,17 @@ export default function HoldingsEditTable({
             <div key={row.id} className="space-y-1">
               <div className={rowGridClass}>
                 <PortfolioAssetSearchField
-                  value={row.ticker}
+                  value={row.name || row.ticker}
                   exclude={usedTickers}
                   placeholder="Search stock, ETF, or fund"
                   inputClassName={fieldClass(compactInputClass, rowErr.ticker)}
-                  onValueChange={(next) => handlePatch(row.id, { ticker: next.toUpperCase() })}
+                  onValueChange={(next) =>
+                    handlePatch(row.id, { ticker: next.toUpperCase(), name: '' })
+                  }
                   onSelect={(asset) =>
                     handlePatch(row.id, {
                       ticker: asset.key,
-                      name: asset.name,
+                      name: asset.kind === 'fund' ? asset.name : '',
                     })
                   }
                 />

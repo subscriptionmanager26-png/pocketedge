@@ -5,7 +5,8 @@ import { searchPortfolioAssets } from '../lib/portfolioAssetUniverse';
 import { formatTicker } from '../lib/tickers';
 
 function displaySymbol(asset) {
-  return asset?.kind === 'fund' ? asset.key : formatTicker(asset.key);
+  if (asset?.kind === 'fund') return asset.name || asset.key;
+  return formatTicker(asset.key);
 }
 
 function AssetSuggestionRow({ asset, onSelect }) {
@@ -22,7 +23,9 @@ function AssetSuggestionRow({ asset, onSelect }) {
           {asset.kindLabel}
         </span>
       </div>
-      <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-pe-text-muted">{asset.name}</p>
+      {asset.kind === 'fund' ? null : (
+        <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-pe-text-muted">{asset.name}</p>
+      )}
     </button>
   );
 }
@@ -85,22 +88,37 @@ export default function PortfolioAssetSearchField({
     const updatePosition = () => {
       const rect = anchorRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const width = Math.min(Math.max(rect.width, 320), window.innerWidth - 32);
-      const left = Math.min(rect.left, window.innerWidth - width - 16);
+      // iOS Safari: fixed positioning is relative to the visual viewport, while
+      // getBoundingClientRect is layout-viewport based when the keyboard is open.
+      const vv = window.visualViewport;
+      const offsetTop = vv?.offsetTop ?? 0;
+      const offsetLeft = vv?.offsetLeft ?? 0;
+      const viewportWidth = vv?.width ?? window.innerWidth;
+      const width = Math.min(Math.max(rect.width, 280), viewportWidth - 32);
+      const left = Math.min(rect.left - offsetLeft, viewportWidth - width - 16);
       setMenuStyle({
-        top: rect.bottom + 4,
+        top: rect.bottom - offsetTop + 4,
         left: Math.max(16, left),
         width,
       });
     };
 
     updatePosition();
+    const raf = window.requestAnimationFrame(updatePosition);
+    const settle = window.setTimeout(updatePosition, 320);
+
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
+    window.visualViewport?.addEventListener('resize', updatePosition);
+    window.visualViewport?.addEventListener('scroll', updatePosition);
 
     return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(settle);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
+      window.visualViewport?.removeEventListener('resize', updatePosition);
+      window.visualViewport?.removeEventListener('scroll', updatePosition);
     };
   }, [showResults, query]);
 

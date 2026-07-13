@@ -31,7 +31,7 @@ export default function TickerText({
         const key = mention.key;
         const label = mentionDisplayLabel(part);
         const position = getPosition(authorId, key);
-        const styles = statusStyles(position.status);
+        const styles = statusStyles(position?.status);
         const isOpen = active === key;
 
         const toggle = (event) => {

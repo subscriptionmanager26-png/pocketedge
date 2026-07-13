@@ -125,6 +125,33 @@ export async function resolvePerson(userId) {
   return null;
 }
 
+/** Batch-resolve profiles for feed cards (one query for missing IDs). */
+export async function resolvePeople(userIds = []) {
+  const unique = [...new Set((userIds ?? []).filter(Boolean).map(String))];
+  if (!unique.length) return [];
+
+  if (!useLiveIdentity()) {
+    return unique.map((id) => getPerson(id)).filter(Boolean);
+  }
+
+  const currentId = getAppCurrentUserId();
+  const missing = unique.filter(
+    (id) => id !== currentId && !byUserId.has(id) && selfProfile?.user_id !== id
+  );
+
+  if (missing.length) {
+    const { data, error } = await supabase
+      .from('social_profiles')
+      .select('user_id, username, display_name, bio, avatar_url, location, focus, created_at')
+      .in('user_id', missing);
+
+    if (error) throw error;
+    for (const row of data ?? []) cacheProfile(row);
+  }
+
+  return unique.map((id) => peekPerson(id) ?? profileToPerson(byUserId.get(id))).filter(Boolean);
+}
+
 export function getHandleForUserIdSync(userId) {
   if (useLiveIdentity()) {
     if (selfProfile?.user_id === userId) return selfProfile.username;

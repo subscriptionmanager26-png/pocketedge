@@ -1,5 +1,5 @@
 import { STOCKS } from '../data/mockData';
-import { formatTicker } from './tickers';
+import { holdingDisplayLabel } from './portfolioAssetUniverse';
 
 /** Build a privacy-safe portfolio snapshot for sharing as a post. */
 export function buildPortfolioShare(portfolio, period = '1M') {
@@ -9,10 +9,11 @@ export function buildPortfolioShare(portfolio, period = '1M') {
   const topHoldings = holdings
     .map((h) => {
       const weight = totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0;
+      const label = holdingDisplayLabel(h);
       return {
         ticker: h.ticker,
-        label: formatTicker(h.ticker),
-        name: STOCKS[h.ticker]?.name ?? '',
+        label,
+        name: h.assetName ?? STOCKS[h.ticker]?.name ?? '',
         weight: Number(weight.toFixed(1)),
         returnPct:
           typeof h.pnlPct === 'number'

@@ -29,6 +29,30 @@ export function portfolioAssetName(item) {
   return item.name ?? '';
 }
 
+/**
+ * Label for a holding in portfolio UI.
+ * Mutual funds always prefer the fund name over the AMFI scheme code.
+ */
+export function holdingDisplayLabel(holding, asset) {
+  const ticker = String(holding?.ticker ?? holding?.symbol ?? '').trim();
+  const assetType = holding?.assetType ?? asset?.kind ?? asset?.assetType ?? null;
+  const name = String(
+    holding?.assetName ?? holding?.name ?? asset?.name ?? ''
+  ).trim();
+  const isFund =
+    assetType === 'fund' ||
+    asset?.kind === 'fund' ||
+    (/^\d{6,}$/.test(ticker) && Boolean(name));
+
+  if (isFund) return name || ticker;
+  if (ticker) {
+    return String(ticker)
+      .trim()
+      .toUpperCase();
+  }
+  return name;
+}
+
 export function portfolioAssetPrice(item, kind) {
   if (kind === 'fund') return item.nav ?? item.price ?? null;
   return item.price ?? item.ltp ?? null;
