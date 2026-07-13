@@ -199,20 +199,18 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
               className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-3.5"
             >
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Total — XYZ · YY% of Portfolio
+                <p className="text-[15px] font-semibold text-pe-text-muted">
+                  Total XYZ · YY% of Portfolio
                 </p>
                 <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">Security Name</p>
                 <p className="mt-1 text-[12px] font-semibold text-pe-text-muted">QTY · Avg Price</p>
               </div>
               <div className="min-w-0 text-right">
-                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Current — XYZ
-                </p>
-                <p className="mt-1 text-[13px] font-semibold text-pe-text-muted">
+                <p className="text-[15px] font-semibold text-pe-text-muted">Current XYZ</p>
+                <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">
                   Today ↑ ABC ( XX% )
                 </p>
-                <p className="mt-1.5 text-[11px] font-semibold text-pe-text-muted">Tag</p>
+                <p className="mt-1 text-[12px] font-semibold text-pe-text-muted">Tag</p>
               </div>
             </div>
           );
@@ -236,14 +234,14 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             className="grid w-full grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface"
           >
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold tabular-nums text-pe-text-secondary">
-                Total —{' '}
+              <p className="text-[15px] font-semibold tabular-nums text-pe-text">
+                Total{' '}
                 {invested != null && Number.isFinite(invested) && invested > 0
                   ? formatInr(invested, { compact: true })
                   : '—'}
                 {weightPct != null ? ` · ${weightPct.toFixed(1)}% of Portfolio` : ''}
               </p>
-              <p className="mt-0.5 truncate text-[15px] font-semibold text-pe-text">
+              <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
                 {holdingDisplayLabel(h)}
               </p>
               <p className="mt-1 text-[12px] font-semibold tabular-nums text-pe-text-muted">
@@ -254,15 +252,15 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
               </p>
             </div>
             <div className="min-w-0 self-start text-right">
-              <p className="text-[15px] font-bold tabular-nums text-pe-text">
-                Current —{' '}
+              <p className="text-[15px] font-semibold tabular-nums text-pe-text">
+                Current{' '}
                 {currentValue != null && Number.isFinite(currentValue)
                   ? formatInr(currentValue, { compact: true })
                   : '—'}
               </p>
               <HoldingTodayDelta amount={todayPnl} pct={todayPnlPct} />
               {form ? (
-                <div className="mt-1.5 flex justify-end">
+                <div className="mt-1 flex justify-end">
                   <FormStatusTag form={form} />
                 </div>
               ) : null}
