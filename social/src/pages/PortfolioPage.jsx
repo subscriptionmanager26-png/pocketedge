@@ -323,11 +323,12 @@ export default function PortfolioPage({
     return {
       overall: true,
       weight: 100,
+      value: metrics.totalValue ?? 0,
+      invested: metrics.invested ?? 0,
       pnl: metrics.totalPnl ?? 0,
       pnlPct: metrics.totalPnlPct ?? 0,
       todayPnl: metrics.todayPnl ?? 0,
       todayPnlPct: metrics.todayPnlPct ?? 0,
-      invested: metrics.invested ?? 0,
     };
   }, [metrics]);
 

@@ -1,6 +1,7 @@
 import NewsList from './NewsList';
 import Avatar from './Avatar';
 import { FormStatusTag } from './FormStatusIcons';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { isDevMockMode } from '../lib/appMode';
 import {
   PORTFOLIO_UPDATES,
@@ -172,81 +173,143 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
       {holdings.map((h) => {
         const isOverall = h.overall;
         const stock = isOverall ? null : STOCKS[h.ticker];
-        const isWatch = h.watchlistOnly;
-        const weightLabel =
-          typeof h.weight === 'number' ? `${h.weight.toFixed(1)}% of holdings` : null;
         const form = !isOverall ? formByTicker[h.ticker] ?? h.form : null;
         const isFund =
           h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
-        const totalPnl = h.pnl;
-        const totalPnlPct = h.pnlPct;
+        const isEtf = h.assetType === 'etf';
+        const invested =
+          h.invested != null
+            ? Number(h.invested)
+            : (Number(h.qty) || 0) * (Number(h.avg) || 0);
+        const currentValue = h.value != null ? Number(h.value) : null;
         const todayPnl = h.todayPnl;
         const todayPnlPct =
           h.todayPnlPct ?? h.changePct ?? (!isOverall ? stock?.changePct : null);
-        const hasTotal = totalPnl != null && Number.isFinite(Number(totalPnl));
-        const hasTotalPct = totalPnlPct != null && Number.isFinite(Number(totalPnlPct));
-        const hasToday = todayPnl != null && Number.isFinite(Number(todayPnl));
-        const hasTodayPct = todayPnlPct != null && Number.isFinite(Number(todayPnlPct));
-        const totalTone = hasTotal ? totalPnl : hasTotalPct ? totalPnlPct : 0;
-        const todayTone = hasToday ? todayPnl : hasTodayPct ? todayPnlPct : 0;
+        const assetTypeLabel = isFund ? 'Fund' : isEtf ? 'ETF' : 'Stock';
+        const weightLabel =
+          typeof h.weight === 'number' && Number.isFinite(h.weight)
+            ? `${h.weight.toFixed(1)}%`
+            : null;
+
+        if (isOverall) {
+          return (
+            <div
+              key="overall"
+              className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-3.5"
+            >
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Total Invested
+                </p>
+                <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">Security Name</p>
+                <p className="mt-1.5 text-[11px] font-semibold text-pe-text-muted">
+                  Tag 1 · Tag 2 · Tag 3
+                </p>
+              </div>
+              <div className="min-w-0 text-right">
+                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Current Value
+                </p>
+                <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">
+                  Today&apos;s ↑ ABC ( XYZ% )
+                </p>
+              </div>
+            </div>
+          );
+        }
 
         return (
           <button
-            key={isOverall ? 'overall' : h.ticker}
+            key={h.ticker}
             type="button"
             onClick={() => {
-              if (isOverall) return;
               if (isFund) {
                 if (onSelectFund) onSelectFund(h.ticker);
                 else onSelectStock?.(h.ticker, { assetType: 'fund' });
                 return;
               }
               onSelectStock?.(h.ticker, {
-                kind: h.assetType === 'etf' ? 'etf' : 'stock',
+                kind: isEtf ? 'etf' : 'stock',
                 assetType: h.assetType,
               });
             }}
-            className={`grid w-full grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-x-3 gap-y-0.5 px-4 py-4 text-left transition ${
-              isOverall ? 'cursor-default' : 'hover:bg-pe-surface'
-            }`}
+            className="grid w-full grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface"
           >
-            {!isWatch && weightLabel ? (
-              <>
-                <p className="text-xs font-semibold text-pe-text-secondary">
-                  {isOverall ? weightLabel : `${h.qty} units · ${weightLabel}`}
-                </p>
-                <span />
-              </>
-            ) : null}
-
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-pe-text">
-                {isOverall ? 'Overall' : holdingDisplayLabel(h)}
+              <p className="text-[12px] font-semibold tabular-nums text-pe-text-secondary">
+                {Number.isFinite(invested) && invested > 0
+                  ? formatInr(invested, { compact: true })
+                  : '—'}
               </p>
-              {form ? (
-                <div className="mt-1">
-                  <FormStatusTag form={form} />
-                </div>
-              ) : isOverall ? (
-                <p className="mt-0.5 text-sm font-normal text-pe-text-muted">Portfolio return</p>
-              ) : null}
+              <p className="mt-0.5 truncate text-[15px] font-semibold text-pe-text">
+                {holdingDisplayLabel(h)}
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                {form ? <FormStatusTag form={form} /> : null}
+                <HoldingMetaTag>{assetTypeLabel}</HoldingMetaTag>
+                {weightLabel ? <HoldingMetaTag>{weightLabel}</HoldingMetaTag> : null}
+              </div>
             </div>
-            <div className="self-start text-right">
-              <p className={`text-[15px] font-bold tabular-nums ${pnlClass(totalTone)}`}>
-                Total{' '}
-                {hasTotal ? formatInr(totalPnl, { compact: true }) : '—'}
-                {hasTotalPct ? ` (${formatPct(totalPnlPct)})` : ''}
+            <div className="min-w-0 self-start text-right">
+              <p className="text-[15px] font-bold tabular-nums text-pe-text">
+                {currentValue != null && Number.isFinite(currentValue)
+                  ? formatInr(currentValue, { compact: true })
+                  : '—'}
               </p>
-              <p className={`mt-0.5 text-[13px] font-semibold tabular-nums ${pnlClass(todayTone)}`}>
-                1D (
-                {hasToday ? formatInr(todayPnl, { compact: true }) : '—'}
-                {hasTodayPct ? `, ${formatPct(todayPnlPct)}` : ''} )
-              </p>
+              <HoldingTodayDelta amount={todayPnl} pct={todayPnlPct} />
             </div>
           </button>
         );
       })}
     </div>
+  );
+}
+
+function HoldingMetaTag({ children }) {
+  return (
+    <span className="inline-flex items-center rounded-md border border-pe-border-strong bg-pe-surface px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-text-muted">
+      {children}
+    </span>
+  );
+}
+
+function formatHoldingDeltaAmount(n) {
+  if (n == null || Number.isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1_00_00_000) return `${(abs / 1_00_00_000).toFixed(2)}Cr`;
+  if (abs >= 1_00_000) return `${(abs / 1_00_000).toFixed(2)}L`;
+  if (abs >= 1_000) return `${(abs / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
+  return `${Math.round(abs).toLocaleString('en-IN')}`;
+}
+
+function HoldingTodayDelta({ amount, pct }) {
+  const hasAmount = amount != null && Number.isFinite(Number(amount));
+  const hasPct = pct != null && Number.isFinite(Number(pct));
+  if (!hasAmount && !hasPct) {
+    return <p className="mt-1 text-[13px] font-semibold text-pe-text-muted">Today&apos;s —</p>;
+  }
+
+  const tone = hasAmount ? amount : pct;
+  const up = tone > 0;
+  const down = tone < 0;
+  const Icon = up ? ArrowUp : down ? ArrowDown : null;
+  const pctText = hasPct
+    ? `${Math.abs(Number(pct)).toFixed(Math.abs(Number(pct)) >= 10 ? 0 : 1)}%`
+    : null;
+
+  return (
+    <p
+      className={`mt-1 inline-flex items-center justify-end gap-0.5 text-[13px] font-semibold tabular-nums ${pnlClass(
+        tone
+      )}`}
+    >
+      <span>Today&apos;s</span>
+      {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
+      <span>
+        {hasAmount ? formatHoldingDeltaAmount(amount) : '—'}
+        {pctText ? ` ( ${pctText} )` : ''}
+      </span>
+    </p>
   );
 }
 
