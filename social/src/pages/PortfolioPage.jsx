@@ -700,6 +700,8 @@ function PortfolioSummaryComingSoon({ portfolioName }) {
 
 function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }) {
   const meta = FORM_META[formId];
+  // Icon (20px) + gap (8px) so body copy and list align under the heading.
+  const bodyAlign = 'pl-7';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center sm:p-4" onClick={onClose}>
@@ -707,37 +709,37 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
         className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-pe-border bg-pe-canvas sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-pe-border bg-pe-canvas px-4 py-3.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <FormStatusIcon form={formId} className="h-5 w-5" />
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-pe-text">{meta.label}</p>
-              {meta.description ? (
-                <p className="mt-0.5 text-xs leading-snug text-pe-text-secondary">
-                  {meta.description}
-                </p>
-              ) : null}
-              <p className="mt-1 text-xs text-pe-text-muted">
-                {items.length} {items.length === 1 ? 'security' : 'securities'}
-              </p>
+        <div className="sticky top-0 border-b border-pe-border bg-pe-canvas px-4 py-3.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <FormStatusIcon form={formId} className="h-5 w-5 shrink-0" />
+              <p className="truncate text-[15px] font-semibold text-pe-text">{meta.label}</p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {meta.description ? (
+            <p className={`mt-1.5 text-xs leading-snug text-pe-text-secondary ${bodyAlign}`}>
+              {meta.description}
+            </p>
+          ) : null}
+          <p className={`mt-1 text-xs text-pe-text-muted ${bodyAlign}`}>
+            {items.length} {items.length === 1 ? 'security' : 'securities'}
+          </p>
         </div>
 
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
+          <p className={`px-4 py-10 text-sm text-pe-text-secondary ${bodyAlign}`}>
             No securities in this category yet.
           </p>
         ) : (
-          <div className="divide-y divide-pe-border">
+          <div className={`divide-y divide-pe-border ${bodyAlign} pr-4`}>
             {items.map((item) => {
               const isFund =
                 item.assetType === 'fund' || /^\d{6,}$/.test(String(item.ticker ?? '').trim());
@@ -753,7 +755,7 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
                     }
                     onSelectStock?.(item.ticker, { assetType: item.assetType });
                   }}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
+                  className="flex w-full items-center justify-between gap-3 py-3.5 pl-0 pr-0 text-left transition hover:bg-pe-surface"
                 >
                   <p className="truncate text-[15px] font-semibold text-pe-text">
                     {item.name || holdingDisplayLabel(item)}

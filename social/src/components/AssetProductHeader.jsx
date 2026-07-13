@@ -34,8 +34,22 @@ export function QuoteChangeBlock({
     change,
   });
   const hasPct = changePct != null && Number.isFinite(Number(changePct));
-  const hasChange = amount != null || hasPct;
-  const tone = amount != null ? amount : hasPct ? changePct : 0;
+  const prev = Number(previousClose);
+  const derivedPct =
+    !hasPct && amount != null && Number.isFinite(prev) && prev !== 0
+      ? (amount / prev) * 100
+      : !hasPct &&
+          amount != null &&
+          Number.isFinite(numericPrice) &&
+          numericPrice !== 0 &&
+          Number.isFinite(numericPrice - amount) &&
+          numericPrice - amount !== 0
+        ? (amount / (numericPrice - amount)) * 100
+        : null;
+  const pctValue = hasPct ? Number(changePct) : derivedPct;
+  const showPct = pctValue != null && Number.isFinite(pctValue);
+  const hasChange = amount != null || showPct;
+  const tone = amount != null ? amount : showPct ? pctValue : 0;
   const formatValue = (n) => (formatAsCurrency ? formatPrice(n) : formatSignedPlain(n));
   const priceDisplay =
     priceText ??
@@ -50,12 +64,17 @@ export function QuoteChangeBlock({
         : '-');
 
   const priceClass =
-    size === 'detail' ? 'text-3xl font-bold text-pe-text' : 'text-[15px] font-semibold text-pe-text';
+    size === 'detail'
+      ? 'text-[20px] font-semibold text-pe-text'
+      : 'text-[15px] font-semibold text-pe-text';
   const changeClass =
     size === 'detail'
-      ? `text-3xl font-bold tabular-nums ${pnlClass(tone)}`
+      ? `text-[20px] font-semibold tabular-nums ${pnlClass(tone)}`
       : `text-sm font-semibold tabular-nums ${pnlClass(tone)}`;
   const labelClass = 'text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted';
+  const changeText = `${amount != null ? formatValue(amount) : '-'}${
+    showPct ? ` (${formatPct(pctValue)})` : ''
+  }`;
 
   if (size === 'detail') {
     return (
@@ -67,10 +86,7 @@ export function QuoteChangeBlock({
         {hasChange ? (
           <div className="min-w-0">
             <p className={labelClass}>Today&apos;s Change</p>
-            <p className={changeClass}>
-              {amount != null ? formatValue(amount) : '-'}
-              {hasPct ? ` (${formatPct(changePct)})` : ''}
-            </p>
+            <p className={changeClass}>{changeText}</p>
           </div>
         ) : null}
       </div>
@@ -84,10 +100,7 @@ export function QuoteChangeBlock({
       {hasChange ? (
         <div className="mt-1">
           <p className={labelClass}>Today&apos;s Change</p>
-          <p className={changeClass}>
-            {amount != null ? formatValue(amount) : '-'}
-            {hasPct ? ` (${formatPct(changePct)})` : ''}
-          </p>
+          <p className={changeClass}>{changeText}</p>
         </div>
       ) : null}
     </div>

@@ -298,7 +298,6 @@ export default function StockInvestmentPage({
                       <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
                       <p className="text-sm text-pe-text-muted">
                         @{person.handle}
-                        {position?.qty ? ` · ${position.qty} shares` : ''}
                         {position?.pnlPct != null ? ` · ${formatPct(position.pnlPct)} P&L` : ''}
                       </p>
                     </div>

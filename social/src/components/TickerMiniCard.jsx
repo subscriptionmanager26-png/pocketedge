@@ -145,20 +145,16 @@ function TickerCardContent({ ticker, authorId, onClose }) {
 
       <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-2.5">
         <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-          {author?.handle ? `@${author.handle}'s holding` : 'Author holding'}
+          {author?.name
+            ? `${String(author.name).trim().split(/\s+/)[0]}'s holding`
+            : 'Author holding'}
         </p>
         <p className="mt-1 text-[17px] font-semibold text-pe-text">
           {holdingPct != null ? `${holdingPct.toFixed(1)}% of book` : 'Holds'}
         </p>
         {position.status === 'holds' ? (
           <p className="mt-0.5 text-[12px] text-pe-text-secondary">
-            {[
-              position.qty != null ? `${position.qty} units` : null,
-              position.value != null ? formatPrice(position.value) : null,
-              position.pnlPct != null ? formatPct(position.pnlPct) : null,
-            ]
-              .filter(Boolean)
-              .join(' · ') || 'In portfolio'}
+            {position.pnlPct != null ? `${formatPct(position.pnlPct)} P&L` : 'In portfolio'}
           </p>
         ) : (
           <p className="mt-0.5 text-[12px] text-pe-text-secondary">

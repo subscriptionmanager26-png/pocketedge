@@ -210,25 +210,26 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             className="grid w-full grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface"
           >
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold tabular-nums text-pe-text">
+              <p className="text-[12px] tabular-nums text-pe-text-muted">
                 Total{' '}
                 {invested != null && Number.isFinite(invested) && invested > 0
                   ? formatInr(invested, { compact: true })
                   : '-'}
-                {weightPct != null ? ` · ${weightPct.toFixed(1)}% of Portfolio` : ''}
-              </p>
-              <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
-                {holdingDisplayLabel(h)}
-              </p>
-              <p className="mt-1 text-[12px] font-semibold tabular-nums text-pe-text-muted">
+                {' · '}
                 {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'} QTY
                 {' · '}
                 Avg{' '}
                 {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '-'}
               </p>
+              <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
+                {holdingDisplayLabel(h)}
+              </p>
+              <p className="mt-1 text-[12px] tabular-nums text-pe-text-muted">
+                {weightPct != null ? `${weightPct.toFixed(1)}% of Portfolio` : '-'}
+              </p>
             </div>
             <div className="min-w-0 self-start text-right">
-              <p className="text-[15px] font-semibold tabular-nums text-pe-text">
+              <p className="text-[12px] tabular-nums text-pe-text-muted">
                 Current{' '}
                 {currentValue != null && Number.isFinite(currentValue)
                   ? formatInr(currentValue, { compact: true })
@@ -246,15 +247,6 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
       })}
     </div>
   );
-}
-
-function formatHoldingDeltaAmount(n) {
-  if (n == null || Number.isNaN(n)) return '-';
-  const abs = Math.abs(n);
-  if (abs >= 1_00_00_000) return `${(abs / 1_00_00_000).toFixed(2)}Cr`;
-  if (abs >= 1_00_000) return `${(abs / 1_00_000).toFixed(2)}L`;
-  if (abs >= 1_000) return `${(abs / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
-  return `${Math.round(abs).toLocaleString('en-IN')}`;
 }
 
 function HoldingTodayDelta({ amount, pct }) {
@@ -281,7 +273,7 @@ function HoldingTodayDelta({ amount, pct }) {
       <span>Today</span>
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
       <span>
-        {hasAmount ? formatHoldingDeltaAmount(amount) : '-'}
+        {hasAmount ? formatInr(amount, { compact: true }) : '-'}
         {pctText ? ` ( ${pctText} )` : ''}
       </span>
     </p>

@@ -949,7 +949,12 @@ export function getPosition(authorId, ticker) {
   // Live hydrate writes authorPositionsCache; demo AUTHOR_POSITIONS is fallback only.
   const live = readCachedPosition(authorId, ticker);
   if (live) return live;
-  return AUTHOR_POSITIONS[authorId]?.[ticker] ?? { status: 'none' };
+  const raw = AUTHOR_POSITIONS[authorId]?.[ticker] ?? { status: 'none' };
+  // Social consumers must never see absolute qty / value / avg.
+  return {
+    status: raw.status ?? 'none',
+    pnlPct: raw.pnlPct ?? null,
+  };
 }
 
 /** Author's weight in a ticker as % of their held portfolio value. Null if not held. */

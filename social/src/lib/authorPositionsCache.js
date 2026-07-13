@@ -30,7 +30,13 @@ function lookupEntry(index, ticker) {
 
 export function readCachedPosition(authorId, ticker) {
   if (!authorId) return null;
-  return lookupEntry(cache.get(String(authorId)), ticker);
+  const entry = lookupEntry(cache.get(String(authorId)), ticker);
+  if (!entry) return null;
+  // Never expose absolute qty / value / avg to social UI consumers.
+  return {
+    status: entry.status ?? 'none',
+    pnlPct: entry.pnlPct ?? null,
+  };
 }
 
 export function readCachedPortfolioWeightPct(authorId, ticker) {
