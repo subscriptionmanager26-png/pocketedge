@@ -108,7 +108,7 @@ export function validateHoldingsRows(rows) {
   return { ok: true, errors: {}, holdings, message: '' };
 }
 
-/** Live portfolio edit table — matches Profile portfolio editor. */
+/** Live portfolio edit table - matches Profile portfolio editor. */
 export default function HoldingsEditTable({
   rows,
   fieldErrors = {},
@@ -139,7 +139,7 @@ export default function HoldingsEditTable({
       onUpdateRow(id, patch);
       return;
     }
-    // Parent merges patch into the row — pass only changed cost-synced fields.
+    // Parent merges patch into the row - pass only changed cost-synced fields.
     const next = patchLiveCostFields(row, patch, costMode);
     const delta = {};
     for (const key of Object.keys(next)) {
@@ -159,7 +159,7 @@ export default function HoldingsEditTable({
         </p>
         <p className="mt-1 text-[13px] text-pe-text-secondary">
           {holdingCount === 0
-            ? 'Add holdings below — match this with Total invested in your broker app.'
+            ? 'Add holdings below - match this with Total invested in your broker app.'
             : `${holdingCount} holding${holdingCount === 1 ? '' : 's'} · check this against your broker app`}
         </p>
       </div>
@@ -260,7 +260,7 @@ export default function HoldingsEditTable({
               {rowErr.ticker ? (
                 <p className="px-0.5 text-[12px] text-pe-negative">
                   {row.ticker.trim()
-                    ? `${row.ticker.trim()} is not a valid stock, ETF, or fund — search to replace it.`
+                    ? `${row.ticker.trim()} is not a valid stock, ETF, or fund - search to replace it.`
                     : 'Pick a stock, ETF, or fund from search results.'}
                 </p>
               ) : null}

@@ -177,7 +177,7 @@ export default function IndexDetailPage({
             <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
               {userReview
                 ? 'No other community signals yet.'
-                : `No community signals yet — be the first to share your view on ${displayIndex.name}.`}
+                : `No community signals yet - be the first to share your view on ${displayIndex.name}.`}
             </p>
           ) : (
             communityReviews.map((review) => (
@@ -197,7 +197,7 @@ export default function IndexDetailPage({
         <DiscussionsList
           posts={discussions}
           onOpenProfile={onOpenProfile}
-          emptyMessage={`No posts yet — posts mentioning ${displayIndex.name} will show up here.`}
+          emptyMessage={`No posts yet - posts mentioning ${displayIndex.name} will show up here.`}
         />
       )}
 

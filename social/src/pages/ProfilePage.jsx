@@ -113,7 +113,7 @@ function ReturnPeriodPicker({ value, onChange, className = '' }) {
 }
 
 function formatJoined(isoDate) {
-  if (!isoDate) return '—';
+  if (!isoDate) return '-';
   const d = new Date(isoDate);
   return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
 }
@@ -606,8 +606,8 @@ function AboutPanel({
   }
 
   const viewRows = [
-    { label: 'Location', value: (canEdit ? location : person.location) || '—' },
-    { label: 'Investment focus', value: (canEdit ? focus : person.focus) || '—' },
+    { label: 'Location', value: (canEdit ? location : person.location) || '-' },
+    { label: 'Investment focus', value: (canEdit ? focus : person.focus) || '-' },
     ...readOnlyRows,
   ];
 
@@ -703,7 +703,7 @@ function PortfoliosListPanel({
 
   return (
     <div>
-      {/* Return period picker hidden for now — always show 1D returns.
+      {/* Return period picker hidden for now - always show 1D returns.
       <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
       */}
 
@@ -1037,7 +1037,7 @@ function PortfolioDetailView({
 
     if (validation.valid) {
       const leave = window.confirm(
-        'You have unsaved changes. Save is still required — discard your work and go back?'
+        'You have unsaved changes. Save is still required - discard your work and go back?'
       );
       if (leave) discardAndExit(proceed);
       return;
@@ -1216,7 +1216,7 @@ function PortfolioDetailView({
                     value={thesis}
                     onChange={(e) => setThesis(e.target.value)}
                     rows={3}
-                    placeholder="Why these holdings — shown in portfolio detail"
+                    placeholder="Why these holdings - shown in portfolio detail"
                     className={fieldClass(
                       `${inputClass} resize-none leading-6 text-pe-ink`,
                       fieldErrors.thesis
@@ -1383,7 +1383,7 @@ function PortfolioDetailView({
                   {rowErr.ticker ? (
                     <p className="px-0.5 text-[12px] text-pe-negative">
                       {row.ticker.trim()
-                        ? `${row.ticker.trim()} is not a valid stock, ETF, or fund — search to replace it.`
+                        ? `${row.ticker.trim()} is not a valid stock, ETF, or fund - search to replace it.`
                         : 'Pick a stock, ETF, or fund from search results.'}
                     </p>
                   ) : null}
@@ -1606,7 +1606,7 @@ function PortfolioDiscussion({
 
       {comments.length === 0 ? (
         <p className="mt-4 text-sm text-pe-text-secondary">
-          Be the first to discuss this portfolio — ask about allocation, thesis, or recent moves.
+          Be the first to discuss this portfolio - ask about allocation, thesis, or recent moves.
         </p>
       ) : (
         <div className="mt-2 divide-y divide-pe-border border-y border-pe-border">

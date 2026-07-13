@@ -246,7 +246,7 @@ export default function StockInvestmentPage({
             <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
               {userReview
                 ? 'No other community signals yet.'
-                : `No community signals yet — be the first to share your take on ${formatTicker(ticker)}.`}
+                : `No community signals yet - be the first to share your take on ${formatTicker(ticker)}.`}
             </p>
           ) : (
             communityReviews.map((review) => (
@@ -267,7 +267,7 @@ export default function StockInvestmentPage({
         <DiscussionsList
           posts={discussions}
           onOpenProfile={onOpenProfile}
-          emptyMessage="No posts yet — posts mentioning this stock will show up here."
+          emptyMessage="No posts yet - posts mentioning this stock will show up here."
         />
       )}
 

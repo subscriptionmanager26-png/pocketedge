@@ -1,4 +1,4 @@
-/** Shared blur-backdrop content — identical on every stock and mutual fund page. */
+/** Shared blur-backdrop content - identical on every stock and mutual fund page. */
 
 export const PREVIEW_REVIEWS = [
   {
@@ -10,7 +10,7 @@ export const PREVIEW_REVIEWS = [
     agreeCount: 42,
     disagreeCount: 3,
     shareCount: 8,
-    comments: [{ id: 'blur_rc_1', authorId: 'u2', body: 'Agree — this is a core holding for me too.', createdAt: '2026-06-28T14:00:00.000Z' }],
+    comments: [{ id: 'blur_rc_1', authorId: 'u2', body: 'Agree - this is a core holding for me too.', createdAt: '2026-06-28T14:00:00.000Z' }],
   },
   {
     id: 'blur_rev_2',
@@ -40,7 +40,7 @@ export const PREVIEW_DISCUSSIONS = [
   {
     id: 'blur_disc_1',
     authorId: 'u1',
-    body: 'Adding on dips — thesis unchanged. This remains a core position in my portfolio and I am happy to hold through volatility.',
+    body: 'Adding on dips - thesis unchanged. This remains a core position in my portfolio and I am happy to hold through volatility.',
     likes: 86,
     comments: [{ id: 'blur_dc_1', authorId: 'u2', body: 'Same view here. Patience is the edge.', createdAt: '2026-07-02T11:00:00+05:30' }],
   },
@@ -54,7 +54,7 @@ export const PREVIEW_DISCUSSIONS = [
   {
     id: 'blur_disc_3',
     authorId: 'u4',
-    body: 'Trimmed a small portion into strength but still overweight. Happy to discuss the bear case in comments — always learning.',
+    body: 'Trimmed a small portion into strength but still overweight. Happy to discuss the bear case in comments - always learning.',
     likes: 41,
     comments: [{ id: 'blur_dc_2', authorId: 'u5', body: 'Fair trim. I am holding full size.', createdAt: '2026-06-30T10:00:00+05:30' }],
   },

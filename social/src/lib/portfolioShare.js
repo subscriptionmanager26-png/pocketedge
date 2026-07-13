@@ -54,6 +54,6 @@ export function defaultPortfolioShareBody(share) {
     .map((h) => `@${h.ticker}`)
     .join(' ');
   return names
-    ? `Sharing my portfolio focus — ${names}`
+    ? `Sharing my portfolio focus - ${names}`
     : `Sharing my portfolio: ${share.name}`;
 }

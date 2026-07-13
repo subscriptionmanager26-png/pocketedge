@@ -197,7 +197,7 @@ export default function ReviewCard({
           {showComments && (
             <div className="mt-4 border-t border-pe-border pt-3">
               {(review.comments ?? []).length === 0 ? (
-                <p className="text-sm text-pe-text-muted">No replies yet — leave a reply.</p>
+                <p className="text-sm text-pe-text-muted">No replies yet - leave a reply.</p>
               ) : (
                 <ul className="space-y-3">
                   {(review.comments ?? []).map((c) => {

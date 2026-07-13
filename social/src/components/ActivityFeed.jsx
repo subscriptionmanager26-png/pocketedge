@@ -170,10 +170,11 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 
   return (
     <div className="divide-y divide-pe-border">
-      {holdings.map((h) => {
-        const isOverall = h.overall;
-        const stock = isOverall ? null : STOCKS[h.ticker];
-        const form = !isOverall ? formByTicker[h.ticker] ?? h.form : null;
+      {holdings
+        .filter((h) => !h.overall)
+        .map((h) => {
+        const stock = STOCKS[h.ticker];
+        const form = formByTicker[h.ticker] ?? h.form;
         const isFund =
           h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
         const isEtf = h.assetType === 'etf';
@@ -187,34 +188,9 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
               : null;
         const currentValue = h.value != null ? Number(h.value) : null;
         const todayPnl = h.todayPnl;
-        const todayPnlPct =
-          h.todayPnlPct ?? h.changePct ?? (!isOverall ? stock?.changePct : null);
+        const todayPnlPct = h.todayPnlPct ?? h.changePct ?? stock?.changePct;
         const weightPct =
           typeof h.weight === 'number' && Number.isFinite(h.weight) ? h.weight : null;
-
-        if (isOverall) {
-          return (
-            <div
-              key="overall"
-              className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-3.5"
-            >
-              <div className="min-w-0">
-                <p className="text-[15px] font-semibold text-pe-text-muted">
-                  Total XYZ · YY% of Portfolio
-                </p>
-                <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">Security Name</p>
-                <p className="mt-1 text-[12px] font-semibold text-pe-text-muted">QTY · Avg Price</p>
-              </div>
-              <div className="min-w-0 text-right">
-                <p className="text-[15px] font-semibold text-pe-text-muted">Current XYZ</p>
-                <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">
-                  Today ↑ ABC ( XX% )
-                </p>
-                <p className="mt-1 text-[12px] font-semibold text-pe-text-muted">Tag</p>
-              </div>
-            </div>
-          );
-        }
 
         return (
           <button
@@ -238,17 +214,17 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 Total{' '}
                 {invested != null && Number.isFinite(invested) && invested > 0
                   ? formatInr(invested, { compact: true })
-                  : '—'}
+                  : '-'}
                 {weightPct != null ? ` · ${weightPct.toFixed(1)}% of Portfolio` : ''}
               </p>
               <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
                 {holdingDisplayLabel(h)}
               </p>
               <p className="mt-1 text-[12px] font-semibold tabular-nums text-pe-text-muted">
-                {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '—'} QTY
+                {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'} QTY
                 {' · '}
                 Avg{' '}
-                {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '—'}
+                {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '-'}
               </p>
             </div>
             <div className="min-w-0 self-start text-right">
@@ -256,7 +232,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 Current{' '}
                 {currentValue != null && Number.isFinite(currentValue)
                   ? formatInr(currentValue, { compact: true })
-                  : '—'}
+                  : '-'}
               </p>
               <HoldingTodayDelta amount={todayPnl} pct={todayPnlPct} />
               {form ? (
@@ -273,7 +249,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 }
 
 function formatHoldingDeltaAmount(n) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '-';
   const abs = Math.abs(n);
   if (abs >= 1_00_00_000) return `${(abs / 1_00_00_000).toFixed(2)}Cr`;
   if (abs >= 1_00_000) return `${(abs / 1_00_000).toFixed(2)}L`;
@@ -285,7 +261,7 @@ function HoldingTodayDelta({ amount, pct }) {
   const hasAmount = amount != null && Number.isFinite(Number(amount));
   const hasPct = pct != null && Number.isFinite(Number(pct));
   if (!hasAmount && !hasPct) {
-    return <p className="mt-1 text-[13px] font-semibold text-pe-text-muted">Today —</p>;
+    return <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">Today -</p>;
   }
 
   const tone = hasAmount ? amount : pct;
@@ -298,14 +274,14 @@ function HoldingTodayDelta({ amount, pct }) {
 
   return (
     <p
-      className={`mt-1 inline-flex items-center justify-end gap-0.5 text-[13px] font-semibold tabular-nums ${pnlClass(
+      className={`mt-1 inline-flex items-center justify-end gap-0.5 text-[15px] font-semibold tabular-nums ${pnlClass(
         tone
       )}`}
     >
       <span>Today</span>
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
       <span>
-        {hasAmount ? formatHoldingDeltaAmount(amount) : '—'}
+        {hasAmount ? formatHoldingDeltaAmount(amount) : '-'}
         {pctText ? ` ( ${pctText} )` : ''}
       </span>
     </p>

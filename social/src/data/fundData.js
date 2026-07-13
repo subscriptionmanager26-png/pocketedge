@@ -118,7 +118,7 @@ export function pickRandomCategory() {
   return FUND_CATEGORIES[Math.floor(Math.random() * FUND_CATEGORIES.length)];
 }
 
-/** Seed community reviews — initial content database */
+/** Seed community reviews - initial content database */
 export const SEED_FUND_REVIEWS = [
   {
     id: 'rev_seed_1',
@@ -134,7 +134,7 @@ export const SEED_FUND_REVIEWS = [
       {
         id: 'rc_s1',
         authorId: 'u2',
-        body: 'Agree on the global sleeve — rare among Indian flexi funds.',
+        body: 'Agree on the global sleeve - rare among Indian flexi funds.',
         parentId: null,
         createdAt: '2026-06-28T14:00:00.000Z',
       },
@@ -157,7 +157,7 @@ export const SEED_FUND_REVIEWS = [
     fundId: 'fund_motilal_mid',
     authorId: 'u2',
     rating: 5,
-    body: 'High conviction midcap bets — volatile but aligned with 5Y horizon.',
+    body: 'High conviction midcap bets - volatile but aligned with 5Y horizon.',
     createdAt: '2026-06-20T11:00:00.000Z',
     agreeCount: 35,
     disagreeCount: 6,
@@ -166,14 +166,14 @@ export const SEED_FUND_REVIEWS = [
       {
         id: 'rc_s2',
         authorId: 'u3',
-        body: 'Drawdowns are brutal — only for investors who can stomach 30% cuts.',
+        body: 'Drawdowns are brutal - only for investors who can stomach 30% cuts.',
         parentId: null,
         createdAt: '2026-06-21T08:00:00.000Z',
       },
       {
         id: 'rc_s3',
         authorId: 'u2',
-        body: 'Fair point — size of SIP matters more here than in large caps.',
+        body: 'Fair point - size of SIP matters more here than in large caps.',
         parentId: 'rc_s2',
         createdAt: '2026-06-21T10:00:00.000Z',
       },
@@ -184,7 +184,7 @@ export const SEED_FUND_REVIEWS = [
     fundId: 'fund_nippon_small',
     authorId: 'u3',
     rating: 4,
-    body: 'Liquidity risk is underpriced — great returns but watch exit loads.',
+    body: 'Liquidity risk is underpriced - great returns but watch exit loads.',
     createdAt: '2026-06-18T16:00:00.000Z',
     agreeCount: 19,
     disagreeCount: 4,
@@ -246,7 +246,7 @@ export const FUND_NEWS = {
   fund_nippon_small: [
     {
       id: 'fn4',
-      title: 'Small cap inflows hit record — AMFI data',
+      title: 'Small cap inflows hit record - AMFI data',
       publishedAt: '2026-07-07T08:00:00.000Z',
       summary: 'Monthly AMFI flows show small cap funds attracting record inflows as investors chase higher beta exposure.',
     },

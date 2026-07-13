@@ -22,7 +22,7 @@ const STEPS = {
   analysis: 'analysis',
 };
 
-/** Portfolio form-check onboarding — replaces fund-review gate. */
+/** Portfolio form-check onboarding - replaces fund-review gate. */
 export default function OnboardingFlow({ userId, onComplete }) {
   const [step, setStep] = useState(STEPS.attract);
   const [holdings, setHoldings] = useState([]);
@@ -73,12 +73,12 @@ export default function OnboardingFlow({ userId, onComplete }) {
       setOnboardingComplete(userId);
       onComplete?.();
     } catch (err) {
-      // Still unlock the app if save fails — user can add portfolio later.
+      // Still unlock the app if save fails - user can add portfolio later.
       console.error(err);
       setFinishError(
         err?.message
-          ? `Could not save portfolio (${err.message}). Entering anyway — you can add it from Profile.`
-          : 'Could not save portfolio. Entering anyway — you can add it from Profile.'
+          ? `Could not save portfolio (${err.message}). Entering anyway - you can add it from Profile.`
+          : 'Could not save portfolio. Entering anyway - you can add it from Profile.'
       );
       setOnboardingComplete(userId);
       window.setTimeout(() => onComplete?.(), 1200);

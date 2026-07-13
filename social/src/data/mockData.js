@@ -1,4 +1,4 @@
-/** Demo data for PocketEdge Social — skin-in-the-game disclosure throughout. */
+/** Demo data for PocketEdge Social - skin-in-the-game disclosure throughout. */
 
 import {
   readCachedPosition,
@@ -173,7 +173,7 @@ export const TOPICS = [
 
 export const FOLLOWING_IDS = new Set(['u1', 'u2', 'u4']);
 
-/** Who each user follows — `u_me` is overridden at runtime by socialGraphStore. */
+/** Who each user follows - `u_me` is overridden at runtime by socialGraphStore. */
 export const USER_FOLLOWING_SEED = {
   u_me: ['u1', 'u2', 'u4'],
   u1: ['u2', 'u4', 'u_me'],
@@ -343,7 +343,7 @@ export const USER_PORTFOLIOS = {
       kind: 'live',
       name: 'Diversified 25',
       objective: 'Broad market exposure across sectors.',
-      thesis: 'Core satellite split with 25 names — demo for paginated holdings.',
+      thesis: 'Core satellite split with 25 names - demo for paginated holdings.',
       totalValue: 12_50_000,
       invested: 10_80_000,
       totalPnlPct: 15.7,
@@ -412,7 +412,7 @@ export const USER_PORTFOLIOS = {
       kind: 'watchlist',
       name: 'Growth watch',
       objective: 'High-growth names to track before sizing live.',
-      thesis: 'Copied from Ananya — monitoring before adding to live book.',
+      thesis: 'Copied from Ananya - monitoring before adding to live book.',
       sourcePortfolioId: 'wl_growth',
       sourcePortfolioName: 'Growth watch',
       sourceUserId: 'u1',
@@ -536,7 +536,7 @@ export const PORTFOLIO_CHANGES = [
     userId: 'u2',
     portfolioId: 'pf_it',
     portfolioName: 'IT portfolio',
-    summary: 'Updated investment thesis — cautious on near-term deal wins.',
+    summary: 'Updated investment thesis - cautious on near-term deal wins.',
     createdAt: '2026-07-03T16:45:00+05:30',
   },
   {
@@ -555,7 +555,7 @@ export const POSTS = [
     id: 'p1',
     authorId: 'u1',
     type: 'text',
-    body: 'Quiet accumulation in @HDFCBANK continues. Credit growth is steady and valuations are finally reasonable after the long consolidation. Still prefer it over @ICICIBANK for the franchise quality, but both belong in a core book.\n\nWhat changed my mind over the last two quarters is deposit franchise quality and the pace of unsecured cleanup. The market keeps pricing private banks as if the rate cycle is the only variable. It is not. Operating leverage on a cleaner book matters more from here.\n\nI am not adding aggressively — just letting SIP-style buys work through dips. If we get a 5–7% pullback without a credit event, I will lean in. Until then, patience is the edge.',
+    body: 'Quiet accumulation in @HDFCBANK continues. Credit growth is steady and valuations are finally reasonable after the long consolidation. Still prefer it over @ICICIBANK for the franchise quality, but both belong in a core book.\n\nWhat changed my mind over the last two quarters is deposit franchise quality and the pace of unsecured cleanup. The market keeps pricing private banks as if the rate cycle is the only variable. It is not. Operating leverage on a cleaner book matters more from here.\n\nI am not adding aggressively - just letting SIP-style buys work through dips. If we get a 5–7% pullback without a credit event, I will lean in. Until then, patience is the edge.',
     image: null,
     createdAt: '2026-07-03T08:12:00+05:30',
     likes: 214,
@@ -563,7 +563,7 @@ export const POSTS = [
       {
         id: 'c1',
         authorId: 'u2',
-        body: 'Agree on franchise. I hold @TCS more than banks right now — different cycle.',
+        body: 'Agree on franchise. I hold @TCS more than banks right now - different cycle.',
         createdAt: '2026-07-03T09:01:00+05:30',
       },
       {
@@ -575,7 +575,7 @@ export const POSTS = [
       {
         id: 'c1b',
         authorId: 'u4',
-        body: 'Solid write-up. I stay away from banks — no position in either name.',
+        body: 'Solid write-up. I stay away from banks - no position in either name.',
         createdAt: '2026-07-03T11:10:00+05:30',
       },
     ],
@@ -586,7 +586,7 @@ export const POSTS = [
     id: 'p2',
     authorId: 'u3',
     type: 'trade',
-    body: 'Adding on strength. Auto cycle still has legs — rural demand + EV optionality.',
+    body: 'Adding on strength. Auto cycle still has legs - rural demand + EV optionality.',
     trade: {
       action: 'buy',
       ticker: 'TATAMOTORS',
@@ -612,7 +612,7 @@ export const POSTS = [
     id: 'p3',
     authorId: 'u2',
     type: 'text',
-    body: 'Weekly note: IT services commentary is cautious but @TCS and @INFY still print cash. I am not chasing — just holding through the noise.',
+    body: 'Weekly note: IT services commentary is cautious but @TCS and @INFY still print cash. I am not chasing - just holding through the noise.',
     image:
       'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80&auto=format&fit=crop',
     createdAt: '2026-07-02T21:15:00+05:30',
@@ -632,7 +632,7 @@ export const POSTS = [
     id: 'p4',
     authorId: 'u4',
     type: 'trade',
-    body: 'Trimming into strength. Booked partial profits — still long the name.',
+    body: 'Trimming into strength. Booked partial profits - still long the name.',
     trade: {
       action: 'sell',
       ticker: 'RELIANCE',
@@ -682,7 +682,7 @@ export const POSTS = [
     id: 'p7',
     authorId: 'u3',
     type: 'text',
-    body: 'Watching @IRCTC for a cleaner setup. Not in yet — liquidity and valuation both need to cooperate.',
+    body: 'Watching @IRCTC for a cleaner setup. Not in yet - liquidity and valuation both need to cooperate.',
     image: null,
     createdAt: '2026-07-01T11:20:00+05:30',
     likes: 38,
@@ -690,7 +690,7 @@ export const POSTS = [
       {
         id: 'c7',
         authorId: 'u5',
-        body: 'Same. No position — just on the radar.',
+        body: 'Same. No position - just on the radar.',
         createdAt: '2026-07-01T12:00:00+05:30',
       },
     ],
@@ -702,7 +702,7 @@ export const POSTS = [
     id: 'p8',
     authorId: 'u5',
     type: 'text',
-    body: 'Hot take I do not own: @RELIANCE looks fine on a 5-year view, but I am not buying here. Same for @TATAMOTORS — great narrative, not my risk budget. Happy to be wrong; just no position.',
+    body: 'Hot take I do not own: @RELIANCE looks fine on a 5-year view, but I am not buying here. Same for @TATAMOTORS - great narrative, not my risk budget. Happy to be wrong; just no position.',
     image: null,
     createdAt: '2026-07-03T12:30:00+05:30',
     likes: 52,
@@ -710,7 +710,7 @@ export const POSTS = [
       {
         id: 'c8',
         authorId: 'u3',
-        body: 'I do hold @TATAMOTORS — different risk tolerance.',
+        body: 'I do hold @TATAMOTORS - different risk tolerance.',
         createdAt: '2026-07-03T13:00:00+05:30',
       },
       {
@@ -728,7 +728,7 @@ export const POSTS = [
     id: 'p9',
     authorId: 'u2',
     type: 'text',
-    body: 'A longer note on what I am actually doing versus what I am merely watching.\n\n@TCS and @INFY remain core holds. Cash conversion is intact, and I would rather own boring compounders than chase narrative stocks into strength. That does not mean the narratives are wrong — only that they are not in my book.\n\nOn @RELIANCE and @TATAMOTORS I have no position. I read every thread, I respect the bulls, and I still will not force a buy just to participate in the conversation. Skin in the game only counts when it is real capital, not vibes.\n\nIf you are long those names, great — disclose it. If you are not, say so. The feed is more useful when opinions come with that context. I will keep writing weekly notes either way; open this post for the full argument and the comment thread.',
+    body: 'A longer note on what I am actually doing versus what I am merely watching.\n\n@TCS and @INFY remain core holds. Cash conversion is intact, and I would rather own boring compounders than chase narrative stocks into strength. That does not mean the narratives are wrong - only that they are not in my book.\n\nOn @RELIANCE and @TATAMOTORS I have no position. I read every thread, I respect the bulls, and I still will not force a buy just to participate in the conversation. Skin in the game only counts when it is real capital, not vibes.\n\nIf you are long those names, great - disclose it. If you are not, say so. The feed is more useful when opinions come with that context. I will keep writing weekly notes either way; open this post for the full argument and the comment thread.',
     image: null,
     createdAt: '2026-07-03T16:00:00+05:30',
     likes: 188,
@@ -736,7 +736,7 @@ export const POSTS = [
       {
         id: 'c9',
         authorId: 'u1',
-        body: 'This is the standard. I hold banks, not autos — and I say so.',
+        body: 'This is the standard. I hold banks, not autos - and I say so.',
         createdAt: '2026-07-03T16:30:00+05:30',
       },
       {
@@ -748,7 +748,7 @@ export const POSTS = [
       {
         id: 'c9c',
         authorId: 'u3',
-        body: 'I hold @TATAMOTORS — so my bias is obvious.',
+        body: 'I hold @TATAMOTORS - so my bias is obvious.',
         createdAt: '2026-07-03T17:45:00+05:30',
       },
     ],
@@ -771,7 +771,7 @@ export const PORTFOLIO_UPDATES = {
       type: 'post',
       postId: 'p4',
       authorId: 'u4',
-      snippet: 'Trimming into strength. Booked partial profits — still long the name.',
+      snippet: 'Trimming into strength. Booked partial profits - still long the name.',
       time: '5h',
     },
     {
@@ -874,7 +874,7 @@ export const PORTFOLIO_UPDATES = {
       id: 'u_in1',
       type: 'post',
       authorId: 'u2',
-      snippet: 'Holding INFY through the noise — cash generation intact.',
+      snippet: 'Holding INFY through the noise - cash generation intact.',
       time: '1d',
     },
   ],
@@ -974,7 +974,7 @@ export function getPortfolioWeightPct(authorId, ticker) {
 }
 
 
-/** Profile trade log — portfolio edits append here automatically. */
+/** Profile trade log - portfolio edits append here automatically. */
 export const USER_TRADES = {
   u_me: [
     {
@@ -1257,7 +1257,7 @@ export function resolveWatchlistHoldings(portfolio) {
   });
 }
 
-/** Metrics for Portfolio tab — live and watchlist share the same layout. */
+/** Metrics for Portfolio tab - live and watchlist share the same layout. */
 export function computePortfolioDisplayMetrics(portfolio) {
   const isWatchlist = portfolio.kind === 'watchlist';
   const holdingsBase = isWatchlist

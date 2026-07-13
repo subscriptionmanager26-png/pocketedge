@@ -1,15 +1,15 @@
 import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
 
 function formatSignedPlain(n) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '-';
   const sign = n > 0 ? '+' : n < 0 ? '−' : '';
   return `${sign}${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
 /**
  * Shared quote block for search rows + security detail headers.
- * Current Price
- * Today's Change as XX ( YY% )
+ * Row: stacked price / change (markets & search).
+ * Detail: Current Price and Today's Change on one horizontal plane.
  */
 export function QuoteChangeBlock({
   price,
@@ -24,7 +24,7 @@ export function QuoteChangeBlock({
   const numericPrice =
     typeof price === 'number'
       ? price
-      : price != null && price !== '…' && price !== '—'
+      : price != null && price !== '…' && price !== '-' && price !== '—'
         ? Number(String(price).replace(/[₹,\s]/g, ''))
         : null;
   const amount = dayChangeAmount({
@@ -34,38 +34,58 @@ export function QuoteChangeBlock({
     change,
   });
   const hasPct = changePct != null && Number.isFinite(Number(changePct));
+  const hasChange = amount != null || hasPct;
   const tone = amount != null ? amount : hasPct ? changePct : 0;
   const formatValue = (n) => (formatAsCurrency ? formatPrice(n) : formatSignedPlain(n));
   const priceDisplay =
     priceText ??
-    (price === '…' || price === '—'
-      ? price
+    (price === '…' || price === '-' || price === '—'
+      ? price === '—'
+        ? '-'
+        : price
       : price != null
         ? typeof price === 'string' && (price.startsWith('₹') || Number.isNaN(Number(price)))
           ? price
           : formatValue(Number(price))
-        : '—');
+        : '-');
 
   const priceClass =
     size === 'detail' ? 'text-3xl font-bold text-pe-text' : 'text-[15px] font-semibold text-pe-text';
   const changeClass =
     size === 'detail'
-      ? `text-lg font-bold tabular-nums ${pnlClass(tone)}`
+      ? `text-3xl font-bold tabular-nums ${pnlClass(tone)}`
       : `text-sm font-semibold tabular-nums ${pnlClass(tone)}`;
+  const labelClass = 'text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted';
+
+  if (size === 'detail') {
+    return (
+      <div className={`flex items-start gap-8 ${className}`.trim()}>
+        <div className="min-w-0">
+          <p className={labelClass}>Current Price</p>
+          <p className={priceClass}>{priceDisplay}</p>
+        </div>
+        {hasChange ? (
+          <div className="min-w-0">
+            <p className={labelClass}>Today&apos;s Change</p>
+            <p className={changeClass}>
+              {amount != null ? formatValue(amount) : '-'}
+              {hasPct ? ` (${formatPct(changePct)})` : ''}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
-      <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-        Current Price
-      </p>
+      <p className={labelClass}>Current Price</p>
       <p className={priceClass}>{priceDisplay}</p>
-      {amount != null || hasPct ? (
+      {hasChange ? (
         <div className="mt-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            Today&apos;s Change
-          </p>
+          <p className={labelClass}>Today&apos;s Change</p>
           <p className={changeClass}>
-            {amount != null ? formatValue(amount) : '—'}
+            {amount != null ? formatValue(amount) : '-'}
             {hasPct ? ` (${formatPct(changePct)})` : ''}
           </p>
         </div>

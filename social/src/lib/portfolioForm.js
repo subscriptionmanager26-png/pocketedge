@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
  * Bullish → In Form, Bearish → Off Track, Mixed/Insufficient → Unsure.
  *
  * Signals live in a dedicated Supabase project (momentum-screener),
- * covering equity, ETF, and mutual-fund schemes — not the main
+ * covering equity, ETF, and mutual-fund schemes - not the main
  * social PocketEdge project.
  */
 export function mapDmaRegimeToForm(regime) {
@@ -21,7 +21,7 @@ export function mapDmaRegimeToForm(regime) {
   }
 }
 
-/** @deprecated Prefer mapDmaRegimeToForm — kept for any leftover callers. */
+/** @deprecated Prefer mapDmaRegimeToForm - kept for any leftover callers. */
 export function classifySecurityForm({ price, ma50, ma200 }) {
   const close = Number(price);
   const dma50 = Number(ma50);
@@ -45,19 +45,19 @@ export const FORM_META = {
     id: 'in_form',
     label: 'In Form',
     shortLabel: 'In Form',
-    description: 'Price is above both the 50-day and 200-day averages — trend looks constructive.',
+    description: 'Price is above both the 50-day and 200-day averages - trend looks constructive.',
   },
   out_of_form: {
     id: 'out_of_form',
     label: 'Off Track',
     shortLabel: 'Off Track',
-    description: 'Price is below both the 50-day and 200-day averages — trend looks weak.',
+    description: 'Price is below both the 50-day and 200-day averages - trend looks weak.',
   },
   unsure: {
     id: 'unsure',
     label: 'Neutral',
     shortLabel: 'Neutral',
-    description: 'Mixed or thin signal vs the 50/200-day averages — no clear trend yet.',
+    description: 'Mixed or thin signal vs the 50/200-day averages - no clear trend yet.',
   },
 };
 

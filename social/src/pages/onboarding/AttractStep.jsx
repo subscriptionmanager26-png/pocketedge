@@ -23,7 +23,7 @@ export default function AttractStep({ onContinue }) {
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
         Add your holdings once. We classify stocks, ETFs, and mutual funds with the
-        daily 50/200 DMA momentum screen — so you know what is in form, and what is
+        daily 50/200 DMA momentum screen - so you know what is in form, and what is
         off track.
       </p>
 
@@ -33,12 +33,12 @@ export default function AttractStep({ onContinue }) {
           <SignalRow
             form="in_form"
             label="In Form"
-            hint="Bullish — above both DMAs with a rising 200 DMA"
+            hint="Bullish - above both DMAs with a rising 200 DMA"
           />
           <SignalRow
             form="out_of_form"
             label="Off Track"
-            hint="Bearish — below both DMAs with a falling 200 DMA"
+            hint="Bearish - below both DMAs with a falling 200 DMA"
           />
           <SignalRow
             form="unsure"
@@ -49,7 +49,7 @@ export default function AttractStep({ onContinue }) {
       </div>
 
       <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-[15px] text-pe-text-secondary">
-        Upload one or more Zerodha Kite holdings screenshots, or add holdings manually —
+        Upload one or more Zerodha Kite holdings screenshots, or add holdings manually -
         your choice.
       </div>
     </OnboardingShell>

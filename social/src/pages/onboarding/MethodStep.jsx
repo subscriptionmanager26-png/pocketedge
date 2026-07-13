@@ -8,7 +8,7 @@ export default function MethodStep({ onManual, onScreenshot, onBack }) {
         How do you want to add holdings?
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Choose screenshot or manual — both run the same form check. Screenshot works for
+        Choose screenshot or manual - both run the same form check. Screenshot works for
         Zerodha Kite; manual works for any broker.
       </p>
 

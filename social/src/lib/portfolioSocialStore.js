@@ -91,7 +91,7 @@ function seedForPortfolio(portfolioId) {
           {
             id: 'pc_demo_2',
             authorId: 'u2',
-            body: 'Strong picks — would love to see the rebalance rules.',
+            body: 'Strong picks - would love to see the rebalance rules.',
             createdAt: new Date(Date.now() - 8_640_000).toISOString(),
           },
         ]

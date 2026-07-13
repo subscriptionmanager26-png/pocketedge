@@ -161,15 +161,6 @@ export default function InvestmentPage({
         changePct={fund.changePct}
         previousClose={fund.previousClose}
         change={fund.change}
-        metaValue={
-          fund.navDate
-            ? new Date(fund.navDate).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })
-            : null
-        }
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
@@ -205,7 +196,7 @@ export default function InvestmentPage({
         <DiscussionsList
           posts={discussions}
           onOpenProfile={onOpenProfile}
-          emptyMessage="No posts yet — posts about this fund will show up here."
+          emptyMessage="No posts yet - posts about this fund will show up here."
         />
       )}
 

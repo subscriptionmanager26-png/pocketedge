@@ -159,7 +159,7 @@ export default function CommodityDetailPage({
             ? '…'
             : commodity.spotPrice != null
               ? commodity.spotPrice
-              : '—'
+              : '-'
         }
         changePct={commodity.changePct}
         previousClose={commodity.previousClose}
@@ -180,7 +180,7 @@ export default function CommodityDetailPage({
             <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
               {userReview
                 ? 'No other community signals yet.'
-                : `No community signals yet — be the first to share your view on ${commodity.name}.`}
+                : `No community signals yet - be the first to share your view on ${commodity.name}.`}
             </p>
           ) : (
             communityReviews.map((review) => (
@@ -200,7 +200,7 @@ export default function CommodityDetailPage({
         <DiscussionsList
           posts={discussions}
           onOpenProfile={onOpenProfile}
-          emptyMessage={`No posts yet — posts mentioning ${commodity.name} will show up here.`}
+          emptyMessage={`No posts yet - posts mentioning ${commodity.name} will show up here.`}
         />
       )}
 

@@ -31,15 +31,8 @@ function formatIndexGroup(group) {
 }
 
 function formatIndexValue(value) {
-  if (value == null) return '—';
+  if (value == null) return '-';
   return value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
-}
-
-function formatNavDate(isoDate) {
-  if (!isoDate) return null;
-  const d = new Date(isoDate);
-  if (Number.isNaN(d.getTime())) return isoDate;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function MarketsPage({
@@ -116,7 +109,7 @@ export default function MarketsPage({
                 price={fund.nav}
                 changePct={fund.changePct}
                 previousClose={fund.previousClose}
-                secondaryValue={fund.navDate ? formatNavDate(fund.navDate) : null}
+                change={fund.change}
                 onClick={() => onSelectFund?.(fund.schemeCode)}
               />
             ))}
@@ -199,7 +192,6 @@ function MarketRow({
   previousClose,
   change,
   formatAsCurrency = true,
-  secondaryValue,
   onClick,
 }) {
   const Tag = onClick ? 'button' : 'div';
@@ -228,15 +220,14 @@ function MarketRow({
       </div>
       <div className="shrink-0 text-right">
         <p className="text-[15px] font-semibold text-pe-text">
-          {priceText ?? (price != null ? formatValue(price) : '—')}
+          {priceText ?? (price != null ? formatValue(price) : '-')}
         </p>
         {amount != null || hasPct ? (
           <p className={`text-sm font-semibold tabular-nums ${pnlClass(tone)}`}>
-            {amount != null ? formatValue(amount) : '—'}
+            {amount != null ? formatValue(amount) : '-'}
             {hasPct ? ` (${formatPct(changePct)})` : ''}
           </p>
         ) : null}
-        {secondaryValue ? <p className="text-xs text-pe-text-muted">{secondaryValue}</p> : null}
       </div>
     </Tag>
   );

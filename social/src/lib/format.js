@@ -1,5 +1,5 @@
 export function formatInr(n, { compact = false } = {}) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '-';
   const abs = Math.abs(n);
   if (compact) {
     if (abs >= 1_00_00_000) return `${n < 0 ? '−' : ''}₹${(abs / 1_00_00_000).toFixed(2)}Cr`;
@@ -14,13 +14,13 @@ export function formatInr(n, { compact = false } = {}) {
 }
 
 export function formatPct(n, { signed = true } = {}) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '-';
   const sign = signed && n > 0 ? '+' : '';
   return `${sign}${n.toFixed(2)}%`;
 }
 
 export function formatPrice(n) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '-';
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',

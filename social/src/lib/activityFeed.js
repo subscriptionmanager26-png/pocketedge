@@ -122,7 +122,7 @@ function portfolioStockItems() {
           ticker,
           createdAt,
           title: `@${person.handle} ${update.type === 'buy' ? 'bought' : 'sold'} ${formatTicker(ticker)}`,
-          body: `${update.qty} shares — significant community activity in a stock you hold`,
+          body: `${update.qty} shares - significant community activity in a stock you hold`,
           meta: { trade: update, ticker },
         });
       }
@@ -156,5 +156,5 @@ export function getActivityFeed() {
   );
 }
 
-// re-export for tests — topic slugs unused here but kept for future filtering
+// re-export for tests - topic slugs unused here but kept for future filtering
 export { getFollowedTopicSlugs };

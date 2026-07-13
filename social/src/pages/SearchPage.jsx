@@ -311,13 +311,6 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
   }
 
   if (tab === 'mutual_funds') {
-    const navDate = item.navDate
-      ? new Date(item.navDate).toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-      : null;
     return (
       <button
         type="button"
@@ -330,15 +323,13 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
             {[item.category, item.subCategory].filter(Boolean).join(' · ') || item.amc}
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <QuoteChangeBlock
-            price={item.nav}
-            changePct={item.changePct}
-            previousClose={item.previousClose}
-            change={item.change}
-          />
-          {navDate ? <p className="mt-1 text-xs text-pe-text-muted">{navDate}</p> : null}
-        </div>
+        <QuoteChangeBlock
+          className="shrink-0 text-right"
+          price={item.nav}
+          changePct={item.changePct}
+          previousClose={item.previousClose}
+          change={item.change}
+        />
       </button>
     );
   }
@@ -360,7 +351,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
         priceText={
           item.value != null
             ? item.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })
-            : '—'
+            : '-'
         }
         changePct={item.changePct}
         previousClose={item.previousClose}

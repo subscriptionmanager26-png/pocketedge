@@ -289,7 +289,7 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
             <div className="mt-3">
               <PortfolioSharePreview share={share} />
               <p className="mt-2 text-xs text-pe-text-muted">
-                Sharing weights & returns only — not rupee amounts or quantities.
+                Sharing weights & returns only - not rupee amounts or quantities.
               </p>
             </div>
           ) : null}

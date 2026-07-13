@@ -318,20 +318,6 @@ export default function PortfolioPage({
     });
   }, [activeList]);
 
-  const overallRow = useMemo(() => {
-    if (!metrics || metrics.kind !== 'portfolio') return null;
-    return {
-      overall: true,
-      weight: 100,
-      value: metrics.totalValue ?? 0,
-      invested: metrics.invested ?? 0,
-      pnl: metrics.totalPnl ?? 0,
-      pnlPct: metrics.totalPnlPct ?? 0,
-      todayPnl: metrics.todayPnl ?? 0,
-      todayPnlPct: metrics.todayPnlPct ?? 0,
-    };
-  }, [metrics]);
-
   const chartDistribution = useMemo(
     () => compressDistribution(metrics?.distribution ?? []),
     [metrics]
@@ -507,7 +493,7 @@ export default function PortfolioPage({
           </div>
         </div>
 
-        {/* Return period picker hidden for now — default 1D only.
+        {/* Return period picker hidden for now - default 1D only.
         <div className="mt-5 flex gap-1 rounded-lg bg-pe-surface p-1">
           {['1D', '1W', '1M', '1Y'].map((per) => (
             <button key={per} type="button" className="flex-1 rounded-md py-2 text-sm font-semibold">
@@ -523,7 +509,7 @@ export default function PortfolioPage({
       {contentTab === 'summary' && <PortfolioSummaryComingSoon portfolioName={activeList?.name} />}
       {contentTab === 'performance' && (
         <HoldingsSummary
-          holdings={overallRow ? [overallRow, ...holdingsRows] : holdingsRows}
+          holdings={holdingsRows}
           onSelectStock={onSelectStock}
           onSelectFund={onSelectFund}
           formByTicker={formByTicker}
@@ -600,7 +586,7 @@ const DIST_TOP_N = 5;
 const OTHERS_COLOR = '#c7c7c7';
 
 function formatDeltaAmount(n) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '-';
   const abs = Math.abs(n);
   if (abs >= 1_00_00_000) return `${(abs / 1_00_00_000).toFixed(2)}Cr`;
   if (abs >= 1_00_000) return `${(abs / 1_00_000).toFixed(2)}L`;
@@ -701,10 +687,11 @@ function PortfolioSummaryComingSoon({ portfolioName }) {
         portfolioName ? (
           <>
             A concise AI read on <span className="font-semibold text-pe-text">{portfolioName}</span>
-            — allocation, recent moves, and what to watch.
+            {' '}
+            - allocation, recent moves, and what to watch.
           </>
         ) : (
-          'A concise AI read on your holdings — allocation, recent moves, and what to watch.'
+          'A concise AI read on your holdings - allocation, recent moves, and what to watch.'
         )
       }
     />

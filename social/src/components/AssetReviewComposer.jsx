@@ -113,7 +113,7 @@ export default function AssetReviewComposer({
             {existing.body ? (
               <p className="mt-2 text-[15px] leading-relaxed text-pe-text">{existing.body}</p>
             ) : (
-              <p className="mt-2 text-sm text-pe-text-muted">No written note — signal only.</p>
+              <p className="mt-2 text-sm text-pe-text-muted">No written note - signal only.</p>
             )}
           </div>
           <button

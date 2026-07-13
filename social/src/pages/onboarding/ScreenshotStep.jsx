@@ -176,7 +176,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
             ) : null}
           </div>
           <p className="mt-3 text-center text-[12px] text-pe-text-muted">
-            Each marker is one screenshot — progress moves forward across the batch.
+            Each marker is one screenshot - progress moves forward across the batch.
           </p>
         </div>
       </OnboardingShell>
@@ -217,7 +217,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
               )
             }
             onAddRow={() => setRows((prev) => [...prev, emptyHoldingRow()])}
-            hint="Same table as portfolio edit — search ticker, total invested, and quantity."
+            hint="Same table as portfolio edit - search ticker, total invested, and quantity."
           />
         </div>
       </OnboardingShell>
@@ -247,7 +247,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
         Upload holdings screenshots
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Add one or more Zerodha Kite holdings screenshots. Parsing runs on your device —
+        Add one or more Zerodha Kite holdings screenshots. Parsing runs on your device -
         images are not uploaded to our servers.
       </p>
 
