@@ -165,8 +165,9 @@ export default function AnalysisStep({
       </div>
 
       <p className="mt-10 text-[12px] leading-relaxed text-pe-text-muted">
-        Form uses the daily NSE 50/200 DMA momentum screen (Bullish → In Form, Bearish →
-        Off Track, Mixed/Insufficient → Unsure). This is not investment advice.
+        Form uses the daily 50/200 DMA momentum screen for stocks, ETFs, and mutual
+        funds (Bullish → In Form, Bearish → Off Track, Mixed/Insufficient → Unsure).
+        This is not investment advice.
       </p>
     </OnboardingShell>
   );

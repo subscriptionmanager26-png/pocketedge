@@ -159,7 +159,26 @@ export function getHandleForUserIdSync(userId) {
     if (cached?.username) return cached.username;
     return null;
   }
-  return getPerson(userId).handle;
+  return getPerson(userId)?.handle ?? null;
+}
+
+/** Collect author ids from posts (+ optional comments) for profile warm-up. */
+export function collectPostAuthorIds(posts = [], { commentAuthors = true } = {}) {
+  const ids = new Set();
+  for (const post of posts ?? []) {
+    if (post?.authorId) ids.add(String(post.authorId));
+    if (commentAuthors) {
+      for (const comment of post?.comments ?? []) {
+        if (comment?.authorId) ids.add(String(comment.authorId));
+      }
+    }
+  }
+  return [...ids];
+}
+
+/** Prefetch profiles so getPersonSync does not flash the Member placeholder. */
+export async function warmPostAuthors(posts = [], options) {
+  return resolvePeople(collectPostAuthorIds(posts, options));
 }
 
 /** Sync person lookup for feed/comments — avoids mock PEOPLE in production. */

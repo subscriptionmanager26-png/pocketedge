@@ -24,7 +24,7 @@ import { getStock, getStockHolders, getStockNews } from '../data/stockData';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchStockNews, fetchCorporateActions, isStockNewsConfigured } from '../lib/stockNewsApi';
 import CorporateActionsList from '../components/CorporateActionsList';
-import { AUTHOR_POSITIONS, CURRENT_USER, getPerson } from '../data/mockData';
+import { AUTHOR_POSITIONS, getPerson } from '../data/mockData';
 import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
@@ -37,6 +37,7 @@ import {
   loadReviewsForStock,
   subscribeReviews,
 } from '../lib/reviewStore';
+import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { subscribeWatchlists } from '../lib/watchlistStore';
 import {
   marketStockToDetail,
@@ -105,12 +106,13 @@ export default function StockInvestmentPage({
     };
   }, [ticker]);
 
+  const me = getAppCurrentUserId();
   const unlocked = hasCommunityReviewsAccess();
   const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
   const reviews = useMemo(() => getReviewsForStock(ticker), [ticker, reviewTick]);
   const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== CURRENT_USER.id),
-    [reviews]
+    () => reviews.filter((r) => r.authorId !== me),
+    [reviews, me]
   );
   const userReview = useMemo(
     () => getUserReviewForStock(ticker, { isEtf }),
@@ -253,7 +255,7 @@ export default function StockInvestmentPage({
                 <ReviewCard
                   key={review.id}
                   review={review}
-                  locked={reviewsLocked && review.authorId !== 'u_me'}
+                  locked={reviewsLocked && review.authorId !== me}
                   onAddComment={handleAddComment}
                   onOpenProfile={onOpenProfile}
                   onGraphChange={onGraphChange}

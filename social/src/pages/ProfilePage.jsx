@@ -1656,13 +1656,25 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [formByTicker, setFormByTicker] = useState({});
   const overallReturn = getPortfolioReturn(portfolio, returnPeriod);
 
+  const holdingFormItems = useMemo(() => {
+    const items = [];
+    const seen = new Set();
+    for (const holding of portfolio.holdings ?? []) {
+      if (!holding?.ticker || seen.has(holding.ticker)) continue;
+      seen.add(holding.ticker);
+      items.push({ ticker: holding.ticker, assetType: holding.assetType });
+    }
+    for (const ticker of portfolio.tickers ?? []) {
+      if (!ticker || seen.has(ticker)) continue;
+      seen.add(ticker);
+      items.push({ ticker });
+    }
+    return items;
+  }, [portfolio.holdings, portfolio.tickers]);
+
   const holdingKeys = useMemo(
-    () =>
-      [
-        ...(portfolio.holdings ?? []).map((holding) => holding.ticker),
-        ...(portfolio.tickers ?? []),
-      ].filter(Boolean),
-    [portfolio.holdings, portfolio.tickers]
+    () => holdingFormItems.map((item) => item.ticker),
+    [holdingFormItems]
   );
 
   const needsClientResolve = useMemo(
@@ -1675,20 +1687,20 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   }, [portfolio.id, returnPeriod]);
 
   useEffect(() => {
-    if (!holdingKeys.length) {
+    if (!holdingFormItems.length) {
       setFormByTicker({});
       return undefined;
     }
 
     let cancelled = false;
-    fetchPortfolioFormByTicker(holdingKeys).then((map) => {
+    fetchPortfolioFormByTicker(holdingFormItems).then((map) => {
       if (!cancelled) setFormByTicker(map);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [holdingKeys]);
+  }, [holdingFormItems]);
 
   useEffect(() => {
     if (!holdingKeys.length || !needsClientResolve) {

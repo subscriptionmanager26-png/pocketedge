@@ -900,8 +900,27 @@ export const PORTFOLIO_UPDATES = {
 };
 
 export function getPerson(id) {
+  if (!id) return null;
   if (id === CURRENT_USER.id) return CURRENT_USER;
-  return PEOPLE.find((p) => p.id === id) ?? PEOPLE[0];
+  const found = PEOPLE.find((p) => p.id === id);
+  if (found) return found;
+  // Never invent another demo person (old PEOPLE[0] fallback → @rohanv).
+  return {
+    id,
+    name: 'Member',
+    handle: 'member',
+    avatar: 'M',
+    bio: '',
+    location: '',
+    focus: '',
+    xirr: 0,
+    followers: 0,
+    following: 0,
+    assetsInfluenced: 0,
+    portfolioPublic: true,
+    showHoldingsPublic: true,
+    showXirrPublic: true,
+  };
 }
 
 export function normalizeHandle(handle) {
@@ -919,7 +938,7 @@ export function getPersonByHandle(handle) {
 }
 
 export function getHandleForUserId(userId) {
-  return getPerson(userId).handle;
+  return getPerson(userId)?.handle ?? null;
 }
 
 export function getUserIdForHandle(handle) {

@@ -22,8 +22,9 @@ export default function AttractStep({ onContinue }) {
         Is your portfolio actually in form?
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Add your holdings once. We classify each NSE name with the daily 50/200 DMA
-        momentum screen — so you know what is in form, and what is off track.
+        Add your holdings once. We classify stocks, ETFs, and mutual funds with the
+        daily 50/200 DMA momentum screen — so you know what is in form, and what is
+        off track.
       </p>
 
       <div className="mt-8 border-t border-pe-border pt-8">

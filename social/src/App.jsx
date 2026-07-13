@@ -28,7 +28,11 @@ import { getFund } from './data/fundData';
 import { bootstrapSocialApp, ensureSocialProfile } from './lib/socialProfileApi';
 import { isProductionApp } from './lib/appMode';
 import { flushDemoLocalData } from './lib/flushDemoLocalData';
-import { getAppCurrentUser, setSelfProfile } from './lib/socialIdentity';
+import {
+  getAppCurrentUser,
+  setSelfProfile,
+  warmPostAuthors,
+} from './lib/socialIdentity';
 import {
   addPostComment,
   buildOptimisticPostComment,
@@ -239,8 +243,14 @@ export default function App() {
       setProfileReady(true);
     }
     if (bootCache?.posts?.length) {
-      setPosts(bootCache.posts);
-      setPostsLoading(false);
+      // Warm author profiles before first paint so cards don't flash "Member".
+      warmPostAuthors(bootCache.posts)
+        .catch(() => {})
+        .finally(() => {
+          if (cancelled) return;
+          setPosts(bootCache.posts);
+          setPostsLoading(false);
+        });
     }
 
     hydrateCommunityAccess().catch(() => {});
@@ -253,7 +263,9 @@ export default function App() {
       setProfileReady(true);
     };
 
-    const applyFeed = (items, profileForCache) => {
+    const applyFeed = async (items, profileForCache) => {
+      if (cancelled) return;
+      await warmPostAuthors(items).catch(() => {});
       if (cancelled) return;
       setPosts(items);
       writeCachedFeedPosts(items);
@@ -265,14 +277,14 @@ export default function App() {
 
     if (usePostBackend()) {
       bootstrapSocialApp({ feedLimit: 50 })
-        .then(({ profile, feed }) => {
+        .then(async ({ profile, feed }) => {
           applyProfile(profile);
           const nextPosts = (feed?.items ?? []).map((row) => {
             const post = mapPostRow(row);
             notePostLikeSynced(post.id, post.liked);
             return post;
           });
-          applyFeed(nextPosts, profile);
+          await applyFeed(nextPosts, profile);
         })
         .catch(async () => {
           // Fallback to separate calls if bootstrap RPC is unavailable.
@@ -289,9 +301,9 @@ export default function App() {
           }
           try {
             const items = await fetchFeedPosts();
-            applyFeed(items, profile);
+            await applyFeed(items, profile);
           } catch {
-            applyFeed([], profile);
+            await applyFeed([], profile);
           }
         });
     } else {
@@ -688,7 +700,7 @@ export default function App() {
         : authView === 'app' && tab === 'activity'
           ? 'Activity'
           : authView === 'app' && tab === 'profile' && profileMode === 'public'
-            ? getPerson(profileUserId).name
+            ? getPerson(profileUserId)?.name
           : authView === 'app' && tab === 'markets' && selectedCommodityId
             ? selectedCommodityId
           : authView === 'app' && tab === 'markets' && selectedIndexId

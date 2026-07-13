@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
 import { SignalDisplay, signalLabelFromRating } from './SignalPicker';
 import { formatTicker } from '../lib/tickers';
-import { getPerson, STOCKS } from '../data/mockData';
+import { STOCKS } from '../data/mockData';
 import { getFund } from '../data/fundData';
 import {
   getUserVote,
@@ -13,6 +13,11 @@ import {
 } from '../lib/reviewStore';
 import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
 import { formatCount, timeAgo } from '../lib/format';
+import {
+  getAppCurrentUserId,
+  getPersonSync,
+  resolvePeople,
+} from '../lib/socialIdentity';
 
 export default function ReviewCard({
   review,
@@ -25,12 +30,42 @@ export default function ReviewCard({
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [reviewTick, setReviewTick] = useState(0);
+  const [enrichTick, setEnrichTick] = useState(0);
   const [following, setFollowing] = useState(() => isFollowing(review.authorId));
+  const me = getAppCurrentUserId();
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
   void reviewTick;
 
-  const person = getPerson(review.authorId);
+  const authorKey = useMemo(() => {
+    const ids = new Set();
+    if (review?.authorId) ids.add(String(review.authorId));
+    for (const comment of review?.comments ?? []) {
+      if (comment?.authorId) ids.add(String(comment.authorId));
+    }
+    return [...ids].sort().join(',');
+  }, [review?.authorId, review?.comments]);
+
+  useEffect(() => {
+    if (!authorKey) return undefined;
+    let cancelled = false;
+    resolvePeople(authorKey.split(','))
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setEnrichTick((n) => n + 1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authorKey]);
+  void enrichTick;
+
+  const person = getPersonSync(review.authorId) ?? {
+    id: review.authorId,
+    name: 'Member',
+    handle: 'member',
+    avatar: 'M',
+  };
   const fund = review.fundId ? getFund(review.fundId) : null;
   const stock = review.stockTicker ? STOCKS[review.stockTicker] : null;
   const assetLabel = stock
@@ -100,7 +135,7 @@ export default function ReviewCard({
               <span className="text-pe-text-muted">·</span>
               <span className="text-sm text-pe-text-muted">{timeAgo(review.createdAt)}</span>
             </div>
-            {review.authorId !== 'u_me' && (
+            {review.authorId !== me && (
               <button
                 type="button"
                 onClick={handleFollow}
@@ -166,15 +201,23 @@ export default function ReviewCard({
               ) : (
                 <ul className="space-y-3">
                   {(review.comments ?? []).map((c) => {
-                    const author = getPerson(c.authorId);
+                    const author = getPersonSync(c.authorId) ?? {
+                      id: c.authorId,
+                      name: 'Member',
+                      handle: 'member',
+                      avatar: 'M',
+                    };
                     const parent = c.parentId
                       ? (review.comments ?? []).find((x) => x.id === c.parentId)
+                      : null;
+                    const parentAuthor = parent
+                      ? getPersonSync(parent.authorId) ?? { name: 'Member' }
                       : null;
                     return (
                       <li key={c.id} className={c.parentId ? 'ml-4 border-l-2 border-pe-border pl-3' : ''}>
                         {parent && (
                           <p className="mb-1 text-xs text-pe-text-muted">
-                            Replying to {getPerson(parent.authorId).name}
+                            Replying to {parentAuthor.name}
                           </p>
                         )}
                         <p className="text-sm font-semibold text-pe-text">{author.name}</p>

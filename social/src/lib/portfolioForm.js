@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
  * Bullish → In Form, Bearish → Off Track, Mixed/Insufficient → Unsure.
  *
  * Signals live in a dedicated Supabase project (momentum-screener),
- * covering equity, ETF, and mutual-fund Growth schemes — not the main
+ * covering equity, ETF, and mutual-fund schemes — not the main
  * social PocketEdge project.
  */
 export function mapDmaRegimeToForm(regime) {
@@ -126,42 +126,94 @@ const ASSET_CLASS_PRIORITY = {
   mutual_fund: 2,
 };
 
+/** Map holding assetType → nse_dma_signals.asset_class. */
+export function toDmaAssetClass(assetType) {
+  const value = String(assetType ?? '')
+    .trim()
+    .toLowerCase();
+  if (value === 'etf') return 'etf';
+  if (value === 'fund' || value === 'mutual_fund' || value === 'mf') return 'mutual_fund';
+  if (value === 'stock' || value === 'equity' || value === 'share') return 'equity';
+  return null;
+}
+
+function normalizeFormRequest(item) {
+  if (item == null) return null;
+  if (typeof item === 'string' || typeof item === 'number') {
+    const original = String(item).trim();
+    const ticker = normalizeTicker(original);
+    return ticker ? { original, ticker, preferredClass: null } : null;
+  }
+  const original = String(item.ticker ?? item.symbol ?? '').trim();
+  const ticker = normalizeTicker(original);
+  if (!ticker) return null;
+  return {
+    original,
+    ticker,
+    preferredClass: toDmaAssetClass(item.assetType ?? item.assetClass),
+  };
+}
+
+function cacheKey(ticker, preferredClass) {
+  return preferredClass ? `${ticker}::${preferredClass}` : ticker;
+}
+
+function pickSignalForTicker(rows, preferredClass) {
+  if (!rows?.length) return null;
+  if (preferredClass) {
+    const match = rows.find((row) => row.asset_class === preferredClass);
+    if (match) return rowToSignal(match);
+  }
+  const ranked = [...rows].sort((a, b) => {
+    const pa = ASSET_CLASS_PRIORITY[a.asset_class] ?? 9;
+    const pb = ASSET_CLASS_PRIORITY[b.asset_class] ?? 9;
+    return pa - pb;
+  });
+  return rowToSignal(ranked[0]);
+}
+
 /**
  * Fetch daily DMA classification rows from momentum-screener
  * (`public.nse_dma_signals`) for equity tickers, ETF tickers, or
  * AMFI mutual-fund scheme codes.
+ *
+ * @param {Array<string|{ticker:string, assetType?:string}>} items
  */
-export async function fetchDmaSignalsByTicker(tickers) {
-  const unique = [...new Set((tickers ?? []).map(normalizeTicker).filter(Boolean))];
-  if (!unique.length) return {};
+export async function fetchDmaSignalsByTicker(items) {
+  const requests = (items ?? []).map(normalizeFormRequest).filter(Boolean);
+  if (!requests.length) return {};
 
   const now = Date.now();
   const byTicker = {};
   const missing = [];
 
-  for (const ticker of unique) {
-    const cached = cache.get(ticker);
+  for (const request of requests) {
+    const key = cacheKey(request.ticker, request.preferredClass);
+    const cached = cache.get(key);
     if (cached && now - cached.at < CACHE_TTL_MS) {
-      byTicker[ticker] = cached.signal;
+      byTicker[request.ticker] = cached.signal;
+      byTicker[request.original] = cached.signal;
     } else {
-      missing.push(ticker);
+      missing.push(request);
     }
   }
 
   if (!missing.length) return byTicker;
 
   if (!dmaClient) {
-    for (const ticker of missing) {
-      const signal = unsureSignal(ticker);
-      cache.set(ticker, { signal, at: now });
-      byTicker[ticker] = signal;
+    for (const request of missing) {
+      const signal = unsureSignal(request.ticker);
+      cache.set(cacheKey(request.ticker, request.preferredClass), { signal, at: now });
+      byTicker[request.ticker] = signal;
+      byTicker[request.original] = signal;
     }
     return byTicker;
   }
 
   try {
-    for (let i = 0; i < missing.length; i += IN_CHUNK) {
-      const chunk = missing.slice(i, i + IN_CHUNK);
+    const symbols = [...new Set(missing.map((r) => r.ticker))];
+    for (let i = 0; i < symbols.length; i += IN_CHUNK) {
+      const chunk = symbols.slice(i, i + IN_CHUNK);
       const { data, error } = await dmaClient
         .from('nse_dma_signals')
         .select(
@@ -172,31 +224,30 @@ export async function fetchDmaSignalsByTicker(tickers) {
 
       if (error) throw error;
 
-      const found = new Map();
-      const ranked = [...(data ?? [])].sort((a, b) => {
-        const pa = ASSET_CLASS_PRIORITY[a.asset_class] ?? 9;
-        const pb = ASSET_CLASS_PRIORITY[b.asset_class] ?? 9;
-        return pa - pb;
-      });
-      for (const row of ranked) {
-        const signal = rowToSignal(row);
-        if (!signal?.symbol) continue;
-        // First hit wins (equity > etf > mutual_fund) if a symbol collides.
-        if (!found.has(signal.symbol)) found.set(signal.symbol, signal);
+      const rowsBySymbol = new Map();
+      for (const row of data ?? []) {
+        const symbol = String(row.symbol ?? '').toUpperCase();
+        if (!symbol) continue;
+        if (!rowsBySymbol.has(symbol)) rowsBySymbol.set(symbol, []);
+        rowsBySymbol.get(symbol).push(row);
       }
 
-      for (const ticker of chunk) {
-        const signal = found.get(ticker) ?? unsureSignal(ticker);
-        cache.set(ticker, { signal, at: now });
-        byTicker[ticker] = signal;
+      for (const request of missing.filter((r) => chunk.includes(r.ticker))) {
+        const signal =
+          pickSignalForTicker(rowsBySymbol.get(request.ticker), request.preferredClass) ??
+          unsureSignal(request.ticker);
+        cache.set(cacheKey(request.ticker, request.preferredClass), { signal, at: now });
+        byTicker[request.ticker] = signal;
+        byTicker[request.original] = signal;
       }
     }
   } catch {
-    for (const ticker of missing) {
-      if (byTicker[ticker]) continue;
-      const signal = unsureSignal(ticker);
-      cache.set(ticker, { signal, at: now });
-      byTicker[ticker] = signal;
+    for (const request of missing) {
+      if (byTicker[request.ticker]) continue;
+      const signal = unsureSignal(request.ticker);
+      cache.set(cacheKey(request.ticker, request.preferredClass), { signal, at: now });
+      byTicker[request.ticker] = signal;
+      byTicker[request.original] = signal;
     }
   }
 
@@ -204,18 +255,15 @@ export async function fetchDmaSignalsByTicker(tickers) {
 }
 
 /** Form status map used by Portfolio / Profile holdings UI. */
-export async function fetchPortfolioFormByTicker(tickers) {
-  const originals = (tickers ?? [])
-    .map((value) => String(value ?? '').trim())
-    .filter(Boolean);
-  const signals = await fetchDmaSignalsByTicker(originals);
+export async function fetchPortfolioFormByTicker(items) {
+  const requests = (items ?? []).map(normalizeFormRequest).filter(Boolean);
+  const signals = await fetchDmaSignalsByTicker(requests);
   const byTicker = {};
 
-  for (const original of originals) {
-    const key = normalizeTicker(original);
-    const form = signals[key]?.form ?? 'unsure';
-    byTicker[key] = form;
-    byTicker[original] = form;
+  for (const request of requests) {
+    const form = signals[request.ticker]?.form ?? 'unsure';
+    byTicker[request.ticker] = form;
+    byTicker[request.original] = form;
   }
 
   return byTicker;

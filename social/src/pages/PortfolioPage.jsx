@@ -140,6 +140,14 @@ export default function PortfolioPage({
     }));
   }, [activeList]);
 
+  const formItems = useMemo(
+    () =>
+      holdingsRows.map((h) => ({
+        ticker: h.ticker,
+        assetType: h.assetType,
+      })),
+    [holdingsRows]
+  );
   const tickers = useMemo(() => holdingsRows.map((h) => h.ticker), [holdingsRows]);
   const [portfolioNews, setPortfolioNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
@@ -149,20 +157,20 @@ export default function PortfolioPage({
   const [postsLoading, setPostsLoading] = useState(false);
 
   useEffect(() => {
-    if (!tickers.length) {
+    if (!formItems.length) {
       setFormByTicker({});
       return undefined;
     }
 
     let cancelled = false;
-    fetchPortfolioFormByTicker(tickers).then((map) => {
+    fetchPortfolioFormByTicker(formItems).then((map) => {
       if (!cancelled) setFormByTicker(map);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [tickers]);
+  }, [formItems]);
 
   const formBuckets = useMemo(() => {
     const buckets = {

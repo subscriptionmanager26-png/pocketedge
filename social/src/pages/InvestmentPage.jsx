@@ -23,7 +23,7 @@ import {
   getFundHolders,
   getFundNews,
 } from '../data/fundData';
-import { getPerson, CURRENT_USER } from '../data/mockData';
+import { getPerson } from '../data/mockData';
 import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
@@ -41,6 +41,7 @@ import {
   loadReviewsForFund,
   subscribeReviews,
 } from '../lib/reviewStore';
+import { getAppCurrentUserId } from '../lib/socialIdentity';
 
 export default function InvestmentPage({
   fundId,
@@ -95,10 +96,11 @@ export default function InvestmentPage({
 
   const unlocked = hasCommunityReviewsAccess();
   const hasAccess = hasFundAccess(fundId);
+  const me = getAppCurrentUserId();
   const reviews = useMemo(() => getReviewsForFund(fundId), [fundId, reviewTick]);
   const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== CURRENT_USER.id),
-    [reviews]
+    () => reviews.filter((r) => r.authorId !== me),
+    [reviews, me]
   );
   const userReview = useMemo(
     () => getUserReviewForFund(fundId),
@@ -194,7 +196,7 @@ export default function InvestmentPage({
                 <ReviewCard
                   key={review.id}
                   review={review}
-                  locked={reviewsLocked && review.authorId !== 'u_me'}
+                  locked={reviewsLocked && review.authorId !== me}
                   onAddComment={handleAddComment}
                   onOpenProfile={onOpenProfile}
                   onGraphChange={onGraphChange}

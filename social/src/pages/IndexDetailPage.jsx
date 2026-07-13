@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetReviewComposer from '../components/AssetReviewComposer';
 import ReviewCard from '../components/ReviewCard';
-import { CURRENT_USER } from '../data/mockData';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
@@ -30,6 +29,7 @@ import {
   loadReviewsForIndex,
   subscribeReviews,
 } from '../lib/reviewStore';
+import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 
@@ -97,13 +97,14 @@ export default function IndexDetailPage({
     [indexId, displayIndex?.name]
   );
 
+  const me = getAppCurrentUserId();
   const reviewsLocked = !unlocked;
   const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
   const reviews = useMemo(() => getReviewsForIndex(indexId), [indexId, reviewTick]);
   const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== CURRENT_USER.id),
-    [reviews]
+    () => reviews.filter((r) => r.authorId !== me),
+    [reviews, me]
   );
   const userReview = useMemo(
     () => getUserReviewForIndex(indexId),
@@ -191,7 +192,7 @@ export default function IndexDetailPage({
                 <ReviewCard
                   key={review.id}
                   review={review}
-                  locked={reviewsLocked && review.authorId !== CURRENT_USER.id}
+                  locked={reviewsLocked && review.authorId !== me}
                   onAddComment={handleAddComment}
                   onOpenProfile={onOpenProfile}
                   onReviewChange={() => setReviewTick((n) => n + 1)}
