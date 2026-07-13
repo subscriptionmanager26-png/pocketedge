@@ -1,6 +1,14 @@
 import { CURRENT_USER, PEOPLE, USER_FOLLOWING_SEED } from '../data/mockData';
 import { isDevMockMode } from './appMode';
 import { getAppCurrentUserId } from './socialIdentity';
+import {
+  fetchFollowCounts,
+  fetchFollowerIds,
+  fetchFollowingIds,
+  followUser,
+  unfollowUser,
+  useFollowBackend,
+} from './socialGraphApi';
 
 const FOLLOWING_KEY = 'pe_social_following';
 const TOPICS_KEY = 'pe_social_topics';
@@ -10,6 +18,15 @@ const ALL_USER_IDS = isDevMockMode() ? [CURRENT_USER.id, ...PEOPLE.map((p) => p.
 const DEFAULT_TOPICS = isDevMockMode() ? ['Banking', 'ITServices', 'Macro'] : [];
 
 const listeners = new Set();
+
+/** Live cache: who the current user follows. */
+let myFollowingCache = null;
+/** Live cache: following list per profile user id. */
+const followingListCache = new Map();
+/** Live cache: followers list per profile user id. */
+const followersListCache = new Map();
+/** Live cache: {followers, following} counts per profile user id. */
+const countsCache = new Map();
 
 function emit() {
   listeners.forEach((fn) => fn());
@@ -29,32 +46,114 @@ function writeJson(key, value) {
   emit();
 }
 
+function isDemoUserId(id) {
+  return /^(u_me|u_\w+|u\d+)$/i.test(String(id ?? ''));
+}
+
+function filterLiveIds(ids) {
+  return (ids ?? []).filter((id) => id && !isDemoUserId(id)).map(String);
+}
+
+function bumpCountsForToggle(followerId, followeeId, nowFollowing) {
+  const delta = nowFollowing ? 1 : -1;
+
+  const followerCounts = countsCache.get(followerId) ?? { followers: 0, following: 0 };
+  countsCache.set(followerId, {
+    ...followerCounts,
+    following: Math.max(0, followerCounts.following + delta),
+  });
+
+  const followeeCounts = countsCache.get(followeeId) ?? { followers: 0, following: 0 };
+  countsCache.set(followeeId, {
+    ...followeeCounts,
+    followers: Math.max(0, followeeCounts.followers + delta),
+  });
+
+  if (followingListCache.has(followerId)) {
+    const list = new Set(followingListCache.get(followerId));
+    if (nowFollowing) list.add(followeeId);
+    else list.delete(followeeId);
+    followingListCache.set(followerId, [...list]);
+  }
+
+  if (followersListCache.has(followeeId)) {
+    const list = new Set(followersListCache.get(followeeId));
+    if (nowFollowing) list.add(followerId);
+    else list.delete(followerId);
+    followersListCache.set(followeeId, [...list]);
+  }
+}
+
 export function subscribeSocialGraph(listener) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
 export function getFollowingIds() {
+  if (useFollowBackend()) {
+    if (myFollowingCache) return new Set(myFollowingCache);
+    return new Set(filterLiveIds(readJson(FOLLOWING_KEY, [])));
+  }
   const ids = readJson(FOLLOWING_KEY, DEFAULT_FOLLOWING);
   if (isDevMockMode()) return new Set(ids);
-  // Production: never surface leftover demo follow targets.
-  return new Set((ids ?? []).filter((id) => !/^(u_me|u_\w+|u\d+)$/i.test(String(id ?? ''))));
+  return new Set(filterLiveIds(ids));
 }
 
 export function isFollowing(userId) {
-  return getFollowingIds().has(userId);
+  if (!userId) return false;
+  return getFollowingIds().has(String(userId));
 }
 
-export function toggleFollow(userId) {
+/** Optimistic toggle; persists to Supabase when live. */
+export async function toggleFollow(userId) {
+  if (!userId || isDemoUserId(userId)) return false;
+  const targetId = String(userId);
+  const me = getAppCurrentUserId();
+  if (targetId === me) return false;
+
+  const currently = isFollowing(targetId);
+  const nextFollowing = !currently;
+
+  if (useFollowBackend()) {
+    const next = getFollowingIds();
+    if (nextFollowing) next.add(targetId);
+    else next.delete(targetId);
+    myFollowingCache = next;
+    writeJson(FOLLOWING_KEY, [...next]);
+    bumpCountsForToggle(me, targetId, nextFollowing);
+    emit();
+
+    try {
+      if (nextFollowing) await followUser(targetId);
+      else await unfollowUser(targetId);
+      await Promise.all([
+        hydrateFollowGraph(targetId).catch(() => {}),
+        me ? hydrateFollowGraph(me).catch(() => {}) : Promise.resolve(),
+      ]);
+    } catch {
+      // Revert optimistic update.
+      if (nextFollowing) next.delete(targetId);
+      else next.add(targetId);
+      myFollowingCache = next;
+      writeJson(FOLLOWING_KEY, [...next]);
+      bumpCountsForToggle(me, targetId, !nextFollowing);
+      emit();
+      return !nextFollowing;
+    }
+    return nextFollowing;
+  }
+
   const next = getFollowingIds();
-  if (next.has(userId)) next.delete(userId);
-  else next.add(userId);
+  if (next.has(targetId)) next.delete(targetId);
+  else next.add(targetId);
   writeJson(FOLLOWING_KEY, [...next]);
-  return next.has(userId);
+  return next.has(targetId);
 }
 
 export function setFollowingIds(ids) {
-  writeJson(FOLLOWING_KEY, ids);
+  const cleaned = filterLiveIds(ids);
+  if (useFollowBackend()) myFollowingCache = new Set(cleaned);
+  writeJson(FOLLOWING_KEY, cleaned);
 }
 
 export function getFollowedTopicSlugs() {
@@ -80,6 +179,10 @@ export function setFollowedTopicSlugs(slugs) {
 export function clearSocialGraph() {
   localStorage.removeItem(FOLLOWING_KEY);
   localStorage.removeItem(TOPICS_KEY);
+  myFollowingCache = null;
+  followingListCache.clear();
+  followersListCache.clear();
+  countsCache.clear();
   emit();
 }
 
@@ -93,22 +196,88 @@ function followingMap() {
 }
 
 export function getFollowingForUser(userId) {
-  if (!isDevMockMode()) {
-    if (userId === getAppCurrentUserId()) return [...getFollowingIds()];
+  if (!userId) return [];
+  const id = String(userId);
+
+  if (useFollowBackend()) {
+    if (followingListCache.has(id)) return [...followingListCache.get(id)];
+    if (id === getAppCurrentUserId()) return [...getFollowingIds()];
     return [];
   }
-  if (userId === CURRENT_USER.id) return [...getFollowingIds()];
-  return [...(USER_FOLLOWING_SEED[userId] ?? [])];
+
+  if (!isDevMockMode()) {
+    if (id === getAppCurrentUserId()) return [...getFollowingIds()];
+    return [];
+  }
+  if (id === CURRENT_USER.id) return [...getFollowingIds()];
+  return [...(USER_FOLLOWING_SEED[id] ?? [])];
 }
 
 export function getFollowersForUser(userId) {
+  if (!userId) return [];
+  const id = String(userId);
+
+  if (useFollowBackend()) {
+    if (followersListCache.has(id)) return [...followersListCache.get(id)];
+    return [];
+  }
+
   const map = followingMap();
-  return ALL_USER_IDS.filter((id) => id !== userId && (map[id] ?? []).includes(userId));
+  return ALL_USER_IDS.filter((uid) => uid !== id && (map[uid] ?? []).includes(id));
 }
 
 export function getFollowCounts(userId) {
+  if (!userId) return { followers: 0, following: 0 };
+  const id = String(userId);
+
+  if (useFollowBackend() && countsCache.has(id)) {
+    return { ...countsCache.get(id) };
+  }
+
   return {
-    followers: getFollowersForUser(userId).length,
-    following: getFollowingForUser(userId).length,
+    followers: getFollowersForUser(id).length,
+    following: getFollowingForUser(id).length,
   };
+}
+
+/** Prefetch current user's following set (call on app bootstrap). */
+export async function hydrateMyFollowing() {
+  if (!useFollowBackend()) return [...getFollowingIds()];
+  const me = getAppCurrentUserId();
+  if (!me || isDemoUserId(me)) return [];
+
+  const ids = await fetchFollowingIds(me);
+  myFollowingCache = new Set(ids);
+  followingListCache.set(me, ids);
+  writeJson(FOLLOWING_KEY, ids);
+  emit();
+  return ids;
+}
+
+/** Prefetch following/followers lists + counts for a profile. */
+export async function hydrateFollowGraph(userId) {
+  if (!userId) return { followers: 0, following: 0 };
+  const id = String(userId);
+
+  if (!useFollowBackend()) {
+    return getFollowCounts(id);
+  }
+
+  const [counts, following, followers] = await Promise.all([
+    fetchFollowCounts(id),
+    fetchFollowingIds(id),
+    fetchFollowerIds(id),
+  ]);
+
+  countsCache.set(id, counts);
+  followingListCache.set(id, following);
+  followersListCache.set(id, followers);
+
+  if (id === getAppCurrentUserId()) {
+    myFollowingCache = new Set(following);
+    writeJson(FOLLOWING_KEY, following);
+  }
+
+  emit();
+  return counts;
 }

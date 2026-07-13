@@ -10,6 +10,7 @@ import {
 import {
   getFollowersForUser,
   getFollowingForUser,
+  hydrateFollowGraph,
   isFollowing,
   toggleFollow,
 } from '../lib/socialGraphStore';
@@ -29,6 +30,18 @@ export default function FollowListView({
   onGraphChange,
 }) {
   const title = mode === 'followers' ? 'Followers' : 'Following';
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    let cancelled = false;
+    hydrateFollowGraph(userId).catch(() => {
+      if (cancelled) return;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, mode]);
+
   const ids = useMemo(() => {
     void graphTick;
     const raw =
@@ -121,8 +134,8 @@ function PersonRow({ person, graphTick, onOpenProfile, onGraphChange }) {
       {!isSelf && (
         <button
           type="button"
-          onClick={() => {
-            toggleFollow(person.id);
+          onClick={async () => {
+            await toggleFollow(person.id);
             onGraphChange?.();
           }}
           className={`shrink-0 rounded-md px-3.5 py-1.5 text-sm font-bold transition ${

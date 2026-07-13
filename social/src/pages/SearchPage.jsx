@@ -393,8 +393,8 @@ function PersonRow({ person, graphTick, onOpenProfile, onFollowChange }) {
       </button>
       <FollowButton
         following={following}
-        onToggle={() => {
-          toggleFollow(person.id);
+        onToggle={async () => {
+          await toggleFollow(person.id);
           onFollowChange?.();
         }}
       />

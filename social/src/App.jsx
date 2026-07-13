@@ -45,6 +45,7 @@ import {
   usePostBackend,
 } from './lib/socialPostApi';
 import { hydrateCommunityAccess } from './lib/reviewStore';
+import { hydrateMyFollowing } from './lib/socialGraphStore';
 import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
 import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
@@ -241,6 +242,7 @@ export default function App() {
       setSocialProfile(bootCache.profile);
       setSelfProfile(bootCache.profile);
       setProfileReady(true);
+      hydrateMyFollowing().catch(() => {});
     }
     if (bootCache?.posts?.length) {
       // Warm author profiles before first paint so cards don't flash "Member".
@@ -261,6 +263,7 @@ export default function App() {
       setSocialProfile(profile);
       setSelfProfile(profile);
       setProfileReady(true);
+      hydrateMyFollowing().catch(() => {});
     };
 
     const applyFeed = async (items, profileForCache) => {

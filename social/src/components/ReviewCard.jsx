@@ -11,7 +11,7 @@ import {
   subscribeReviews,
   toggleReviewLike,
 } from '../lib/reviewStore';
-import { isFollowing, toggleFollow } from '../lib/socialGraphStore';
+import { isFollowing, toggleFollow, subscribeSocialGraph } from '../lib/socialGraphStore';
 import { formatCount, timeAgo } from '../lib/format';
 import {
   getAppCurrentUserId,
@@ -35,6 +35,10 @@ export default function ReviewCard({
   const me = getAppCurrentUserId();
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
+  useEffect(
+    () => subscribeSocialGraph(() => setFollowing(isFollowing(review.authorId))),
+    [review.authorId]
+  );
   void reviewTick;
 
   const authorKey = useMemo(() => {
@@ -80,8 +84,8 @@ export default function ReviewCard({
     onReviewChange?.();
   };
 
-  const handleFollow = () => {
-    const next = toggleFollow(review.authorId);
+  const handleFollow = async () => {
+    const next = await toggleFollow(review.authorId);
     setFollowing(next);
     onGraphChange?.();
   };

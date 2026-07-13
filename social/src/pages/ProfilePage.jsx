@@ -21,7 +21,7 @@ import {
 import { updateSocialProfile } from '../lib/socialProfileApi';
 import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } from '../lib/socialIdentity';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
-import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph } from '../lib/socialGraphStore';
+import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { FormStatusTag } from '../components/FormStatusIcons';
@@ -207,6 +207,20 @@ export default function ProfilePage({
       cancelled = true;
     };
   }, [userId, mode]);
+
+  useEffect(() => {
+    if (!person?.id) return undefined;
+    setFollowingState(isFollowing(person.id));
+    let cancelled = false;
+    hydrateFollowGraph(person.id)
+      .then(() => {
+        if (!cancelled) setFollowingState(isFollowing(person.id));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [person?.id]);
 
   useEffect(() => {
     if (!person?.id) return;
@@ -410,8 +424,8 @@ export default function ProfilePage({
         followingCount={followCounts.following}
         onOpenFollowers={() => setFollowListMode('followers')}
         onOpenFollowing={() => setFollowListMode('following')}
-        onToggleFollow={() => {
-          const next = toggleFollow(person.id);
+        onToggleFollow={async () => {
+          const next = await toggleFollow(person.id);
           setFollowingState(next);
           onGraphChange?.();
         }}
