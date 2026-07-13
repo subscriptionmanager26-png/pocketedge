@@ -13,7 +13,12 @@ import {
   markAllActivityRead,
   subscribeActivity,
 } from './lib/activityStore';
-import { clearSocialGraph } from './lib/socialGraphStore';
+import {
+  clearSocialGraph,
+  getMyRecentFollowerEvents,
+  hydrateMyFollowing,
+  subscribeSocialGraph,
+} from './lib/socialGraphStore';
 import {
   clearSession,
   resolveAuthViewForUser,
@@ -30,6 +35,7 @@ import { isProductionApp } from './lib/appMode';
 import { flushDemoLocalData } from './lib/flushDemoLocalData';
 import {
   getAppCurrentUser,
+  resolvePeople,
   setSelfProfile,
   warmPostAuthors,
 } from './lib/socialIdentity';
@@ -45,7 +51,6 @@ import {
   usePostBackend,
 } from './lib/socialPostApi';
 import { hydrateCommunityAccess } from './lib/reviewStore';
-import { hydrateMyFollowing } from './lib/socialGraphStore';
 import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
 import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
@@ -190,6 +195,16 @@ export default function App() {
   });
 
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
+  useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
+
+  // Own profile must use the live auth UUID, not demo CURRENT_USER.id (`u_me`).
+  useEffect(() => {
+    const liveId = socialProfile?.user_id;
+    if (!liveId) return;
+    if (profileUserId === CURRENT_USER.id || profileUserId === 'u_me') {
+      setProfileUserId(liveId);
+    }
+  }, [socialProfile?.user_id, profileUserId]);
 
   useEffect(() => {
     if (skipAuthForDev()) {
@@ -242,7 +257,13 @@ export default function App() {
       setSocialProfile(bootCache.profile);
       setSelfProfile(bootCache.profile);
       setProfileReady(true);
-      hydrateMyFollowing().catch(() => {});
+      hydrateMyFollowing()
+        .then(() => {
+          const followerIds = getMyRecentFollowerEvents().map((event) => event.followerId);
+          if (followerIds.length) return resolvePeople(followerIds);
+          return null;
+        })
+        .catch(() => {});
     }
     if (bootCache?.posts?.length) {
       // Warm author profiles before first paint so cards don't flash "Member".
@@ -263,7 +284,13 @@ export default function App() {
       setSocialProfile(profile);
       setSelfProfile(profile);
       setProfileReady(true);
-      hydrateMyFollowing().catch(() => {});
+      hydrateMyFollowing()
+        .then(() => {
+          const followerIds = getMyRecentFollowerEvents().map((event) => event.followerId);
+          if (followerIds.length) return resolvePeople(followerIds);
+          return null;
+        })
+        .catch(() => {});
     };
 
     const applyFeed = async (items, profileForCache) => {
@@ -339,6 +366,22 @@ export default function App() {
   useEffect(() => {
     if (tab === 'activity') markAllActivityRead(activityItems);
   }, [tab, activityItems]);
+
+  useEffect(() => {
+    if (authView !== 'app' || tab !== 'activity') return undefined;
+    let cancelled = false;
+    hydrateMyFollowing()
+      .then(() => {
+        if (cancelled) return null;
+        const followerIds = getMyRecentFollowerEvents().map((event) => event.followerId);
+        if (followerIds.length) return resolvePeople(followerIds);
+        return null;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [authView, tab, authUser?.id]);
 
   const handlePost = async ({ body, image, portfolioShare }) => {
     const me = getAppCurrentUser();

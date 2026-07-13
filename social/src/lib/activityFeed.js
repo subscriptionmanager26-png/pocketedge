@@ -2,6 +2,7 @@ import { isDevMockMode } from './appMode';
 import {
   getFollowedTopicSlugs,
   getFollowingIds,
+  getMyRecentFollowerEvents,
 } from './socialGraphStore';
 import {
   MY_PORTFOLIO,
@@ -132,12 +133,31 @@ function portfolioStockItems() {
   return items;
 }
 
-/** Activity from followed people + community moves on portfolio stocks. */
+function newFollowerItems() {
+  return getMyRecentFollowerEvents().map((event) => ({
+    id: `follower_${event.followerId}_${event.createdAt ?? ''}`,
+    category: 'followers',
+    type: 'new_follower',
+    authorId: event.followerId,
+    ticker: null,
+    createdAt: event.createdAt ?? new Date().toISOString(),
+    title: 'started following you',
+    body: '',
+    meta: { followerId: event.followerId },
+  }));
+}
+
+/** Activity from new followers + (in mock) followed people & holdings. */
 export function getActivityFeed() {
-  if (!isDevMockMode()) return [];
+  if (!isDevMockMode()) {
+    return newFollowerItems().sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
 
   const followingIds = getFollowingIds();
   const items = [
+    ...newFollowerItems(),
     ...followingPostItems(followingIds),
     ...followingTradeItems(followingIds),
     ...followingPortfolioChangeItems(followingIds),

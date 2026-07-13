@@ -5,6 +5,7 @@ import {
   fetchFollowCounts,
   fetchFollowerIds,
   fetchFollowingIds,
+  fetchRecentFollowers,
   followUser,
   unfollowUser,
   useFollowBackend,
@@ -27,6 +28,8 @@ const followingListCache = new Map();
 const followersListCache = new Map();
 /** Live cache: {followers, following} counts per profile user id. */
 const countsCache = new Map();
+/** Live cache: recent follower events for the current user (activity). */
+let myFollowerEventsCache = [];
 
 function emit() {
   listeners.forEach((fn) => fn());
@@ -180,6 +183,7 @@ export function clearSocialGraph() {
   localStorage.removeItem(FOLLOWING_KEY);
   localStorage.removeItem(TOPICS_KEY);
   myFollowingCache = null;
+  myFollowerEventsCache = [];
   followingListCache.clear();
   followersListCache.clear();
   countsCache.clear();
@@ -245,37 +249,47 @@ export async function hydrateMyFollowing() {
   if (!useFollowBackend()) return [...getFollowingIds()];
   const me = getAppCurrentUserId();
   if (!me || isDemoUserId(me)) return [];
+  await hydrateFollowGraph(me);
+  return [...getFollowingIds()];
+}
 
-  const ids = await fetchFollowingIds(me);
-  myFollowingCache = new Set(ids);
-  followingListCache.set(me, ids);
-  writeJson(FOLLOWING_KEY, ids);
-  emit();
-  return ids;
+/** Recent people who followed the current user (for Activity). */
+export function getMyRecentFollowerEvents() {
+  return myFollowerEventsCache.map((event) => ({ ...event }));
 }
 
 /** Prefetch following/followers lists + counts for a profile. */
 export async function hydrateFollowGraph(userId) {
   if (!userId) return { followers: 0, following: 0 };
   const id = String(userId);
+  if (isDemoUserId(id)) return { followers: 0, following: 0 };
 
   if (!useFollowBackend()) {
     return getFollowCounts(id);
   }
 
-  const [counts, following, followers] = await Promise.all([
+  const me = getAppCurrentUserId();
+  const isSelf = id === me;
+
+  const [counts, following, followersPayload] = await Promise.all([
     fetchFollowCounts(id),
     fetchFollowingIds(id),
-    fetchFollowerIds(id),
+    isSelf ? fetchRecentFollowers(id, { limit: 50 }) : fetchFollowerIds(id),
   ]);
 
   countsCache.set(id, counts);
   followingListCache.set(id, following);
-  followersListCache.set(id, followers);
 
-  if (id === getAppCurrentUserId()) {
+  if (isSelf) {
+    myFollowerEventsCache = followersPayload;
+    followersListCache.set(
+      id,
+      followersPayload.map((event) => event.followerId)
+    );
     myFollowingCache = new Set(following);
     writeJson(FOLLOWING_KEY, following);
+  } else {
+    followersListCache.set(id, followersPayload);
   }
 
   emit();

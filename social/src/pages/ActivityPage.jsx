@@ -5,19 +5,21 @@ import {
   Briefcase,
   FileText,
   TrendingUp,
+  UserPlus,
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import PageHeader from '../components/PageHeader';
-import { getPerson } from '../data/mockData';
 import { getActivityFeed } from '../lib/activityFeed';
 import { isActivityRead, markActivityRead } from '../lib/activityStore';
 import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { getPersonSync } from '../lib/socialIdentity';
 import { formatTicker } from '../lib/tickers';
 
 const TYPE_ICONS = {
   post: FileText,
   trade: TrendingUp,
   portfolio_change: Briefcase,
+  new_follower: UserPlus,
 };
 
 export default function ActivityPage({
@@ -28,10 +30,15 @@ export default function ActivityPage({
 }) {
   const feed = items ?? getActivityFeed();
 
-  const { following, holdings } = useMemo(() => {
+  const { followers, following, holdings } = useMemo(() => {
+    const followerItems = feed.filter((item) => item.category === 'followers');
     const followingItems = feed.filter((item) => item.category === 'following');
     const holdingItems = feed.filter((item) => item.category === 'portfolio_stock');
-    return { following: followingItems, holdings: holdingItems };
+    return {
+      followers: followerItems,
+      following: followingItems,
+      holdings: holdingItems,
+    };
   }, [feed]);
 
   return (
@@ -41,6 +48,15 @@ export default function ActivityPage({
           Activity
         </h1>
       </PageHeader>
+
+      <ActivitySection
+        title="New followers"
+        empty="When someone follows you, they’ll show up here."
+        items={followers}
+        onOpenProfile={onOpenProfile}
+        onOpenPost={onOpenPost}
+        onOpenStock={onOpenStock}
+      />
 
       <ActivitySection
         title="From people you follow"
@@ -99,10 +115,11 @@ function ActivitySection({
 }
 
 function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
-  const person = item.authorId ? getPerson(item.authorId) : null;
+  const person = item.authorId ? getPersonSync(item.authorId) : null;
   const Icon = TYPE_ICONS[item.type] ?? FileText;
   const unread = !isActivityRead(item.id);
   const trade = item.meta?.trade;
+  const isNewFollower = item.type === 'new_follower';
 
   const handleClick = () => {
     markActivityRead(item.id);
@@ -116,6 +133,10 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
     }
     if (item.authorId) onOpenProfile?.(item.authorId);
   };
+
+  const title = isNewFollower
+    ? `${person?.name ?? 'Someone'} started following you`
+    : item.title;
 
   return (
     <button
@@ -142,11 +163,15 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[15px] font-semibold leading-5 text-pe-text">{item.title}</p>
+          <p className="text-[15px] font-semibold leading-5 text-pe-text">{title}</p>
           <span className="shrink-0 text-xs text-pe-text-muted">{timeAgo(item.createdAt)}</span>
         </div>
 
-        {item.body ? (
+        {person?.handle && isNewFollower ? (
+          <p className="mt-1 text-sm leading-5 text-pe-text-secondary">@{person.handle}</p>
+        ) : null}
+
+        {!isNewFollower && item.body ? (
           <p className="mt-1 text-sm leading-5 text-pe-text-secondary">{item.body}</p>
         ) : null}
 

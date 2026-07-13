@@ -61,3 +61,20 @@ export async function fetchFollowCounts(userId) {
     following: Number(data?.following ?? 0),
   };
 }
+
+/** Recent people who followed `userId`, with created_at for activity. */
+export async function fetchRecentFollowers(userId, { limit = 50 } = {}) {
+  const { data, error } = await supabase.rpc('list_recent_followers', {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  const items = data?.items ?? [];
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((row) => ({
+      followerId: String(row.follower_id ?? row.followerId ?? ''),
+      createdAt: row.created_at ?? row.createdAt ?? null,
+    }))
+    .filter((row) => row.followerId);
+}
