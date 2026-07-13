@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Plus, Sparkles, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Sparkles, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -393,37 +393,32 @@ export default function PortfolioPage({
               portfolio={activeList}
               onSeeOriginal={onOpenSourcePortfolio}
             />
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div className="grid grid-cols-2 gap-x-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[15px] font-semibold text-pe-text-muted">Current value</p>
+                  <p className="text-[13px] font-semibold text-pe-text-muted">Current Value</p>
                   <PortfolioKindMetaTags portfolio={activeList} />
                 </div>
-                <p className="mt-1 text-3xl font-bold tracking-tight text-pe-text">
+                <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
                   {formatInr(metrics.totalValue)}
                 </p>
+                <PortfolioDeltaLine
+                  amount={metrics.todayPnl}
+                  pct={metrics.todayPnlPct}
+                  suffix="today"
+                />
               </div>
               <div className="min-w-0 text-right">
-                <p className="text-[15px] font-semibold text-pe-text-muted">Total PnL</p>
-                <p className={`mt-1 text-xl font-bold tabular-nums ${pnlClass(metrics.totalPnl)}`}>
-                  {formatInr(metrics.totalPnl, { compact: true })}
-                  {metrics.totalPnlPct != null ? ` (${formatPct(metrics.totalPnlPct)})` : ''}
+                <p className="text-[13px] font-semibold text-pe-text-muted">Initial Invested</p>
+                <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
+                  {formatInr(metrics.invested)}
                 </p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm text-pe-text-muted">
-                  Total invested{' '}
-                  <span className="font-semibold text-pe-text">{formatInr(metrics.invested)}</span>
-                </p>
-              </div>
-              <div className="min-w-0 text-right">
-                <p className="text-sm text-pe-text-muted">
-                  Today&apos;s PnL{' '}
-                  <span className={`font-semibold ${pnlClass(metrics.todayPnl)}`}>
-                    {formatInr(metrics.todayPnl, { compact: true })}
-                    {metrics.todayPnlPct != null ? ` (${formatPct(metrics.todayPnlPct)})` : ''}
-                  </span>
-                </p>
+                <PortfolioDeltaLine
+                  amount={metrics.totalPnl}
+                  pct={metrics.totalPnlPct}
+                  suffix="total"
+                  align="right"
+                />
               </div>
             </div>
           </>
@@ -595,6 +590,41 @@ const CONTENT_TABS = [
 const DIST_COLORS = ['#ff6719', '#1a8917', '#4a6fe3', '#c47b0a', '#6b6b6b', '#d93025'];
 const DIST_TOP_N = 5;
 const OTHERS_COLOR = '#c7c7c7';
+
+function formatDeltaAmount(n) {
+  if (n == null || Number.isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1_00_00_000) return `${(abs / 1_00_00_000).toFixed(2)}Cr`;
+  if (abs >= 1_00_000) return `${(abs / 1_00_000).toFixed(2)}L`;
+  if (abs >= 1_000) return `${(abs / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
+  return `${Math.round(abs).toLocaleString('en-IN')}`;
+}
+
+function PortfolioDeltaLine({ amount, pct, suffix, align = 'left' }) {
+  const tone = amount ?? pct ?? 0;
+  const up = tone > 0;
+  const down = tone < 0;
+  const Icon = up ? ArrowUp : down ? ArrowDown : null;
+  const amountText = formatDeltaAmount(amount);
+  const pctText =
+    pct != null && Number.isFinite(Number(pct))
+      ? `${Math.abs(Number(pct)).toFixed(Math.abs(Number(pct)) >= 10 ? 0 : 1)}%`
+      : null;
+
+  return (
+    <p
+      className={`mt-1.5 inline-flex items-center gap-0.5 text-[13px] font-semibold tabular-nums ${
+        align === 'right' ? 'justify-end' : ''
+      } ${pnlClass(tone)}`}
+    >
+      {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
+      <span>
+        {amountText}
+        {pctText ? ` ( ${pctText} )` : ''} {suffix}
+      </span>
+    </p>
+  );
+}
 
 function compressDistribution(distribution, topN = DIST_TOP_N) {
   const sorted = [...(distribution ?? [])].sort((a, b) => b.weight - a.weight);
