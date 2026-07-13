@@ -51,7 +51,7 @@ export default function AnalysisStep({
   const sections = [
     { key: 'in_form', title: 'In Form', items: summary.buckets.in_form },
     { key: 'out_of_form', title: 'Off Track', items: summary.buckets.out_of_form },
-    { key: 'unsure', title: 'Unsure', items: summary.buckets.unsure },
+    { key: 'unsure', title: 'Neutral', items: summary.buckets.unsure },
   ];
 
   const sourceLabel =

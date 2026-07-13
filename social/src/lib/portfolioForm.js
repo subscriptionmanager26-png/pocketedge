@@ -55,8 +55,8 @@ export const FORM_META = {
   },
   unsure: {
     id: 'unsure',
-    label: 'Unsure',
-    shortLabel: 'Unsure',
+    label: 'Neutral',
+    shortLabel: 'Neutral',
     description: 'Mixed or thin signal vs the 50/200-day averages — no clear trend yet.',
   },
 };

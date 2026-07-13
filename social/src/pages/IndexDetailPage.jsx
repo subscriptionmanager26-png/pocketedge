@@ -33,11 +33,6 @@ import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 
-function formatIndexValue(value) {
-  if (value == null) return '—';
-  return value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
-}
-
 export default function IndexDetailPage({
   indexId,
   onBack,
@@ -146,14 +141,15 @@ export default function IndexDetailPage({
         ticker={displayIndex.symbol !== displayIndex.name ? displayIndex.symbol : null}
         subtitle={formatIndexGroup(displayIndex.group)}
         type="Index"
-        priceLabel="Index Value"
+        formatAsCurrency={false}
         price={
           loading && displayIndex.value == null
             ? '…'
-            : formatIndexValue(displayIndex.value)
+            : displayIndex.value
         }
-        changeLabel="Today's Change"
         changePct={displayIndex.changePct}
+        previousClose={displayIndex.previousClose}
+        change={displayIndex.change}
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

@@ -28,6 +28,17 @@ export function formatPrice(n) {
   }).format(n);
 }
 
+/** Absolute day move from quote fields (prefers explicit change / previous close). */
+export function dayChangeAmount({ price, changePct, previousClose, change } = {}) {
+  if (change != null && Number.isFinite(Number(change))) return Number(change);
+  const px = Number(price);
+  const prev = Number(previousClose);
+  if (Number.isFinite(px) && Number.isFinite(prev)) return px - prev;
+  const pct = Number(changePct);
+  if (Number.isFinite(px) && Number.isFinite(pct)) return px * (pct / 100);
+  return null;
+}
+
 export function formatCount(n) {
   if (n >= 1_00_000) return `${(n / 1_00_000).toFixed(1)}L`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;

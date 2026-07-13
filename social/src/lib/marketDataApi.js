@@ -435,6 +435,8 @@ export function marketFundToDetail(fund) {
     nav: fund.nav ?? fund.price,
     navDate: fund.navDate ?? fund.asOfDate,
     asOfDate: fund.asOfDate ?? fund.navDate,
+    changePct: fund.changePct,
+    change: fund.change,
     previousClose: fund.previousClose,
     syncedAt: fund.syncedAt,
     priceSource: fund.priceSource,

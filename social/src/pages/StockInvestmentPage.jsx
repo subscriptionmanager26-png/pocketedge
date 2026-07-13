@@ -43,7 +43,7 @@ import {
   marketStockToDetail,
   resolveMarketStock,
 } from '../lib/marketDataApi';
-import { formatPct, formatPrice } from '../lib/format';
+import { formatPct } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
 export default function StockInvestmentPage({
@@ -204,14 +204,14 @@ export default function StockInvestmentPage({
         name={displayStock.name}
         ticker={formatTicker(ticker)}
         type={getStockAssetType(ticker, displayStock)}
-        priceLabel={isEtf ? 'ETF Price' : 'Stock Price'}
         price={
           marketLoading && displayStock.price == null
             ? '…'
-            : formatPrice(displayStock.price)
+            : displayStock.price
         }
-        changeLabel="Today's Change"
         changePct={displayStock.changePct}
+        previousClose={displayStock.previousClose}
+        change={displayStock.change}
       />
 
       <UnderlineTabs

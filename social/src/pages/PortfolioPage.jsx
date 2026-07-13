@@ -389,38 +389,40 @@ export default function PortfolioPage({
       <section className="border-b border-pe-border px-4 py-5">
         {metrics?.kind === 'portfolio' ? (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[15px] font-semibold text-pe-text-muted">Current value</p>
-              <PortfolioKindMetaTags portfolio={activeList} />
-            </div>
             <PortfolioSourceAttribution
               portfolio={activeList}
               onSeeOriginal={onOpenSourcePortfolio}
             />
-            <p className="mt-1 text-3xl font-bold tracking-tight text-pe-text">
-              {formatInr(metrics.totalValue)}
-            </p>
-            <p className="mt-2 text-sm text-pe-text-muted">
-              Total invested{' '}
-              <span className="font-semibold text-pe-text">{formatInr(metrics.invested)}</span>
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Total PnL
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[15px] font-semibold text-pe-text-muted">Current value</p>
+                  <PortfolioKindMetaTags portfolio={activeList} />
+                </div>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-pe-text">
+                  {formatInr(metrics.totalValue)}
                 </p>
-                <p className={`mt-0.5 text-sm font-semibold ${pnlClass(metrics.totalPnl)}`}>
+              </div>
+              <div className="min-w-0 text-right">
+                <p className="text-[15px] font-semibold text-pe-text-muted">Total PnL</p>
+                <p className={`mt-1 text-xl font-bold tabular-nums ${pnlClass(metrics.totalPnl)}`}>
                   {formatInr(metrics.totalPnl, { compact: true })}
                   {metrics.totalPnlPct != null ? ` (${formatPct(metrics.totalPnlPct)})` : ''}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Today&apos;s PnL
+              <div className="min-w-0">
+                <p className="text-sm text-pe-text-muted">
+                  Total invested{' '}
+                  <span className="font-semibold text-pe-text">{formatInr(metrics.invested)}</span>
                 </p>
-                <p className={`mt-0.5 text-sm font-semibold ${pnlClass(metrics.todayPnl)}`}>
-                  {formatInr(metrics.todayPnl, { compact: true })}
-                  {metrics.todayPnlPct != null ? ` (${formatPct(metrics.todayPnlPct)})` : ''}
+              </div>
+              <div className="min-w-0 text-right">
+                <p className="text-sm text-pe-text-muted">
+                  Today&apos;s PnL{' '}
+                  <span className={`font-semibold ${pnlClass(metrics.todayPnl)}`}>
+                    {formatInr(metrics.todayPnl, { compact: true })}
+                    {metrics.todayPnlPct != null ? ` (${formatPct(metrics.todayPnlPct)})` : ''}
+                  </span>
                 </p>
               </div>
             </div>
@@ -581,7 +583,7 @@ export default function PortfolioPage({
   );
 }
 
-const FORM_METRIC_ORDER = ['in_form', 'out_of_form', 'unsure'];
+const FORM_METRIC_ORDER = ['in_form', 'unsure', 'out_of_form'];
 const CONTENT_TABS = [
   { id: 'summary', label: 'Summary' },
   { id: 'performance', label: 'Performance' },

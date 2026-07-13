@@ -4,7 +4,7 @@ import UnderlineTabs from '../components/UnderlineTabs';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { useMarketTabData } from '../hooks/useMarketTabData';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
-import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
 const MARKET_TABS = [
@@ -96,10 +96,10 @@ export default function MarketsPage({
                 key={stock.symbol}
                 title={formatTicker(stock.symbol)}
                 subtitle={stock.name}
-                primaryLabel="Stock Price"
-                primaryValue={stock.price != null ? formatPrice(stock.price) : '—'}
-                changeLabel="Today's Change"
+                price={stock.price}
                 changePct={stock.changePct}
+                previousClose={stock.previousClose}
+                change={stock.change}
                 onClick={() => onSelectStock?.(stock.symbol)}
               />
             ))}
@@ -113,9 +113,9 @@ export default function MarketsPage({
                 key={fund.schemeCode}
                 title={fund.name}
                 subtitle={[fund.category, fund.subCategory].filter(Boolean).join(' · ') || fund.amc}
-                primaryLabel="NAV"
-                primaryValue={fund.nav != null ? formatPrice(fund.nav) : '—'}
-                secondaryLabel="NAV"
+                price={fund.nav}
+                changePct={fund.changePct}
+                previousClose={fund.previousClose}
                 secondaryValue={fund.navDate ? formatNavDate(fund.navDate) : null}
                 onClick={() => onSelectFund?.(fund.schemeCode)}
               />
@@ -130,10 +130,10 @@ export default function MarketsPage({
                 key={etf.symbol}
                 title={formatTicker(etf.symbol)}
                 subtitle={etf.name}
-                primaryLabel="ETF Price"
-                primaryValue={etf.ltp != null ? formatPrice(etf.ltp) : '—'}
-                changeLabel="Today's Change"
+                price={etf.ltp ?? etf.price}
                 changePct={etf.changePct}
+                previousClose={etf.previousClose}
+                change={etf.change}
                 onClick={() => onSelectStock?.(etf.symbol, { kind: 'etf' })}
               />
             ))}
@@ -147,10 +147,12 @@ export default function MarketsPage({
                 key={index.id}
                 title={index.name}
                 subtitle={formatIndexGroup(index.group)}
-                primaryLabel="Index Value"
-                primaryValue={formatIndexValue(index.value)}
-                changeLabel="Today's Change"
+                priceText={formatIndexValue(index.value)}
+                price={index.value}
+                formatAsCurrency={false}
                 changePct={index.changePct}
+                previousClose={index.previousClose}
+                change={index.change}
                 onClick={() => onSelectIndex?.(index.id)}
               />
             ))}
@@ -164,10 +166,10 @@ export default function MarketsPage({
                 key={item.id}
                 title={item.name}
                 subtitle={[item.unit, item.location].filter(Boolean).join(' · ')}
-                primaryLabel="Spot Price"
-                primaryValue={item.spotPrice != null ? formatPrice(item.spotPrice) : '—'}
-                changeLabel="Today's Change"
+                price={item.spotPrice}
                 changePct={item.changePct}
+                previousClose={item.previousClose}
+                change={item.change}
                 onClick={() => onSelectCommodity?.(item.id)}
               />
             ))}
@@ -191,15 +193,26 @@ function MarketList({ children, empty, emptyMessage }) {
 function MarketRow({
   title,
   subtitle,
-  primaryLabel,
-  primaryValue,
-  changeLabel,
+  price,
+  priceText,
   changePct,
-  secondaryLabel,
+  previousClose,
+  change,
+  formatAsCurrency = true,
   secondaryValue,
   onClick,
 }) {
   const Tag = onClick ? 'button' : 'div';
+  const amount = dayChangeAmount({ price, changePct, previousClose, change });
+  const hasPct = changePct != null && Number.isFinite(Number(changePct));
+  const tone = amount != null ? amount : hasPct ? changePct : 0;
+  const formatValue = (n) => {
+    if (!formatAsCurrency) {
+      const sign = n > 0 ? '+' : n < 0 ? '−' : '';
+      return `${sign}${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+    }
+    return formatPrice(n);
+  };
 
   return (
     <Tag
@@ -213,42 +226,18 @@ function MarketRow({
         <p className="truncate text-[15px] font-semibold text-pe-text">{title}</p>
         {subtitle ? <p className="text-sm text-pe-text-muted">{subtitle}</p> : null}
       </div>
-      {primaryValue != null || changePct != null || secondaryValue ? (
-        <div className="shrink-0 text-right">
-          {primaryValue != null ? (
-            <div>
-              {primaryLabel ? (
-                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  {primaryLabel}
-                </p>
-              ) : null}
-              <p className="text-[15px] font-semibold text-pe-text">{primaryValue}</p>
-            </div>
-          ) : null}
-          {changePct != null ? (
-            <div className="mt-1">
-              {changeLabel ? (
-                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  {changeLabel}
-                </p>
-              ) : null}
-              <p className={`text-sm font-semibold ${pnlClass(changePct)}`}>
-                {formatPct(changePct)}
-              </p>
-            </div>
-          ) : null}
-          {secondaryValue ? (
-            <div className="mt-1">
-              {secondaryLabel ? (
-                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  {secondaryLabel}
-                </p>
-              ) : null}
-              <p className="text-xs text-pe-text-muted">{secondaryValue}</p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="shrink-0 text-right">
+        <p className="text-[15px] font-semibold text-pe-text">
+          {priceText ?? (price != null ? formatValue(price) : '—')}
+        </p>
+        {amount != null || hasPct ? (
+          <p className={`text-sm font-semibold tabular-nums ${pnlClass(tone)}`}>
+            {amount != null ? formatValue(amount) : '—'}
+            {hasPct ? ` (${formatPct(changePct)})` : ''}
+          </p>
+        ) : null}
+        {secondaryValue ? <p className="text-xs text-pe-text-muted">{secondaryValue}</p> : null}
+      </div>
     </Tag>
   );
 }

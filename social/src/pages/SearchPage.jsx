@@ -13,7 +13,8 @@ import {
   toggleFollow,
   toggleTopicFollow,
 } from '../lib/socialGraphStore';
-import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatCount } from '../lib/format';
+import { QuoteChangeBlock } from '../components/AssetProductHeader';
 import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';
 
@@ -287,36 +288,24 @@ export default function SearchPage({
 
 function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex }) {
   if (tab === 'stocks' || tab === 'etf') {
+    const price = item.price ?? item.ltp;
     return (
       <button
         type="button"
         onClick={() => onSelectStock?.(item.symbol, { kind: tab === 'etf' ? 'etf' : 'stock' })}
         className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
       >
-        <div>
+        <div className="min-w-0 pr-3">
           <p className="text-[15px] font-semibold text-pe-text">{formatTicker(item.symbol)}</p>
           <p className="text-sm text-pe-text-muted">{item.name}</p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            {tab === 'etf' ? 'ETF Price' : 'Stock Price'}
-          </p>
-          <p className="text-[15px] font-semibold text-pe-text">
-            {item.price != null || item.ltp != null
-              ? formatPrice(item.price ?? item.ltp)
-              : '—'}
-          </p>
-          {item.changePct != null ? (
-            <div className="mt-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Today&apos;s Change
-              </p>
-              <p className={`text-sm font-semibold ${pnlClass(item.changePct)}`}>
-                {formatPct(item.changePct)}
-              </p>
-            </div>
-          ) : null}
-        </div>
+        <QuoteChangeBlock
+          className="shrink-0 text-right"
+          price={price}
+          changePct={item.changePct}
+          previousClose={item.previousClose}
+          change={item.change}
+        />
       </button>
     );
   }
@@ -342,18 +331,13 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">NAV</p>
-          <p className="text-[15px] font-semibold text-pe-text">
-            {item.nav != null ? formatPrice(item.nav) : '—'}
-          </p>
-          {navDate ? (
-            <div className="mt-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                NAV
-              </p>
-              <p className="text-xs text-pe-text-muted">{navDate}</p>
-            </div>
-          ) : null}
+          <QuoteChangeBlock
+            price={item.nav}
+            changePct={item.changePct}
+            previousClose={item.previousClose}
+            change={item.change}
+          />
+          {navDate ? <p className="mt-1 text-xs text-pe-text-muted">{navDate}</p> : null}
         </div>
       </button>
     );
@@ -365,30 +349,23 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
       onClick={() => onSelectIndex?.(item.id)}
       className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
     >
-      <div>
+      <div className="min-w-0 pr-3">
         <p className="text-[15px] font-semibold text-pe-text">{item.name}</p>
         {item.group ? <p className="text-sm text-pe-text-muted">{item.group}</p> : null}
       </div>
-      <div className="shrink-0 text-right">
-        <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-          Index Value
-        </p>
-        <p className="text-[15px] font-semibold text-pe-text">
-          {item.value != null
+      <QuoteChangeBlock
+        className="shrink-0 text-right"
+        price={item.value}
+        formatAsCurrency={false}
+        priceText={
+          item.value != null
             ? item.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })
-            : '—'}
-        </p>
-        {item.changePct != null ? (
-          <div className="mt-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-              Today&apos;s Change
-            </p>
-            <p className={`text-sm font-semibold ${pnlClass(item.changePct)}`}>
-              {formatPct(item.changePct)}
-            </p>
-          </div>
-        ) : null}
-      </div>
+            : '—'
+        }
+        changePct={item.changePct}
+        previousClose={item.previousClose}
+        change={item.change}
+      />
     </button>
   );
 }

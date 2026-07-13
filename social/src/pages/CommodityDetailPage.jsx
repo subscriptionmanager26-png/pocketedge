@@ -19,7 +19,6 @@ import {
 } from '../components/InvestmentSections';
 import { hasMarketAssetAccess } from '../lib/assetAccess';
 import { getCommodityDiscussions } from '../lib/assetDiscussions';
-import { formatPrice } from '../lib/format';
 import {
   addReviewComment,
   getReviewsForCommodity,
@@ -144,16 +143,16 @@ export default function CommodityDetailPage({
         ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
         subtitle={subtitle}
         type="Commodity"
-        priceLabel="Spot Price"
         price={
           loading && commodity.spotPrice == null
             ? '…'
             : commodity.spotPrice != null
-              ? formatPrice(commodity.spotPrice)
+              ? commodity.spotPrice
               : '—'
         }
-        changeLabel="Today's Change"
         changePct={commodity.changePct}
+        previousClose={commodity.previousClose}
+        change={commodity.change}
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

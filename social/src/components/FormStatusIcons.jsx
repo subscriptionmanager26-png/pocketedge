@@ -53,7 +53,7 @@ const TAG_CLASS = {
 const TAG_LABEL = {
   in_form: 'In form',
   out_of_form: 'Off Track',
-  unsure: 'Unsure',
+  unsure: 'Neutral',
 };
 
 export function FormStatusTag({ form }) {

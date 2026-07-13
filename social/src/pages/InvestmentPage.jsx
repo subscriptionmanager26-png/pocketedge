@@ -31,7 +31,6 @@ import {
   marketFundToDetail,
   resolveMarketFund,
 } from '../lib/marketDataApi';
-import { formatPrice } from '../lib/format';
 import {
   addReviewComment,
   getReviewsForFund,
@@ -142,15 +141,10 @@ export default function InvestmentPage({
       <AssetProductHeader
         name={fund.name}
         type={getFundAssetType()}
-        priceLabel="NAV"
-        price={
-          marketLoading && fund.nav == null
-            ? '…'
-            : fund.nav != null
-              ? formatPrice(fund.nav)
-              : null
-        }
-        metaLabel="NAV"
+        price={marketLoading && fund.nav == null ? '…' : fund.nav}
+        changePct={fund.changePct}
+        previousClose={fund.previousClose}
+        change={fund.change}
         metaValue={
           fund.navDate
             ? new Date(fund.navDate).toLocaleDateString('en-IN', {

@@ -42,7 +42,7 @@ export default function AttractStep({ onContinue }) {
           />
           <SignalRow
             form="unsure"
-            label="Unsure"
+            label="Neutral"
             hint="Mixed signal or insufficient price history"
           />
         </div>
