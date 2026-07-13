@@ -14,11 +14,7 @@ import {
   toggleTopicFollow,
 } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
-import {
-  MARKET_MIN_SEARCH_CHARS,
-  fetchMarketPreview,
-  searchMarketTab,
-} from '../lib/marketDataApi';
+import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';
 
 const RESULT_TABS = [
@@ -49,7 +45,6 @@ export default function SearchPage({
   const [query, setQuery] = useState('');
   const [resultTab, setResultTab] = useState('people');
   const [graphTick, setGraphTick] = useState(0);
-  const [topStocks, setTopStocks] = useState([]);
   const [marketResults, setMarketResults] = useState({});
   const [marketSearching, setMarketSearching] = useState(false);
   const [peopleResults, setPeopleResults] = useState([]);
@@ -63,12 +58,6 @@ export default function SearchPage({
     setGraphTick((n) => n + 1);
     onGraphChange?.();
   };
-
-  useEffect(() => {
-    fetchMarketPreview('stocks')
-      .then(({ items }) => setTopStocks(items.slice(0, 5)))
-      .catch(() => setTopStocks([]));
-  }, []);
 
   useEffect(() => {
     if (!isMarketSearch || !['stocks', 'mutual_funds', 'etf', 'indices'].includes(resultTab)) {
@@ -204,15 +193,6 @@ export default function SearchPage({
               </p>
             </section>
           )}
-
-          <section>
-            <SectionLabel>Top stock movers</SectionLabel>
-            <div className="mt-1 divide-y divide-pe-border">
-              {topStocks.map((stock) => (
-                <StockRow key={stock.symbol} stock={stock} onSelectStock={onSelectStock} />
-              ))}
-            </div>
-          </section>
         </div>
       ) : (
         <div>
@@ -317,16 +297,24 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
           <p className="text-[15px] font-semibold text-pe-text">{formatTicker(item.symbol)}</p>
           <p className="text-sm text-pe-text-muted">{item.name}</p>
         </div>
-        <div className="text-right">
+        <div className="shrink-0 text-right">
+          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+            {tab === 'etf' ? 'ETF Price' : 'Stock Price'}
+          </p>
           <p className="text-[15px] font-semibold text-pe-text">
             {item.price != null || item.ltp != null
               ? formatPrice(item.price ?? item.ltp)
               : '—'}
           </p>
           {item.changePct != null ? (
-            <p className={`text-sm font-semibold ${pnlClass(item.changePct)}`}>
-              {formatPct(item.changePct)}
-            </p>
+            <div className="mt-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Today&apos;s Change
+              </p>
+              <p className={`text-sm font-semibold ${pnlClass(item.changePct)}`}>
+                {formatPct(item.changePct)}
+              </p>
+            </div>
           ) : null}
         </div>
       </button>
@@ -334,6 +322,13 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
   }
 
   if (tab === 'mutual_funds') {
+    const navDate = item.navDate
+      ? new Date(item.navDate).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : null;
     return (
       <button
         type="button"
@@ -346,9 +341,20 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
             {[item.category, item.subCategory].filter(Boolean).join(' · ') || item.amc}
           </p>
         </div>
-        <p className="shrink-0 text-[15px] font-semibold text-pe-text">
-          {item.nav != null ? formatPrice(item.nav) : '—'}
-        </p>
+        <div className="shrink-0 text-right">
+          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">NAV</p>
+          <p className="text-[15px] font-semibold text-pe-text">
+            {item.nav != null ? formatPrice(item.nav) : '—'}
+          </p>
+          {navDate ? (
+            <div className="mt-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                NAV
+              </p>
+              <p className="text-xs text-pe-text-muted">{navDate}</p>
+            </div>
+          ) : null}
+        </div>
       </button>
     );
   }
@@ -363,16 +369,24 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
         <p className="text-[15px] font-semibold text-pe-text">{item.name}</p>
         {item.group ? <p className="text-sm text-pe-text-muted">{item.group}</p> : null}
       </div>
-      <div className="text-right">
+      <div className="shrink-0 text-right">
+        <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          Index Value
+        </p>
         <p className="text-[15px] font-semibold text-pe-text">
           {item.value != null
             ? item.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })
             : '—'}
         </p>
         {item.changePct != null ? (
-          <p className={`text-sm font-semibold ${pnlClass(item.changePct)}`}>
-            {formatPct(item.changePct)}
-          </p>
+          <div className="mt-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+              Today&apos;s Change
+            </p>
+            <p className={`text-sm font-semibold ${pnlClass(item.changePct)}`}>
+              {formatPct(item.changePct)}
+            </p>
+          </div>
         ) : null}
       </div>
     </button>
@@ -417,33 +431,6 @@ function PersonRow({ person, graphTick, onOpenProfile, onFollowChange }) {
         }}
       />
     </div>
-  );
-}
-
-function StockRow({ stock, onSelectStock }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSelectStock?.(stock.symbol)}
-      className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
-    >
-      <div>
-        <p className="text-[15px] font-semibold text-pe-text">{formatTicker(stock.symbol)}</p>
-        <p className="text-sm text-pe-text-muted">{stock.name}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-[15px] font-semibold text-pe-text">
-          {stock.price != null || stock.ltp != null
-            ? formatPrice(stock.price ?? stock.ltp)
-            : '—'}
-        </p>
-        {stock.changePct != null ? (
-          <p className={`text-sm font-semibold ${pnlClass(stock.changePct)}`}>
-            {formatPct(stock.changePct)}
-          </p>
-        ) : null}
-      </div>
-    </button>
   );
 }
 

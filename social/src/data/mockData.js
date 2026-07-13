@@ -1241,9 +1241,20 @@ export function resolveWatchlistHoldings(portfolio) {
 /** Metrics for Portfolio tab — live and watchlist share the same layout. */
 export function computePortfolioDisplayMetrics(portfolio) {
   const isWatchlist = portfolio.kind === 'watchlist';
-  const holdings = isWatchlist
+  const holdingsBase = isWatchlist
     ? resolveWatchlistHoldings(portfolio)
     : (portfolio.holdings ?? []).map(recalcHolding);
+
+  const holdings = holdingsBase.map((h) => {
+    const changePct = Number(h.changePct ?? STOCKS[h.ticker]?.changePct ?? 0) || 0;
+    const todayPnl = (h.value ?? 0) * (changePct / 100);
+    return {
+      ...h,
+      changePct,
+      todayPnl,
+      todayPnlPct: changePct,
+    };
+  });
 
   const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
   const invested = isWatchlist
@@ -1251,10 +1262,7 @@ export function computePortfolioDisplayMetrics(portfolio) {
     : holdings.reduce((sum, h) => sum + (h.qty ?? 0) * (h.avg ?? 0), 0);
   const totalPnl = totalValue - invested;
   const totalPnlPct = invested > 0 ? (totalPnl / invested) * 100 : 0;
-  const todayPnl = holdings.reduce((sum, h) => {
-    const changePct = STOCKS[h.ticker]?.changePct ?? 0;
-    return sum + (h.value ?? 0) * (changePct / 100);
-  }, 0);
+  const todayPnl = holdings.reduce((sum, h) => sum + (h.todayPnl ?? 0), 0);
   const todayPnlPct = totalValue > 0 ? (todayPnl / totalValue) * 100 : 0;
 
   const distribution = holdings

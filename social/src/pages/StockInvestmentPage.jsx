@@ -202,11 +202,14 @@ export default function StockInvestmentPage({
         name={displayStock.name}
         ticker={formatTicker(ticker)}
         type={getStockAssetType(ticker, displayStock)}
+        priceLabel={isEtf ? 'ETF Price' : 'Stock Price'}
         price={
           marketLoading && displayStock.price == null
             ? '…'
             : formatPrice(displayStock.price)
         }
+        changeLabel="Today's Change"
+        changePct={displayStock.changePct}
       />
 
       <UnderlineTabs

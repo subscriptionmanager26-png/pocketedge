@@ -143,6 +143,7 @@ export default function CommodityDetailPage({
         ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
         subtitle={subtitle}
         type="Commodity"
+        priceLabel="Spot Price"
         price={
           loading && commodity.spotPrice == null
             ? '…'
@@ -150,6 +151,8 @@ export default function CommodityDetailPage({
               ? formatPrice(commodity.spotPrice)
               : '—'
         }
+        changeLabel="Today's Change"
+        changePct={commodity.changePct}
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

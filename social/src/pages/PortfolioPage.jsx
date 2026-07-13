@@ -308,7 +308,10 @@ export default function PortfolioPage({
     return {
       overall: true,
       weight: 100,
-      pnlPct: metrics.todayPnlPct ?? 0,
+      pnl: metrics.totalPnl ?? 0,
+      pnlPct: metrics.totalPnlPct ?? 0,
+      todayPnl: metrics.todayPnl ?? 0,
+      todayPnlPct: metrics.todayPnlPct ?? 0,
       invested: metrics.invested ?? 0,
     };
   }, [metrics]);
@@ -389,13 +392,30 @@ export default function PortfolioPage({
             <p className="mt-1 text-3xl font-bold tracking-tight text-pe-text">
               {formatInr(metrics.totalValue)}
             </p>
-            <p className="mt-2 text-sm font-normal text-pe-text-muted">
-              Day&apos;s P&L{' '}
-              <span className={`font-semibold ${pnlClass(metrics.todayPnl)}`}>
-                {formatInr(metrics.todayPnl, { compact: true })}
-                {metrics.todayPnlPct != null ? ` (${formatPct(metrics.todayPnlPct)})` : ''}
-              </span>
+            <p className="mt-2 text-sm text-pe-text-muted">
+              Total invested{' '}
+              <span className="font-semibold text-pe-text">{formatInr(metrics.invested)}</span>
             </p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Total PnL
+                </p>
+                <p className={`mt-0.5 text-sm font-semibold ${pnlClass(metrics.totalPnl)}`}>
+                  {formatInr(metrics.totalPnl, { compact: true })}
+                  {metrics.totalPnlPct != null ? ` (${formatPct(metrics.totalPnlPct)})` : ''}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Today&apos;s PnL
+                </p>
+                <p className={`mt-0.5 text-sm font-semibold ${pnlClass(metrics.todayPnl)}`}>
+                  {formatInr(metrics.todayPnl, { compact: true })}
+                  {metrics.todayPnlPct != null ? ` (${formatPct(metrics.todayPnlPct)})` : ''}
+                </p>
+              </div>
+            </div>
           </>
         ) : null}
 
@@ -403,12 +423,15 @@ export default function PortfolioPage({
           {FORM_METRIC_ORDER.map((formId) => {
             const meta = FORM_META[formId];
             const count = formBuckets[formId]?.length ?? 0;
+            const selected = formSheet === formId;
             return (
               <button
                 key={formId}
                 type="button"
                 onClick={() => setFormSheet(formId)}
-                className="flex h-full min-w-0 flex-col rounded-[12px] border border-pe-border bg-white px-2.5 py-2.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)] transition hover:border-pe-border-strong hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_6px_16px_rgba(0,0,0,0.08)]"
+                className={`flex h-full min-w-0 flex-col rounded-[12px] border bg-white px-2.5 py-2.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)] transition hover:border-pe-border-strong hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_6px_16px_rgba(0,0,0,0.08)] ${
+                  selected ? 'border-pe-accent' : 'border-pe-border'
+                }`}
               >
                 <div className="flex min-w-0 items-center gap-1">
                   <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
@@ -426,6 +449,11 @@ export default function PortfolioPage({
             );
           })}
         </div>
+        {formSheet && FORM_META[formSheet]?.description ? (
+          <p className="mt-2.5 text-[12px] leading-snug text-pe-text-secondary">
+            {FORM_META[formSheet].description}
+          </p>
+        ) : null}
 
         <div className="mt-5">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
@@ -649,7 +677,12 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
             <FormStatusIcon form={formId} className="h-5 w-5" />
             <div className="min-w-0">
               <p className="text-[15px] font-semibold text-pe-text">{meta.label}</p>
-              <p className="text-xs text-pe-text-muted">
+              {meta.description ? (
+                <p className="mt-0.5 text-xs leading-snug text-pe-text-secondary">
+                  {meta.description}
+                </p>
+              ) : null}
+              <p className="mt-1 text-xs text-pe-text-muted">
                 {items.length} {items.length === 1 ? 'security' : 'securities'}
               </p>
             </div>

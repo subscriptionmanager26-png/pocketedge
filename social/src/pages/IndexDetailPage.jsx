@@ -145,11 +145,14 @@ export default function IndexDetailPage({
         ticker={displayIndex.symbol !== displayIndex.name ? displayIndex.symbol : null}
         subtitle={formatIndexGroup(displayIndex.group)}
         type="Index"
+        priceLabel="Index Value"
         price={
           loading && displayIndex.value == null
             ? '…'
             : formatIndexValue(displayIndex.value)
         }
+        changeLabel="Today's Change"
+        changePct={displayIndex.changePct}
       />
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />

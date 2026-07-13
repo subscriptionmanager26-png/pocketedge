@@ -8,7 +8,7 @@ import {
   STOCKS,
 } from '../data/mockData';
 import { getPersonSync } from '../lib/socialIdentity';
-import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { formatInr, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 
@@ -173,12 +173,16 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
         const isOverall = h.overall;
         const stock = isOverall ? null : STOCKS[h.ticker];
         const isWatch = h.watchlistOnly;
-        const changePct = h.pnlPct ?? stock?.changePct ?? 0;
         const weightLabel =
           typeof h.weight === 'number' ? `${h.weight.toFixed(1)}% of holdings` : null;
         const form = !isOverall ? formByTicker[h.ticker] ?? h.form : null;
         const isFund =
           h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
+        const totalPnl = h.pnl;
+        const totalPnlPct = h.pnlPct;
+        const todayPnl = h.todayPnl;
+        const todayPnlPct =
+          h.todayPnlPct ?? h.changePct ?? (!isOverall ? stock?.changePct : null);
 
         return (
           <button
@@ -196,7 +200,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 assetType: h.assetType,
               });
             }}
-            className={`grid w-full grid-cols-[minmax(0,1.4fr)_0.8fr] gap-x-3 gap-y-0.5 px-4 py-4 text-left transition ${
+            className={`grid w-full grid-cols-[minmax(0,1.3fr)_0.7fr_0.7fr] gap-x-2 gap-y-0.5 px-4 py-4 text-left transition ${
               isOverall ? 'cursor-default' : 'hover:bg-pe-surface'
             }`}
           >
@@ -205,6 +209,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 <p className="text-xs font-semibold text-pe-text-secondary">
                   {isOverall ? weightLabel : `${h.qty} units · ${weightLabel}`}
                 </p>
+                <span />
                 <span />
               </>
             ) : null}
@@ -221,12 +226,35 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 <p className="mt-0.5 text-sm font-normal text-pe-text-muted">Portfolio return</p>
               ) : null}
             </div>
-            <p className={`self-start text-right text-[15px] font-bold ${pnlClass(changePct)}`}>
-              {formatPct(changePct)}
-            </p>
+            <HoldingPnlStat label="Total PnL" amount={totalPnl} pct={totalPnlPct} />
+            <HoldingPnlStat label="Today's PnL" amount={todayPnl} pct={todayPnlPct} />
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function HoldingPnlStat({ label, amount, pct }) {
+  const hasAmount = amount != null && Number.isFinite(Number(amount));
+  const hasPct = pct != null && Number.isFinite(Number(pct));
+  const tone = hasAmount ? amount : hasPct ? pct : 0;
+
+  return (
+    <div className="text-right">
+      <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">{label}</p>
+      {hasAmount ? (
+        <p className={`mt-0.5 text-[13px] font-bold tabular-nums ${pnlClass(tone)}`}>
+          {formatInr(amount, { compact: true })}
+        </p>
+      ) : null}
+      {hasPct ? (
+        <p className={`text-[12px] font-semibold tabular-nums ${pnlClass(tone)}`}>
+          {formatPct(pct)}
+        </p>
+      ) : !hasAmount ? (
+        <p className="mt-0.5 text-[13px] font-semibold text-pe-text-muted">—</p>
+      ) : null}
     </div>
   );
 }

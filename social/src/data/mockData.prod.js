@@ -200,8 +200,25 @@ export function resolveWatchlistHoldings(portfolio) {
 }
 
 export function computePortfolioDisplayMetrics(portfolio) {
-  const holdings = portfolio?.holdings ?? [];
-  const { totalValue, invested, totalPnlPct } = recalcPortfolioTotals(holdings);
+  const holdingsBase = (portfolio?.holdings ?? []).map(recalcHolding);
+  const holdings = holdingsBase.map((h) => {
+    const changePct = Number(h.changePct ?? h.dayChangePct ?? 0) || 0;
+    const todayPnl = (h.value ?? 0) * (changePct / 100);
+    return {
+      ...h,
+      changePct,
+      todayPnl,
+      todayPnlPct: changePct,
+    };
+  });
+
+  const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
+  const invested = holdings.reduce((sum, h) => sum + (h.qty ?? 0) * (h.avg ?? 0), 0);
+  const totalPnl = totalValue - invested;
+  const totalPnlPct = invested > 0 ? (totalPnl / invested) * 100 : 0;
+  const todayPnl = holdings.reduce((sum, h) => sum + (h.todayPnl ?? 0), 0);
+  const todayPnlPct = totalValue > 0 ? (todayPnl / totalValue) * 100 : 0;
+
   const value = portfolio?.totalValue ?? totalValue;
   const distribution = holdings
     .map((h) => ({
@@ -214,9 +231,13 @@ export function computePortfolioDisplayMetrics(portfolio) {
     .sort((a, b) => b.weight - a.weight);
 
   return {
+    kind: 'portfolio',
     totalValue: value,
     invested: portfolio?.invested ?? invested,
+    totalPnl: portfolio?.totalPnl ?? totalPnl,
     totalPnlPct: portfolio?.totalPnlPct ?? totalPnlPct,
+    todayPnl: portfolio?.todayPnl ?? todayPnl,
+    todayPnlPct: portfolio?.todayPnlPct ?? todayPnlPct,
     xirr: portfolio?.xirr ?? 0,
     holdings,
     distribution,

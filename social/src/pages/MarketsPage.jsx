@@ -96,7 +96,9 @@ export default function MarketsPage({
                 key={stock.symbol}
                 title={formatTicker(stock.symbol)}
                 subtitle={stock.name}
+                primaryLabel="Stock Price"
                 primaryValue={stock.price != null ? formatPrice(stock.price) : '—'}
+                changeLabel="Today's Change"
                 changePct={stock.changePct}
                 onClick={() => onSelectStock?.(stock.symbol)}
               />
@@ -111,8 +113,10 @@ export default function MarketsPage({
                 key={fund.schemeCode}
                 title={fund.name}
                 subtitle={[fund.category, fund.subCategory].filter(Boolean).join(' · ') || fund.amc}
+                primaryLabel="NAV"
                 primaryValue={fund.nav != null ? formatPrice(fund.nav) : '—'}
-                secondaryValue={fund.navDate ? `NAV · ${formatNavDate(fund.navDate)}` : null}
+                secondaryLabel="NAV"
+                secondaryValue={fund.navDate ? formatNavDate(fund.navDate) : null}
                 onClick={() => onSelectFund?.(fund.schemeCode)}
               />
             ))}
@@ -126,7 +130,9 @@ export default function MarketsPage({
                 key={etf.symbol}
                 title={formatTicker(etf.symbol)}
                 subtitle={etf.name}
+                primaryLabel="ETF Price"
                 primaryValue={etf.ltp != null ? formatPrice(etf.ltp) : '—'}
+                changeLabel="Today's Change"
                 changePct={etf.changePct}
                 onClick={() => onSelectStock?.(etf.symbol, { kind: 'etf' })}
               />
@@ -141,7 +147,9 @@ export default function MarketsPage({
                 key={index.id}
                 title={index.name}
                 subtitle={formatIndexGroup(index.group)}
+                primaryLabel="Index Value"
                 primaryValue={formatIndexValue(index.value)}
+                changeLabel="Today's Change"
                 changePct={index.changePct}
                 onClick={() => onSelectIndex?.(index.id)}
               />
@@ -156,7 +164,10 @@ export default function MarketsPage({
                 key={item.id}
                 title={item.name}
                 subtitle={[item.unit, item.location].filter(Boolean).join(' · ')}
+                primaryLabel="Spot Price"
                 primaryValue={item.spotPrice != null ? formatPrice(item.spotPrice) : '—'}
+                changeLabel="Today's Change"
+                changePct={item.changePct}
                 onClick={() => onSelectCommodity?.(item.id)}
               />
             ))}
@@ -177,7 +188,17 @@ function MarketList({ children, empty, emptyMessage }) {
   return <div className="divide-y divide-pe-border">{children}</div>;
 }
 
-function MarketRow({ title, subtitle, primaryValue, secondaryValue, changePct, onClick }) {
+function MarketRow({
+  title,
+  subtitle,
+  primaryLabel,
+  primaryValue,
+  changeLabel,
+  changePct,
+  secondaryLabel,
+  secondaryValue,
+  onClick,
+}) {
   const Tag = onClick ? 'button' : 'div';
 
   return (
@@ -195,15 +216,36 @@ function MarketRow({ title, subtitle, primaryValue, secondaryValue, changePct, o
       {primaryValue != null || changePct != null || secondaryValue ? (
         <div className="shrink-0 text-right">
           {primaryValue != null ? (
-            <p className="text-[15px] font-semibold text-pe-text">{primaryValue}</p>
+            <div>
+              {primaryLabel ? (
+                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  {primaryLabel}
+                </p>
+              ) : null}
+              <p className="text-[15px] font-semibold text-pe-text">{primaryValue}</p>
+            </div>
           ) : null}
           {changePct != null ? (
-            <p className={`text-sm font-semibold ${pnlClass(changePct)}`}>
-              {formatPct(changePct)}
-            </p>
+            <div className="mt-1">
+              {changeLabel ? (
+                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  {changeLabel}
+                </p>
+              ) : null}
+              <p className={`text-sm font-semibold ${pnlClass(changePct)}`}>
+                {formatPct(changePct)}
+              </p>
+            </div>
           ) : null}
           {secondaryValue ? (
-            <p className="text-xs text-pe-text-muted">{secondaryValue}</p>
+            <div className="mt-1">
+              {secondaryLabel ? (
+                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  {secondaryLabel}
+                </p>
+              ) : null}
+              <p className="text-xs text-pe-text-muted">{secondaryValue}</p>
+            </div>
           ) : null}
         </div>
       ) : null}

@@ -140,12 +140,23 @@ export default function InvestmentPage({
       <AssetProductHeader
         name={fund.name}
         type={getFundAssetType()}
+        priceLabel="NAV"
         price={
           marketLoading && fund.nav == null
             ? '…'
             : fund.nav != null
               ? formatPrice(fund.nav)
               : null
+        }
+        metaLabel="NAV"
+        metaValue={
+          fund.navDate
+            ? new Date(fund.navDate).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })
+            : null
         }
       />
 

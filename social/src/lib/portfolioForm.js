@@ -45,16 +45,19 @@ export const FORM_META = {
     id: 'in_form',
     label: 'In Form',
     shortLabel: 'In Form',
+    description: 'Price is above both the 50-day and 200-day averages — trend looks constructive.',
   },
   out_of_form: {
     id: 'out_of_form',
     label: 'Off Track',
     shortLabel: 'Off Track',
+    description: 'Price is below both the 50-day and 200-day averages — trend looks weak.',
   },
   unsure: {
     id: 'unsure',
     label: 'Unsure',
     shortLabel: 'Unsure',
+    description: 'Mixed or thin signal vs the 50/200-day averages — no clear trend yet.',
   },
 };
 
