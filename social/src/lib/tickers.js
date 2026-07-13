@@ -8,13 +8,13 @@
  * never keeps extending the underlined token.
  */
 
-const BRACKET_MENTION_RE = /@\[([^\]]{1,80})\]/g;
-const PLAIN_MENTION_RE = /@([A-Z0-9][A-Z0-9.&-]{0,31})(?=\s|[.,!?;:'")\]]|$)/g;
-const LEGACY_CASH_TAG_RE = /\$([A-Z][A-Z0-9]{0,11})(?=\s|[.,!?;:'")\]]|$)/g;
+const BRACKET_MENTION_RE = /@\[([^\]]{1,80})\]/gi;
+const PLAIN_MENTION_RE = /@([A-Za-z0-9][A-Za-z0-9.&-]{0,31})(?=\s|[.,!?;:'")\]]|$)/g;
+const LEGACY_CASH_TAG_RE = /\$([A-Za-z][A-Za-z0-9]{0,11})(?=\s|[.,!?;:'")\]]|$)/g;
 
 /** Split body into plain text and mention tokens for rendering. */
 export const MENTION_PARTS_RE =
-  /(@\[[^\]]{1,80}\]|@[A-Z0-9][A-Z0-9.&-]{0,31}(?=\s|[.,!?;:'")\]]|$)|\$[A-Z][A-Z0-9]{0,11}(?=\s|[.,!?;:'")\]]|$))/g;
+  /(@\[[^\]]{1,80}\]|@[A-Za-z0-9][A-Za-z0-9.&-]{0,31}(?=\s|[.,!?;:'")\]]|$)|\$[A-Za-z][A-Za-z0-9]{0,11}(?=\s|[.,!?;:'")\]]|$))/g;
 
 export function formatTicker(ticker) {
   return ticker ?? '';
@@ -66,16 +66,19 @@ export function extractTickers(text = '') {
   const found = [];
   const seen = new Set();
 
-  const push = (key) => {
-    const value = String(key ?? '').trim();
-    if (!value || seen.has(value)) return;
-    seen.add(value);
+  const push = (key, { upper = false } = {}) => {
+    let value = String(key ?? '').trim();
+    if (!value) return;
+    if (upper) value = value.toUpperCase();
+    const seenKey = value.toUpperCase();
+    if (seen.has(seenKey)) return;
+    seen.add(seenKey);
     found.push(value);
   };
 
   for (const match of text.matchAll(BRACKET_MENTION_RE)) push(match[1]);
-  for (const match of text.matchAll(PLAIN_MENTION_RE)) push(match[1]);
-  for (const match of text.matchAll(LEGACY_CASH_TAG_RE)) push(match[1]);
+  for (const match of text.matchAll(PLAIN_MENTION_RE)) push(match[1], { upper: true });
+  for (const match of text.matchAll(LEGACY_CASH_TAG_RE)) push(match[1], { upper: true });
 
   return found;
 }
@@ -83,9 +86,11 @@ export function extractTickers(text = '') {
 export function bodyMentionsTicker(body = '', ticker) {
   const needle = String(ticker ?? '').trim();
   if (!needle) return false;
-  if (body.includes(`@[${needle}]`)) return true;
-  if (body.includes(`@${needle}`) || body.includes(`$${needle}`)) return true;
-  return extractTickers(body).some((entry) => entry === needle);
+  const upperBody = String(body).toUpperCase();
+  const upperNeedle = needle.toUpperCase();
+  if (upperBody.includes(`@[${upperNeedle}]`)) return true;
+  if (upperBody.includes(`@${upperNeedle}`) || upperBody.includes(`$${upperNeedle}`)) return true;
+  return extractTickers(body).some((entry) => entry.toUpperCase() === upperNeedle);
 }
 
 export function statusStyles(status) {

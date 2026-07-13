@@ -7,29 +7,26 @@ import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
   BlurredSection,
-  DiscussionsBlurPreview,
   DiscussionsList,
   HoldersBlurPreview,
   INVESTMENT_TABS,
   NewsBlurPreview,
-  REVIEW_LOCK,
-  ReviewsBlurPreview,
   TRACK_MARKET_LOCK,
   TRACK_MARKET_NEWS_LOCK,
 } from '../components/InvestmentSections';
 import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { hasMarketAssetAccess } from '../lib/assetAccess';
-import { getIndexDiscussions } from '../lib/assetDiscussions';
+import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import {
   addReviewComment,
   getReviewsForIndex,
   getUserReviewForIndex,
-  hasCommunityReviewsAccess,
   hydrateCommunityAccess,
   loadReviewsForIndex,
   subscribeReviews,
 } from '../lib/reviewStore';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
+import { isDevMockMode } from '../lib/appMode';
 import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 
@@ -85,16 +82,30 @@ export default function IndexDetailPage({
   const liveIndex = useNseIndexLiveQuote(index, Boolean(index && !loading));
   const displayIndex = liveIndex ?? index;
 
-  const unlocked = hasCommunityReviewsAccess();
   const hasAccess = hasMarketAssetAccess();
-  const discussions = useMemo(
-    () => getIndexDiscussions(indexId, displayIndex?.name),
-    [indexId, displayIndex?.name]
+  const [discussions, setDiscussions] = useState(() =>
+    isDevMockMode() ? getIndexDiscussions(indexId, displayIndex?.name) : []
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    if (isDevMockMode()) {
+      setDiscussions(getIndexDiscussions(indexId, displayIndex?.name));
+      return undefined;
+    }
+    loadPostsMentioning([indexId, displayIndex?.name].filter(Boolean))
+      .then((posts) => {
+        if (!cancelled) setDiscussions(posts);
+      })
+      .catch(() => {
+        if (!cancelled) setDiscussions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [indexId, displayIndex?.name]);
+
   const me = getAppCurrentUserId();
-  const reviewsLocked = !unlocked;
-  const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
   const reviews = useMemo(() => getReviewsForIndex(indexId), [indexId, reviewTick]);
   const communityReviews = useMemo(
@@ -156,62 +167,38 @@ export default function IndexDetailPage({
 
       {tab === 'reviews' && (
         <>
-          {unlocked && userReview && (
-            <AssetReviewComposer
-              assetType="index"
-              indexId={indexId}
-              assetLabel={displayIndex.name}
-              onSubmitted={() => setReviewTick((n) => n + 1)}
-            />
-          )}
-          <BlurredSection
-            locked={reviewsLocked}
-            lock={REVIEW_LOCK}
-            onCta={onPromptReview}
-            preview={<ReviewsBlurPreview onOpenProfile={onOpenProfile} />}
-          >
-            {unlocked && !userReview ? (
-              <AssetReviewComposer
-                assetType="index"
-                indexId={indexId}
-                assetLabel={displayIndex.name}
-                onSubmitted={() => setReviewTick((n) => n + 1)}
+          <AssetReviewComposer
+            assetType="index"
+            indexId={indexId}
+            assetLabel={displayIndex.name}
+            onSubmitted={() => setReviewTick((n) => n + 1)}
+          />
+          {communityReviews.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+              {userReview
+                ? 'No other community signals yet.'
+                : `No community signals yet — be the first to share your view on ${displayIndex.name}.`}
+            </p>
+          ) : (
+            communityReviews.map((review) => (
+              <ReviewCard
+                key={review.id}
+                review={review}
+                onAddComment={handleAddComment}
+                onOpenProfile={onOpenProfile}
+                onReviewChange={() => setReviewTick((n) => n + 1)}
               />
-            ) : communityReviews.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-                {userReview
-                  ? 'No other community signals yet.'
-                  : `No community signals yet — be the first to share your view on ${displayIndex.name}.`}
-              </p>
-            ) : (
-              communityReviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  locked={reviewsLocked && review.authorId !== me}
-                  onAddComment={handleAddComment}
-                  onOpenProfile={onOpenProfile}
-                  onReviewChange={() => setReviewTick((n) => n + 1)}
-                />
-              ))
-            )}
-          </BlurredSection>
+            ))
+          )}
         </>
       )}
 
       {tab === 'discussions' && (
-        <BlurredSection
-          locked={discussionsLocked}
-          lock={!unlocked ? REVIEW_LOCK : TRACK_MARKET_LOCK}
-          onCta={!unlocked ? onPromptReview : undefined}
-          preview={<DiscussionsBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <DiscussionsList
-            posts={discussions}
-            onOpenProfile={onOpenProfile}
-            emptyMessage={`No posts yet — posts mentioning ${displayIndex.name} will show up here.`}
-          />
-        </BlurredSection>
+        <DiscussionsList
+          posts={discussions}
+          onOpenProfile={onOpenProfile}
+          emptyMessage={`No posts yet — posts mentioning ${displayIndex.name} will show up here.`}
+        />
       )}
 
       {tab === 'holders' && (

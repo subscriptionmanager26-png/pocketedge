@@ -9,13 +9,10 @@ import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
   BlurredSection,
-  DiscussionsBlurPreview,
   DiscussionsList,
   HoldersBlurPreview,
   INVESTMENT_TABS,
   NewsBlurPreview,
-  REVIEW_LOCK,
-  ReviewsBlurPreview,
   TRACK_FUND_LOCK,
 } from '../components/InvestmentSections';
 import {
@@ -25,22 +22,23 @@ import {
 } from '../data/fundData';
 import { getPerson } from '../data/mockData';
 import { hasFundAccess } from '../lib/assetAccess';
-import { getFundDiscussions } from '../lib/assetDiscussions';
+import { getFundDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
 import {
   marketFundToDetail,
   resolveMarketFund,
 } from '../lib/marketDataApi';
+import { formatPrice } from '../lib/format';
 import {
   addReviewComment,
   getReviewsForFund,
   getUserReviewForFund,
-  hasCommunityReviewsAccess,
   hydrateCommunityAccess,
   loadReviewsForFund,
   subscribeReviews,
 } from '../lib/reviewStore';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
+import { isDevMockMode } from '../lib/appMode';
 
 export default function InvestmentPage({
   fundId,
@@ -93,7 +91,6 @@ export default function InvestmentPage({
     };
   }, [fundId, seedFund]);
 
-  const unlocked = hasCommunityReviewsAccess();
   const hasAccess = hasFundAccess(fundId);
   const me = getAppCurrentUserId();
   const reviews = useMemo(() => getReviewsForFund(fundId), [fundId, reviewTick]);
@@ -105,12 +102,31 @@ export default function InvestmentPage({
     () => getUserReviewForFund(fundId),
     [fundId, reviewTick]
   );
-  const discussions = useMemo(() => getFundDiscussions(fundId), [fundId]);
+  const [discussions, setDiscussions] = useState(() =>
+    isDevMockMode() ? getFundDiscussions(fundId) : []
+  );
   const holders = getFundHolders(fundId);
   const news = getFundNews(fundId);
 
-  const reviewsLocked = !unlocked;
-  const discussionsLocked = !unlocked || !hasAccess;
+  useEffect(() => {
+    let cancelled = false;
+    if (isDevMockMode()) {
+      setDiscussions(getFundDiscussions(fundId));
+      return undefined;
+    }
+    const keys = [fundId, fund?.name].filter(Boolean);
+    loadPostsMentioning(keys)
+      .then((posts) => {
+        if (!cancelled) setDiscussions(posts);
+      })
+      .catch(() => {
+        if (!cancelled) setDiscussions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fundId, fund?.name]);
+
   const holdersLocked = !hasAccess;
   const hasResolvedFund = Boolean(seedFund || marketFund);
 
@@ -160,61 +176,37 @@ export default function InvestmentPage({
 
       {tab === 'reviews' && (
         <>
-          {unlocked && userReview && (
-            <AssetReviewComposer
-              assetType="fund"
-              fundId={fundId}
-              assetLabel={fund.name}
-              onSubmitted={() => setReviewTick((n) => n + 1)}
-            />
-          )}
-          <BlurredSection
-            locked={reviewsLocked}
-            lock={REVIEW_LOCK}
-            onCta={onPromptReview}
-            preview={<ReviewsBlurPreview onOpenProfile={onOpenProfile} />}
-          >
-            {unlocked && !userReview ? (
-              <AssetReviewComposer
-                assetType="fund"
-                fundId={fundId}
-                assetLabel={fund.name}
-                onSubmitted={() => setReviewTick((n) => n + 1)}
+          <AssetReviewComposer
+            assetType="fund"
+            fundId={fundId}
+            assetLabel={fund.name}
+            onSubmitted={() => setReviewTick((n) => n + 1)}
+          />
+          {communityReviews.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+              {userReview ? 'No other community signals yet.' : 'No community signals yet.'}
+            </p>
+          ) : (
+            communityReviews.map((review) => (
+              <ReviewCard
+                key={review.id}
+                review={review}
+                onAddComment={handleAddComment}
+                onOpenProfile={onOpenProfile}
+                onGraphChange={onGraphChange}
+                onReviewChange={() => setReviewTick((n) => n + 1)}
               />
-            ) : communityReviews.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-                {userReview ? 'No other community signals yet.' : 'No community signals yet.'}
-              </p>
-            ) : (
-              communityReviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  locked={reviewsLocked && review.authorId !== me}
-                  onAddComment={handleAddComment}
-                  onOpenProfile={onOpenProfile}
-                  onGraphChange={onGraphChange}
-                  onReviewChange={() => setReviewTick((n) => n + 1)}
-                />
-              ))
-            )}
-          </BlurredSection>
+            ))
+          )}
         </>
       )}
 
       {tab === 'discussions' && (
-        <BlurredSection
-          locked={discussionsLocked}
-          lock={!unlocked ? REVIEW_LOCK : TRACK_FUND_LOCK}
-          onCta={!unlocked ? onPromptReview : undefined}
-          preview={<DiscussionsBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <DiscussionsList
-            posts={discussions}
-            onOpenProfile={onOpenProfile}
-            emptyMessage="No posts yet — posts about this fund will show up here."
-          />
-        </BlurredSection>
+        <DiscussionsList
+          posts={discussions}
+          onOpenProfile={onOpenProfile}
+          emptyMessage="No posts yet — posts about this fund will show up here."
+        />
       )}
 
       {tab === 'holders' && (

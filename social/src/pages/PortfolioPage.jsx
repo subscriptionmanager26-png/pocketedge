@@ -21,7 +21,7 @@ import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchStockNewsForTickers, fetchCorporateActionsForTickers, isStockNewsConfigured } from '../lib/stockNewsApi';
-import { fetchPostsMentioningTickers, usePostBackend } from '../lib/socialPostApi';
+import { ASSET_POSTS_DAYS, loadPostsMentioning } from '../lib/assetDiscussions';
 import CorporateActionsList from '../components/CorporateActionsList';
 import { skipAuthForDev } from '../lib/sessionStore';
 import { fetchPortfolioFormByTicker, FORM_META } from '../lib/portfolioForm';
@@ -30,7 +30,6 @@ import {
   PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
 
-const PORTFOLIO_POSTS_DAYS = 30;
 function useBackend() {
   return isSupabaseConfigured() && !skipAuthForDev();
 }
@@ -148,6 +147,14 @@ export default function PortfolioPage({
       })),
     [holdingsRows]
   );
+  const mentionKeys = useMemo(() => {
+    const keys = new Set();
+    for (const holding of holdingsRows) {
+      if (holding?.ticker) keys.add(holding.ticker);
+      if (holding?.assetName) keys.add(holding.assetName);
+    }
+    return [...keys];
+  }, [holdingsRows]);
   const tickers = useMemo(() => holdingsRows.map((h) => h.ticker), [holdingsRows]);
   const [portfolioNews, setPortfolioNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
@@ -253,17 +260,17 @@ export default function PortfolioPage({
   }, [tickers]);
 
   useEffect(() => {
-    if (!tickers.length) {
+    if (!mentionKeys.length) {
       setPortfolioPosts([]);
       return undefined;
     }
 
-    if (usePostBackend()) {
+    if (useBackend()) {
       let cancelled = false;
       setPostsLoading(true);
-      fetchPostsMentioningTickers(tickers, { days: PORTFOLIO_POSTS_DAYS, limit: 50 })
+      loadPostsMentioning(mentionKeys, { days: ASSET_POSTS_DAYS, limit: 50 })
         .then((posts) => {
-          if (!cancelled) setPortfolioPosts(postsToActivityItems(posts, tickers));
+          if (!cancelled) setPortfolioPosts(postsToActivityItems(posts, mentionKeys));
         })
         .catch(() => {
           if (!cancelled) setPortfolioPosts([]);
@@ -284,14 +291,14 @@ export default function PortfolioPage({
 
     setPortfolioPosts([]);
     return undefined;
-  }, [tickers]);
+  }, [mentionKeys, tickers]);
 
   const activity = useMemo(() => {
     const base = collectActivity(tickers);
     return {
       ...base,
       news: isStockNewsConfigured() || !isDevMockMode() ? portfolioNews : base.news,
-      posts: usePostBackend() || !isDevMockMode() ? portfolioPosts : base.posts,
+      posts: useBackend() || !isDevMockMode() ? portfolioPosts : base.posts,
       trades: [],
     };
   }, [tickers, portfolioNews, portfolioPosts]);

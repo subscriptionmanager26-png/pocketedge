@@ -9,13 +9,10 @@ import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
   BlurredSection,
-  DiscussionsBlurPreview,
   DiscussionsList,
   HoldersBlurPreview,
   INVESTMENT_TABS,
   NewsBlurPreview,
-  REVIEW_LOCK,
-  ReviewsBlurPreview,
   STOCK_INVESTMENT_TABS,
   TRACK_STOCK_LOCK,
   TRACK_STOCK_NEWS_LOCK,
@@ -26,13 +23,12 @@ import { fetchStockNews, fetchCorporateActions, isStockNewsConfigured } from '..
 import CorporateActionsList from '../components/CorporateActionsList';
 import { AUTHOR_POSITIONS, getPerson } from '../data/mockData';
 import { hasStockAccess } from '../lib/assetAccess';
-import { getStockDiscussions } from '../lib/assetDiscussions';
+import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
 import {
   addReviewComment,
   getReviewsForStock,
   getUserReviewForStock,
-  hasCommunityReviewsAccess,
   hydrateCommunityAccess,
   loadReviewsForStock,
   subscribeReviews,
@@ -107,7 +103,6 @@ export default function StockInvestmentPage({
   }, [ticker]);
 
   const me = getAppCurrentUserId();
-  const unlocked = hasCommunityReviewsAccess();
   const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
   const reviews = useMemo(() => getReviewsForStock(ticker), [ticker, reviewTick]);
   const communityReviews = useMemo(
@@ -118,12 +113,32 @@ export default function StockInvestmentPage({
     () => getUserReviewForStock(ticker, { isEtf }),
     [ticker, isEtf, reviewTick]
   );
-  const discussions = useMemo(() => getStockDiscussions(ticker), [ticker]);
+  const [discussions, setDiscussions] = useState(() =>
+    isDevMockMode() ? getStockDiscussions(ticker) : []
+  );
   const holders = getStockHolders(ticker);
   const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
   const [newsLoading, setNewsLoading] = useState(false);
   const [corporateActions, setCorporateActions] = useState([]);
   const [corpActionsLoading, setCorpActionsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isDevMockMode()) {
+      setDiscussions(getStockDiscussions(ticker));
+      return undefined;
+    }
+    loadPostsMentioning([ticker])
+      .then((posts) => {
+        if (!cancelled) setDiscussions(posts);
+      })
+      .catch(() => {
+        if (!cancelled) setDiscussions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
 
   useEffect(() => {
     if (isStockNewsConfigured()) {
@@ -172,8 +187,6 @@ export default function StockInvestmentPage({
     };
   }, [ticker, isEtf]);
 
-  const reviewsLocked = !unlocked;
-  const discussionsLocked = !unlocked || !hasAccess;
   const holdersLocked = !hasAccess;
 
   if (!marketLoading && !marketStock && !seedStock) {
@@ -222,64 +235,40 @@ export default function StockInvestmentPage({
 
       {tab === 'reviews' && (
         <>
-          {unlocked && userReview && (
-            <AssetReviewComposer
-              assetType={isEtf ? 'etf' : 'stock'}
-              ticker={ticker}
-              assetLabel={formatTicker(ticker)}
-              isEtf={isEtf}
-              onSubmitted={() => setReviewTick((n) => n + 1)}
-            />
-          )}
-          <BlurredSection
-            locked={reviewsLocked}
-            lock={REVIEW_LOCK}
-            onCta={onPromptReview}
-            preview={<ReviewsBlurPreview onOpenProfile={onOpenProfile} />}
-          >
-            {unlocked && !userReview ? (
-              <AssetReviewComposer
-                assetType="stock"
-                ticker={ticker}
-                assetLabel={formatTicker(ticker)}
-                onSubmitted={() => setReviewTick((n) => n + 1)}
+          <AssetReviewComposer
+            assetType={isEtf ? 'etf' : 'stock'}
+            ticker={ticker}
+            assetLabel={formatTicker(ticker)}
+            isEtf={isEtf}
+            onSubmitted={() => setReviewTick((n) => n + 1)}
+          />
+          {communityReviews.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+              {userReview
+                ? 'No other community signals yet.'
+                : `No community signals yet — be the first to share your take on ${formatTicker(ticker)}.`}
+            </p>
+          ) : (
+            communityReviews.map((review) => (
+              <ReviewCard
+                key={review.id}
+                review={review}
+                onAddComment={handleAddComment}
+                onOpenProfile={onOpenProfile}
+                onGraphChange={onGraphChange}
+                onReviewChange={() => setReviewTick((n) => n + 1)}
               />
-            ) : communityReviews.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-                {userReview
-                  ? 'No other community signals yet.'
-                  : `No community signals yet — be the first to share your take on ${formatTicker(ticker)}.`}
-              </p>
-            ) : (
-              communityReviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  locked={reviewsLocked && review.authorId !== me}
-                  onAddComment={handleAddComment}
-                  onOpenProfile={onOpenProfile}
-                  onGraphChange={onGraphChange}
-                  onReviewChange={() => setReviewTick((n) => n + 1)}
-                />
-              ))
-            )}
-          </BlurredSection>
+            ))
+          )}
         </>
       )}
 
       {tab === 'discussions' && (
-        <BlurredSection
-          locked={discussionsLocked}
-          lock={!unlocked ? REVIEW_LOCK : TRACK_STOCK_LOCK}
-          onCta={!unlocked ? onPromptReview : undefined}
-          preview={<DiscussionsBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <DiscussionsList
-            posts={discussions}
-            onOpenProfile={onOpenProfile}
-            emptyMessage="No posts yet — posts mentioning this stock will show up here."
-          />
-        </BlurredSection>
+        <DiscussionsList
+          posts={discussions}
+          onOpenProfile={onOpenProfile}
+          emptyMessage="No posts yet — posts mentioning this stock will show up here."
+        />
       )}
 
       {tab === 'holders' && (

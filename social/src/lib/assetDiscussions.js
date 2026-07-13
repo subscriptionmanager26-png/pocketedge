@@ -1,6 +1,8 @@
 import { FUNDS } from '../data/fundData';
 import { POSTS } from '../data/mockData';
 import { isDevMockMode } from './appMode';
+import { fetchPostsMentioningTickers, usePostBackend } from './socialPostApi';
+import { warmPostAuthors } from './socialIdentity';
 import { bodyMentionsTicker } from './tickers';
 
 /** Fund-specific discussion posts (discussions = posts). */
@@ -61,6 +63,34 @@ function sortByDate(posts) {
   return [...posts].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+}
+
+/** How far back asset/portfolio mention lookups look. */
+export const ASSET_POSTS_DAYS = 90;
+
+/**
+ * Live posts that mention any of the given keys (ticker, fund name, etc.).
+ * Warms author profiles before returning so rows can render real names.
+ */
+export async function loadPostsMentioning(
+  keys,
+  { days = ASSET_POSTS_DAYS, limit = 50 } = {}
+) {
+  const unique = [...new Set((keys ?? []).map((k) => String(k ?? '').trim()).filter(Boolean))];
+  if (!unique.length) return [];
+
+  if (!usePostBackend()) {
+    if (!isDevMockMode()) return [];
+    return sortByDate(
+      POSTS.filter((post) =>
+        unique.some((key) => bodyMentionsTicker(post.body, key) || post.trade?.ticker === key)
+      )
+    ).slice(0, limit);
+  }
+
+  const posts = await fetchPostsMentioningTickers(unique, { days, limit });
+  await warmPostAuthors(posts).catch(() => {});
+  return posts;
 }
 
 export function getStockDiscussions(ticker) {

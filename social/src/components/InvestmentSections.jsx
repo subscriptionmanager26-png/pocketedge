@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import Avatar from './Avatar';
 import ReviewCard from './ReviewCard';
 import NewsList from './NewsList';
 import { getPerson } from '../data/mockData';
+import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import {
   PREVIEW_DISCUSSIONS,
   PREVIEW_HOLDERS,
@@ -126,8 +128,14 @@ export function NewsBlurPreview() {
 }
 
 /** Discussions are posts — same row on stock and fund pages. */
-export function DiscussionPostRow({ post, onOpenProfile }) {
-  const author = getPerson(post.authorId);
+export function DiscussionPostRow({ post, onOpenProfile, enrichmentTick = 0 }) {
+  void enrichmentTick;
+  const author = getPersonSync(post.authorId) ?? {
+    id: post.authorId,
+    name: 'Member',
+    handle: 'member',
+    avatar: 'M',
+  };
   return (
     <div className="border-b border-pe-border py-4">
       <button
@@ -151,6 +159,22 @@ export function DiscussionPostRow({ post, onOpenProfile }) {
 }
 
 export function DiscussionsList({ posts, onOpenProfile, emptyMessage }) {
+  const [enrichTick, setEnrichTick] = useState(0);
+
+  useEffect(() => {
+    const ids = [...new Set((posts ?? []).map((p) => p?.authorId).filter(Boolean).map(String))];
+    if (!ids.length) return undefined;
+    let cancelled = false;
+    resolvePeople(ids)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setEnrichTick((n) => n + 1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [posts]);
+
   if (!posts.length) {
     return (
       <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">{emptyMessage}</p>
@@ -159,7 +183,12 @@ export function DiscussionsList({ posts, onOpenProfile, emptyMessage }) {
   return (
     <div className="px-4 py-2">
       {posts.map((post) => (
-        <DiscussionPostRow key={post.id} post={post} onOpenProfile={onOpenProfile} />
+        <DiscussionPostRow
+          key={post.id}
+          post={post}
+          onOpenProfile={onOpenProfile}
+          enrichmentTick={enrichTick}
+        />
       ))}
     </div>
   );
