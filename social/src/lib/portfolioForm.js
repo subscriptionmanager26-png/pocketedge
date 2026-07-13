@@ -5,7 +5,8 @@ import { createClient } from '@supabase/supabase-js';
  * Bullish → In Form, Bearish → Off Track, Mixed/Insufficient → Unsure.
  *
  * Signals live in a dedicated Supabase project (momentum-screener),
- * not the main social PocketEdge project.
+ * covering equity, ETF, and mutual-fund Growth schemes — not the main
+ * social PocketEdge project.
  */
 export function mapDmaRegimeToForm(regime) {
   switch (String(regime ?? '').trim()) {
@@ -87,6 +88,7 @@ function rowToSignal(row) {
   const regime = row.regime ?? null;
   return {
     symbol: String(row.symbol ?? '').toUpperCase(),
+    assetClass: row.asset_class ?? null,
     regime,
     form: mapDmaRegimeToForm(regime),
     price: row.close != null ? Number(row.close) : null,
@@ -102,6 +104,7 @@ function rowToSignal(row) {
 function unsureSignal(ticker) {
   return {
     symbol: ticker,
+    assetClass: null,
     regime: null,
     form: 'unsure',
     price: null,
@@ -114,9 +117,16 @@ function unsureSignal(ticker) {
   };
 }
 
+const ASSET_CLASS_PRIORITY = {
+  equity: 0,
+  etf: 1,
+  mutual_fund: 2,
+};
+
 /**
  * Fetch daily DMA classification rows from momentum-screener
- * (`public.nse_dma_signals`) for the given NSE tickers.
+ * (`public.nse_dma_signals`) for equity tickers, ETF tickers, or
+ * AMFI mutual-fund scheme codes.
  */
 export async function fetchDmaSignalsByTicker(tickers) {
   const unique = [...new Set((tickers ?? []).map(normalizeTicker).filter(Boolean))];
@@ -152,17 +162,24 @@ export async function fetchDmaSignalsByTicker(tickers) {
       const { data, error } = await dmaClient
         .from('nse_dma_signals')
         .select(
-          'symbol, regime, close, dma_50, dma_200, dma_200_slope, as_of_date, pct_vs_50, pct_vs_200'
+          'asset_class, symbol, regime, close, dma_50, dma_200, dma_200_slope, as_of_date, pct_vs_50, pct_vs_200'
         )
-        .in('symbol', chunk);
+        .in('symbol', chunk)
+        .in('asset_class', ['equity', 'etf', 'mutual_fund']);
 
       if (error) throw error;
 
       const found = new Map();
-      for (const row of data ?? []) {
+      const ranked = [...(data ?? [])].sort((a, b) => {
+        const pa = ASSET_CLASS_PRIORITY[a.asset_class] ?? 9;
+        const pb = ASSET_CLASS_PRIORITY[b.asset_class] ?? 9;
+        return pa - pb;
+      });
+      for (const row of ranked) {
         const signal = rowToSignal(row);
         if (!signal?.symbol) continue;
-        found.set(signal.symbol, signal);
+        // First hit wins (equity > etf > mutual_fund) if a symbol collides.
+        if (!found.has(signal.symbol)) found.set(signal.symbol, signal);
       }
 
       for (const ticker of chunk) {

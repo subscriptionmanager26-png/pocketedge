@@ -52,7 +52,7 @@ export function summarizeAnalysis(rows) {
   if (rows.length && totalValue > 0 && inFormValue / totalValue >= 0.65) {
     headline = 'Mostly in form';
     detail =
-      'A large share of your portfolio is classified Bullish on the daily 50/200 DMA screen.';
+      'A large share of your portfolio (stocks, ETFs, and funds) is classified Bullish on the daily 50/200 DMA screen.';
   } else if (rows.length && totalValue > 0 && offTrackValue / totalValue >= 0.5) {
     headline = 'Under pressure';
     detail =
