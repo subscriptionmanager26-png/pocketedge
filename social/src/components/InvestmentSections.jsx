@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import Avatar from './Avatar';
-import ReviewCard from './ReviewCard';
 import NewsList from './NewsList';
-import { getPerson } from '../data/mockData';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import {
   PREVIEW_DISCUSSIONS,
@@ -89,36 +87,59 @@ export function BlurredSection({ locked, lock, onCta, preview, children }) {
 }
 
 export function ReviewsBlurPreview({ onOpenProfile }) {
+  void onOpenProfile;
   return (
-    <>
+    <div className="divide-y divide-pe-border px-4 py-2">
       {PREVIEW_REVIEWS.map((review) => (
-        <ReviewCard key={review.id} review={review} locked onOpenProfile={onOpenProfile} />
+        <div key={review.id} className="py-4">
+          <div className="flex items-center gap-2">
+            <span className="h-8 w-8 rounded-full bg-pe-surface" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <div className="h-3 w-28 rounded bg-pe-surface" />
+              <div className="mt-1.5 h-2.5 w-20 rounded bg-pe-surface/80" />
+            </div>
+          </div>
+          <p className="mt-3 line-clamp-3 text-[15px] leading-relaxed text-pe-text-secondary">
+            {review.body}
+          </p>
+        </div>
       ))}
-    </>
+    </div>
   );
 }
 
 export function DiscussionsBlurPreview({ onOpenProfile }) {
-  return <DiscussionsList posts={PREVIEW_DISCUSSIONS} onOpenProfile={onOpenProfile} />;
+  void onOpenProfile;
+  return (
+    <div className="divide-y divide-pe-border px-4 py-2">
+      {PREVIEW_DISCUSSIONS.map((post) => (
+        <div key={post.id} className="py-4">
+          <div className="flex items-center gap-2">
+            <span className="h-8 w-8 rounded-full bg-pe-surface" aria-hidden />
+            <div className="h-3 w-24 rounded bg-pe-surface" />
+          </div>
+          <p className="mt-3 line-clamp-3 text-[15px] leading-relaxed text-pe-text-secondary">
+            {post.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function HoldersBlurPreview({ onOpenProfile }) {
+  void onOpenProfile;
   return (
     <div className="divide-y divide-pe-border">
-      {PREVIEW_HOLDERS.map(({ userId, detail }) => {
-        const person = getPerson(userId);
-        return (
-          <div key={userId} className="flex items-center gap-3 px-4 py-3.5">
-            <Avatar person={person} />
-            <div>
-              <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
-              <p className="text-sm text-pe-text-muted">
-                @{person.handle}{detail ? ` · ${detail}` : ''}
-              </p>
-            </div>
+      {PREVIEW_HOLDERS.map((row, index) => (
+        <div key={`blur-holder-${index}`} className="flex items-center gap-3 px-4 py-3.5">
+          <span className="h-9 w-9 rounded-full bg-pe-surface" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <div className="h-3.5 w-32 rounded bg-pe-surface" />
+            <div className="mt-1.5 h-2.5 w-24 rounded bg-pe-surface/80" />
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

@@ -8,21 +8,24 @@ import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
+  BlurredSection,
   DiscussionsList,
+  HoldersBlurPreview,
   INVESTMENT_TABS,
+  NewsBlurPreview,
+  TRACK_FUND_LOCK,
 } from '../components/InvestmentSections';
 import {
   getFund,
   getFundHolders,
   getFundNews,
 } from '../data/fundData';
-import { getPerson } from '../data/mockData';
+import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
 import {
   marketFundToDetail,
   resolveMarketFund,
-  withDerivedDayChange,
 } from '../lib/marketDataApi';
 import { formatPrice } from '../lib/format';
 import {
@@ -33,7 +36,7 @@ import {
   loadReviewsForFund,
   subscribeReviews,
 } from '../lib/reviewStore';
-import { getAppCurrentUserId } from '../lib/socialIdentity';
+import { getAppCurrentUserId, getPersonSync } from '../lib/socialIdentity';
 import { isDevMockMode } from '../lib/appMode';
 
 export default function InvestmentPage({
@@ -76,9 +79,7 @@ export default function InvestmentPage({
           return;
         }
         const found = await resolveMarketFund(fundId);
-        const detail = found ? marketFundToDetail(found) : null;
-        const enriched = detail ? await withDerivedDayChange(detail, 'fund') : null;
-        if (!cancelled) setMarketFund(enriched);
+        if (!cancelled) setMarketFund(found ? marketFundToDetail(found) : null);
       } finally {
         if (!cancelled) setMarketLoading(false);
       }
@@ -89,6 +90,7 @@ export default function InvestmentPage({
     };
   }, [fundId, seedFund]);
 
+  const hasAccess = hasFundAccess(fundId);
   const me = getAppCurrentUserId();
   const reviews = useMemo(() => getReviewsForFund(fundId), [fundId, reviewTick]);
   const communityReviews = useMemo(
@@ -124,6 +126,7 @@ export default function InvestmentPage({
     };
   }, [fundId, fund?.name]);
 
+  const holdersLocked = !hasAccess;
   const hasResolvedFund = Boolean(seedFund || marketFund);
 
   if (!marketLoading && !hasResolvedFund) {
@@ -197,12 +200,22 @@ export default function InvestmentPage({
       )}
 
       {tab === 'holders' && (
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_FUND_LOCK}
+          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
+        >
           <div className="divide-y divide-pe-border">
             {holders.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No disclosed holders yet.</p>
             ) : (
               holders.map((userId) => {
-                const person = getPerson(userId);
+                const person = getPersonSync(userId) ?? {
+                  id: userId,
+                  name: 'Member',
+                  handle: 'member',
+                  avatar: 'M',
+                };
                 return (
                   <button
                     key={userId}
@@ -220,9 +233,15 @@ export default function InvestmentPage({
               })
             )}
           </div>
+        </BlurredSection>
       )}
 
       {tab === 'news' && (
+        <BlurredSection
+          locked={holdersLocked}
+          lock={TRACK_FUND_LOCK}
+          preview={<NewsBlurPreview />}
+        >
           <div>
             {news.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
@@ -230,6 +249,7 @@ export default function InvestmentPage({
               <NewsList items={news} />
             )}
           </div>
+        </BlurredSection>
       )}
     </div>
   );

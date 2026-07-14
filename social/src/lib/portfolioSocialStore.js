@@ -78,6 +78,9 @@ function withUnread(entry, portfolioId) {
 }
 
 function seedForPortfolio(portfolioId) {
+  if (import.meta.env.PROD) {
+    return { ...DEFAULTS };
+  }
   const hash = [...portfolioId].reduce((n, c) => n + c.charCodeAt(0), 0);
   const demoComments =
     portfolioId === 'pf_diversified'

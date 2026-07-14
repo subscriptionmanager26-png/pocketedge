@@ -118,148 +118,164 @@ export function pickRandomCategory() {
   return FUND_CATEGORIES[Math.floor(Math.random() * FUND_CATEGORIES.length)];
 }
 
-/** Seed community reviews - initial content database */
-export const SEED_FUND_REVIEWS = [
-  {
-    id: 'rev_seed_1',
-    fundId: 'fund_parag_flexi',
-    authorId: 'u1',
-    rating: 5,
-    body: 'Consistent philosophy, low churn, and global diversification make this my core flexi holding.',
-    createdAt: '2026-06-28T10:00:00.000Z',
-    agreeCount: 42,
-    disagreeCount: 3,
-    shareCount: 8,
-    comments: [
+/**
+ * Demo-only community fixtures. `import.meta.env.PROD` is statically true in
+ * production builds so Rollup drops the demo branch from the shipped bundle.
+ */
+export const SEED_FUND_REVIEWS = import.meta.env.PROD
+  ? []
+  : [
       {
-        id: 'rc_s1',
-        authorId: 'u2',
-        body: 'Agree on the global sleeve - rare among Indian flexi funds.',
-        parentId: null,
-        createdAt: '2026-06-28T14:00:00.000Z',
+        id: 'rev_seed_1',
+        fundId: 'fund_parag_flexi',
+        authorId: 'u1',
+        rating: 5,
+        body: 'Consistent philosophy, low churn, and global diversification make this my core flexi holding.',
+        createdAt: '2026-06-28T10:00:00.000Z',
+        agreeCount: 42,
+        disagreeCount: 3,
+        shareCount: 8,
+        comments: [
+          {
+            id: 'rc_s1',
+            authorId: 'u2',
+            body: 'Agree on the global sleeve - rare among Indian flexi funds.',
+            parentId: null,
+            createdAt: '2026-06-28T14:00:00.000Z',
+          },
+        ],
       },
-    ],
-  },
-  {
-    id: 'rev_seed_2',
-    fundId: 'fund_parag_flexi',
-    authorId: 'u4',
-    rating: 4,
-    body: 'Valuation discipline is real, but cash drag hurts in sharp rallies.',
-    createdAt: '2026-06-25T09:30:00.000Z',
-    agreeCount: 28,
-    disagreeCount: 11,
-    shareCount: 4,
-    comments: [],
-  },
-  {
-    id: 'rev_seed_3',
-    fundId: 'fund_motilal_mid',
-    authorId: 'u2',
-    rating: 5,
-    body: 'High conviction midcap bets - volatile but aligned with 5Y horizon.',
-    createdAt: '2026-06-20T11:00:00.000Z',
-    agreeCount: 35,
-    disagreeCount: 6,
-    shareCount: 5,
-    comments: [
       {
-        id: 'rc_s2',
+        id: 'rev_seed_2',
+        fundId: 'fund_parag_flexi',
+        authorId: 'u4',
+        rating: 4,
+        body: 'Valuation discipline is real, but cash drag hurts in sharp rallies.',
+        createdAt: '2026-06-25T09:30:00.000Z',
+        agreeCount: 28,
+        disagreeCount: 11,
+        shareCount: 4,
+        comments: [],
+      },
+      {
+        id: 'rev_seed_3',
+        fundId: 'fund_motilal_mid',
+        authorId: 'u2',
+        rating: 5,
+        body: 'High conviction midcap bets - volatile but aligned with 5Y horizon.',
+        createdAt: '2026-06-20T11:00:00.000Z',
+        agreeCount: 35,
+        disagreeCount: 6,
+        shareCount: 5,
+        comments: [
+          {
+            id: 'rc_s2',
+            authorId: 'u3',
+            body: 'Drawdowns are brutal - only for investors who can stomach 30% cuts.',
+            parentId: null,
+            createdAt: '2026-06-21T08:00:00.000Z',
+          },
+          {
+            id: 'rc_s3',
+            authorId: 'u2',
+            body: 'Fair point - size of SIP matters more here than in large caps.',
+            parentId: 'rc_s2',
+            createdAt: '2026-06-21T10:00:00.000Z',
+          },
+        ],
+      },
+      {
+        id: 'rev_seed_4',
+        fundId: 'fund_nippon_small',
         authorId: 'u3',
-        body: 'Drawdowns are brutal - only for investors who can stomach 30% cuts.',
-        parentId: null,
-        createdAt: '2026-06-21T08:00:00.000Z',
+        rating: 4,
+        body: 'Liquidity risk is underpriced - great returns but watch exit loads.',
+        createdAt: '2026-06-18T16:00:00.000Z',
+        agreeCount: 19,
+        disagreeCount: 4,
+        shareCount: 2,
+        comments: [],
       },
       {
-        id: 'rc_s3',
-        authorId: 'u2',
-        body: 'Fair point - size of SIP matters more here than in large caps.',
-        parentId: 'rc_s2',
-        createdAt: '2026-06-21T10:00:00.000Z',
+        id: 'rev_seed_5',
+        fundId: 'fund_hdfc_flexi',
+        authorId: 'u5',
+        rating: 3,
+        body: 'Solid house brand, but feels like a closet index vs true flexi peers.',
+        createdAt: '2026-06-15T12:00:00.000Z',
+        agreeCount: 14,
+        disagreeCount: 9,
+        shareCount: 1,
+        comments: [],
       },
-    ],
-  },
-  {
-    id: 'rev_seed_4',
-    fundId: 'fund_nippon_small',
-    authorId: 'u3',
-    rating: 4,
-    body: 'Liquidity risk is underpriced - great returns but watch exit loads.',
-    createdAt: '2026-06-18T16:00:00.000Z',
-    agreeCount: 19,
-    disagreeCount: 4,
-    shareCount: 2,
-    comments: [],
-  },
-  {
-    id: 'rev_seed_5',
-    fundId: 'fund_hdfc_flexi',
-    authorId: 'u5',
-    rating: 3,
-    body: 'Solid house brand, but feels like a closet index vs true flexi peers.',
-    createdAt: '2026-06-15T12:00:00.000Z',
-    agreeCount: 14,
-    disagreeCount: 9,
-    shareCount: 1,
-    comments: [],
-  },
-];
+    ];
 
 /** Funds on the current user's watchlist (demo). */
-export const MY_FUND_WATCHLIST = ['fund_motilal_mid'];
+export const MY_FUND_WATCHLIST = import.meta.env.PROD ? [] : ['fund_motilal_mid'];
 
-export const FUND_HOLDERS = {
-  fund_parag_flexi: ['u1', 'u2', 'u5', 'u_me'],
-  fund_ppfas_flexi: ['u4'],
-  fund_motilal_mid: ['u2', 'u3'],
-  fund_axis_mid: ['u1'],
-  fund_nippon_small: ['u3', 'u4'],
-  fund_sbi_small: ['u5'],
-  fund_quant_small: ['u3'],
-  fund_hdfc_flexi: ['u5', 'u1'],
-  fund_kotak_mid: ['u4', 'u2'],
-};
+export const FUND_HOLDERS = import.meta.env.PROD
+  ? {}
+  : {
+      fund_parag_flexi: ['u1', 'u2', 'u5', 'u_me'],
+      fund_ppfas_flexi: ['u4'],
+      fund_motilal_mid: ['u2', 'u3'],
+      fund_axis_mid: ['u1'],
+      fund_nippon_small: ['u3', 'u4'],
+      fund_sbi_small: ['u5'],
+      fund_quant_small: ['u3'],
+      fund_hdfc_flexi: ['u5', 'u1'],
+      fund_kotak_mid: ['u4', 'u2'],
+    };
 
-export const FUND_NEWS = {
-  fund_parag_flexi: [
-    {
-      id: 'fn1',
-      title: 'Parag Parikh Flexi Cap adds to cash amid global volatility',
-      publishedAt: '2026-07-08T10:00:00.000Z',
-      summary: 'The fund increased cash allocation as managers turned cautious on elevated global valuations and currency volatility.',
-    },
-    {
-      id: 'fn2',
-      title: 'Overseas allocation in flexi caps: what changed in Q1',
-      publishedAt: '2026-07-05T09:00:00.000Z',
-      summary: 'Flexi cap schemes trimmed international exposure in Q1 while maintaining a barbell of quality domestic franchises.',
-    },
-  ],
-  fund_motilal_mid: [
-    {
-      id: 'fn3',
-      title: 'Motilal Oswal Midcap tops peer returns over 3 years',
-      publishedAt: '2026-07-09T11:00:00.000Z',
-      summary: 'Category data shows the scheme leading midcap peers on a three-year basis, driven by concentrated bets in high-growth industrials.',
-    },
-  ],
-  fund_nippon_small: [
-    {
-      id: 'fn4',
-      title: 'Small cap inflows hit record - AMFI data',
-      publishedAt: '2026-07-07T08:00:00.000Z',
-      summary: 'Monthly AMFI flows show small cap funds attracting record inflows as investors chase higher beta exposure.',
-    },
-    {
-      id: 'fn5',
-      title: 'Nippon India Small Cap restricts lump sum above ₹2L',
-      publishedAt: '2026-07-01T12:00:00.000Z',
-      summary: 'The AMC capped fresh lump sum investments citing liquidity constraints in the small cap universe.',
-    },
-  ],
-};
+export const FUND_NEWS = import.meta.env.PROD
+  ? {}
+  : {
+      fund_parag_flexi: [
+        {
+          id: 'fn1',
+          title: 'Parag Parikh Flexi Cap adds to cash amid global volatility',
+          publishedAt: '2026-07-08T10:00:00.000Z',
+          summary:
+            'The fund increased cash allocation as managers turned cautious on elevated global valuations and currency volatility.',
+        },
+        {
+          id: 'fn2',
+          title: 'Overseas allocation in flexi caps: what changed in Q1',
+          publishedAt: '2026-07-05T09:00:00.000Z',
+          summary:
+            'Flexi cap schemes trimmed international exposure in Q1 while maintaining a barbell of quality domestic franchises.',
+        },
+      ],
+      fund_motilal_mid: [
+        {
+          id: 'fn3',
+          title: 'Motilal Oswal Midcap tops peer returns over 3 years',
+          publishedAt: '2026-07-09T11:00:00.000Z',
+          summary:
+            'Category data shows the scheme leading midcap peers on a three-year basis, driven by concentrated bets in high-growth industrials.',
+        },
+      ],
+      fund_nippon_small: [
+        {
+          id: 'fn4',
+          title: 'Small cap inflows hit record - AMFI data',
+          publishedAt: '2026-07-07T08:00:00.000Z',
+          summary:
+            'Monthly AMFI flows show small cap funds attracting record inflows as investors chase higher beta exposure.',
+        },
+        {
+          id: 'fn5',
+          title: 'Nippon India Small Cap restricts lump sum above ₹2L',
+          publishedAt: '2026-07-01T12:00:00.000Z',
+          summary:
+            'The AMC capped fresh lump sum investments citing liquidity constraints in the small cap universe.',
+        },
+      ],
+    };
 
 export function getFundHolders(fundId) {
+  // Production has no disclosed-holders backend yet — never surface demo people.
+  if (!isDevMockMode()) return [];
   return FUND_HOLDERS[fundId] ?? [];
 }
 

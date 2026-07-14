@@ -73,22 +73,28 @@ function nseApiPlugin() {
   };
 }
 
+function mockDataProdPlugin(isProd) {
+  const prodFile = path.resolve(__dirname, 'src/data/mockData.prod.js');
+  return {
+    name: 'mock-data-prod',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!isProd || !importer) return null;
+      if (source.includes('mockData.prod')) return null;
+      // Only remap the demo fixtures module — keep other paths alone.
+      const base = source.replace(/\\/g, '/').split('/').pop() ?? '';
+      if (base !== 'mockData' && base !== 'mockData.js') return null;
+      return prodFile;
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
   return {
-    plugins: [react(), nseApiPlugin(), socialServiceWorkerPlugin()],
+    plugins: [react(), nseApiPlugin(), socialServiceWorkerPlugin(), mockDataProdPlugin(isProd)],
     envDir: path.resolve(__dirname, '..'),
-    resolve: {
-      alias: isProd
-        ? {
-            [path.resolve(__dirname, 'src/data/mockData.js')]: path.resolve(
-              __dirname,
-              'src/data/mockData.prod.js'
-            ),
-          }
-        : {},
-    },
     server: { port: 5175, strictPort: true, open: false },
     build: {
       target: 'es2020',
