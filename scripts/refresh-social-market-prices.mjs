@@ -144,6 +144,71 @@ async function upsertHistory(url, apiKey, rows) {
   return rpcBatch(url, apiKey, 'bulk_upsert_social_market_price_history', rows);
 }
 
+/** Existing fund rows keyed by scheme code — used to derive day change vs prior NAV. */
+async function fetchExistingFundQuotes(url, apiKey) {
+  const base = url.replace(/\/$/, '');
+  const map = new Map();
+  const pageSize = 1000;
+  let from = 0;
+
+  for (;;) {
+    const to = from + pageSize - 1;
+    const res = await fetch(
+      `${base}/rest/v1/social_market_assets?asset_type=eq.fund&select=asset_key,price,as_of_date,previous_close&order=asset_key.asc`,
+      {
+        headers: {
+          ...restHeaders(apiKey),
+          Range: `${from}-${to}`,
+          Prefer: 'count=exact',
+        },
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`fetch existing funds HTTP ${res.status}: ${text}`);
+    }
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) break;
+    for (const row of rows) {
+      const key = String(row.asset_key ?? '').trim();
+      if (!key) continue;
+      map.set(key, {
+        price: row.price != null ? Number(row.price) : null,
+        asOfDate: row.as_of_date ?? null,
+        previousClose: row.previous_close != null ? Number(row.previous_close) : null,
+      });
+    }
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return map;
+}
+
+function fundDayChange({ nav, asOfDate, existing }) {
+  if (nav == null || !Number.isFinite(nav)) {
+    return { previousClose: null, changePct: null };
+  }
+
+  let previousClose = null;
+  if (existing?.asOfDate && existing.asOfDate !== asOfDate && Number.isFinite(existing.price)) {
+    // New NAV date → prior stored NAV is yesterday's close.
+    previousClose = existing.price;
+  } else if (Number.isFinite(existing?.previousClose)) {
+    // Same-day refresh → keep the prior baseline.
+    previousClose = existing.previousClose;
+  }
+
+  if (previousClose == null || previousClose === 0) {
+    return { previousClose: null, changePct: null };
+  }
+
+  return {
+    previousClose,
+    changePct: ((nav - previousClose) / previousClose) * 100,
+  };
+}
+
 function equityAssetRows(quotes, assetType, asOfDate, syncedAt) {
   return quotes
     .filter((q) => q.symbol && q.ltp != null)
@@ -242,19 +307,27 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   const text = await res.text();
   const schemes = parseNavAll(text);
 
+  console.log('Loading existing fund quotes for day-change baseline...');
+  const existingByKey = await fetchExistingFundQuotes(url, apiKey);
+
   const assetByKey = new Map();
   const historyByKey = new Map();
   for (const scheme of schemes) {
     const key = String(scheme.schemeCode ?? '').trim();
     if (!key || scheme.nav == null) continue;
     const asOfDate = scheme.navDate || istDateString();
+    const { previousClose, changePct } = fundDayChange({
+      nav: scheme.nav,
+      asOfDate,
+      existing: existingByKey.get(key),
+    });
     assetByKey.set(key, {
       asset_type: 'fund',
       asset_key: key,
       name: scheme.name || key,
       price: scheme.nav,
-      change_pct: null,
-      previous_close: null,
+      change_pct: changePct,
+      previous_close: previousClose,
       as_of_date: asOfDate,
       price_source: 'amfi',
       synced_at: syncedAt,
@@ -265,8 +338,8 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
         asset_key: key,
         as_of_date: asOfDate,
         close_price: scheme.nav,
-        previous_close: null,
-        change_pct: null,
+        previous_close: previousClose,
+        change_pct: changePct,
         source: 'amfi',
         synced_at: syncedAt,
       });

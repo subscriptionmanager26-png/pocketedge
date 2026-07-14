@@ -217,15 +217,15 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                   : '-'}
                 {' · '}
                 {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'} QTY
-                {' · '}
-                Avg{' '}
-                {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '-'}
               </p>
               <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
                 {holdingDisplayLabel(h)}
               </p>
               <p className="mt-1 text-[12px] tabular-nums text-pe-text-muted">
                 {weightPct != null ? `${weightPct.toFixed(1)}% of Portfolio` : '-'}
+                {' · '}
+                Avg{' '}
+                {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '-'}
               </p>
             </div>
             <div className="min-w-0 self-start text-right">
@@ -253,7 +253,7 @@ function HoldingTodayDelta({ amount, pct }) {
   const hasAmount = amount != null && Number.isFinite(Number(amount));
   const hasPct = pct != null && Number.isFinite(Number(pct));
   if (!hasAmount && !hasPct) {
-    return <p className="mt-1 text-[15px] font-semibold text-pe-text-muted">Today -</p>;
+    return <p className="mt-1 whitespace-nowrap text-[15px] font-semibold text-pe-text-muted">-</p>;
   }
 
   const tone = hasAmount ? amount : pct;
@@ -266,15 +266,14 @@ function HoldingTodayDelta({ amount, pct }) {
 
   return (
     <p
-      className={`mt-1 inline-flex items-center justify-end gap-0.5 text-[15px] font-semibold tabular-nums ${pnlClass(
+      className={`mt-1 inline-flex max-w-full items-center justify-end gap-0.5 whitespace-nowrap text-[15px] font-semibold tabular-nums ${pnlClass(
         tone
       )}`}
     >
-      <span>Today</span>
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
       <span>
         {hasAmount ? formatInr(amount, { compact: true }) : '-'}
-        {pctText ? ` ( ${pctText} )` : ''}
+        {pctText ? ` (${pctText})` : ''}
       </span>
     </p>
   );

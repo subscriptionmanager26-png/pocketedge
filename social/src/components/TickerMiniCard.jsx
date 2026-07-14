@@ -182,6 +182,8 @@ function TickerCardContent({ ticker, authorId, onClose }) {
 
 export default function TickerMiniCard({ ticker, authorId, onClose }) {
   const ref = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(max-width: 767px)').matches
@@ -197,15 +199,42 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
 
   useEffect(() => {
     if (isMobile) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
+      const scrollY = window.scrollY;
+      const { body, documentElement: html } = document;
+      const prev = {
+        bodyOverflow: body.style.overflow,
+        htmlOverflow: html.style.overflow,
+        bodyPosition: body.style.position,
+        bodyTop: body.style.top,
+        bodyLeft: body.style.left,
+        bodyRight: body.style.right,
+        bodyWidth: body.style.width,
+      };
+
+      // iOS Safari: overflow:hidden alone often fails to unlock cleanly.
+      // Pin the body, then restore scroll position on close.
+      html.style.overflow = 'hidden';
+      body.style.overflow = 'hidden';
+      body.style.position = 'fixed';
+      body.style.top = `-${scrollY}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.width = '100%';
+
       const onKeyDown = (event) => {
-        if (event.key === 'Escape') onClose?.();
+        if (event.key === 'Escape') onCloseRef.current?.();
       };
       document.addEventListener('keydown', onKeyDown);
       return () => {
-        document.body.style.overflow = prev;
+        html.style.overflow = prev.htmlOverflow;
+        body.style.overflow = prev.bodyOverflow;
+        body.style.position = prev.bodyPosition;
+        body.style.top = prev.bodyTop;
+        body.style.left = prev.bodyLeft;
+        body.style.right = prev.bodyRight;
+        body.style.width = prev.bodyWidth;
         document.removeEventListener('keydown', onKeyDown);
+        window.scrollTo(0, scrollY);
       };
     }
 
@@ -213,10 +242,10 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
     let remove = () => {};
     const timer = window.setTimeout(() => {
       const onPointerDown = (event) => {
-        if (ref.current && !ref.current.contains(event.target)) onClose?.();
+        if (ref.current && !ref.current.contains(event.target)) onCloseRef.current?.();
       };
       const onKeyDown = (event) => {
-        if (event.key === 'Escape') onClose?.();
+        if (event.key === 'Escape') onCloseRef.current?.();
       };
       document.addEventListener('mousedown', onPointerDown);
       document.addEventListener('keydown', onKeyDown);
@@ -230,7 +259,7 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
       window.clearTimeout(timer);
       remove();
     };
-  }, [onClose, isMobile]);
+  }, [isMobile]);
 
   if (isMobile) {
     return createPortal(
