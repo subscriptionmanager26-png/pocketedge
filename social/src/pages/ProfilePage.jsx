@@ -35,7 +35,7 @@ import { ProfilePageSkeleton } from '../components/PageSkeletons';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
 import ReviewCard from '../components/ReviewCard';
-import { getReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
+import { getReviewsByAuthor, loadReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
 import {
   addPortfolioComment,
   getPortfolioEngagementSync,
@@ -192,6 +192,19 @@ export default function ProfilePage({
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
   useEffect(() => subscribeReviews(() => setReviewsVersion((n) => n + 1)), []);
   useEffect(() => subscribePortfolioEngagement(() => setPortfolioSocialTick((n) => n + 1)), []);
+
+  useEffect(() => {
+    if (!person?.id) return undefined;
+    let cancelled = false;
+    loadReviewsByAuthor(person.id)
+      .then(() => {
+        if (!cancelled) setReviewsVersion((n) => n + 1);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [person?.id]);
 
   useEffect(() => {
     let cancelled = false;

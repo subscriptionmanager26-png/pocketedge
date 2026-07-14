@@ -6,7 +6,7 @@ import { hydrateAuthorPositions } from '../lib/authorPositionsStore';
 import { resolvePortfolioAsset, holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { getPersonSync, resolvePerson } from '../lib/socialIdentity';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
-import { formatTicker, statusStyles } from '../lib/tickers';
+import { formatTicker } from '../lib/tickers';
 
 function resolveAuthorPosition(authorId, ticker, asset) {
   const keys = [
@@ -81,7 +81,6 @@ function TickerCardContent({ ticker, authorId, onClose }) {
 
   void positionTick;
   const { position, weightPct } = resolveAuthorPosition(authorId, ticker, asset);
-  const styles = statusStyles(position.status);
 
   const name =
     asset?.name ||
@@ -152,29 +151,6 @@ function TickerCardContent({ ticker, authorId, onClose }) {
         <p className="mt-1 text-[17px] font-semibold text-pe-text">
           {holdingPct != null ? `${holdingPct.toFixed(1)}% of book` : 'Holds'}
         </p>
-        {position.status === 'holds' ? (
-          <p className="mt-0.5 text-[12px] text-pe-text-secondary">
-            {position.pnlPct != null ? `${formatPct(position.pnlPct)} P&L` : 'In portfolio'}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-[12px] text-pe-text-secondary">
-            {position.status === 'watchlist'
-              ? 'On watchlist'
-              : position.status === 'exited'
-                ? 'Exited'
-                : 'No position'}
-          </p>
-        )}
-      </div>
-
-      <div
-        className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold ${styles.chip}`}
-      >
-        <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
-        {styles.label}
-        {position.status === 'holds' && position.pnlPct != null && (
-          <span className={pnlClass(position.pnlPct)}>· {formatPct(position.pnlPct)}</span>
-        )}
       </div>
     </>
   );

@@ -13,7 +13,7 @@ import {
   toggleFollow,
   toggleTopicFollow,
 } from '../lib/socialGraphStore';
-import { formatCount } from '../lib/format';
+import { formatCount, formatPct } from '../lib/format';
 import { QuoteChangeBlock } from '../components/AssetProductHeader';
 import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';

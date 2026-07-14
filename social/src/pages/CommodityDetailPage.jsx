@@ -6,15 +6,9 @@ import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
-  BlurredSection,
   DiscussionsList,
-  HoldersBlurPreview,
   INVESTMENT_TABS,
-  NewsBlurPreview,
-  TRACK_MARKET_LOCK,
-  TRACK_MARKET_NEWS_LOCK,
 } from '../components/InvestmentSections';
-import { hasMarketAssetAccess } from '../lib/assetAccess';
 import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import {
   addReviewComment,
@@ -78,7 +72,6 @@ export default function CommodityDetailPage({
     };
   }, [commodityId]);
 
-  const hasAccess = hasMarketAssetAccess();
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : []
   );
@@ -102,7 +95,6 @@ export default function CommodityDetailPage({
   }, [commodityId, commodity?.name]);
 
   const me = getAppCurrentUserId();
-  const holdersLocked = !hasAccess;
   const reviews = useMemo(() => getReviewsForCommodity(commodityId), [commodityId, reviewTick]);
   const communityReviews = useMemo(
     () => reviews.filter((r) => r.authorId !== me),
@@ -205,25 +197,13 @@ export default function CommodityDetailPage({
       )}
 
       {tab === 'holders' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_MARKET_LOCK}
-          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
-        >
           <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
             No disclosed holders yet.
           </p>
-        </BlurredSection>
       )}
 
       {tab === 'news' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_MARKET_NEWS_LOCK}
-          preview={<NewsBlurPreview />}
-        >
           <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-        </BlurredSection>
       )}
     </div>
   );

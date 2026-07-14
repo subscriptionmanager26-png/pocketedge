@@ -8,21 +8,15 @@ import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
-  BlurredSection,
   DiscussionsList,
-  HoldersBlurPreview,
   INVESTMENT_TABS,
-  NewsBlurPreview,
   STOCK_INVESTMENT_TABS,
-  TRACK_STOCK_LOCK,
-  TRACK_STOCK_NEWS_LOCK,
 } from '../components/InvestmentSections';
 import { getStock, getStockHolders, getStockNews } from '../data/stockData';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchStockNews, fetchCorporateActions, isStockNewsConfigured } from '../lib/stockNewsApi';
 import CorporateActionsList from '../components/CorporateActionsList';
 import { AUTHOR_POSITIONS, getPerson } from '../data/mockData';
-import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
 import {
@@ -34,7 +28,6 @@ import {
   subscribeReviews,
 } from '../lib/reviewStore';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
-import { subscribeWatchlists } from '../lib/watchlistStore';
 import {
   marketStockToDetail,
   resolveMarketStock,
@@ -74,10 +67,8 @@ export default function StockInvestmentPage({
   const displayStock = stock;
   const [tab, setTab] = useState('reviews');
   const [reviewTick, setReviewTick] = useState(0);
-  const [accessTick, setAccessTick] = useState(0);
 
   useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
-  useEffect(() => subscribeWatchlists(() => setAccessTick((n) => n + 1)), []);
 
   useEffect(() => {
     hydrateCommunityAccess();
@@ -103,7 +94,6 @@ export default function StockInvestmentPage({
   }, [ticker]);
 
   const me = getAppCurrentUserId();
-  const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
   const reviews = useMemo(() => getReviewsForStock(ticker), [ticker, reviewTick]);
   const communityReviews = useMemo(
     () => reviews.filter((r) => r.authorId !== me),
@@ -186,8 +176,6 @@ export default function StockInvestmentPage({
       cancelled = true;
     };
   }, [ticker, isEtf]);
-
-  const holdersLocked = !hasAccess;
 
   if (!marketLoading && !marketStock && !seedStock) {
     return (
@@ -272,11 +260,6 @@ export default function StockInvestmentPage({
       )}
 
       {tab === 'holders' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_STOCK_LOCK}
-          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
-        >
           <div className="divide-y divide-pe-border">
             {holders.length === 0 ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
@@ -306,15 +289,9 @@ export default function StockInvestmentPage({
               })
             )}
           </div>
-        </BlurredSection>
       )}
 
       {tab === 'news' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_STOCK_NEWS_LOCK}
-          preview={<NewsBlurPreview />}
-        >
           <div>
             {newsLoading ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
@@ -324,7 +301,6 @@ export default function StockInvestmentPage({
               <NewsList items={news} />
             )}
           </div>
-        </BlurredSection>
       )}
 
       {tab === 'corporate_actions' && (
