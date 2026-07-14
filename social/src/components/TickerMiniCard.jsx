@@ -198,47 +198,27 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
   }, []);
 
   useEffect(() => {
+    // Desktop popover only: close on outside click / Escape.
+    // Do not lock document/body scroll on mobile — that breaks feed scrolling
+    // after the sheet closes across mobile browsers.
     if (isMobile) {
-      const scrollY = window.scrollY;
-      const { body, documentElement: html } = document;
-      const prev = {
-        bodyOverflow: body.style.overflow,
-        htmlOverflow: html.style.overflow,
-        bodyPosition: body.style.position,
-        bodyTop: body.style.top,
-        bodyLeft: body.style.left,
-        bodyRight: body.style.right,
-        bodyWidth: body.style.width,
-      };
-
-      // iOS Safari: overflow:hidden alone often fails to unlock cleanly.
-      // Pin the body, then restore scroll position on close.
-      html.style.overflow = 'hidden';
-      body.style.overflow = 'hidden';
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = '0';
-      body.style.right = '0';
-      body.style.width = '100%';
-
       const onKeyDown = (event) => {
         if (event.key === 'Escape') onCloseRef.current?.();
       };
       document.addEventListener('keydown', onKeyDown);
       return () => {
-        html.style.overflow = prev.htmlOverflow;
-        body.style.overflow = prev.bodyOverflow;
-        body.style.position = prev.bodyPosition;
-        body.style.top = prev.bodyTop;
-        body.style.left = prev.bodyLeft;
-        body.style.right = prev.bodyRight;
-        body.style.width = prev.bodyWidth;
         document.removeEventListener('keydown', onKeyDown);
-        window.scrollTo(0, scrollY);
+        // Heal leftover locks from older sheet implementations that left body pinned.
+        document.documentElement.style.removeProperty('overflow');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('position');
+        document.body.style.removeProperty('top');
+        document.body.style.removeProperty('left');
+        document.body.style.removeProperty('right');
+        document.body.style.removeProperty('width');
       };
     }
 
-    // Defer so the opening click doesn't immediately close the card.
     let remove = () => {};
     const timer = window.setTimeout(() => {
       const onPointerDown = (event) => {
@@ -273,7 +253,8 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
         <div
           role="dialog"
           aria-label={`${ticker} details`}
-          className="absolute bottom-0 left-0 right-0 rounded-t-2xl border-t border-pe-border bg-pe-canvas p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
+          className="absolute bottom-0 left-0 right-0 overscroll-contain rounded-t-2xl border-t border-pe-border bg-pe-canvas p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
+          onClick={(event) => event.stopPropagation()}
         >
           <TickerCardContent ticker={ticker} authorId={authorId} onClose={onClose} />
         </div>
