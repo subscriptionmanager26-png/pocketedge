@@ -356,7 +356,7 @@ export default function Shell({
                 </PageHeader>
               )}
 
-              <main className="flex-1 pb-[72px] md:pb-10">{children}</main>
+              <main className="flex-1 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-10">{children}</main>
             </div>
           </div>
         </div>
@@ -366,15 +366,15 @@ export default function Shell({
         <button
           type="button"
           onClick={onCompose}
-          className="fixed bottom-[72px] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white transition hover:bg-pe-accent-pressed active:scale-95 md:hidden"
+          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white transition hover:bg-pe-accent-pressed active:scale-95 md:hidden"
           aria-label="Compose post"
         >
           <Pencil className="h-5 w-5" />
         </button>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 h-14 border-t border-pe-border bg-pe-canvas md:hidden">
-        <div className="mx-auto flex h-full max-w-feed items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-pe-border bg-pe-canvas pb-[env(safe-area-inset-bottom,0px)] md:hidden">
+        <div className="mx-auto flex h-14 max-w-feed items-center justify-around px-1">
           {MOBILE_TABS.map(({ id, label, icon: Icon }) => {
             const active = tab === id;
             return (
@@ -382,7 +382,7 @@ export default function Shell({
                 key={id}
                 type="button"
                 onClick={() => goTab(id)}
-                className={`relative flex min-w-[4.25rem] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition ${
+                className={`relative flex h-full min-w-[4.25rem] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition ${
                   active ? 'text-pe-accent' : 'text-pe-text-muted'
                 }`}
               >

@@ -22,6 +22,7 @@ import { getFundAssetType } from '../lib/assetTypes';
 import {
   marketFundToDetail,
   resolveMarketFund,
+  withDerivedDayChange,
 } from '../lib/marketDataApi';
 import { formatPrice } from '../lib/format';
 import {
@@ -75,7 +76,9 @@ export default function InvestmentPage({
           return;
         }
         const found = await resolveMarketFund(fundId);
-        if (!cancelled) setMarketFund(found ? marketFundToDetail(found) : null);
+        const detail = found ? marketFundToDetail(found) : null;
+        const enriched = detail ? await withDerivedDayChange(detail, 'fund') : null;
+        if (!cancelled) setMarketFund(enriched);
       } finally {
         if (!cancelled) setMarketLoading(false);
       }

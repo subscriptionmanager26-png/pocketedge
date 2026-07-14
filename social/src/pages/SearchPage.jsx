@@ -8,12 +8,10 @@ import { profileToPerson } from '../lib/socialIdentity';
 import { searchSocialProfiles } from '../lib/socialProfileApi';
 import {
   getFollowedTopicSlugs,
-  isFollowing,
   isTopicFollowed,
-  toggleFollow,
   toggleTopicFollow,
 } from '../lib/socialGraphStore';
-import { formatCount, formatPct } from '../lib/format';
+import { formatCount } from '../lib/format';
 import { QuoteChangeBlock } from '../components/AssetProductHeader';
 import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';
@@ -179,9 +177,7 @@ export default function SearchPage({
                       <PersonRow
                         key={person.id}
                         person={person}
-                        graphTick={graphTick}
                         onOpenProfile={onOpenProfile}
-                        onFollowChange={bumpGraph}
                       />
                     ))}
                 </div>
@@ -222,9 +218,7 @@ export default function SearchPage({
                   <PersonRow
                     key={p.id}
                     person={p}
-                    graphTick={graphTick}
                     onOpenProfile={onOpenProfile}
-                    onFollowChange={bumpGraph}
                   />
                 ))
               ) : (
@@ -370,36 +364,19 @@ function SectionLabel({ children, icon: Icon }) {
   );
 }
 
-function PersonRow({ person, graphTick, onOpenProfile, onFollowChange }) {
-  void graphTick;
-  const following = isFollowing(person.id);
+function PersonRow({ person, onOpenProfile }) {
   return (
-    <div className="flex items-center gap-3 py-3.5">
-      <Avatar person={person} onClick={() => onOpenProfile?.(person.id)} />
-      <button
-        type="button"
-        onClick={() => onOpenProfile?.(person.id)}
-        className="min-w-0 flex-1 text-left"
-      >
-        <p className="truncate text-[15px] font-semibold text-pe-text hover:underline">
-          {person.name}
-        </p>
+    <button
+      type="button"
+      onClick={() => onOpenProfile?.(person.id)}
+      className="flex w-full items-center gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
+    >
+      <Avatar person={person} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-semibold text-pe-text">{person.name}</p>
         <p className="text-sm text-pe-text-muted">@{person.handle}</p>
-        <p className="mt-0.5 text-xs text-pe-text-secondary">
-          <span className="font-semibold text-pe-positive">
-            XIRR {formatPct(person.xirr, { signed: false })}
-          </span>
-          <span> · {formatCount(person.followers)} followers</span>
-        </p>
-      </button>
-      <FollowButton
-        following={following}
-        onToggle={async () => {
-          await toggleFollow(person.id);
-          onFollowChange?.();
-        }}
-      />
-    </div>
+      </div>
+    </button>
   );
 }
 

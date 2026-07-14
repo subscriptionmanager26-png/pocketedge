@@ -50,7 +50,7 @@ export default function AnalysisStep({
 }) {
   const sections = [
     { key: 'in_form', title: 'In Form', items: summary.buckets.in_form },
-    { key: 'out_of_form', title: 'Off Track', items: summary.buckets.out_of_form },
+    { key: 'out_of_form', title: 'Out of Form', items: summary.buckets.out_of_form },
     { key: 'unsure', title: 'Neutral', items: summary.buckets.unsure },
   ];
 
@@ -98,7 +98,7 @@ export default function AnalysisStep({
           accent="positive"
         />
         <Stat
-          label="Off Track"
+          label="Out of Form"
           value={String(summary.buckets.out_of_form.length)}
           accent="negative"
         />

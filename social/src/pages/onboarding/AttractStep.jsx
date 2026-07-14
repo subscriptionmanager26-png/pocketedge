@@ -37,7 +37,7 @@ export default function AttractStep({ onContinue }) {
           />
           <SignalRow
             form="out_of_form"
-            label="Off Track"
+            label="Out of Form"
             hint="Bearish - below both DMAs with a falling 200 DMA"
           />
           <SignalRow

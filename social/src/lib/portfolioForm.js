@@ -49,8 +49,8 @@ export const FORM_META = {
   },
   out_of_form: {
     id: 'out_of_form',
-    label: 'Off Track',
-    shortLabel: 'Off Track',
+    label: 'Out of Form',
+    shortLabel: 'Out of Form',
     description: 'Price is below both the 50-day and 200-day averages - trend looks weak.',
   },
   unsure: {

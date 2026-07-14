@@ -211,21 +211,19 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
           >
             <div className="min-w-0">
               <p className="text-[12px] tabular-nums text-pe-text-muted">
-                Total{' '}
+                Total Invested{' '}
                 {invested != null && Number.isFinite(invested) && invested > 0
                   ? formatInr(invested, { compact: true })
                   : '-'}
                 {' · '}
-                {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'} QTY
+                QTY{' '}
+                {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'}
               </p>
               <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
                 {holdingDisplayLabel(h)}
               </p>
               <p className="mt-1 text-[12px] tabular-nums text-pe-text-muted">
                 {weightPct != null ? `${weightPct.toFixed(1)}% of Portfolio` : '-'}
-                {' · '}
-                Avg{' '}
-                {Number.isFinite(avg) && avg > 0 ? formatInr(avg, { compact: true }) : '-'}
               </p>
             </div>
             <div className="min-w-0 self-start text-right">

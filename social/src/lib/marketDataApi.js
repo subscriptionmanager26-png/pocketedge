@@ -475,6 +475,64 @@ export async function getSocialMarketPriceHistory(assetType, assetKey, limit = 1
   return Array.isArray(data) ? data : [];
 }
 
+/**
+ * When live change_pct / previous_close are missing, derive them from the
+ * two most recent history closes (newest first from get_social_market_price_history).
+ */
+export async function deriveDayChangeFromHistory(assetType, assetKey, currentPrice = null) {
+  const rows = await getSocialMarketPriceHistory(assetType, assetKey, 5);
+  if (!Array.isArray(rows) || rows.length < 2) return null;
+
+  const latest = rows[0];
+  const prior = rows[1];
+  const price =
+    currentPrice != null && Number.isFinite(Number(currentPrice))
+      ? Number(currentPrice)
+      : latest?.close_price != null
+        ? Number(latest.close_price)
+        : null;
+  const previousClose =
+    prior?.close_price != null ? Number(prior.close_price) : null;
+  if (!Number.isFinite(price) || !Number.isFinite(previousClose) || previousClose === 0) {
+    return null;
+  }
+
+  const change = price - previousClose;
+  return {
+    previousClose,
+    change,
+    changePct: (change / previousClose) * 100,
+  };
+}
+
+export async function withDerivedDayChange(item, assetType = 'fund') {
+  if (!item) return item;
+  const hasPct = item.changePct != null && Number.isFinite(Number(item.changePct));
+  const hasPrev =
+    item.previousClose != null && Number.isFinite(Number(item.previousClose));
+  if (hasPct && hasPrev) return item;
+
+  const key = item.schemeCode ?? item.id ?? item.symbol ?? item.asset_key;
+  if (!key) return item;
+
+  try {
+    const derived = await deriveDayChangeFromHistory(
+      assetType,
+      key,
+      item.nav ?? item.price ?? null
+    );
+    if (!derived) return item;
+    return {
+      ...item,
+      previousClose: item.previousClose ?? derived.previousClose,
+      change: item.change ?? derived.change,
+      changePct: item.changePct ?? derived.changePct,
+    };
+  } catch {
+    return item;
+  }
+}
+
 // Legacy alias used by detail pages during migration.
 export async function fetchMarketTab(tab) {
   return fetchMarketPreview(tab);

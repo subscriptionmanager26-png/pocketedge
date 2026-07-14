@@ -133,10 +133,12 @@ export default function PortfolioPage({
     const metrics = computePortfolioDisplayMetrics(activeList);
     const holdings = metrics.holdings ?? [];
     const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
-    return holdings.map((h) => ({
-      ...h,
-      weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
-    }));
+    return holdings
+      .map((h) => ({
+        ...h,
+        weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
+      }))
+      .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
   }, [activeList]);
 
   const formItems = useMemo(
@@ -318,11 +320,6 @@ export default function PortfolioPage({
     });
   }, [activeList]);
 
-  const chartDistribution = useMemo(
-    () => compressDistribution(metrics?.distribution ?? []),
-    [metrics]
-  );
-
   if (useBackend() && portfoliosLoading) {
     return (
       <div>
@@ -454,45 +451,6 @@ export default function PortfolioPage({
           </p>
         ) : null}
 
-        <div className="mt-5">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-            Distribution
-          </p>
-          <div className="flex h-2 overflow-hidden rounded-full bg-pe-surface">
-            {chartDistribution.map((d, i) => (
-              <div
-                key={d.ticker}
-                title={`${d.label} ${d.weight.toFixed(1)}%`}
-                className="h-full"
-                style={{
-                  width: `${d.weight}%`,
-                  backgroundColor: d.isOthers
-                    ? OTHERS_COLOR
-                    : DIST_COLORS[i % DIST_COLORS.length],
-                }}
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-            {chartDistribution.map((d, i) => (
-              <span
-                key={d.ticker}
-                className="inline-flex items-center gap-1.5 text-xs text-pe-text-secondary"
-              >
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{
-                    backgroundColor: d.isOthers
-                      ? OTHERS_COLOR
-                      : DIST_COLORS[i % DIST_COLORS.length],
-                  }}
-                />
-                {d.label} {d.weight.toFixed(0)}%
-              </span>
-            ))}
-          </div>
-        </div>
-
         {/* Return period picker hidden for now - default 1D only.
         <div className="mt-5 flex gap-1 rounded-lg bg-pe-surface p-1">
           {['1D', '1W', '1M', '1Y'].map((per) => (
@@ -572,7 +530,7 @@ export default function PortfolioPage({
   );
 }
 
-const FORM_METRIC_ORDER = ['in_form', 'unsure', 'out_of_form'];
+const FORM_METRIC_ORDER = ['out_of_form', 'unsure', 'in_form'];
 const CONTENT_TABS = [
   { id: 'summary', label: 'Summary' },
   { id: 'performance', label: 'Performance' },
@@ -580,10 +538,6 @@ const CONTENT_TABS = [
   { id: 'corporate_actions', label: 'Corporate Actions' },
   { id: 'posts', label: 'Posts' },
 ];
-
-const DIST_COLORS = ['#ff6719', '#1a8917', '#4a6fe3', '#c47b0a', '#6b6b6b', '#d93025'];
-const DIST_TOP_N = 5;
-const OTHERS_COLOR = '#c7c7c7';
 
 function formatDeltaAmount(n) {
   if (n == null || Number.isNaN(n)) return '-';
@@ -618,40 +572,6 @@ function PortfolioDeltaLine({ amount, pct, suffix, align = 'left' }) {
       </span>
     </p>
   );
-}
-
-function compressDistribution(distribution, topN = DIST_TOP_N) {
-  const sorted = [...(distribution ?? [])].sort((a, b) => b.weight - a.weight);
-  const toLabel = (d) =>
-    d.label ||
-    holdingDisplayLabel({
-      ticker: d.ticker,
-      assetName: d.assetName ?? d.name,
-      assetType: d.assetType,
-    });
-
-  if (sorted.length <= topN) {
-    return sorted.map((d) => ({ ...d, label: toLabel(d), isOthers: false }));
-  }
-
-  const top = sorted.slice(0, topN).map((d) => ({
-    ...d,
-    label: toLabel(d),
-    isOthers: false,
-  }));
-  const rest = sorted.slice(topN);
-  const othersWeight = rest.reduce((sum, d) => sum + d.weight, 0);
-
-  return [
-    ...top,
-    {
-      ticker: '__others__',
-      label: `Others (${rest.length})`,
-      weight: othersWeight,
-      isOthers: true,
-      restCount: rest.length,
-    },
-  ];
 }
 
 function PortfolioComingSoonCard({ title, description, showIcon = false }) {
