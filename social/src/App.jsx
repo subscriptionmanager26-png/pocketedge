@@ -460,7 +460,27 @@ export default function App() {
       );
       try {
         const updated = await addPostComment(postId, trimmed);
-        setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p.id !== postId) return p;
+            // addPostComment may return a full post, or a partial merge on reload failure.
+            if (updated?.authorId || updated?.body != null || updated?.type) {
+              return updated;
+            }
+            const comments = updated?.comments?.length
+              ? updated.comments
+              : [...(p.comments ?? []).filter((c) => c.id !== optimistic.id), ...(updated?.comments ?? [])];
+            return {
+              ...p,
+              comments,
+              commentCount: Math.max(
+                comments.length,
+                Number(updated?.commentCount) || 0,
+                Number(p.commentCount) || 0
+              ),
+            };
+          })
+        );
       } catch (err) {
         console.error('addPostComment failed', err);
         setPosts((prev) =>

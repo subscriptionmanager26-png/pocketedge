@@ -66,7 +66,22 @@ export default function PostDetailPage({
     return undefined;
   }, [postId, cached, fetchPost]);
 
-  const post = detailPost ?? cached;
+  const post = useMemo(() => {
+    const base = detailPost ?? cached;
+    if (!base) return null;
+    // Prefer the richer comments list from either source (App cache updates on comment).
+    const detailComments = detailPost?.comments ?? [];
+    const cachedComments = cached?.comments ?? [];
+    const comments =
+      cachedComments.length > detailComments.length ? cachedComments : detailComments;
+    const commentCount = Math.max(
+      comments.length,
+      Number(base.commentCount) || 0,
+      Number(cached?.commentCount) || 0,
+      Number(detailPost?.commentCount) || 0
+    );
+    return { ...base, comments, commentCount };
+  }, [detailPost, cached]);
   const enrichmentPosts = useMemo(() => (post ? [post] : []), [post]);
   const enrichmentTick = usePostEnrichment(enrichmentPosts);
 

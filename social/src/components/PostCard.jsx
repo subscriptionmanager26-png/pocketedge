@@ -49,7 +49,10 @@ export default function PostCard({
   const [liked, setLiked] = useState(post.liked ?? false);
   const [likes, setLikes] = useState(post.likes ?? 0);
   const [activeTicker, setActiveTicker] = useState(null);
-  const commentCount = post.comments?.length ?? post.commentCount ?? 0;
+  const commentCount = Math.max(
+    Array.isArray(post.comments) ? post.comments.length : 0,
+    Number(post.commentCount) || 0
+  );
 
   useEffect(() => {
     setLiked(post.liked ?? false);
@@ -234,7 +237,7 @@ export default function PostCard({
           <p className="py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
             Comments · {commentCount}
           </p>
-          {commentCount === 0 ? (
+          {!(post.comments?.length) ? (
             <p className="pb-4 text-sm text-pe-text-secondary">No comments yet.</p>
           ) : (
             post.comments.map((c) => (

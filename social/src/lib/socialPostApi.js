@@ -165,13 +165,25 @@ export async function addPostComment(postId, body, parentId = null) {
     };
   }
 
-  const { error } = await supabase.rpc('add_post_comment', {
+  const { data, error } = await supabase.rpc('add_post_comment', {
     p_post_id: postId,
     p_body: trimmed,
     p_parent_id: parentId,
   });
   if (error) throw error;
-  return fetchPost(postId);
+
+  // Prefer a full reload so comment_count and authors stay in sync.
+  try {
+    return await fetchPost(postId);
+  } catch (fetchErr) {
+    // Comment is already persisted — merge it into a minimal post shape if reload fails.
+    console.error('fetchPost after add_post_comment failed', fetchErr);
+    return {
+      id: postId,
+      comments: [mapComment(data)],
+      commentCount: 1,
+    };
+  }
 }
 
 export function buildOptimisticPostComment(body, parentId = null) {

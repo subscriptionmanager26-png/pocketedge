@@ -149,7 +149,7 @@ begin
   from public.social_post_comments c
   where c.post_id = p_post_id;
 
-  return payload || json_build_object('comments', comments);
+  return (payload::jsonb || jsonb_build_object('comments', coalesce(comments, '[]'::json)::jsonb))::json;
 end;
 $$;
 
