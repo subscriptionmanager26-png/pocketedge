@@ -1,9 +1,12 @@
 /**
- * Zerodha Kite holdings screenshot parsing for onboarding.
+ * Broker holdings screenshot parsing for onboarding.
+ * Uses Zerodha Kite (mobile + desktop) and Groww OCR from mcp-playground.
  */
 
+const ACCEPTED_SOURCES = new Set(['kite', 'groww-stocks', 'groww-mf']);
+
 /**
- * Parse one or more Zerodha holdings screenshots and merge into edit rows
+ * Parse one or more broker holdings screenshots and merge into edit rows
  * shaped like the in-app portfolio table: ticker, invested, qty.
  */
 export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}) {
@@ -47,9 +50,9 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
         onProgress: (pct) => report(pct),
       });
       const normalized = toPlaygroundHoldings(raw);
-      if (normalized?.source && normalized.source !== 'kite') {
+      if (normalized?.source && !ACCEPTED_SOURCES.has(normalized.source)) {
         lastError = new Error(
-          `“${file.name || 'screenshot'}” does not look like a Zerodha Kite holdings screen.`
+          `“${file.name || 'screenshot'}” does not look like a Zerodha or Groww holdings screen.`
         );
         report(100);
         continue;
@@ -57,7 +60,7 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
       const rows = playgroundHoldingsToExtracted(normalized);
       if (!rows.length) {
         lastError = new Error(
-          `No holdings found in “${file.name || 'screenshot'}”. Use a clear Zerodha Kite holdings screen.`
+          `No holdings found in “${file.name || 'screenshot'}”. Use a clear Zerodha Kite or Groww holdings screen.`
         );
         report(100);
         continue;
@@ -84,7 +87,10 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
   }
 
   if (!extracted.length) {
-    throw lastError ?? new Error('No holdings found. Use clear Zerodha Kite holdings screenshots.');
+    throw (
+      lastError ??
+      new Error('No holdings found. Use clear Zerodha Kite or Groww holdings screenshots.')
+    );
   }
 
   return mergeHoldingsToEditRows(extracted);
@@ -92,6 +98,7 @@ export async function parseZerodhaHoldingsScreenshots(files, { onProgress } = {}
 
 function playgroundHoldingsToExtracted(parsed) {
   const rows = [];
+  const isGrowwMf = parsed?.source === 'groww-mf';
 
   for (const h of parsed?.holdings ?? []) {
     const name = String(h.name ?? h.raw?.tradingsymbol ?? '').trim();
@@ -99,12 +106,17 @@ function playgroundHoldingsToExtracted(parsed) {
 
     const ticker = name.toUpperCase();
 
-    const qty = Number(h.units);
+    let qty = Number(h.units);
     let invested = Number(h.invested);
     const avg = Number(h.raw?.average_price);
 
     if ((!Number.isFinite(invested) || invested <= 0) && Number.isFinite(qty) && qty > 0 && Number.isFinite(avg)) {
       invested = qty * avg;
+    }
+
+    // Groww MF screens often omit units — keep the row using invested only.
+    if ((!Number.isFinite(qty) || qty <= 0) && isGrowwMf && Number.isFinite(invested) && invested > 0) {
+      qty = 1;
     }
 
     if (!Number.isFinite(qty) || qty <= 0) continue;

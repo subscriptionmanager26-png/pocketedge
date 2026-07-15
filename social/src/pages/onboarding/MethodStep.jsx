@@ -9,7 +9,7 @@ export default function MethodStep({ onManual, onScreenshot, onBack }) {
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
         Choose screenshot or manual - both run the same form check. Screenshot works for
-        Zerodha Kite; manual works for any broker.
+        Zerodha Kite and Groww; manual works for any broker.
       </p>
 
       <div className="mt-8 border-t border-pe-border pt-8">
@@ -17,9 +17,9 @@ export default function MethodStep({ onManual, onScreenshot, onBack }) {
         <div className="mt-3 divide-y divide-pe-border rounded-lg border border-pe-border">
           <MethodRow
             icon={<Camera className="h-5 w-5 text-pe-accent" />}
-            title="Zerodha screenshot"
-            description="Upload Zerodha Kite holdings screenshots. We parse them locally into an editable summary."
-            badge="Zerodha"
+            title="Broker screenshot"
+            description="Upload Zerodha Kite or Groww holdings screenshots. We parse them locally into an editable summary."
+            badge="Zerodha · Groww"
             onClick={onScreenshot}
           />
           <MethodRow

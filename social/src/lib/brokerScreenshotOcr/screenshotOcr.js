@@ -1,10 +1,21 @@
 /**
  * Portfolio screenshot OCR (browser).
- * Supports Zerodha Kite holdings screens.
+ * Supports Zerodha Kite + Groww (Stocks / Mutual Funds).
  * Uses Tesseract.js + fixed-layout template parsing.
  */
 
 import { createWorker } from 'tesseract.js';
+import {
+  detectGrowwKind,
+  parseGrowwHoldings,
+  growwToPlaygroundHoldings,
+  applyMinChannel,
+} from './growwOcr.js';
+import {
+  isKiteDesktopLayout,
+  isKiteDesktopLayoutFromText,
+  parseKiteDesktopHoldings,
+} from './kiteDesktopOcr.js';
 
 const LABELS = new Set([
   'qty',
@@ -75,10 +86,11 @@ let activeOcrProgress = null;
 
 async function ensureWorker() {
   if (tesseractWorker) return tesseractWorker;
-  // Pin worker/core to CDN (same as mcp-playground) so Vite bundles don't break WASM paths.
+  // Pin worker/core to CDN so Vite bundles don't break WASM paths.
   tesseractWorker = await createWorker('eng', 1, {
     workerPath: `${TESSERACT_CDN}/tesseract.js@5.1.1/dist/worker.min.js`,
     corePath: `${TESSERACT_CDN}/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js`,
+    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     logger: (m) => {
       if (activeOcrProgress && m.status === 'recognizing text') {
         activeOcrProgress(Math.round((m.progress || 0) * 100));
@@ -91,27 +103,23 @@ async function ensureWorker() {
 async function ocrTokens(imageSource, onProgress) {
   const worker = await ensureWorker();
   activeOcrProgress = typeof onProgress === 'function' ? onProgress : null;
-  try {
-    const { data } = await worker.recognize(imageSource);
-    const tokens = [];
-    for (const word of data.words || []) {
-      const text = (word.text || '').trim();
-      const conf = Math.round(word.confidence || 0);
-      if (!text || conf < 25) continue;
-      const b = word.bbox;
-      tokens.push({
-        text,
-        left: b.x0,
-        top: b.y0,
-        width: b.x1 - b.x0,
-        height: b.y1 - b.y0,
-        conf,
-      });
-    }
-    return tokens;
-  } finally {
-    activeOcrProgress = null;
+  const { data } = await worker.recognize(imageSource);
+  const tokens = [];
+  for (const word of data.words || []) {
+    const text = (word.text || '').trim();
+    const conf = Math.round(word.confidence || 0);
+    if (!text || conf < 25) continue;
+    const b = word.bbox;
+    tokens.push({
+      text,
+      left: b.x0,
+      top: b.y0,
+      width: b.x1 - b.x0,
+      height: b.y1 - b.y0,
+      conf,
+    });
   }
+  return { tokens, text: data.text || '' };
 }
 
 function fullText(tokens) {
@@ -181,7 +189,9 @@ function loadImageToCanvas(fileOrUrl) {
       const sctx = src.getContext('2d');
       sctx.drawImage(img, 0, 0);
 
-      // Upscale + contrast for WhatsApp-compressed screenshots
+      // Upscale small / WhatsApp-compressed images. Skip heavy contrast on
+      // desktop-width screenshots — it destroys table headers and decimals.
+      const isDesktopWidth = src.width >= 1200;
       const scale = src.width < 1000 ? 2 : 1;
       const canvas = document.createElement('canvas');
       canvas.width = src.width * scale;
@@ -189,15 +199,18 @@ function loadImageToCanvas(fileOrUrl) {
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = imgData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        for (let c = 0; c < 3; c++) {
-          let v = (d[i + c] - 128) * 1.4 + 128;
-          d[i + c] = Math.max(0, Math.min(255, v));
+
+      if (!isDesktopWidth) {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          for (let c = 0; c < 3; c++) {
+            let v = (d[i + c] - 128) * 1.4 + 128;
+            d[i + c] = Math.max(0, Math.min(255, v));
+          }
         }
+        ctx.putImageData(imgData, 0, 0);
       }
-      ctx.putImageData(imgData, 0, 0);
       resolve(canvas);
     };
     img.onerror = () => reject(new Error('Could not load image'));
@@ -505,6 +518,10 @@ function extractDaysPnl(tokens, imgH) {
  * Incomplete rows keep nulls for missing fields — no invented market values.
  */
 export function toPlaygroundHoldings(parseResult) {
+  if (parseResult.screen_type === 'groww-stocks' || parseResult.screen_type === 'groww-mf') {
+    return growwToPlaygroundHoldings(parseResult);
+  }
+
   const holdings = [];
   for (const h of parseResult.holdings || []) {
     if (!h.symbol?.present) continue;
@@ -520,8 +537,12 @@ export function toPlaygroundHoldings(parseResult) {
     const avg = h.avg_price?.present ? h.avg_price.value : null;
     const ltp = h.ltp?.present ? h.ltp.value : null;
     const invested = h.invested?.present ? h.invested.value : null;
-    // Market value = Qty × LTP only when both are present. Never fall back to Avg × Qty.
-    const value = units != null && ltp != null ? units * ltp : null;
+    // Prefer on-screen Cur. val when present (desktop); else Qty × LTP.
+    const value = h.cur_val?.present
+      ? h.cur_val.value
+      : units != null && ltp != null
+        ? units * ltp
+        : null;
     const pnl = h.pnl_amount?.present ? h.pnl_amount.value : null;
     const pnlPct = h.pnl_percent?.present
       ? h.pnl_percent.value
@@ -555,6 +576,8 @@ export function toPlaygroundHoldings(parseResult) {
         last_price: ltp,
         pnl,
         invested,
+        available_qty: h.available_qty ?? null,
+        pending_qty: h.pending_qty ?? null,
         row_status: complete ? 'complete' : h.row_status || 'partial',
         tags: h.tags,
         issues: [...(h.issues || []), ...missingFields.map((f) => `missing:${f}`)],
@@ -625,7 +648,35 @@ function findListRegion(tokens, h) {
 
 export async function parseScreenshot(file, { onProgress } = {}) {
   const canvas = await loadImageToCanvas(file);
-  const tokens = await ocrTokens(canvas, onProgress);
+  const { tokens, text: ocrText } = await ocrTokens(canvas, onProgress);
+
+  let growwKind = detectGrowwKind(tokens);
+  if (growwKind) {
+    // Groww uses green/red amounts — re-OCR on min-channel so colored ₹ text is readable
+    const growwCanvas = applyMinChannel(canvas);
+    const growwOcr = await ocrTokens(growwCanvas, onProgress);
+    growwKind = detectGrowwKind(growwOcr.tokens) || growwKind;
+    const worker = await ensureWorker();
+    return parseGrowwHoldings(growwOcr.tokens, growwCanvas, growwKind, worker);
+  }
+
+  // Zerodha Kite desktop web table (Instrument / Qty. / Avg. cost / …)
+  // Prefer desktop whenever OCR text already contains table-style rows, even if
+  // header words were mangled (common after image preprocessing).
+  if (isKiteDesktopLayout(tokens) || isKiteDesktopLayoutFromText(ocrText, tokens)) {
+    return parseKiteDesktopHoldings(tokens, canvas, ocrText);
+  }
+
+  // Last-chance: if we can extract ≥2 desktop rows from OCR text, use them.
+  // Avoids falling into the mobile card parser which drops almost everything.
+  const desktopProbe = parseKiteDesktopHoldings(tokens, canvas, ocrText);
+  if ((desktopProbe.holdings || []).length >= 2) {
+    desktopProbe.quality_issues = [
+      ...(desktopProbe.quality_issues || []),
+      'desktop_detected_via_row_probe',
+    ];
+    return desktopProbe;
+  }
 
   const { screenType, issues } = classifyScreen(tokens, canvas);
   const obscured = issues.includes('volume_slider_obscuring_right_column');
