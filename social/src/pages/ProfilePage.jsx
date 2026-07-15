@@ -9,7 +9,6 @@ import { isDevMockMode } from '../lib/appMode';
 import {
   CURRENT_USER,
   POSTS,
-  getPortfolioReturn,
   getPortfolioTotalReturnPct,
 } from '../data/mockData';
 import {
