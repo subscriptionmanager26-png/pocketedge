@@ -10,6 +10,7 @@ import {
   CURRENT_USER,
   POSTS,
   getPortfolioReturn,
+  getPortfolioTotalReturnPct,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -746,7 +747,7 @@ function PortfoliosListPanel({
             <PortfolioCard
               key={portfolio.id}
               portfolio={portfolio}
-              returnPct={getPortfolioReturn(portfolio, '1D')}
+              returnPct={getPortfolioTotalReturnPct(portfolio)}
               social={getPortfolioEngagementSync(portfolio.id)}
               canCopy={!canEdit}
               showUnreadComments={canEdit}
@@ -1681,7 +1682,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [assetsByKey, setAssetsByKey] = useState({});
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [formByTicker, setFormByTicker] = useState({});
-  const overallReturn = getPortfolioReturn(portfolio, returnPeriod);
+  const overallReturn = getPortfolioTotalReturnPct(portfolio);
 
   const holdingFormItems = useMemo(() => {
     const items = [];
@@ -1843,13 +1844,15 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   return (
     <div className="divide-y divide-pe-border px-4">
       <div className="flex items-center justify-between gap-4 py-3.5">
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold text-pe-text">Overall</p>
-          <p className="text-sm text-pe-text-muted">Return</p>
+        <p className="text-[15px] font-semibold text-pe-text">Overall</p>
+        <div className="shrink-0 text-right">
+          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+            Total return
+          </p>
+          <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(overallReturn)}`}>
+            {formatPct(overallReturn)}
+          </p>
         </div>
-        <p className={`shrink-0 w-16 text-right text-[15px] font-bold ${pnlClass(overallReturn)}`}>
-          {formatPct(overallReturn)}
-        </p>
       </div>
       {pageRows.map((row) => (
         <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5">

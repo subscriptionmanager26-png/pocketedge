@@ -130,9 +130,14 @@ export default function PortfolioCard({
               <p className="mt-1 text-sm text-pe-text-secondary">{portfolio.objective}</p>
             ) : null}
           </div>
-          <p className={`shrink-0 text-lg font-bold ${pnlClass(returnPct)}`}>
-            {formatPct(returnPct)}
-          </p>
+          <div className="shrink-0 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+              Total return
+            </p>
+            <p className={`mt-0.5 text-lg font-bold tabular-nums ${pnlClass(returnPct)}`}>
+              {formatPct(returnPct)}
+            </p>
+          </div>
         </div>
       </button>
 

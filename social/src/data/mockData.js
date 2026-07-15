@@ -1173,6 +1173,39 @@ export function getPortfolioReturn(portfolio, period = '1M') {
   return returns[period] ?? returns['1M'] ?? 0;
 }
 
+/** Lifetime total return % = (current value − invested) / invested. */
+export function getPortfolioTotalReturnPct(portfolio) {
+  const holdings = portfolio?.holdings ?? [];
+  if (holdings.length) {
+    let totalValue = 0;
+    let invested = 0;
+    for (const h of holdings) {
+      const qty = Number(h.qty) || 0;
+      const avg = Number(h.avg) || 0;
+      const storedInvested = Number(h.invested);
+      const cost =
+        Number.isFinite(storedInvested) && storedInvested > 0
+          ? storedInvested
+          : qty * avg;
+      const storedValue = Number(h.value);
+      const price = Number(h.price);
+      const value =
+        Number.isFinite(storedValue) && storedValue > 0
+          ? storedValue
+          : qty * (Number.isFinite(price) && price > 0 ? price : avg);
+      totalValue += value;
+      invested += cost;
+    }
+    if (invested > 0) return ((totalValue - invested) / invested) * 100;
+  }
+
+  const metrics = computePortfolioDisplayMetrics(portfolio);
+  if (metrics.invested > 0 && Number.isFinite(metrics.totalPnlPct)) {
+    return metrics.totalPnlPct;
+  }
+  return Number(portfolio?.totalPnlPct) || 0;
+}
+
 export function enrichUserPortfolio(portfolio) {
   const returns = estimateReturns(portfolio);
   return {
