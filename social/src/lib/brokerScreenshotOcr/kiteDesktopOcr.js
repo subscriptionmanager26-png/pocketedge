@@ -438,123 +438,235 @@ function finalizeRow(row) {
 }
 
 /**
- * Desktop OCR often returns one row per line:
- * ANANTRAJ 150 478.81 575.55 71,821.50 86,332.50 14,511.00 +20.20% +0.33%
- * Also tolerate mangled OCR: +2020%, missing dots, EVENT tags, etc.
+ * Desktop OCR returns equity tickers OR multi-word mutual fund names.
+ * Fund names often wrap across lines, e.g.:
+ *   Bandhan Small Cap
+ *   Fund 199.858 50.03 55.557 ...
+ *   ICICI Prudential
+ *   219.335 45.59 ...
+ *   Commodities Fund
  */
 export function parseKiteDesktopTextLines(ocrText) {
   const holdings = [];
   const seen = new Set();
-  const lines = String(ocrText || '').split(/\r?\n/);
+  const rawLines = String(ocrText || '')
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
 
-  for (const line of lines) {
-    const cleaned = line.replace(/\s+/g, ' ').trim();
-    if (!cleaned) continue;
-    if (/^instrument\b/i.test(cleaned)) continue;
-    if (/^total\b/i.test(cleaned)) continue;
-    if (/holdings\s*\(/i.test(cleaned)) continue;
-    if (/total investment|current value|day'?s p&l|allequity|analytics|download/i.test(cleaned)) {
+  let pendingName = '';
+
+  const skipLine = (cleaned) =>
+    /^instrument\b/i.test(cleaned) ||
+    /^total\b/i.test(cleaned) ||
+    /holdings\s*\(/i.test(cleaned) ||
+    /total investment|current value|day'?s p&l|allequity|analytics|download/i.test(cleaned) ||
+    /^(un|u)$/i.test(cleaned);
+
+  for (const cleaned of rawLines) {
+    if (skipLine(cleaned)) continue;
+
+    const parts = cleaned.split(/\s+/);
+    const numIdx = findNumericRunStart(parts);
+
+    if (numIdx < 0) {
+      // Name-only fragment — buffer, or append as suffix to last holding
+      if (/^[A-Za-z]/.test(cleaned) && !/^\d/.test(cleaned)) {
+        const suffix = normalizeTrailingFundSuffix(cleaned);
+        if (holdings.length && !pendingName && looksLikeNameSuffix(suffix || cleaned)) {
+          appendNameSuffix(holdings, seen, suffix || cleaned);
+        } else {
+          pendingName = pendingName ? `${pendingName} ${cleaned}` : cleaned;
+        }
+      }
       continue;
     }
 
-    const holding = parseDesktopDataLine(cleaned);
-    if (!holding?.symbol?.present) continue;
-    const symbol = holding.symbol.value;
-    if (seen.has(symbol) || DESKTOP_LABELS.has(symbol.toLowerCase())) continue;
-    seen.add(symbol);
+    const nameFromLine = parts.slice(0, numIdx).join(' ').trim();
+    let name = `${pendingName} ${nameFromLine}`.replace(/\s+/g, ' ').trim();
+    pendingName = '';
+
+    // Strip trailing EVENT / T1 tags from the name side
+    const tags = [];
+    let pendingQty = 0;
+    const nameParts = name ? name.split(/\s+/) : [];
+    while (nameParts.length) {
+      const last = nameParts[nameParts.length - 1];
+      if (/^event$/i.test(last)) {
+        tags.push('EVENT');
+        nameParts.pop();
+        continue;
+      }
+      const settle = last.match(/^T([12]):\s*(\d+)$/i);
+      if (settle) {
+        pendingQty += Number(settle[2]);
+        tags.push(`T${settle[1]}:${settle[2]}`);
+        nameParts.pop();
+        continue;
+      }
+      break;
+    }
+    name = nameParts.join(' ').trim();
+
+    const numTokens = parts.slice(numIdx);
+    // Also allow T1/EVENT between name and numbers
+    while (numTokens.length) {
+      if (/^event$/i.test(numTokens[0])) {
+        tags.push('EVENT');
+        numTokens.shift();
+        continue;
+      }
+      const settle = numTokens[0].match(/^T([12]):\s*(\d+)$/i);
+      if (settle) {
+        pendingQty += Number(settle[2]);
+        tags.push(`T${settle[1]}:${settle[2]}`);
+        numTokens.shift();
+        continue;
+      }
+      break;
+    }
+
+    // Numbers-only rows are valid when a wrapped fund name is already pending
+    // (e.g. "ICICI Prudential" then "219.335 45.59 …" then "Commodities Fund").
+    if (!name) {
+      continue;
+    }
+
+    const holding = parseNameAndNumbers(name, numTokens, tags, pendingQty);
+    if (!holding?.symbol?.present) {
+      // Numbers without a usable name — keep name buffer if any
+      if (name) pendingName = name;
+      continue;
+    }
+
+    const key = holdingKey(holding);
+    if (seen.has(key)) continue;
+    if (DESKTOP_LABELS.has(holding.symbol.value.toLowerCase())) continue;
+    if (BLOCKED_SYMBOLS.has(holding.symbol.value.toUpperCase().replace(/\s+/g, ''))) continue;
+    seen.add(key);
     holdings.push(holding);
   }
 
   return holdings;
 }
 
-function parseDesktopDataLine(cleaned) {
-  const parts = cleaned.split(/\s+/);
-  if (parts.length < 4) return null;
+function holdingKey(h) {
+  // Dedup on qty+invested so temporary incomplete MF names don't block later rows
+  const qty = h.quantity?.value;
+  const inv = h.invested?.value;
+  if (qty != null && inv != null) return `q:${qty}|i:${inv}`;
+  return `s:${String(h.symbol.value || '').toUpperCase()}`;
+}
 
-  let idx = 0;
-  let symbolRaw = parts[idx];
-  if (!SYMBOL_RE.test(symbolRaw.toUpperCase())) return null;
-  if (DESKTOP_LABELS.has(normLabel(symbolRaw))) return null;
-  idx += 1;
+function appendNameSuffix(holdings, seen, cleaned) {
+  const last = holdings[holdings.length - 1];
+  const oldKey = holdingKey(last);
+  const next = `${last.symbol.value} ${cleaned}`.replace(/\s+/g, ' ').trim();
+  last.symbol = fv(next, next, last.symbol.confidence === 'high' ? 85 : 70);
+  if (/fund/i.test(cleaned)) last.asset_type_hint = 'MF';
+  seen.delete(oldKey);
+  seen.add(holdingKey(last));
+}
 
-  const tags = [];
-  let pendingQty = 0;
-  let availableQty = null;
+/** OCR sometimes reads a lone "Fund" as FoomA / Fundd / etc. */
+function normalizeTrailingFundSuffix(text) {
+  const t = String(text || '').trim();
+  if (/^f[o0]{1,2}[mn]\w{0,2}$/i.test(t) && t.length <= 6) return 'Fund';
+  return t;
+}
 
-  // EVENT badge and/or T1/T2 settlement badges (undelivered units).
-  // OCR forms: "T1:100", "T1: 100", "T2:50"
-  while (idx < parts.length) {
-    if (/^event$/i.test(parts[idx])) {
-      tags.push('EVENT');
-      idx += 1;
-      continue;
+function isNumToken(p) {
+  if (!p || !/[0-9]/.test(p)) return false;
+  if (/^T[12]:/i.test(p)) return false;
+  return /^[+-]?[\d,]+(?:\.\d+)?%?$/.test(p);
+}
+
+function findNumericRunStart(parts) {
+  for (let i = 0; i < parts.length; i++) {
+    let count = 0;
+    for (let j = i; j < parts.length; j++) {
+      if (isNumToken(parts[j])) count++;
+      else break;
     }
-    let settle = parts[idx].match(/^T([12]):\s*(\d+)$/i);
-    if (!settle && /^T([12]):$/i.test(parts[idx]) && parts[idx + 1] && /^\d+$/.test(parts[idx + 1])) {
-      settle = [null, parts[idx].match(/^T([12]):$/i)[1], parts[idx + 1]];
-      idx += 1; // consume the number token below via idx++
-    }
-    if (settle) {
-      const n = Number(settle[2]);
-      pendingQty += n;
-      tags.push(`T${settle[1]}:${n}`);
-      idx += 1;
-      continue;
-    }
-    break;
+    if (count >= 5) return i;
   }
+  return -1;
+}
 
-  const nums = [];
-  for (; idx < parts.length; idx++) {
-    const p = parts[idx];
-    if (!/[0-9]/.test(p)) continue;
-    // Skip settlement tokens that leaked into numeric scan
-    if (/^T[12]:/i.test(p)) continue;
-    if (!/^[+-]?[\d,]+(?:\.\d+)?%?$/.test(p) && !/^[+-]?[\d,]+\.\d+%?$/.test(p)) {
-      if (!/^[+-]?[\d,]+(?:\.\d*)?%?$/.test(p)) continue;
-    }
-    nums.push(p);
+/**
+ * Trailing wrap fragments that complete the previous row's instrument name.
+ * Must NOT match brand-led name starts like "Bandhan Small Cap".
+ */
+function looksLikeNameSuffix(text) {
+  const t = String(text || '').trim();
+  if (
+    /^(bandhan|edelweiss|hdfc|icici|kotak|nippon|sbi|axis|mirae|uti|dsp|tata|quant|motilal|franklin|invesco|ppfas|aditya|hsbc|baroda|canara|groww|parag|pgim|trust|navi)/i.test(
+      t,
+    )
+  ) {
+    return false;
   }
+  // Single-token equity tickers (not the word "Fund")
+  if (SYMBOL_RE.test(t.toUpperCase()) && !/\s/.test(t) && !/^fund$/i.test(t)) return false;
+  return /^(fund(\s+of\s+fund)?|of fund|index fund|(commodities|gilt|infrastructure|technology|arbitrage)\s+fund|(mid|small)\s+cap\s+fund|services\s+ex-?bank\s+index(\s+fund)?|technology\s+equity(\s+fund\s+of\s+fund)?)$/i.test(
+    t,
+  );
+}
 
-  // Need qty, avg, ltp, invested, cur_val at minimum — rejects watchlist lines
-  // like "SBIN 1027.80 +1.28%" and index headers.
-  if (nums.length < 5) return null;
+function isWeakInstrumentName(name) {
+  if (!name || name.length < 2) return true;
+  if (/^(fund|equity|of|the|and|index|cap|small|mid|gilt|services|technology|financial)$/i.test(name)) {
+    return true;
+  }
+  return false;
+}
+
+function parseNameAndNumbers(name, numTokens, tags = [], pendingQty = 0) {
+  if (numTokens.length < 5) return null;
+
+  const cleanedName = String(name || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (isWeakInstrumentName(cleanedName)) return null;
+
+  // Single-token ticker must look like an equity symbol; multi-word names are MF/schemes
+  const isTicker = SYMBOL_RE.test(cleanedName.toUpperCase()) && !/\s/.test(cleanedName);
+  if (!isTicker && cleanedName.length < 6) return null;
 
   const row = emptyHolding();
-  const symbol = correctOcrSymbol(symbolRaw);
-  if (BLOCKED_SYMBOLS.has(symbol)) return null;
-  row.symbol = fv(symbolRaw, symbol, 90);
-  row.tags = tags;
+  const symbol = isTicker ? correctOcrSymbol(cleanedName) : cleanedName;
+  if (BLOCKED_SYMBOLS.has(symbol.toUpperCase())) return null;
+
+  row.symbol = fv(cleanedName, symbol, 90);
+  row.tags = [...tags];
+  if (!isTicker || /fund/i.test(cleanedName)) {
+    row.asset_type_hint = 'MF';
+  }
 
   let n = 0;
-  const take = () => (n < nums.length ? nums[n++] : null);
+  const take = () => (n < numTokens.length ? numTokens[n++] : null);
 
   const qtyTok = take();
-  if (!qtyTok || qtyTok.includes('%') || !/^\d{1,6}$/.test(qtyTok.replace(/,/g, ''))) {
+  // Equity qty is usually an integer; MF qty can be decimal (199.858)
+  if (!qtyTok || qtyTok.includes('%') || !/^\d{1,8}(?:\.\d{1,4})?$/.test(qtyTok.replace(/,/g, ''))) {
     return null;
   }
-  availableQty = parseIndianNumber(qtyTok);
+  let availableQty = parseIndianNumber(qtyTok);
   row.quantity = fv(qtyTok, availableQty, 90);
 
-  // Zerodha shows Qty=0 with T1/T2 when units are bought but not yet delivered.
-  // Use settlement qty as the economic quantity in that case.
   if ((availableQty === 0 || availableQty == null) && pendingQty > 0) {
     row.quantity = fv(`T:${pendingQty}`, pendingQty, 85);
     row.issues.push('qty_from_pending_delivery');
-    if (!tags.includes('pending_delivery')) tags.push('pending_delivery');
-    row.tags = tags;
+    if (!row.tags.includes('pending_delivery')) row.tags.push('pending_delivery');
+    availableQty = 0;
   }
 
   const avgTok = take();
   row.avg_price = fv(avgTok, parseIndianNumber(avgTok), 90);
-
   const ltpTok = take();
   row.ltp = fv(ltpTok, parseIndianNumber(ltpTok), 90);
-
   const invTok = take();
   if (invTok) row.invested = fv(invTok, parseIndianNumber(invTok), 90);
-
   const curTok = take();
   if (curTok) row.cur_val = fv(curTok, parseIndianNumber(curTok), 90);
 
@@ -575,24 +687,39 @@ function parseDesktopDataLine(cleaned) {
   const dayTok = take();
   if (dayTok) row.ltp_day_change_pct = fv(dayTok, parseIndianNumber(dayTok), 90);
 
-  // Sanity checks
   if (!row.quantity.present || !row.avg_price.present || !row.ltp.present) return null;
   if (!row.invested.present) return null;
-  if (row.quantity.value <= 0 || row.quantity.value > 1_000_000) return null;
+  if (row.quantity.value <= 0 || row.quantity.value > 10_000_000) return null;
   if (row.avg_price.value <= 0) return null;
 
-  // Invested should roughly equal Qty × Avg (OCR noise allowed)
+  if (row.pnl_amount.present && row.pnl_percent.present) {
+    if (row.pnl_amount.value < 0 && row.pnl_percent.value > 0) {
+      row.pnl_percent = fv(row.pnl_percent.raw, -Math.abs(row.pnl_percent.value), 70);
+      row.issues.push('net_chg_sign_inferred_from_pnl');
+    } else if (row.pnl_amount.value > 0 && row.pnl_percent.value < 0) {
+      row.pnl_percent = fv(row.pnl_percent.raw, Math.abs(row.pnl_percent.value), 70);
+      row.issues.push('net_chg_sign_inferred_from_pnl');
+    }
+  }
+
   const expected = row.quantity.value * row.avg_price.value;
   if (expected > 0) {
     const ratio = row.invested.value / expected;
     if (ratio < 0.5 || ratio > 2.0) return null;
   }
 
-  // Keep available vs pending on the raw field for UI
   row.available_qty = availableQty;
   row.pending_qty = pendingQty || null;
-
   return finalizeRow(row);
+}
+
+/** @deprecated equity-only path kept for token fallbacks */
+function parseDesktopDataLine(cleaned) {
+  const parts = cleaned.split(/\s+/);
+  const numIdx = findNumericRunStart(parts);
+  if (numIdx < 0) return null;
+  const name = parts.slice(0, numIdx).join(' ');
+  return parseNameAndNumbers(name, parts.slice(numIdx), [], 0);
 }
 
 function tokensToRoughText(tokens) {
@@ -601,8 +728,42 @@ function tokensToRoughText(tokens) {
   return rows.map((r) => r.tokens.map((t) => t.text).join(' ')).join('\n');
 }
 
-function extractDesktopSummary(tokens) {
+function extractDesktopSummary(tokens, ocrText = '') {
   const summary = {};
+  const text = String(ocrText || '');
+
+  // Prefer Total footer line from OCR text — most reliable on desktop:
+  // Total 15,35,671.36 19,37,360.88 4,01,689.52 26.16% 6,927.38 (0.36%)
+  for (const line of text.split(/\r?\n/)) {
+    const cleaned = line.replace(/\s+/g, ' ').trim();
+    const m = cleaned.match(
+      /^Total\s+([+-]?[\d,]+\.\d+)\s+([+-]?[\d,]+\.\d+)\s+([+-]?[\d,]+\.\d+)\s+([+-]?[\d,]+\.?\d*%?)\s+([+-]?[\d,]+\.\d+)\s*\(?([+-]?[\d,]+\.?\d*%?)\)?/i,
+    );
+    if (m) {
+      summary.invested = fv(m[1], parseIndianNumber(m[1]), 90);
+      summary.current = fv(m[2], parseIndianNumber(m[2]), 90);
+      summary.pnl_amount = fv(m[3], parseIndianNumber(m[3]), 90);
+      summary.pnl_percent = fv(m[4], parseIndianNumber(m[4]), 90);
+      summary.day_pnl = fv(m[5], parseIndianNumber(m[5]), 90);
+      if (m[6]) summary.day_pnl_pct = fv(m[6], parseIndianNumber(m[6]), 90);
+      break;
+    }
+  }
+
+  // Header "Day's P&L" amount if footer didn't have it
+  if (!summary.day_pnl) {
+    const dayMatch = text.match(/Day'?s?\s*P&L[\s\S]{0,40}?([+-]?[\d,]+\.\d+)/i);
+    if (dayMatch) {
+      const v = parseIndianNumber(dayMatch[1]);
+      // Day's P&L is usually much smaller than total invested
+      if (v != null && Math.abs(v) < 5_000_000) {
+        summary.day_pnl = fv(dayMatch[1], v, 70);
+      }
+    }
+  }
+
+  if (summary.invested && summary.current) return summary;
+
   const textTokens = tokens.filter((t) => t.top < 220 || /investment|current|day|total|p&l/i.test(t.text));
 
   for (let i = 0; i < tokens.length; i++) {
@@ -623,7 +784,7 @@ function extractDesktopSummary(tokens) {
     }
   }
 
-  // Also parse "Total" footer row: large invested + cur val + pnl
+  // Also parse "Total" footer row from token clusters
   const rows = clusterRows(tokens, 10);
   for (const row of rows) {
     const joined = row.tokens.map((t) => t.text).join(' ').toLowerCase();
@@ -639,6 +800,13 @@ function extractDesktopSummary(tokens) {
       }
       if (!summary.pnl_amount && sorted[2]) {
         summary.pnl_amount = fv(sorted[2].text, parseIndianNumber(sorted[2].text), sorted[2].conf);
+      }
+      // Day's P&L is typically the next amount after total P&L on the Total row
+      if (!summary.day_pnl && sorted[3]) {
+        const v = parseIndianNumber(sorted[3].text);
+        if (v != null && Math.abs(v) < Math.abs(summary.pnl_amount?.value || Infinity)) {
+          summary.day_pnl = fv(sorted[3].text, v, sorted[3].conf);
+        }
       }
     }
   }
@@ -676,7 +844,10 @@ export function parseKiteDesktopHoldings(tokens, canvas, ocrText = '') {
   }
 
   if (fromText.length >= 2) {
-    const summary = extractDesktopSummary(workingTokens.length ? workingTokens : tokens);
+    const summary = extractDesktopSummary(
+      workingTokens.length ? workingTokens : tokens,
+      ocrText || tokensToRoughText(workingTokens.length ? workingTokens : tokens),
+    );
     return {
       source_file: 'kite-desktop',
       screen_type: 'kite_desktop_table',
@@ -684,7 +855,7 @@ export function parseKiteDesktopHoldings(tokens, canvas, ocrText = '') {
       quality_issues: hasSidebar ? ['sidebar_cropped'] : [],
       portfolio_summary: summary,
       market_overview: {},
-      days_pnl: summary.pnl_amount || { value: null, raw: null, present: false, confidence: 'missing' },
+      days_pnl: summary.day_pnl || { value: null, raw: null, present: false, confidence: 'missing' },
       holdings: fromText,
       fields_present: ['holdings_list'],
       fields_missing: [],
@@ -751,7 +922,7 @@ export function parseKiteDesktopHoldings(tokens, canvas, ocrText = '') {
     return filled >= 2;
   });
 
-  const summary = extractDesktopSummary(tokens);
+  const summary = extractDesktopSummary(tokens, ocrText || tokensToRoughText(tokens));
   const present = new Set();
   const missing = new Set();
   if (filtered.length) present.add('holdings_list');
@@ -768,7 +939,7 @@ export function parseKiteDesktopHoldings(tokens, canvas, ocrText = '') {
     quality_issues: useColumns ? [] : ['desktop_columns_partial_fallback_sequential'],
     portfolio_summary: summary,
     market_overview: {},
-    days_pnl: summary.pnl_amount || { value: null, raw: null, present: false, confidence: 'missing' },
+    days_pnl: summary.day_pnl || { value: null, raw: null, present: false, confidence: 'missing' },
     holdings: filtered,
     fields_present: [...present].sort(),
     fields_missing: [...missing].sort(),
