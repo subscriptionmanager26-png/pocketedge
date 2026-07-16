@@ -6,6 +6,9 @@ import { createBooleanSyncManager } from './optimisticDebouncedSync';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const POST_IMAGE_BUCKET = 'post-images';
+const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
+
 const postLikeSync = createBooleanSyncManager();
 
 export function isBackendPostId(postId) {
@@ -47,6 +50,73 @@ export function mapPostRow(row, { comments = [] } = {}) {
 
 export function notePostLikeSynced(postId, liked) {
   postLikeSync.noteServerSynced(postId, Boolean(liked));
+}
+
+function extensionForMime(mime) {
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/gif') return 'gif';
+  return 'jpg';
+}
+
+function dataUrlToBlob(dataUrl) {
+  const match = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error('Invalid image data.');
+  const mime = match[1];
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+/** Upload a post image (File/Blob or data URL) and return its public URL. */
+export async function uploadPostImage(image) {
+  if (!image) return null;
+  if (typeof image === 'string' && !image.startsWith('data:')) {
+    // Already a remote URL.
+    return image;
+  }
+
+  if (!usePostBackend() || !supabase) {
+    // Dev/mock: keep data URLs so the feed still shows the image locally.
+    if (typeof image === 'string') return image;
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('Could not read image.'));
+      reader.readAsDataURL(image);
+    });
+  }
+
+  const userId = getAppCurrentUserId();
+  if (!userId) throw new Error('Sign in to post images.');
+
+  let blob;
+  let mime;
+  if (typeof image === 'string') {
+    blob = dataUrlToBlob(image);
+    mime = blob.type || 'image/jpeg';
+  } else {
+    blob = image;
+    mime = image.type || 'image/jpeg';
+  }
+
+  if (blob.size > MAX_POST_IMAGE_BYTES) {
+    throw new Error('Image must be under 5 MB.');
+  }
+
+  const ext = extensionForMime(mime);
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error } = await supabase.storage.from(POST_IMAGE_BUCKET).upload(path, blob, {
+    contentType: mime,
+    upsert: false,
+    cacheControl: '31536000',
+  });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(POST_IMAGE_BUCKET).getPublicUrl(path);
+  return data?.publicUrl ?? null;
 }
 
 export async function fetchFeedPosts({ limit = 50, offset = 0 } = {}) {
@@ -99,8 +169,8 @@ export async function createPost({
   via = null,
   topics = [],
 }) {
-  const postType = portfolioShare ? 'portfolio' : trade ? 'trade' : image ? 'image' : type;
-  const imageUrl = image && !String(image).startsWith('data:') ? image : null;
+  const imageUrl = image ? await uploadPostImage(image) : null;
+  const postType = portfolioShare ? 'portfolio' : trade ? 'trade' : imageUrl ? 'image' : type;
 
   const { data, error } = await supabase.rpc('create_social_post', {
     p_body: body,
