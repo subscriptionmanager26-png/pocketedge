@@ -86,14 +86,14 @@ export default function MarketsPage({
           <MarketList empty={items.length === 0} emptyMessage="No stocks found">
             {items.map((stock) => (
               <MarketRow
-                key={stock.symbol}
+                key={stock.id ?? stock.symbol}
                 title={formatTicker(stock.symbol)}
                 subtitle={stock.name}
                 price={stock.price}
                 changePct={stock.changePct}
                 previousClose={stock.previousClose}
                 change={stock.change}
-                onClick={() => onSelectStock?.(stock.symbol)}
+                onClick={() => onSelectStock?.(stock.id ?? stock.symbol)}
               />
             ))}
           </MarketList>
@@ -120,14 +120,14 @@ export default function MarketsPage({
           <MarketList empty={items.length === 0} emptyMessage="No ETFs found">
             {items.map((etf) => (
               <MarketRow
-                key={etf.symbol}
+                key={etf.id ?? etf.symbol}
                 title={formatTicker(etf.symbol)}
                 subtitle={etf.name}
                 price={etf.ltp ?? etf.price}
                 changePct={etf.changePct}
                 previousClose={etf.previousClose}
                 change={etf.change}
-                onClick={() => onSelectStock?.(etf.symbol, { kind: 'etf' })}
+                onClick={() => onSelectStock?.(etf.id ?? etf.symbol, { kind: 'etf' })}
               />
             ))}
           </MarketList>

@@ -187,3 +187,61 @@ begin
   return coalesce(result, json_build_object('items', '[]'::json, 'total', 0));
 end;
 $$;
+
+create or replace function public.list_social_market_preview(
+  p_asset_type text,
+  p_limit integer default 40
+)
+returns json
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  lim integer := greatest(1, least(coalesce(p_limit, 40), 100));
+  result json;
+begin
+  if p_asset_type is null or p_asset_type not in ('stock', 'etf', 'fund', 'commodity') then
+    raise exception 'Invalid asset type';
+  end if;
+
+  if p_asset_type = 'fund' then
+    select json_build_object(
+      'synced_at', (select max(synced_at) from public.social_market_assets where asset_type = 'fund'),
+      'items', coalesce(json_agg(row_to_json(t)), '[]'::json)
+    )
+    into result
+    from (
+      select a.asset_type, a.asset_key, a.name, a.price, a.change_pct,
+        a.previous_close, a.as_of_date, a.price_source, a.synced_at,
+        a.exchange, a.exchange_symbol, a.isin
+      from public.social_market_assets a
+      where a.asset_type = 'fund'
+        and a.price is not null
+        and a.name ~* 'direct'
+        and a.name ~* 'growth'
+      order by a.name asc
+      limit lim
+    ) t;
+  else
+    select json_build_object(
+      'synced_at', (select max(synced_at) from public.social_market_assets where asset_type = p_asset_type),
+      'items', coalesce(json_agg(row_to_json(t)), '[]'::json)
+    )
+    into result
+    from (
+      select a.asset_type, a.asset_key, a.name, a.price, a.change_pct,
+        a.previous_close, a.as_of_date, a.price_source, a.synced_at,
+        a.exchange, a.exchange_symbol, a.isin
+      from public.social_market_assets a
+      where a.asset_type = p_asset_type
+        and a.price is not null
+      order by abs(coalesce(a.change_pct, 0)) desc, a.asset_key asc
+      limit lim
+    ) t;
+  end if;
+
+  return coalesce(result, json_build_object('synced_at', null, 'items', '[]'::json));
+end;
+$$;
