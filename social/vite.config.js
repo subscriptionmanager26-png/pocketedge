@@ -113,6 +113,7 @@ export default defineConfig(({ mode }) => {
               return 'react-vendor';
             }
             if (id.includes('tesseract')) return 'ocr';
+            if (id.includes('/xlsx/')) return 'spreadsheet';
             if (id.includes('lucide-react')) return 'icons';
             return 'vendor';
           },

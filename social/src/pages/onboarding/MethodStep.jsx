@@ -1,25 +1,32 @@
-import { Camera, Keyboard } from 'lucide-react';
+import { Camera, FileSpreadsheet, Keyboard } from 'lucide-react';
 import OnboardingShell, { sectionLabelClass } from './OnboardingShell';
 
-export default function MethodStep({ onManual, onScreenshot, onBack }) {
+export default function MethodStep({ onManual, onScreenshot, onExcel, onBack }) {
   return (
     <OnboardingShell onBack={onBack} badge="Setup">
       <p className="text-2xl font-bold text-pe-text md:text-3xl">
         How do you want to add holdings?
       </p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Choose screenshot or manual - both run the same form check. Screenshot works for
-        Zerodha Kite and Groww; manual works for any broker.
+        Choose a Zerodha file, a screenshot, or manual entry. Every option ends with the same
+        editable form check.
       </p>
 
       <div className="mt-8 border-t border-pe-border pt-8">
         <p className={sectionLabelClass}>Choose a path</p>
         <div className="mt-3 divide-y divide-pe-border rounded-lg border border-pe-border">
           <MethodRow
+            icon={<FileSpreadsheet className="h-5 w-5 text-pe-accent" />}
+            title="Upload Excel file"
+            description="Upload a Zerodha holdings statement. We read Equity and Mutual Fund positions locally."
+            badge="Zerodha only"
+            onClick={onExcel}
+          />
+          <MethodRow
             icon={<Camera className="h-5 w-5 text-pe-accent" />}
-            title="Broker screenshot"
-            description="Upload Zerodha Kite or Groww holdings screenshots. We parse them locally into an editable summary."
-            badge="Zerodha · Groww"
+            title="Upload screenshot"
+            description="Upload Zerodha Kite holdings screenshots. We parse them locally into an editable summary."
+            badge="Zerodha only"
             onClick={onScreenshot}
           />
           <MethodRow

@@ -117,7 +117,7 @@ function rowHasInput(row, isWatchlist) {
   return Boolean(row.ticker?.trim() || row.invested !== '' && row.invested != null || row.qty !== '' && row.qty != null);
 }
 
-export function validatePortfolioDraft({ kind, name, objective, thesis, rows }) {
+export function validatePortfolioDraft({ kind, name, rows }) {
   const isWatchlist = isWatchlistKind(kind);
   const errors = {
     name: false,
@@ -127,8 +127,6 @@ export function validatePortfolioDraft({ kind, name, objective, thesis, rows }) 
   };
 
   if (!name.trim()) errors.name = true;
-  if (!objective.trim()) errors.objective = true;
-  if (!thesis.trim()) errors.thesis = true;
 
   const completeRows = [];
 
@@ -190,15 +188,13 @@ export function validatePortfolioDraft({ kind, name, objective, thesis, rows }) 
 
   const valid =
     !errors.name &&
-    !errors.objective &&
-    !errors.thesis &&
     completeRows.length >= 1 &&
     Object.keys(errors.rows).length === 0;
 
   return { valid, errors, completeRows };
 }
 
-export function portfolioHasDraftWork({ name, objective, thesis, rows, isWatchlist }) {
-  if (name.trim() || objective.trim() || thesis.trim()) return true;
+export function portfolioHasDraftWork({ name, rows, isWatchlist }) {
+  if (name.trim()) return true;
   return rows.some((row) => rowHasInput(row, isWatchlist));
 }

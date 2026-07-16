@@ -8,6 +8,7 @@ import {
 } from '../../lib/socialPortfolioApi';
 import { analyzeHoldings, summarizeAnalysis } from './onboardingAnalysis';
 import AttractStep from './AttractStep';
+import ExcelStep from './ExcelStep';
 import MethodStep from './MethodStep';
 import ManualStep from './ManualStep';
 import ScreenshotStep from './ScreenshotStep';
@@ -17,6 +18,7 @@ const STEPS = {
   attract: 'attract',
   method: 'method',
   manual: 'manual',
+  excel: 'excel',
   screenshot: 'screenshot',
   analyzing: 'analyzing',
   analysis: 'analysis',
@@ -57,6 +59,12 @@ export default function OnboardingFlow({ userId, onComplete }) {
       }));
 
       const assetsByKey = await resolvePortfolioAssets(holdings.map((h) => h.ticker));
+      const unresolved = holdings.filter((holding) => !assetsByKey.has(holding.ticker));
+      if (unresolved.length) {
+        throw new Error(
+          `Could not match ${unresolved.length} holding${unresolved.length === 1 ? '' : 's'} to a listed asset.`
+        );
+      }
       const built = buildLiveHoldings(editRows, assetsByKey);
 
       const draft = await createDraftPortfolio(userId);
@@ -96,6 +104,7 @@ export default function OnboardingFlow({ userId, onComplete }) {
       <MethodStep
         onBack={() => setStep(STEPS.attract)}
         onManual={() => setStep(STEPS.manual)}
+        onExcel={() => setStep(STEPS.excel)}
         onScreenshot={() => setStep(STEPS.screenshot)}
       />
     );
@@ -105,6 +114,10 @@ export default function OnboardingFlow({ userId, onComplete }) {
     return (
       <ManualStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />
     );
+  }
+
+  if (step === STEPS.excel) {
+    return <ExcelStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />;
   }
 
   if (step === STEPS.screenshot) {

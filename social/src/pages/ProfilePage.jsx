@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, ClipboardCheck, Copy, Heart, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  ClipboardCheck,
+  Copy,
+  FileSpreadsheet,
+  Heart,
+  ImagePlus,
+  Pencil,
+  Plus,
+  Share2,
+  Trash2,
+  X,
+} from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -60,6 +74,8 @@ import {
 import PortfolioAssetSearchField from '../components/PortfolioAssetSearchField';
 import CostModeToggle from '../components/CostModeToggle';
 import { resolvePortfolioAssets } from '../lib/portfolioAssetUniverse';
+import { parseZerodhaHoldingsScreenshots } from './onboarding/onboardingHoldings';
+import { parseZerodhaHoldingsWorkbook } from './onboarding/zerodhaHoldingsWorkbook';
 import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
@@ -801,9 +817,13 @@ function PortfolioDetailView({
   const [editRows, setEditRows] = useState([]);
   const [costMode, setCostMode] = useState(COST_MODES.invested);
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
+  const [importNotice, setImportNotice] = useState('');
+  const [importingHoldings, setImportingHoldings] = useState(false);
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
   const editSessionRef = useRef(0);
+  const excelInputRef = useRef(null);
+  const screenshotInputRef = useRef(null);
   const saveEditsRef = useRef(async () => {});
   const cancelEditsRef = useRef(() => {});
 
@@ -935,8 +955,93 @@ function PortfolioDetailView({
     const rows = buildEditRows(portfolioKind);
     setEditRows(rows);
     setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
+    setImportNotice('');
     setEditing(true);
     markUnknownTickerErrors(rows, session);
+  };
+
+  const applyImportedHoldings = async (importedRows, sourceLabel) => {
+    const incoming = importedRows.filter((row) => String(row.ticker ?? '').trim());
+    if (!incoming.length) {
+      setImportNotice(`No usable holdings were found in the ${sourceLabel}.`);
+      return;
+    }
+
+    setImportingHoldings(true);
+    setImportNotice('');
+    try {
+      const current = editRows.filter((row) => String(row.ticker ?? '').trim());
+      const assetsByToken = await resolvePortfolioAssets([
+        ...current.map((row) => row.ticker),
+        ...incoming.map((row) => row.ticker),
+      ]);
+      const unresolved = incoming.filter((row) => !assetsByToken.has(row.ticker));
+      const importedByKey = new Map();
+      for (const row of incoming) {
+        const asset = assetsByToken.get(row.ticker);
+        if (!asset) continue;
+        importedByKey.set(asset.key, {
+          ...row,
+          ticker: asset.key,
+          name: asset.kind === 'fund' ? asset.name : asset.symbol ?? '',
+          missingFromImport: false,
+        });
+      }
+
+      setEditRows((previous) => {
+        const merged = [];
+        const consumed = new Set();
+        for (const row of previous) {
+          if (!String(row.ticker ?? '').trim()) continue;
+          const key = assetsByToken.get(row.ticker)?.key ?? row.ticker;
+          const imported = importedByKey.get(key);
+          if (imported) {
+            merged.push({ ...row, ...imported, id: row.id, missingFromImport: false });
+            consumed.add(key);
+          } else {
+            merged.push({ ...row, missingFromImport: true });
+          }
+        }
+        for (const [key, imported] of importedByKey) {
+          if (consumed.has(key)) continue;
+          merged.push({ ...imported, id: makeRowId(), missingFromImport: false });
+        }
+        return [...merged, makeBlankRow()];
+      });
+      setFieldErrors((previous) => ({ ...previous, rows: {} }));
+      const unmatchedText = unresolved.length
+        ? ` ${unresolved.length} unlisted symbol${unresolved.length === 1 ? '' : 's'} was skipped.`
+        : '';
+      setImportNotice(
+        `${sourceLabel} applied. Holdings not present in the import are highlighted in amber.${unmatchedText}`
+      );
+    } catch (error) {
+      setImportNotice(error?.message ?? `Could not read that ${sourceLabel}.`);
+    } finally {
+      setImportingHoldings(false);
+    }
+  };
+
+  const importExcelHoldings = async (file) => {
+    if (!file) return;
+    try {
+      await applyImportedHoldings(await parseZerodhaHoldingsWorkbook(file), 'Zerodha Excel file');
+    } finally {
+      if (excelInputRef.current) excelInputRef.current.value = '';
+    }
+  };
+
+  const importScreenshotHoldings = async (files) => {
+    const images = [...(files ?? [])];
+    if (!images.length) return;
+    try {
+      await applyImportedHoldings(
+        await parseZerodhaHoldingsScreenshots(images),
+        'holdings screenshot'
+      );
+    } finally {
+      if (screenshotInputRef.current) screenshotInputRef.current.value = '';
+    }
   };
 
   useEffect(() => {
@@ -1230,26 +1335,6 @@ function PortfolioDetailView({
                     placeholder="e.g. Main portfolio"
                   />
                 </Field>
-                <Field label="Portfolio objective">
-                  <input
-                    value={objective}
-                    onChange={(e) => setObjective(e.target.value)}
-                    className={fieldClass(inputClass, fieldErrors.objective)}
-                    placeholder="What this portfolio is for"
-                  />
-                </Field>
-                <Field label="Investment thesis">
-                  <textarea
-                    value={thesis}
-                    onChange={(e) => setThesis(e.target.value)}
-                    rows={3}
-                    placeholder="Why these holdings - shown in portfolio detail"
-                    className={fieldClass(
-                      `${inputClass} resize-none leading-6 text-pe-ink`,
-                      fieldErrors.thesis
-                    )}
-                  />
-                </Field>
               </div>
             ) : (
               <>
@@ -1301,6 +1386,58 @@ function PortfolioDetailView({
             ) : null}
           </div>
 
+          {!isWatchlist ? (
+            <div className="mt-5 rounded-lg border border-pe-border bg-pe-surface p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-pe-text">Update from broker export</p>
+                  <p className="mt-0.5 text-[12px] text-pe-text-muted">
+                    Imported symbols update matching holdings. Unlisted existing holdings stay and
+                    are marked for review.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={importingHoldings}
+                    onClick={() => excelInputRef.current?.click()}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[13px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" />
+                    Upload Excel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={importingHoldings}
+                    onClick={() => screenshotInputRef.current?.click()}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[13px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
+                  >
+                    <ImagePlus className="h-3.5 w-3.5" />
+                    Upload screenshot
+                  </button>
+                </div>
+              </div>
+              {importNotice ? (
+                <p className="mt-2 text-[12px] text-pe-text-secondary">{importNotice}</p>
+              ) : null}
+              <input
+                ref={excelInputRef}
+                type="file"
+                className="hidden"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                onChange={(event) => importExcelHoldings(event.target.files?.[0])}
+              />
+              <input
+                ref={screenshotInputRef}
+                type="file"
+                className="hidden"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                onChange={(event) => importScreenshotHoldings(event.target.files)}
+              />
+            </div>
+          ) : null}
+
           <div className="mt-4 space-y-2">
             <div className={`${rowGridClass} px-0.5`}>
               <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
@@ -1335,7 +1472,13 @@ function PortfolioDetailView({
 
               return (
                 <div key={row.id} className="space-y-1">
-                  <div className={rowGridClass}>
+                  <div
+                    className={`${rowGridClass} ${
+                      row.missingFromImport
+                        ? 'rounded-md border border-amber-400 bg-amber-50/50 p-2'
+                        : ''
+                    }`}
+                  >
                     <PortfolioAssetSearchField
                       value={row.name || row.ticker}
                       exclude={usedTickers}
@@ -1347,7 +1490,7 @@ function PortfolioDetailView({
                       onSelect={(asset) =>
                         updateRow(row.id, {
                           ticker: asset.key,
-                          name: asset.kind === 'fund' ? asset.name : '',
+                          name: asset.kind === 'fund' ? asset.name : asset.symbol ?? '',
                         })
                       }
                     />
@@ -1412,6 +1555,11 @@ function PortfolioDetailView({
                       {row.ticker.trim()
                         ? `${row.ticker.trim()} is not a valid stock, ETF, or fund - search to replace it.`
                         : 'Pick a stock, ETF, or fund from search results.'}
+                    </p>
+                  ) : null}
+                  {row.missingFromImport ? (
+                    <p className="px-0.5 text-[12px] font-medium text-amber-700">
+                      Symbol not found in file
                     </p>
                   ) : null}
                 </div>

@@ -20,6 +20,12 @@ function useMarketRpc() {
 
 export function portfolioAssetKey(item, kind) {
   if (kind === 'fund') return String(item.schemeCode ?? item.id ?? '').trim();
+  if (
+    String(item.id ?? '').toUpperCase().startsWith('BSE:') ||
+    String(item.exchange ?? '').toUpperCase() === 'BSE'
+  ) {
+    return String(item.id).trim().toUpperCase();
+  }
   return String(item.symbol ?? item.id ?? '')
     .trim()
     .toUpperCase();
@@ -62,6 +68,7 @@ function toEntry(item, { kind, label }) {
   const key = portfolioAssetKey(item, kind);
   return {
     key,
+    symbol: item.symbol ?? key,
     name: portfolioAssetName(item),
     kind,
     kindLabel: label,
@@ -126,6 +133,9 @@ async function findPortfolioAssetExactLocal(meta, needle) {
   const found = items.find((item) => {
     const key = portfolioAssetKey(item, meta.kind);
     if (key === needle) return true;
+    if (meta.kind !== 'fund' && String(item.symbol ?? '').trim().toUpperCase() === needle) {
+      return true;
+    }
     if (meta.kind === 'fund') {
       const name = String(item.name ?? '').trim().toLowerCase();
       return name === needleLower || name.includes(needleLower);

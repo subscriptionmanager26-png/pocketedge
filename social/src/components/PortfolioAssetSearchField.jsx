@@ -11,7 +11,7 @@ const EASE_CLOSE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 function displaySymbol(asset) {
   if (asset?.kind === 'fund') return asset.name || asset.key;
-  return formatTicker(asset.key);
+  return formatTicker(asset.symbol || asset.key);
 }
 
 function AssetSuggestionRow({ asset, onSelect }) {
