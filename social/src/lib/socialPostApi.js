@@ -8,6 +8,9 @@ const UUID_RE =
 
 const POST_IMAGE_BUCKET = 'post-images';
 const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
+/** Longest edge after resize — enough for feed, small on disk/CDN. */
+const POST_IMAGE_MAX_EDGE = 1600;
+const POST_IMAGE_JPEG_QUALITY = 0.82;
 
 const postLikeSync = createBooleanSyncManager();
 
@@ -69,6 +72,103 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime });
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Could not read image.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function loadImageElement(source) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    let objectUrl = null;
+    img.onload = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      resolve(img);
+    };
+    img.onerror = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      reject(new Error('Could not decode image.'));
+    };
+    if (typeof source === 'string') {
+      img.src = source;
+      return;
+    }
+    objectUrl = URL.createObjectURL(source);
+    img.src = objectUrl;
+  });
+}
+
+/**
+ * Resize + JPEG-encode post images so uploads stay small.
+ * Skips animated GIFs (would flatten to one frame). Falls back to original on failure.
+ */
+export async function compressPostImage(image) {
+  if (!image) return null;
+
+  let sourceBlob = null;
+  let sourceDataUrl = null;
+  let mime = 'image/jpeg';
+
+  if (typeof image === 'string') {
+    if (!image.startsWith('data:')) return image;
+    sourceDataUrl = image;
+    sourceBlob = dataUrlToBlob(image);
+    mime = sourceBlob.type || 'image/jpeg';
+  } else {
+    sourceBlob = image;
+    mime = image.type || 'image/jpeg';
+  }
+
+  // Keep GIFs as-is so animation (if any) is preserved.
+  if (mime === 'image/gif') {
+    return { blob: sourceBlob, mime, dataUrl: sourceDataUrl };
+  }
+
+  try {
+    const img = await loadImageElement(sourceDataUrl ?? sourceBlob);
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) throw new Error('Invalid image dimensions.');
+
+    const scale = Math.min(1, POST_IMAGE_MAX_EDGE / Math.max(w, h));
+    const tw = Math.max(1, Math.round(w * scale));
+    const th = Math.max(1, Math.round(h * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = tw;
+    canvas.height = th;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas unavailable.');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    // White backdrop so transparent PNGs don't become black after JPEG.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tw, th);
+    ctx.drawImage(img, 0, 0, tw, th);
+
+    const compressed = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Compression failed.'))),
+        'image/jpeg',
+        POST_IMAGE_JPEG_QUALITY
+      );
+    });
+
+    // Prefer compressed only when it actually shrinks (or we resized).
+    if (compressed.size < sourceBlob.size || scale < 1) {
+      return { blob: compressed, mime: 'image/jpeg', dataUrl: null };
+    }
+    return { blob: sourceBlob, mime, dataUrl: sourceDataUrl };
+  } catch (err) {
+    console.warn('Post image compression skipped', err);
+    return { blob: sourceBlob, mime, dataUrl: sourceDataUrl };
+  }
+}
+
 /** Upload a post image (File/Blob or data URL) and return its public URL. */
 export async function uploadPostImage(image) {
   if (!image) return null;
@@ -77,29 +177,18 @@ export async function uploadPostImage(image) {
     return image;
   }
 
+  const compressed = await compressPostImage(image);
+  const blob = compressed.blob;
+  const mime = compressed.mime || blob.type || 'image/jpeg';
+
   if (!usePostBackend() || !supabase) {
-    // Dev/mock: keep data URLs so the feed still shows the image locally.
-    if (typeof image === 'string') return image;
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error('Could not read image.'));
-      reader.readAsDataURL(image);
-    });
+    // Dev/mock: keep a (preferably compressed) data URL for local feed preview.
+    if (compressed.dataUrl) return compressed.dataUrl;
+    return blobToDataUrl(blob);
   }
 
   const userId = getAppCurrentUserId();
   if (!userId) throw new Error('Sign in to post images.');
-
-  let blob;
-  let mime;
-  if (typeof image === 'string') {
-    blob = dataUrlToBlob(image);
-    mime = blob.type || 'image/jpeg';
-  } else {
-    blob = image;
-    mime = image.type || 'image/jpeg';
-  }
 
   if (blob.size > MAX_POST_IMAGE_BYTES) {
     throw new Error('Image must be under 5 MB.');
