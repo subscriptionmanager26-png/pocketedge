@@ -146,6 +146,10 @@ async function upsertHistory(url, apiKey, rows) {
   return rpcBatch(url, apiKey, 'bulk_upsert_social_market_price_history', rows);
 }
 
+async function upsertFundIsins(url, apiKey, rows) {
+  return rpcBatch(url, apiKey, 'bulk_upsert_social_market_asset_isins', rows);
+}
+
 /** Existing fund rows keyed by scheme code — used to derive day change vs prior NAV. */
 async function fetchExistingFundQuotes(url, apiKey) {
   const base = url.replace(/\/$/, '');
@@ -412,6 +416,7 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
 
   const assetByKey = new Map();
   const historyByKey = new Map();
+  const fundIsinByValue = new Map();
   for (const scheme of schemes) {
     const key = String(scheme.schemeCode ?? '').trim();
     if (!key || scheme.nav == null) continue;
@@ -432,6 +437,12 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
       price_source: 'amfi',
       synced_at: syncedAt,
     });
+    for (const isin of [scheme.isinPayout, scheme.isinReinvest]) {
+      const value = String(isin ?? '').trim().toUpperCase();
+      if (/^[A-Z0-9]{12}$/.test(value)) {
+        fundIsinByValue.set(value, { asset_key: key, isin: value, synced_at: syncedAt });
+      }
+    }
     if (writeHistory && asOfDate) {
       historyByKey.set(`${key}|${asOfDate}`, {
         asset_type: 'fund',
@@ -447,9 +458,12 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   }
   const assetRows = [...assetByKey.values()];
   const historyRows = [...historyByKey.values()];
+  const fundIsinRows = [...fundIsinByValue.values()];
 
   console.log(`Upserting ${assetRows.length} fund NAVs...`);
   const fundUpdated = await upsertAssets(url, apiKey, assetRows);
+  console.log(`Upserting ${fundIsinRows.length} mutual-fund ISIN mappings...`);
+  const fundIsinsUpdated = await upsertFundIsins(url, apiKey, fundIsinRows);
 
   let historyUpserted = 0;
   if (writeHistory && historyRows.length) {
@@ -457,7 +471,7 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
     historyUpserted = await upsertHistory(url, apiKey, historyRows);
   }
 
-  return { fundUpdated, historyUpserted, schemeCount: assetRows.length };
+  return { fundUpdated, fundIsinsUpdated, historyUpserted, schemeCount: assetRows.length };
 }
 
 async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedAt }) {
@@ -624,6 +638,7 @@ async function main() {
       fundUpdated = fd.fundUpdated;
       historyUpserted += fd.historyUpserted;
       meta.funds = fd.schemeCount;
+      meta.fund_isins = fd.fundIsinsUpdated;
     }
 
     if (args.mode === 'all' || args.mode === 'commodities') {

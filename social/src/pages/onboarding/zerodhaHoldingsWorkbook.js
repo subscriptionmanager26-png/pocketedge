@@ -53,17 +53,22 @@ function rowsFromSheet(xlsx, sheet, { type }) {
   const parsed = [];
   for (const row of values.slice(headerRow + 1)) {
     const symbol = String(valueAt(row, headerMap, 'symbol') ?? '').trim();
+    const isin = String(valueAt(row, headerMap, 'isin') ?? '').trim().toUpperCase();
     const quantity = parseNumber(valueAt(row, headerMap, 'quantityavailable'));
     const averagePrice = parseNumber(valueAt(row, headerMap, 'averageprice'));
     if (!symbol || quantity == null || quantity <= 0) continue;
     if (type === EQUITY_SHEET && isExcludedEquitySymbol(symbol)) continue;
+    if (type === FUND_SHEET && !/^[A-Z0-9]{12}$/.test(isin)) continue;
 
     const name =
       String(valueAt(row, headerMap, 'tradingsymbol', 'instrumentname', 'name') ?? symbol).trim() ||
       symbol;
     parsed.push({
-      ticker: symbol.toUpperCase(),
+      // Fund display names vary by broker; AMFI ISIN maps to PocketEdge's
+      // canonical scheme code during asset resolution.
+      ticker: type === FUND_SHEET ? isin : symbol.toUpperCase(),
       name,
+      isin: isin || null,
       qty: quantity,
       avg: averagePrice ?? 0,
       invested: quantity * (averagePrice ?? 0),
