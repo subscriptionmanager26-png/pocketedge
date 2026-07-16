@@ -105,7 +105,10 @@ export function buildLiveHoldings(rows, assetsByKey = new Map()) {
     const qty = Number(row.qty) || 0;
     const invested = Number(row.invested) || 0;
     const avg = qty > 0 ? invested / qty : 0;
-    const price = asset?.price ?? 0;
+    // Unmapped broker positions are retained at their average cost, which
+    // deliberately starts them at zero profit/loss until a market mapping is
+    // available.
+    const price = asset?.price ?? avg;
     return recalcHolding({ ticker: asset?.key ?? ticker, qty, avg, price });
   });
 }

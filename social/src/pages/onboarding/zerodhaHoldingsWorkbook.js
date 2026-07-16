@@ -17,13 +17,6 @@ function parseNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function isExcludedEquitySymbol(symbol) {
-  const value = String(symbol ?? '').trim().toUpperCase();
-  // Zerodha's Equity tab also includes ETFs and sovereign gold bonds. This
-  // import intentionally limits itself to direct equity holdings.
-  return /^SGB/.test(value) || /-(E|F)$/.test(value);
-}
-
 function findHeaderRow(rows) {
   return rows.findIndex((row) => {
     const headers = row.map(normalizedHeader);
@@ -57,7 +50,6 @@ function rowsFromSheet(xlsx, sheet, { type }) {
     const quantity = parseNumber(valueAt(row, headerMap, 'quantityavailable'));
     const averagePrice = parseNumber(valueAt(row, headerMap, 'averageprice'));
     if (!symbol || quantity == null || quantity <= 0) continue;
-    if (type === EQUITY_SHEET && isExcludedEquitySymbol(symbol)) continue;
     if (type === FUND_SHEET && !/^[A-Z0-9]{12}$/.test(isin)) continue;
 
     const name =

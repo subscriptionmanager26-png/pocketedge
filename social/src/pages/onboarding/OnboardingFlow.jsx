@@ -59,12 +59,6 @@ export default function OnboardingFlow({ userId, onComplete }) {
       }));
 
       const assetsByKey = await resolvePortfolioAssets(holdings.map((h) => h.ticker));
-      const unresolved = holdings.filter((holding) => !assetsByKey.has(holding.ticker));
-      if (unresolved.length) {
-        throw new Error(
-          `Could not match ${unresolved.length} holding${unresolved.length === 1 ? '' : 's'} to a listed asset.`
-        );
-      }
       const built = buildLiveHoldings(editRows, assetsByKey);
 
       const draft = await createDraftPortfolio(userId);

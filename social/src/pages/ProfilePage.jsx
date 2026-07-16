@@ -925,39 +925,18 @@ function PortfolioDetailView({
     return [...rows, makeBlankRow()];
   };
 
-  const markUnknownTickerErrors = async (rows, session) => {
-    const tickers = rows.map((row) => row.ticker.trim()).filter(Boolean);
-    if (!tickers.length) return;
-
-    const assetsByKey = await resolvePortfolioAssets(tickers);
-    if (session !== editSessionRef.current) return;
-
-    const rowErrors = {};
-    for (const row of rows) {
-      const ticker = row.ticker.trim();
-      if (ticker && !assetsByKey.has(ticker)) {
-        rowErrors[row.id] = { ticker: true };
-      }
-    }
-
-    if (Object.keys(rowErrors).length) {
-      setFieldErrors((prev) => ({ ...prev, rows: { ...prev.rows, ...rowErrors } }));
-    }
-  };
-
   const initEditRows = (kind = portfolioKind) => {
     editSessionRef.current += 1;
     setEditRows(buildEditRows(kind));
   };
 
   const startEditing = () => {
-    const session = ++editSessionRef.current;
+    editSessionRef.current += 1;
     const rows = buildEditRows(portfolioKind);
     setEditRows(rows);
     setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
     setImportNotice('');
     setEditing(true);
-    markUnknownTickerErrors(rows, session);
   };
 
   const applyImportedHoldings = async (importedRows, sourceLabel) => {
@@ -975,15 +954,15 @@ function PortfolioDetailView({
         ...current.map((row) => row.ticker),
         ...incoming.map((row) => row.ticker),
       ]);
-      const unresolved = incoming.filter((row) => !assetsByToken.has(row.ticker));
       const importedByKey = new Map();
       for (const row of incoming) {
         const asset = assetsByToken.get(row.ticker);
-        if (!asset) continue;
-        importedByKey.set(asset.key, {
+        const key = asset?.key ?? row.ticker;
+        importedByKey.set(key, {
           ...row,
-          ticker: asset.key,
-          name: asset.kind === 'fund' ? asset.name : asset.symbol ?? '',
+          ticker: key,
+          name: asset ? (asset.kind === 'fund' ? asset.name : asset.symbol ?? '') : row.name,
+          unmapped: !asset,
           missingFromImport: false,
         });
       }
@@ -1009,11 +988,14 @@ function PortfolioDetailView({
         return [...merged, makeBlankRow()];
       });
       setFieldErrors((previous) => ({ ...previous, rows: {} }));
-      const unmatchedText = unresolved.length
-        ? ` ${unresolved.length} unlisted symbol${unresolved.length === 1 ? '' : 's'} was skipped.`
+      const unmappedCount = incoming.filter((row) => !assetsByToken.has(row.ticker)).length;
+      const unmappedText = unmappedCount
+        ? ` ${unmappedCount} unmapped ${
+            unmappedCount === 1 ? 'security was' : 'securities were'
+          } kept at their average cost.`
         : '';
       setImportNotice(
-        `${sourceLabel} applied. Holdings not present in the import are highlighted in amber.${unmatchedText}`
+        `${sourceLabel} applied. Holdings not present in the import are highlighted in amber.${unmappedText}`
       );
     } catch (error) {
       setImportNotice(error?.message ?? `Could not read that ${sourceLabel}.`);
@@ -1046,11 +1028,10 @@ function PortfolioDetailView({
 
   useEffect(() => {
     if (startInEditMode) {
-      const session = ++editSessionRef.current;
+      editSessionRef.current += 1;
       const rows = buildEditRows(portfolio.kind ?? 'live');
       setEditRows(rows);
       setEditing(true);
-      markUnknownTickerErrors(rows, session);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.id, startInEditMode]);
@@ -1069,21 +1050,6 @@ function PortfolioDetailView({
     const assetsByKey = await resolvePortfolioAssets(
       validation.completeRows.map((row) => row.ticker.trim())
     );
-
-    const rowErrors = { ...validation.errors.rows };
-    let assetsValid = true;
-    for (const row of validation.completeRows) {
-      const ticker = row.ticker.trim();
-      if (!assetsByKey.has(ticker)) {
-        rowErrors[row.id] = { ...(rowErrors[row.id] ?? {}), ticker: true };
-        assetsValid = false;
-      }
-    }
-
-    if (!assetsValid) {
-      setFieldErrors({ ...validation.errors, rows: rowErrors });
-      return;
-    }
 
     const holdings = isWatchlist
       ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
