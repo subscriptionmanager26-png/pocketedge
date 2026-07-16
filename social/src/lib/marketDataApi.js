@@ -67,6 +67,9 @@ export function marketAssetRowToItem(row) {
   const asOfDate = row.as_of_date ?? row.asOfDate ?? null;
   const priceSource = row.price_source ?? row.priceSource ?? null;
   const syncedAt = row.synced_at ?? row.syncedAt ?? null;
+  const exchange = row.exchange ?? null;
+  const exchangeSymbol = row.exchange_symbol ?? row.exchangeSymbol ?? null;
+  const isin = row.isin ?? null;
 
   if (type === 'fund') {
     return {
@@ -107,7 +110,7 @@ export function marketAssetRowToItem(row) {
   }
 
   return {
-    symbol: key,
+    symbol: exchangeSymbol ?? key,
     id: key,
     name,
     price,
@@ -117,6 +120,8 @@ export function marketAssetRowToItem(row) {
     asOfDate,
     priceSource,
     syncedAt,
+    exchange,
+    isin,
     assetType: type,
   };
 }
@@ -457,6 +462,7 @@ export function marketStockToDetail(stock) {
     asOfDate: stock.asOfDate,
     syncedAt: stock.syncedAt,
     priceSource: stock.priceSource,
+    exchange: stock.exchange,
     isin: stock.isin,
     series: stock.series,
     segment: stock.segment,

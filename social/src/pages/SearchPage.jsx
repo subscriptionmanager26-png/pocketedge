@@ -286,11 +286,18 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
     return (
       <button
         type="button"
-        onClick={() => onSelectStock?.(item.symbol, { kind: tab === 'etf' ? 'etf' : 'stock' })}
+        onClick={() => onSelectStock?.(item.id ?? item.symbol, { kind: tab === 'etf' ? 'etf' : 'stock' })}
         className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
       >
         <div className="min-w-0 pr-3">
-          <p className="text-[15px] font-semibold text-pe-text">{formatTicker(item.symbol)}</p>
+          <p className="flex items-center gap-1.5 text-[15px] font-semibold text-pe-text">
+            {formatTicker(item.symbol)}
+            {item.priceSource === 'bse' || item.exchange === 'BSE' ? (
+              <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-pe-accent">
+                BSE
+              </span>
+            ) : null}
+          </p>
           <p className="text-sm text-pe-text-muted">{item.name}</p>
         </div>
         <QuoteChangeBlock

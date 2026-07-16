@@ -16,6 +16,7 @@
  */
 
 import { parseNavAll } from './lib/indian-markets/amfi.js';
+import { fetchBseEquityQuotes, loadBseFallbackUniverse } from './lib/indian-markets/bse.js';
 import { SOURCES, UA } from './lib/indian-markets/constants.js';
 import { fetchMcxSpotPrices } from './lib/indian-markets/mcx.js';
 import {
@@ -42,10 +43,11 @@ function optionalEnv(...names) {
 }
 
 function parseArgs(argv) {
-  const args = { mode: 'all', writeHistory: true };
+  const args = { mode: 'all', writeHistory: true, dryRun: false };
   for (const arg of argv) {
     if (arg.startsWith('--mode=')) args.mode = arg.slice('--mode='.length);
     if (arg === '--no-history') args.writeHistory = false;
+    if (arg === '--dry-run') args.dryRun = true;
   }
   if (!['all', 'equity', 'funds', 'commodities'].includes(args.mode)) {
     throw new Error(`Invalid --mode=${args.mode}. Use all|equity|funds|commodities`);
@@ -240,7 +242,64 @@ function equityHistoryRows(quotes, assetType, asOfDate, syncedAt) {
     }));
 }
 
-async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt }) {
+function bseRows({ bseQuotes, universe, nseSymbols, asOfDate, syncedAt }) {
+  const universeBySymbol = new Map(universe.map((row) => [row.symbol, row]));
+  const candidatesBySymbol = new Map();
+  for (const quote of bseQuotes) {
+    if (!universeBySymbol.has(quote.symbol)) continue;
+    const candidates = candidatesBySymbol.get(quote.symbol) ?? [];
+    candidates.push(quote);
+    candidatesBySymbol.set(quote.symbol, candidates);
+  }
+
+  const matched = [];
+  const missing = [];
+  const ambiguous = [];
+  const nseCovered = [];
+  for (const [symbol, universeRow] of universeBySymbol) {
+    if (nseSymbols.has(symbol)) {
+      nseCovered.push({ symbol, isin: universeRow.isin });
+      continue;
+    }
+    const candidates = candidatesBySymbol.get(symbol) ?? [];
+    if (candidates.length === 1 && candidates[0].ltp != null) {
+      matched.push({ ...candidates[0], isin: universeRow.isin });
+    } else if (candidates.length > 1) {
+      ambiguous.push({ symbol, isin: universeRow.isin, scripCodes: candidates.map((item) => item.scripCode) });
+    } else {
+      missing.push({ symbol, isin: universeRow.isin });
+    }
+  }
+
+  const assetRows = matched.map((quote) => ({
+    asset_type: 'stock',
+    asset_key: `BSE:${quote.scripCode}`,
+    name: quote.name ?? quote.symbol,
+    price: quote.ltp,
+    change_pct: quote.changePct ?? null,
+    previous_close: quote.previousClose ?? null,
+    as_of_date: asOfDate,
+    price_source: 'bse',
+    exchange: 'BSE',
+    exchange_symbol: quote.symbol,
+    isin: quote.isin,
+    synced_at: syncedAt,
+  }));
+  const historyRows = matched.map((quote) => ({
+    asset_type: 'stock',
+    asset_key: `BSE:${quote.scripCode}`,
+    as_of_date: asOfDate,
+    close_price: quote.ltp,
+    previous_close: quote.previousClose ?? null,
+    change_pct: quote.changePct ?? null,
+    source: 'bse',
+    synced_at: syncedAt,
+  }));
+
+  return { assetRows, historyRows, matched, missing, ambiguous, nseCovered };
+}
+
+async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dryRun = false }) {
   console.log('Fetching NSE stocks traded + ETF list...');
   const nseFetch = await createNseSession('https://www.nseindia.com/market-data/stocks-traded');
   const [stocks, etfs] = await Promise.all([
@@ -273,11 +332,49 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt }) 
   }
   const stockQuotes = [...stockByKey.values()];
   const typedEtfs = [...etfByKey.values()];
+  const nseSymbols = new Set(stockQuotes.map((quote) => quote.symbol));
+  console.log('Fetching BSE equity fallback snapshot...');
+  const [{ rows: bseUniverse, invalid: invalidUniverse }, bseQuotes] = await Promise.all([
+    loadBseFallbackUniverse(),
+    fetchBseEquityQuotes(),
+  ]);
+  const bse = bseRows({
+    bseQuotes,
+    universe: bseUniverse,
+    nseSymbols,
+    asOfDate,
+    syncedAt,
+  });
+  const bseMeta = {
+    universe: bseUniverse.length,
+    invalid_universe: invalidUniverse,
+    fetched: bseQuotes.length,
+    matched: bse.matched,
+    missing: bse.missing,
+    ambiguous: bse.ambiguous,
+    nseCovered: bse.nseCovered,
+  };
+  console.log(
+    `BSE fallback: ${bse.matched.length} matched, ${bse.missing.length} missing, ` +
+      `${bse.ambiguous.length} ambiguous, ${bse.nseCovered.length} NSE-covered.`
+  );
 
   const assetRows = [
     ...equityAssetRows(stockQuotes, 'stock', asOfDate, syncedAt),
     ...equityAssetRows(typedEtfs, 'etf', asOfDate, syncedAt),
+    ...bse.assetRows,
   ];
+
+  if (dryRun) {
+    return {
+      equityUpdated: 0,
+      historyUpserted: 0,
+      stockCount: stockQuotes.length,
+      etfCount: typedEtfs.length,
+      bseUpdated: 0,
+      bseMeta,
+    };
+  }
 
   console.log(`Upserting ${assetRows.length} equity quotes (as_of ${asOfDate})...`);
   const equityUpdated = await upsertAssets(url, apiKey, assetRows);
@@ -287,6 +384,7 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt }) 
     const historyRows = [
       ...equityHistoryRows(stockQuotes, 'stock', asOfDate, syncedAt),
       ...equityHistoryRows(typedEtfs, 'etf', asOfDate, syncedAt),
+      ...bse.historyRows,
     ];
     console.log(`Upserting ${historyRows.length} equity history points...`);
     historyUpserted = await upsertHistory(url, apiKey, historyRows);
@@ -297,6 +395,8 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt }) 
     historyUpserted,
     stockCount: stockQuotes.length,
     etfCount: typedEtfs.length,
+    bseUpdated: bse.assetRows.length,
+    bseMeta,
   };
 }
 
@@ -429,15 +529,49 @@ async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedA
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const url = requireEnv('VITE_SUPABASE_URL', 'SUPABASE_URL');
-  const serviceKey = optionalEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY');
-  const anonKey = optionalEnv('VITE_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY');
-  const apiKey = serviceKey ?? anonKey;
-  if (!apiKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY');
-
   const syncedAt = new Date().toISOString();
   const asOfDate = istDateString();
-  console.log(`Mode=${args.mode} as_of=${asOfDate} history=${args.writeHistory}`);
+  console.log(`Mode=${args.mode} as_of=${asOfDate} history=${args.writeHistory} dry_run=${args.dryRun}`);
+  if (args.dryRun) {
+    if (args.mode !== 'equity' && args.mode !== 'all') {
+      throw new Error('--dry-run currently validates the BSE equity fallback; use --mode=equity');
+    }
+    const validation = await refreshEquity({
+      url: null,
+      apiKey: null,
+      writeHistory: false,
+      asOfDate,
+      syncedAt,
+      dryRun: true,
+    });
+    const bse = validation.bseMeta;
+    console.log(
+      JSON.stringify(
+        {
+          status: 'validated',
+          bse: {
+            universe: bse.universe,
+            invalid_universe: bse.invalid_universe,
+            fetched: bse.fetched,
+            matched: bse.matched.map(({ symbol, isin, scripCode }) => ({ symbol, isin, scripCode })),
+            missing: bse.missing,
+            ambiguous: bse.ambiguous,
+            nse_covered: bse.nseCovered,
+          },
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
+  const url = requireEnv('VITE_SUPABASE_URL', 'SUPABASE_URL');
+  const serviceKey = optionalEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY');
+  if (!serviceKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY; quote refresh requires the service role');
+  }
+  const apiKey = serviceKey;
 
   let runId = null;
   try {
@@ -470,6 +604,14 @@ async function main() {
       historyUpserted += eq.historyUpserted;
       meta.stocks = eq.stockCount;
       meta.etfs = eq.etfCount;
+      meta.bse = {
+        universe: eq.bseMeta.universe,
+        fetched: eq.bseMeta.fetched,
+        matched: eq.bseMeta.matched.length,
+        missing: eq.bseMeta.missing.length,
+        ambiguous: eq.bseMeta.ambiguous.length,
+        nse_covered: eq.bseMeta.nseCovered.length,
+      };
     }
 
     if (args.mode === 'all' || args.mode === 'funds') {

@@ -118,6 +118,7 @@ export default function AssetProductHeader({
   change,
   formatAsCurrency = true,
   metaValue,
+  priceSource,
 }) {
   return (
     <section className="border-b border-pe-border px-4 py-5">
@@ -129,7 +130,16 @@ export default function AssetProductHeader({
         </p>
       ) : null}
       <h1 className="text-2xl font-bold text-pe-text">{name}</h1>
-      {ticker ? <p className="mt-0.5 text-sm text-pe-text-muted">{ticker}</p> : null}
+      {ticker ? (
+        <p className="mt-0.5 flex items-center gap-1.5 text-sm text-pe-text-muted">
+          {ticker}
+          {String(priceSource ?? '').toLowerCase() === 'bse' ? (
+            <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-pe-accent">
+              BSE
+            </span>
+          ) : null}
+        </p>
+      ) : null}
       {subtitle ? <p className="mt-0.5 text-sm text-pe-text-secondary">{subtitle}</p> : null}
 
       {price != null || changePct != null ? (

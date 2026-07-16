@@ -214,7 +214,7 @@ export default function StockInvestmentPage({
 
       <AssetProductHeader
         name={displayStock.name}
-        ticker={formatTicker(ticker)}
+        ticker={formatTicker(displayStock.ticker ?? ticker)}
         type={getStockAssetType(ticker, displayStock)}
         price={
           marketLoading && displayStock.price == null
@@ -224,6 +224,7 @@ export default function StockInvestmentPage({
         changePct={displayStock.changePct}
         previousClose={displayStock.previousClose}
         change={displayStock.change}
+        priceSource={displayStock.priceSource}
       />
 
       <UnderlineTabs

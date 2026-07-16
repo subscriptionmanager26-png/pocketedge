@@ -1,7 +1,8 @@
 name: Social market price refresh (equity)
 
 # PocketEdge is the quote source for search/detail.
-# Refresh NSE stocks + ETFs into social_market_assets (+ daily history point).
+# Refresh NSE stocks + ETFs and the approved BSE-only fallback universe into
+# social_market_assets (+ daily history point).
 
 on:
   schedule:
@@ -21,7 +22,7 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
