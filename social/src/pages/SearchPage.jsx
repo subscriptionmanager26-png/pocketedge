@@ -290,14 +290,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
         className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
       >
         <div className="min-w-0 pr-3">
-          <p className="flex items-center gap-1.5 text-[15px] font-semibold text-pe-text">
-            {formatTicker(item.symbol)}
-            {item.priceSource === 'bse' || item.exchange === 'BSE' ? (
-              <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-pe-accent">
-                BSE
-              </span>
-            ) : null}
-          </p>
+          <p className="text-[15px] font-semibold text-pe-text">{formatTicker(item.symbol)}</p>
           <p className="text-sm text-pe-text-muted">{item.name}</p>
         </div>
         <QuoteChangeBlock
