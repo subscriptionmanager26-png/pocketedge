@@ -19,7 +19,12 @@ import {
 } from '../components/InvestmentSections';
 import { getStock, getStockHolders, getStockNews } from '../data/stockData';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchStockNews, fetchCorporateActions, isStockNewsConfigured } from '../lib/stockNewsApi';
+import {
+  fetchStockNews,
+  fetchLatestStockExplanation,
+  fetchCorporateActions,
+  isStockNewsConfigured,
+} from '../lib/stockNewsApi';
 import CorporateActionsList from '../components/CorporateActionsList';
 import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
@@ -118,6 +123,7 @@ export default function StockInvestmentPage({
   const holders = getStockHolders(ticker);
   const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
   const [newsLoading, setNewsLoading] = useState(false);
+  const [dailyExplanation, setDailyExplanation] = useState(null);
   const [corporateActions, setCorporateActions] = useState([]);
   const [corpActionsLoading, setCorpActionsLoading] = useState(false);
 
@@ -134,6 +140,20 @@ export default function StockInvestmentPage({
       .catch(() => {
         if (!cancelled) setDiscussions([]);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
+
+  useEffect(() => {
+    if (!isStockNewsConfigured()) {
+      setDailyExplanation(null);
+      return undefined;
+    }
+    let cancelled = false;
+    fetchLatestStockExplanation(ticker).then((result) => {
+      if (!cancelled) setDailyExplanation(result);
+    });
     return () => {
       cancelled = true;
     };
@@ -317,6 +337,21 @@ export default function StockInvestmentPage({
           preview={<NewsBlurPreview />}
         >
           <div>
+            {dailyExplanation && (
+              <section className="border-b border-pe-border bg-pe-surface/40 px-4 py-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-bold text-pe-text">Daily market explanation</h2>
+                  {dailyExplanation.confidence && (
+                    <span className="text-xs font-semibold text-pe-text-muted">
+                      {dailyExplanation.confidence} confidence
+                    </span>
+                  )}
+                </div>
+                <p className="whitespace-pre-line text-sm leading-6 text-pe-text-secondary">
+                  {dailyExplanation.explanation}
+                </p>
+              </section>
+            )}
             {newsLoading ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
             ) : news.length === 0 ? (

@@ -73,7 +73,8 @@
     "simulate:basket-nav": "node scripts/simulate-basket-nav.mjs",
     "sync:indian-markets": "node scripts/sync-indian-markets.mjs",
     "sync:social-market-assets": "node --env-file=.env scripts/sync-social-market-assets.mjs",
-    "refresh:social-market-prices": "node --env-file=.env scripts/refresh-social-market-prices.mjs"
+    "refresh:social-market-prices": "node --env-file=.env scripts/refresh-social-market-prices.mjs",
+    "generate:daily-stock-explanations": "node --env-file=.env scripts/generate-daily-stock-explanations.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.10.1",
