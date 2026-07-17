@@ -1784,9 +1784,12 @@ function PortfolioDiscussion({
 }
 
 function portfolioHoldingsNeedClientResolve(portfolio) {
+  // Always resolve live market data when the portfolio has any positions: the
+  // stored snapshot carries a name/price from save time but never a live day
+  // change, so relying on it alone would freeze holdings at "no change".
   const holdings = portfolio.holdings ?? [];
-  if (!holdings.length && (portfolio.tickers ?? []).length) return true;
-  return holdings.some((h) => h.ticker && !h.assetName);
+  if (holdings.length) return holdings.some((h) => Boolean(h.ticker));
+  return (portfolio.tickers ?? []).length > 0;
 }
 
 function PortfolioHoldingsList({ portfolio, returnPeriod }) {
