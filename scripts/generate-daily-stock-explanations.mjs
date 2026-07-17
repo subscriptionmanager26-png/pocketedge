@@ -212,6 +212,9 @@ function noRecentNewsRow(ticker, asOfDate) {
     confidence: null,
     price_context: [],
     news_context: [],
+    // Must carry the same key set as generated/failed rows — PostgREST bulk
+    // upsert requires every object in the array to have identical keys.
+    input_context: {},
     model: null,
     generated_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
