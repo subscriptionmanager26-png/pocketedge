@@ -307,12 +307,12 @@ async function explainWithOpenAi(apiKey, model, input) {
   return { explanation, confidence: null };
 }
 
-async function upsertRows(newsUrl, newsKey, rows) {
+async function upsertRows(newsUrl, newsKey, table, rows) {
   for (let offset = 0; offset < rows.length; offset += UPSERT_BATCH_SIZE) {
     await restJson(
       newsUrl,
       newsKey,
-      'mn_daily_stock_explanations?on_conflict=ticker,as_of_date',
+      `${table}?on_conflict=ticker,as_of_date`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -333,6 +333,13 @@ async function main() {
     args.provider === 'openai'
       ? process.env.OPENAI_MODEL || 'gpt-5-nano'
       : process.env.MISTRAL_MODEL || 'mistral-small-latest';
+  // OpenAI explanations land in a separate table so they can be compared against
+  // the Mistral output. Override with EXPLANATIONS_TABLE if needed.
+  const table =
+    process.env.EXPLANATIONS_TABLE ||
+    (args.provider === 'openai'
+      ? 'mn_daily_stock_explanations_openai'
+      : 'mn_daily_stock_explanations');
   const asOfDate = istDate();
   const [tickers, newsByTicker] = await Promise.all([
     fetchAllTickers(newsUrl, newsKey),
@@ -400,11 +407,14 @@ async function main() {
     }
     await new Promise((resolve) => setTimeout(resolve, MISTRAL_DELAY_MS));
   }
-  await upsertRows(newsUrl, newsKey, rows);
+  await upsertRows(newsUrl, newsKey, table, rows);
   console.log(
     JSON.stringify(
       {
         as_of_date: asOfDate,
+        provider: args.provider,
+        model,
+        table,
         tracked_stocks: selectedTickers.length,
         generated,
         no_recent_news: rows.length - generated - failed,
