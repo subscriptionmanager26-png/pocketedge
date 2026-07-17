@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MARKETS_DIR = path.join(__dirname, '..', 'social', 'public', 'data', 'markets');
+const ETF_ISIN_FILE = path.join(__dirname, '..', 'data', 'etf-isin-mapping.csv');
 const BATCH_SIZE = 500;
 
 function requireEnv(...names) {
@@ -37,7 +38,26 @@ async function readSearchIndex(fileName) {
   return payload.items ?? [];
 }
 
-function stockRows(items, assetType) {
+async function readEtfIsins() {
+  const text = await readFile(ETF_ISIN_FILE, 'utf8');
+  const [header, ...lines] = text.trim().split(/\r?\n/);
+  const columns = header.split(',').map((value) => value.trim());
+  const isinColumn = columns.indexOf('ISINNumber');
+  const symbolColumn = columns.indexOf('Symbol');
+  if (isinColumn < 0 || symbolColumn < 0) {
+    throw new Error('ETF ISIN mapping must contain ISINNumber and Symbol columns.');
+  }
+  const bySymbol = new Map();
+  for (const line of lines) {
+    const values = line.split(',').map((value) => value.trim());
+    const isin = String(values[isinColumn] ?? '').toUpperCase();
+    const symbol = String(values[symbolColumn] ?? '').toUpperCase();
+    if (/^[A-Z0-9]{12}$/.test(isin) && symbol) bySymbol.set(symbol, isin);
+  }
+  return bySymbol;
+}
+
+function securityRows(items, assetType, isinBySymbol = new Map()) {
   const syncedAt = new Date().toISOString();
   return items
     .map((item) => {
@@ -50,10 +70,25 @@ function stockRows(items, assetType) {
         name: item.name ?? key,
         price,
         change_pct: item.changePct ?? null,
+        isin:
+          assetType === 'etf'
+            ? isinBySymbol.get(key) ?? null
+            : String(item.isin ?? '').trim().toUpperCase() || null,
         synced_at: syncedAt,
       };
     })
     .filter(Boolean);
+}
+
+function securityIsinRows(rows) {
+  return rows
+    .filter((row) => /^[A-Z0-9]{12}$/.test(String(row.isin ?? '')))
+    .map((row) => ({
+      asset_type: row.asset_type,
+      asset_key: row.asset_key,
+      isin: row.isin,
+      synced_at: row.synced_at,
+    }));
 }
 
 function fundRows(items) {
@@ -118,6 +153,26 @@ async function upsertViaTable(url, serviceKey, rows) {
   return uploaded;
 }
 
+async function upsertSecurityIsins(url, serviceKey, rows) {
+  if (!rows.length) return 0;
+  if (!serviceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to sync security ISIN mappings.');
+  }
+  const supabase = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  let uploaded = 0;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase.rpc('bulk_upsert_social_market_asset_isins', {
+      p_rows: batch,
+    });
+    if (error) throw error;
+    uploaded += batch.length;
+  }
+  return uploaded;
+}
+
 async function main() {
   const url = requireEnv('VITE_SUPABASE_URL', 'SUPABASE_URL');
   const serviceKey = optionalEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY');
@@ -128,15 +183,16 @@ async function main() {
   }
 
   console.log('Loading market search indexes...');
-  const [stocks, etfs, funds] = await Promise.all([
+  const [stocks, etfs, funds, etfIsins] = await Promise.all([
     readSearchIndex('stocks-search.json'),
     readSearchIndex('etf-search.json'),
     readSearchIndex('mutual-funds-search.json'),
+    readEtfIsins(),
   ]);
 
   const rows = [
-    ...stockRows(stocks, 'stock'),
-    ...stockRows(etfs, 'etf'),
+    ...securityRows(stocks, 'stock'),
+    ...securityRows(etfs, 'etf', etfIsins),
     ...fundRows(funds),
   ];
 
@@ -145,6 +201,9 @@ async function main() {
     ? await upsertViaTable(url, serviceKey, rows)
     : await upsertViaRpc(url, apiKey, rows);
   console.log(`Done. ${count} assets synced.`);
+  const securityIsins = securityIsinRows(rows);
+  const isinCount = await upsertSecurityIsins(url, serviceKey, securityIsins);
+  console.log(`Synced ${isinCount} stock/ETF ISIN mappings.`);
 
   const verifyClient = createClient(url, apiKey, {
     auth: { persistSession: false, autoRefreshToken: false },

@@ -56,9 +56,9 @@ function rowsFromSheet(xlsx, sheet, { type }) {
       String(valueAt(row, headerMap, 'tradingsymbol', 'instrumentname', 'name') ?? symbol).trim() ||
       symbol;
     parsed.push({
-      // Fund display names vary by broker; AMFI ISIN maps to PocketEdge's
-      // canonical scheme code during asset resolution.
-      ticker: type === FUND_SHEET ? isin : symbol.toUpperCase(),
+    // ISIN is the shared identity across stocks, ETFs, and funds. The
+    // portfolio resolver maps it to the exchange/scheme quote key when known.
+    ticker: /^[A-Z0-9]{12}$/.test(isin) ? isin : symbol.toUpperCase(),
       name,
       isin: isin || null,
       qty: quantity,

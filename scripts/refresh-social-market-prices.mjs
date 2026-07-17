@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Refresh PocketEdge social market quotes from NSE (stocks/ETFs), AMFI (funds),
- * and MCX (commodities). Also upserts daily close / NAV / spot rows into
- * social_market_price_history.
+ * Refresh PocketEdge social market quotes from NSE (stocks/ETFs/SGBs), AMFI
+ * (funds), and MCX (commodities). Also upserts daily close / NAV / spot rows
+ * into social_market_price_history.
  *
  * Usage:
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=all
@@ -22,8 +22,10 @@ import { fetchMcxSpotPrices } from './lib/indian-markets/mcx.js';
 import {
   createNseSession,
   fetchEtfList,
+  fetchSgbQuotes,
   fetchStocksTraded,
 } from './lib/indian-markets/nse.js';
+import { loadSgbUniverse } from './lib/indian-markets/sgb.js';
 
 const BATCH_SIZE = 500;
 
@@ -146,7 +148,7 @@ async function upsertHistory(url, apiKey, rows) {
   return rpcBatch(url, apiKey, 'bulk_upsert_social_market_price_history', rows);
 }
 
-async function upsertFundIsins(url, apiKey, rows) {
+async function upsertSecurityIsins(url, apiKey, rows) {
   return rpcBatch(url, apiKey, 'bulk_upsert_social_market_asset_isins', rows);
 }
 
@@ -303,12 +305,55 @@ function bseRows({ bseQuotes, universe, nseSymbols, asOfDate, syncedAt }) {
   return { assetRows, historyRows, matched, missing, ambiguous, nseCovered };
 }
 
+function sgbRows({ quotes, universe, asOfDate, syncedAt }) {
+  const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
+  const assetRows = [];
+  const historyRows = [];
+  const missing = [];
+
+  for (const item of universe) {
+    const quote = quoteBySymbol.get(item.symbol);
+    if (!quote) {
+      missing.push(item);
+      continue;
+    }
+    assetRows.push({
+      asset_type: 'bond',
+      asset_key: item.symbol,
+      name: quote.name,
+      price: quote.ltp,
+      change_pct: quote.changePct,
+      previous_close: quote.previousClose,
+      as_of_date: asOfDate,
+      price_source: 'nse_sgb',
+      exchange: 'NSE',
+      exchange_symbol: item.symbol,
+      isin: item.isin,
+      synced_at: syncedAt,
+    });
+    historyRows.push({
+      asset_type: 'bond',
+      asset_key: item.symbol,
+      as_of_date: asOfDate,
+      close_price: quote.ltp,
+      previous_close: quote.previousClose,
+      change_pct: quote.changePct,
+      source: 'nse_sgb',
+      synced_at: syncedAt,
+    });
+  }
+
+  return { assetRows, historyRows, missing };
+}
+
 async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dryRun = false }) {
-  console.log('Fetching NSE stocks traded + ETF list...');
+  console.log('Fetching NSE stocks, ETFs, and SGBs...');
   const nseFetch = await createNseSession('https://www.nseindia.com/market-data/stocks-traded');
-  const [stocks, etfs] = await Promise.all([
+  const [stocks, etfs, sgbQuotes, sgbUniverse] = await Promise.all([
     fetchStocksTraded(nseFetch),
     fetchEtfList(nseFetch),
+    fetchSgbQuotes(nseFetch),
+    loadSgbUniverse(),
   ]);
 
   const etfQuotes = etfs.map((row) => ({
@@ -337,6 +382,16 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
   const stockQuotes = [...stockByKey.values()];
   const typedEtfs = [...etfByKey.values()];
   const nseSymbols = new Set(stockQuotes.map((quote) => quote.symbol));
+  const sgb = sgbRows({
+    quotes: sgbQuotes,
+    universe: sgbUniverse.rows,
+    asOfDate,
+    syncedAt,
+  });
+  console.log(
+    `SGBs: ${sgb.assetRows.length} matched, ${sgb.missing.length} missing, ` +
+      `${sgbUniverse.invalid.length} invalid mappings.`
+  );
   console.log('Fetching BSE equity fallback snapshot...');
   const [{ rows: bseUniverse, invalid: invalidUniverse }, bseQuotes] = await Promise.all([
     loadBseFallbackUniverse(),
@@ -367,6 +422,7 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
     ...equityAssetRows(stockQuotes, 'stock', asOfDate, syncedAt),
     ...equityAssetRows(typedEtfs, 'etf', asOfDate, syncedAt),
     ...bse.assetRows,
+    ...sgb.assetRows,
   ];
 
   if (dryRun) {
@@ -375,6 +431,13 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
       historyUpserted: 0,
       stockCount: stockQuotes.length,
       etfCount: typedEtfs.length,
+      sgbCount: sgb.assetRows.length,
+      sgbMeta: {
+        universe: sgbUniverse.rows.length,
+        invalid_universe: sgbUniverse.invalid,
+        fetched: sgbQuotes.length,
+        missing: sgb.missing,
+      },
       bseUpdated: 0,
       bseMeta,
     };
@@ -382,6 +445,21 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
 
   console.log(`Upserting ${assetRows.length} equity quotes (as_of ${asOfDate})...`);
   const equityUpdated = await upsertAssets(url, apiKey, assetRows);
+  const bseIsinRows = bse.assetRows
+    .filter((row) => /^[A-Z0-9]{12}$/.test(String(row.isin ?? '')))
+    .map(({ asset_type, asset_key, isin, synced_at }) => ({
+      asset_type,
+      asset_key,
+      isin,
+      synced_at,
+    }));
+  const sgbIsinRows = sgb.assetRows.map(({ asset_type, asset_key, isin, synced_at }) => ({
+    asset_type,
+    asset_key,
+    isin,
+    synced_at,
+  }));
+  await upsertSecurityIsins(url, apiKey, [...bseIsinRows, ...sgbIsinRows]);
 
   let historyUpserted = 0;
   if (writeHistory) {
@@ -389,6 +467,7 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
       ...equityHistoryRows(stockQuotes, 'stock', asOfDate, syncedAt),
       ...equityHistoryRows(typedEtfs, 'etf', asOfDate, syncedAt),
       ...bse.historyRows,
+      ...sgb.historyRows,
     ];
     console.log(`Upserting ${historyRows.length} equity history points...`);
     historyUpserted = await upsertHistory(url, apiKey, historyRows);
@@ -399,7 +478,16 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
     historyUpserted,
     stockCount: stockQuotes.length,
     etfCount: typedEtfs.length,
+    sgbCount: sgb.assetRows.length,
+    sgbMeta: {
+      universe: sgbUniverse.rows.length,
+      invalid_universe: sgbUniverse.invalid,
+      fetched: sgbQuotes.length,
+      missing: sgb.missing,
+    },
     bseUpdated: bse.assetRows.length,
+    bseIsinsUpdated: bseIsinRows.length,
+    sgbIsinsUpdated: sgbIsinRows.length,
     bseMeta,
   };
 }
@@ -440,7 +528,12 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
     for (const isin of [scheme.isinPayout, scheme.isinReinvest]) {
       const value = String(isin ?? '').trim().toUpperCase();
       if (/^[A-Z0-9]{12}$/.test(value)) {
-        fundIsinByValue.set(value, { asset_key: key, isin: value, synced_at: syncedAt });
+        fundIsinByValue.set(value, {
+          asset_type: 'fund',
+          asset_key: key,
+          isin: value,
+          synced_at: syncedAt,
+        });
       }
     }
     if (writeHistory && asOfDate) {
@@ -463,7 +556,7 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   console.log(`Upserting ${assetRows.length} fund NAVs...`);
   const fundUpdated = await upsertAssets(url, apiKey, assetRows);
   console.log(`Upserting ${fundIsinRows.length} mutual-fund ISIN mappings...`);
-  const fundIsinsUpdated = await upsertFundIsins(url, apiKey, fundIsinRows);
+  const fundIsinsUpdated = await upsertSecurityIsins(url, apiKey, fundIsinRows);
 
   let historyUpserted = 0;
   if (writeHistory && historyRows.length) {
@@ -572,6 +665,13 @@ async function main() {
             ambiguous: bse.ambiguous,
             nse_covered: bse.nseCovered,
           },
+          sgb: {
+            universe: validation.sgbMeta.universe,
+            invalid_universe: validation.sgbMeta.invalid_universe,
+            fetched: validation.sgbMeta.fetched,
+            matched: validation.sgbCount,
+            missing: validation.sgbMeta.missing,
+          },
         },
         null,
         2
@@ -618,6 +718,13 @@ async function main() {
       historyUpserted += eq.historyUpserted;
       meta.stocks = eq.stockCount;
       meta.etfs = eq.etfCount;
+      meta.sgb = {
+        universe: eq.sgbMeta.universe,
+        fetched: eq.sgbMeta.fetched,
+        matched: eq.sgbCount,
+        missing: eq.sgbMeta.missing.length,
+        isins: eq.sgbIsinsUpdated,
+      };
       meta.bse = {
         universe: eq.bseMeta.universe,
         fetched: eq.bseMeta.fetched,
@@ -625,6 +732,7 @@ async function main() {
         missing: eq.bseMeta.missing.length,
         ambiguous: eq.bseMeta.ambiguous.length,
         nse_covered: eq.bseMeta.nseCovered.length,
+        isins: eq.bseIsinsUpdated,
       };
     }
 

@@ -109,7 +109,13 @@ export function buildLiveHoldings(rows, assetsByKey = new Map()) {
     // deliberately starts them at zero profit/loss until a market mapping is
     // available.
     const price = asset?.price ?? avg;
-    return recalcHolding({ ticker: asset?.key ?? ticker, qty, avg, price });
+    return recalcHolding({
+      ticker: asset?.key ?? ticker,
+      assetName: asset?.name ?? row.name?.trim() ?? '',
+      qty,
+      avg,
+      price,
+    });
   });
 }
 

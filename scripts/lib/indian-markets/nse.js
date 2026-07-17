@@ -79,6 +79,30 @@ export async function fetchEtfList(nseFetch) {
   }));
 }
 
+export async function fetchSgbQuotes(nseFetch) {
+  const payload = await nseFetch('/api/NextApi/apiClient/marketWatchApi?functionName=getSGBData', {
+    headers: { Referer: 'https://www.nseindia.com/market-data/sovereign-gold-bond' },
+  });
+  const rows = payload?.data?.data ?? payload?.data ?? [];
+
+  return rows
+    .map((row) => {
+      const symbol = String(row?.symbol ?? '').trim().toUpperCase();
+      const ltp = Number(row?.lastPrice);
+      if (!symbol || !Number.isFinite(ltp)) return null;
+      const previousClose = Number(row?.previousClose);
+      const changePct = Number(row?.pChange ?? row?.PChange);
+      return {
+        symbol,
+        name: String(row?.companyName ?? symbol).trim(),
+        ltp,
+        previousClose: Number.isFinite(previousClose) ? previousClose : null,
+        changePct: Number.isFinite(changePct) ? changePct : null,
+      };
+    })
+    .filter(Boolean);
+}
+
 /**
  * Bulk live equity snapshot for PocketEdge catalog refresh.
  * Shape mirrors /api/live-analysis-stocksTraded on the stocks-traded page.

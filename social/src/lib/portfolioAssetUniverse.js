@@ -13,6 +13,7 @@ const PORTFOLIO_TABS = [
   { tab: 'etf', kind: 'etf', label: 'ETF' },
   { tab: 'mutual_funds', kind: 'fund', label: 'Fund' },
 ];
+const PORTFOLIO_BOND_META = { kind: 'bond', label: 'Bond' };
 
 function useMarketRpc() {
   return Boolean(supabase) && isSupabaseConfigured() && !skipAuthForDev();
@@ -51,6 +52,7 @@ export function holdingDisplayLabel(holding, asset) {
     (/^\d{6,}$/.test(ticker) && Boolean(name));
 
   if (isFund) return name || ticker;
+  if (/^[A-Z0-9]{12}$/i.test(ticker) && name) return name;
   if (ticker) {
     return String(ticker)
       .trim()
@@ -80,6 +82,7 @@ function toEntry(item, { kind, label }) {
 function metaForAssetType(assetType) {
   if (assetType === 'fund') return PORTFOLIO_TABS[2];
   if (assetType === 'etf') return PORTFOLIO_TABS[1];
+  if (assetType === 'bond') return PORTFOLIO_BOND_META;
   return PORTFOLIO_TABS[0];
 }
 
