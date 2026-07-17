@@ -102,7 +102,8 @@ export default function CommodityDetailPage({
   }, [commodityId, commodity?.name]);
 
   const me = getAppCurrentUserId();
-  const holdersLocked = !hasAccess;
+  // Holders & News are open to everyone for now (was: !hasAccess).
+  const holdersLocked = false && !hasAccess;
   const reviews = useMemo(() => getReviewsForCommodity(commodityId), [commodityId, reviewTick]);
   const communityReviews = useMemo(
     () => reviews.filter((r) => r.authorId !== me),

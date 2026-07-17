@@ -126,7 +126,8 @@ export default function InvestmentPage({
     };
   }, [fundId, fund?.name]);
 
-  const holdersLocked = !hasAccess;
+  // Holders & News are open to everyone for now (was: !hasAccess).
+  const holdersLocked = false && !hasAccess;
   const hasResolvedFund = Boolean(seedFund || marketFund);
 
   if (!marketLoading && !hasResolvedFund) {

@@ -106,7 +106,8 @@ export default function IndexDetailPage({
   }, [indexId, displayIndex?.name]);
 
   const me = getAppCurrentUserId();
-  const holdersLocked = !hasAccess;
+  // Holders & News are open to everyone for now (was: !hasAccess).
+  const holdersLocked = false && !hasAccess;
   const reviews = useMemo(() => getReviewsForIndex(indexId), [indexId, reviewTick]);
   const communityReviews = useMemo(
     () => reviews.filter((r) => r.authorId !== me),

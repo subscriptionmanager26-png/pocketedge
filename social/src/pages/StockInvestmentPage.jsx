@@ -206,7 +206,8 @@ export default function StockInvestmentPage({
     };
   }, [ticker, isEtf]);
 
-  const holdersLocked = !hasAccess;
+  // Holders & News are open to everyone for now (was: !hasAccess).
+  const holdersLocked = false && !hasAccess;
 
   if (!marketLoading && !marketStock && !seedStock) {
     return (
