@@ -1798,7 +1798,30 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [assetsByKey, setAssetsByKey] = useState({});
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [formByTicker, setFormByTicker] = useState({});
-  const overallReturn = getPortfolioTotalReturnPct(portfolio);
+  const overallReturn = useMemo(() => {
+    const holdings = portfolio.holdings ?? [];
+    let totalValue = 0;
+    let totalCost = 0;
+
+    for (const holding of holdings) {
+      const qty = Number(holding?.qty) || 0;
+      const avg = Number(holding?.avg) || 0;
+      const asset = assetsByKey[holding?.ticker];
+      const livePrice = Number(asset?.price);
+      const savedPrice = Number(holding?.price);
+      const price =
+        Number.isFinite(livePrice) && livePrice > 0
+          ? livePrice
+          : Number.isFinite(savedPrice) && savedPrice > 0
+            ? savedPrice
+            : avg;
+
+      totalValue += qty * price;
+      totalCost += qty * avg;
+    }
+
+    return totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
+  }, [portfolio.holdings, assetsByKey]);
 
   const holdingFormItems = useMemo(() => {
     const items = [];
@@ -1885,14 +1908,28 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     if (liveHoldings.length) {
       const totalValue = liveHoldings.reduce((sum, h) => {
         const asset = assetsByKey[h.ticker];
-        const price = h.price ?? asset?.price ?? 0;
-        const value = h.value ?? (h.qty ?? 0) * price;
+        const livePrice = Number(asset?.price);
+        const savedPrice = Number(h.price);
+        const price =
+          Number.isFinite(livePrice) && livePrice > 0
+            ? livePrice
+            : Number.isFinite(savedPrice) && savedPrice > 0
+              ? savedPrice
+              : Number(h.avg) || 0;
+        const value = (Number(h.qty) || 0) * price;
         return sum + value;
       }, 0);
       return liveHoldings.map((h) => {
         const asset = assetsByKey[h.ticker];
-        const price = h.price ?? asset?.price ?? 0;
-        const value = h.value ?? (h.qty ?? 0) * price;
+        const livePrice = Number(asset?.price);
+        const savedPrice = Number(h.price);
+        const price =
+          Number.isFinite(livePrice) && livePrice > 0
+            ? livePrice
+            : Number.isFinite(savedPrice) && savedPrice > 0
+              ? savedPrice
+              : Number(h.avg) || 0;
+        const value = (Number(h.qty) || 0) * price;
         const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
         return {
           key: h.ticker,
@@ -1906,7 +1943,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
                   ? asset.name
                   : '',
           weight,
-          itemReturn: periodReturnForChangePct(h.changePct ?? asset?.item?.changePct, h.pnlPct),
+          itemReturn: periodReturnForChangePct(asset?.item?.changePct ?? h.changePct, h.pnlPct),
         };
       });
     }
