@@ -52,14 +52,36 @@ export async function fetchStockNews(ticker, { limit = 20 } = {}) {
   return (data ?? []).map(mapNewsRow);
 }
 
-/** Map a daily explanation row into an accordion item (title = date, body = AI text). */
+/**
+ * Explanations are markdown with "## What happened?" and "## Why did it happen?"
+ * sections. Pull the body text under a given heading (until the next heading,
+ * a horizontal rule, or the end).
+ */
+function sectionBody(text, label) {
+  const re = new RegExp(
+    `#{1,6}\\s*${label}\\??[^\\n]*\\n+([\\s\\S]*?)(?=\\n\\s*-{3,}\\s*(?:\\n|$)|\\n\\s*#{1,6}\\s|$)`,
+    'i'
+  );
+  const match = text.match(re);
+  return match ? match[1].trim() : '';
+}
+
+/**
+ * Map a daily explanation row into an accordion item:
+ * title = "What happened?" text, body = "Why did it happen?" text, plus the date.
+ */
 function mapExplanationRow(row) {
   const asOfDate = row.as_of_date;
+  const raw = String(row.explanation ?? '').replace(/\r\n/g, '\n').trim();
+  const what = sectionBody(raw, 'What happened');
+  const why = sectionBody(raw, 'Why did it happen');
+
   return {
     id: asOfDate,
     asOfDate,
-    title: formatNewsDate(asOfDate) || asOfDate,
-    summary: row.explanation ?? '',
+    publishedAt: asOfDate,
+    title: what || formatNewsDate(asOfDate) || asOfDate,
+    summary: why || raw,
     confidence: row.confidence ?? null,
     status: row.status,
   };
