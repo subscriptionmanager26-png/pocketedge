@@ -58,41 +58,36 @@ async function readEtfIsins() {
 }
 
 function securityRows(items, assetType, isinBySymbol = new Map()) {
-  const syncedAt = new Date().toISOString();
   return items
     .map((item) => {
       const key = String(item.symbol ?? item.id ?? '').trim().toUpperCase();
       if (!key) return null;
-      const price = item.price ?? item.ltp ?? item.nav ?? null;
       return {
         asset_type: assetType,
         asset_key: key,
         name: item.name ?? key,
-        price,
-        change_pct: item.changePct ?? null,
         isin:
           assetType === 'etf'
             ? isinBySymbol.get(key) ?? null
             : String(item.isin ?? '').trim().toUpperCase() || null,
-        synced_at: syncedAt,
       };
     })
     .filter(Boolean);
 }
 
 function securityIsinRows(rows) {
+  const syncedAt = new Date().toISOString();
   return rows
     .filter((row) => /^[A-Z0-9]{12}$/.test(String(row.isin ?? '')))
     .map((row) => ({
       asset_type: row.asset_type,
       asset_key: row.asset_key,
       isin: row.isin,
-      synced_at: row.synced_at,
+      synced_at: syncedAt,
     }));
 }
 
 function fundRows(items) {
-  const syncedAt = new Date().toISOString();
   return items
     .map((item) => {
       const key = String(item.schemeCode ?? item.id ?? '').trim();
@@ -101,9 +96,6 @@ function fundRows(items) {
         asset_type: 'fund',
         asset_key: key,
         name: item.name ?? key,
-        price: item.nav ?? null,
-        change_pct: null,
-        synced_at: syncedAt,
       };
     })
     .filter(Boolean);
