@@ -311,7 +311,10 @@ async function explainWithOpenAi(apiKey, model, input) {
       model,
       instructions: input.system_prompt,
       input: input.user_prompt,
-      max_output_tokens: 550,
+      // gpt-5 reasoning models spend output tokens on hidden reasoning first;
+      // keep effort minimal and leave a generous budget for the visible answer.
+      reasoning: { effort: 'minimal' },
+      max_output_tokens: 2_000,
     }),
   });
   if (!response.ok) throw new Error(`OpenAI ${response.status}: ${await response.text()}`);
@@ -325,7 +328,10 @@ async function explainWithOpenAi(apiKey, model, input) {
         .join('') ??
       ''
   ).trim();
-  if (!explanation) throw new Error('OpenAI returned an empty explanation.');
+  if (!explanation) {
+    const reason = payload.incomplete_details?.reason ?? payload.status ?? 'unknown';
+    throw new Error(`OpenAI returned an empty explanation (status: ${reason}).`);
+  }
   return { explanation, confidence: null };
 }
 
