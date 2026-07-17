@@ -18,6 +18,12 @@ const ANALYST_INSTRUCTIONS = `You are an experienced equity market journalist.
 Explain today's stock price movement using ONLY the news provided.
 Do not use outside knowledge or invent explanations.
 
+The move you must explain is the net daily figure given under "Price move to explain (authoritative)". This is the single source of truth for both the size and the direction of the move.
+
+Ignore ALL price levels, percentages, and directional language written inside the news itself (e.g. "fell in early trade", "down 2% intraday", "opened lower", "hit a 52-week high"). Those may describe intraday swings, a different session, or unrelated context — they are NOT the move you are explaining, and must never override or contradict the authoritative figure.
+
+Do not explain intraday volatility. Explain only the net daily move, and make sure the direction of your explanation (up vs down) matches the sign of the authoritative figure.
+
 Before writing:
 
 1. Rank the news by relevance.
@@ -37,7 +43,7 @@ Respond in exactly this format:
 
 ## What happened?
 
-State only today's price movement.
+State only today's net price movement, using the authoritative figure — never a number quoted in the news.
 
 ---
 
@@ -224,13 +230,14 @@ function noRecentNewsRow(ticker, asOfDate) {
 function buildUserMessage(ticker, prices, news) {
   // Compact markdown: each price block is "change" + "date"; each news block is
   // the full article followed by its date. Keeps the input token-lean.
+  const fmtPct = (pct) => (pct == null ? null : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`);
+  const latest = prices[0];
+  const moveLine =
+    latest && latest.changePct != null
+      ? `${fmtPct(latest.changePct)} on ${latest.date}`
+      : 'net move unavailable';
   const priceText = prices.length
-    ? prices
-        .map(
-          (row) =>
-            `${row.changePct == null ? 'change n/a' : `${row.changePct.toFixed(2)}%`}\n${row.date}`
-        )
-        .join('\n\n')
+    ? prices.map((row) => `${fmtPct(row.changePct) ?? 'change n/a'}\n${row.date}`).join('\n\n')
     : 'No recent price-change data available.';
   const newsText = news.length
     ? news
@@ -239,7 +246,10 @@ function buildUserMessage(ticker, prices, news) {
     : 'No news in the last seven days.';
   return `Stock: ${ticker}
 
-## Price changes (most recent first)
+## Price move to explain (authoritative)
+${moveLine}
+
+## Recent daily price changes (most recent first)
 ${priceText}
 
 ## News (most recent first)
