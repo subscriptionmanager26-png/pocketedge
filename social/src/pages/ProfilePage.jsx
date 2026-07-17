@@ -1798,6 +1798,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [assetsByKey, setAssetsByKey] = useState({});
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [formByTicker, setFormByTicker] = useState({});
+  const overallReturn = getPortfolioTotalReturnPct(portfolio);
 
   const holdingFormItems = useMemo(() => {
     const items = [];
@@ -1870,7 +1871,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     };
   }, [portfolio.id, holdingKeys, needsClientResolve]);
 
-  const { rows, overallReturn } = useMemo(() => {
+  const rows = useMemo(() => {
     const periodReturnForChangePct = (changePct, fallbackPnl = 0) => {
       const day = changePct ?? fallbackPnl ?? 0;
       const month = Number((day * 8).toFixed(1));
@@ -1882,48 +1883,38 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
 
     const liveHoldings = (portfolio.holdings ?? []).filter(Boolean);
     if (liveHoldings.length) {
-      // Always recompute from the live market asset when it resolves so values
-      // track the current price/NAV. The saved snapshot (h.price/h.value/etc.)
-      // is only a fallback for holdings we cannot resolve, otherwise a portfolio
-      // would freeze at whatever the prices were the moment it was last saved.
-      const computed = liveHoldings.map((h) => {
+      const totalValue = liveHoldings.reduce((sum, h) => {
         const asset = assetsByKey[h.ticker];
-        const qty = Number(h.qty) || 0;
-        const avg = Number(h.avg) || 0;
-        const livePrice = asset?.price ?? (Number.isFinite(Number(h.price)) ? Number(h.price) : avg);
-        const cost = qty * avg;
-        const value =
-          qty > 0 && livePrice > 0 ? qty * livePrice : (Number(h.value) || cost);
-        const totalReturnPct = cost > 0 ? ((value - cost) / cost) * 100 : (Number(h.pnlPct) || 0);
-        const dayChangePct = asset?.item?.changePct ?? h.changePct ?? null;
-        return { h, asset, value, cost, totalReturnPct, dayChangePct };
+        const price = h.price ?? asset?.price ?? 0;
+        const value = h.value ?? (h.qty ?? 0) * price;
+        return sum + value;
+      }, 0);
+      return liveHoldings.map((h) => {
+        const asset = assetsByKey[h.ticker];
+        const price = h.price ?? asset?.price ?? 0;
+        const value = h.value ?? (h.qty ?? 0) * price;
+        const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
+        return {
+          key: h.ticker,
+          title: holdingDisplayLabel(h, asset),
+          subtitle:
+            (h.assetType ?? asset?.kind) === 'fund'
+              ? ''
+              : h.assetName && h.assetName !== holdingDisplayLabel(h, asset)
+                ? h.assetName
+                : asset?.name && asset.name !== holdingDisplayLabel(h, asset)
+                  ? asset.name
+                  : '',
+          weight,
+          itemReturn: periodReturnForChangePct(h.changePct ?? asset?.item?.changePct, h.pnlPct),
+        };
       });
-
-      const totalValue = computed.reduce((sum, c) => sum + c.value, 0);
-      const totalCost = computed.reduce((sum, c) => sum + c.cost, 0);
-      const overall = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
-
-      const nextRows = computed.map(({ h, asset, value, totalReturnPct, dayChangePct }) => ({
-        key: h.ticker,
-        title: holdingDisplayLabel(h, asset),
-        subtitle:
-          (h.assetType ?? asset?.kind) === 'fund'
-            ? ''
-            : h.assetName && h.assetName !== holdingDisplayLabel(h, asset)
-              ? h.assetName
-              : asset?.name && asset.name !== holdingDisplayLabel(h, asset)
-                ? asset.name
-                : '',
-        weight: totalValue > 0 ? (value / totalValue) * 100 : 0,
-        itemReturn: periodReturnForChangePct(dayChangePct, totalReturnPct),
-      }));
-      return { rows: nextRows, overallReturn: overall };
     }
 
     const tickers = portfolio.tickers ?? [];
-    if (!tickers.length) return { rows: [], overallReturn: 0 };
+    if (!tickers.length) return [];
     const equal = 100 / tickers.length;
-    const nextRows = tickers.map((ticker) => {
+    return tickers.map((ticker) => {
       const asset = assetsByKey[ticker];
       const title = holdingDisplayLabel({ ticker, assetType: asset?.kind }, asset);
       return {
@@ -1939,7 +1930,6 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
         itemReturn: periodReturnForChangePct(asset?.item?.changePct),
       };
     });
-    return { rows: nextRows, overallReturn: getPortfolioTotalReturnPct(portfolio) };
   }, [portfolio, returnPeriod, assetsByKey]);
 
   const sortedRows = useMemo(

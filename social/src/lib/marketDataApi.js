@@ -62,16 +62,8 @@ export function marketAssetRowToItem(row) {
   const key = row.asset_key ?? row.assetKey;
   const name = row.name;
   const price = row.price ?? null;
-  const rawChangePct = row.change_pct ?? row.changePct ?? null;
+  const changePct = row.change_pct ?? row.changePct ?? null;
   const previousClose = row.previous_close ?? row.previousClose ?? null;
-  // AMFI fund rows carry price + previous_close but no precomputed change_pct;
-  // derive the day change so funds show a live daily move like equities/ETFs.
-  const changePct =
-    rawChangePct != null && Number.isFinite(Number(rawChangePct))
-      ? Number(rawChangePct)
-      : price != null && previousClose != null && Number(previousClose) !== 0
-        ? ((Number(price) - Number(previousClose)) / Number(previousClose)) * 100
-        : null;
   const asOfDate = row.as_of_date ?? row.asOfDate ?? null;
   const priceSource = row.price_source ?? row.priceSource ?? null;
   const syncedAt = row.synced_at ?? row.syncedAt ?? null;
