@@ -10,7 +10,7 @@ import {
 } from '../data/blurPlaceholders';
 
 export const INVESTMENT_TABS = [
-  { id: 'reviews', label: 'Signals' },
+  { id: 'insights', label: 'Insights' },
   { id: 'discussions', label: 'Posts' },
   { id: 'holders', label: 'Holders' },
   { id: 'news', label: 'News' },

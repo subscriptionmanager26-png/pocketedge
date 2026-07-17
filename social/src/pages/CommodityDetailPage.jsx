@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import AssetReviewComposer from '../components/AssetReviewComposer';
-import ReviewCard from '../components/ReviewCard';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
@@ -16,15 +14,6 @@ import {
 } from '../components/InvestmentSections';
 import { hasMarketAssetAccess } from '../lib/assetAccess';
 import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
-import {
-  addReviewComment,
-  getReviewsForCommodity,
-  getUserReviewForCommodity,
-  hydrateCommunityAccess,
-  loadReviewsForCommodity,
-  subscribeReviews,
-} from '../lib/reviewStore';
-import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
 
@@ -32,19 +21,10 @@ export default function CommodityDetailPage({
   commodityId,
   onBack,
   onOpenProfile,
-  onPromptReview,
 }) {
   const [commodity, setCommodity] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('reviews');
-  const [reviewTick, setReviewTick] = useState(0);
-
-  useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
-
-  useEffect(() => {
-    hydrateCommunityAccess();
-    loadReviewsForCommodity(commodityId).catch(() => {});
-  }, [commodityId]);
+  const [tab, setTab] = useState('insights');
 
   useEffect(() => {
     let cancelled = false;
@@ -101,23 +81,8 @@ export default function CommodityDetailPage({
     };
   }, [commodityId, commodity?.name]);
 
-  const me = getAppCurrentUserId();
   // Holders & News are open to everyone for now (was: !hasAccess).
   const holdersLocked = false && !hasAccess;
-  const reviews = useMemo(() => getReviewsForCommodity(commodityId), [commodityId, reviewTick]);
-  const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== me),
-    [reviews, me]
-  );
-  const userReview = useMemo(
-    () => getUserReviewForCommodity(commodityId),
-    [commodityId, reviewTick]
-  );
-
-  const handleAddComment = async (reviewId, body) => {
-    await addReviewComment(reviewId, body);
-    setReviewTick((n) => n + 1);
-  };
 
   if (!loading && !commodity) {
     return (
@@ -169,32 +134,10 @@ export default function CommodityDetailPage({
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
-      {tab === 'reviews' && (
-        <>
-          <AssetReviewComposer
-            assetType="commodity"
-            commodityId={commodityId}
-            assetLabel={commodity.name}
-            onSubmitted={() => setReviewTick((n) => n + 1)}
-          />
-          {communityReviews.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-              {userReview
-                ? 'No other community signals yet.'
-                : `No community signals yet - be the first to share your view on ${commodity.name}.`}
-            </p>
-          ) : (
-            communityReviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                onAddComment={handleAddComment}
-                onOpenProfile={onOpenProfile}
-                onReviewChange={() => setReviewTick((n) => n + 1)}
-              />
-            ))
-          )}
-        </>
+      {tab === 'insights' && (
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+          No insights yet - daily AI summaries will appear here.
+        </p>
       )}
 
       {tab === 'discussions' && (

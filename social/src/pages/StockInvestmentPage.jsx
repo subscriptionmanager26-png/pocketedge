@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import AssetReviewComposer from '../components/AssetReviewComposer';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
-import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
@@ -21,7 +19,7 @@ import { getStock, getStockHolders, getStockNews } from '../data/stockData';
 import { isDevMockMode } from '../lib/appMode';
 import {
   fetchStockNews,
-  fetchLatestStockExplanation,
+  fetchStockExplanations,
   fetchCorporateActions,
   isStockNewsConfigured,
 } from '../lib/stockNewsApi';
@@ -29,15 +27,7 @@ import CorporateActionsList from '../components/CorporateActionsList';
 import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
-import {
-  addReviewComment,
-  getReviewsForStock,
-  getUserReviewForStock,
-  hydrateCommunityAccess,
-  loadReviewsForStock,
-  subscribeReviews,
-} from '../lib/reviewStore';
-import { getAppCurrentUserId, getPersonSync } from '../lib/socialIdentity';
+import { getPersonSync } from '../lib/socialIdentity';
 import { subscribeWatchlists } from '../lib/watchlistStore';
 import {
   marketStockToDetail,
@@ -50,8 +40,6 @@ export default function StockInvestmentPage({
   ticker,
   onBack,
   onOpenProfile,
-  onGraphChange,
-  onPromptReview,
 }) {
   const seedStock = getStock(ticker);
   const [marketStock, setMarketStock] = useState(null);
@@ -76,17 +64,10 @@ export default function StockInvestmentPage({
     });
   }, [marketStock, seedStock, ticker]);
   const displayStock = stock;
-  const [tab, setTab] = useState('reviews');
-  const [reviewTick, setReviewTick] = useState(0);
+  const [tab, setTab] = useState('insights');
   const [accessTick, setAccessTick] = useState(0);
 
-  useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
   useEffect(() => subscribeWatchlists(() => setAccessTick((n) => n + 1)), []);
-
-  useEffect(() => {
-    hydrateCommunityAccess();
-    loadReviewsForStock(ticker, { isEtf }).catch(() => {});
-  }, [ticker, isEtf]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,24 +87,15 @@ export default function StockInvestmentPage({
     };
   }, [ticker]);
 
-  const me = getAppCurrentUserId();
   const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
-  const reviews = useMemo(() => getReviewsForStock(ticker), [ticker, reviewTick]);
-  const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== me),
-    [reviews, me]
-  );
-  const userReview = useMemo(
-    () => getUserReviewForStock(ticker, { isEtf }),
-    [ticker, isEtf, reviewTick]
-  );
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getStockDiscussions(ticker) : []
   );
   const holders = getStockHolders(ticker);
   const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
   const [newsLoading, setNewsLoading] = useState(false);
-  const [dailyExplanation, setDailyExplanation] = useState(null);
+  const [insights, setInsights] = useState([]);
+  const [insightsLoading, setInsightsLoading] = useState(false);
   const [corporateActions, setCorporateActions] = useState([]);
   const [corpActionsLoading, setCorpActionsLoading] = useState(false);
 
@@ -147,13 +119,18 @@ export default function StockInvestmentPage({
 
   useEffect(() => {
     if (!isStockNewsConfigured()) {
-      setDailyExplanation(null);
+      setInsights([]);
       return undefined;
     }
     let cancelled = false;
-    fetchLatestStockExplanation(ticker).then((result) => {
-      if (!cancelled) setDailyExplanation(result);
-    });
+    setInsightsLoading(true);
+    fetchStockExplanations(ticker)
+      .then((items) => {
+        if (!cancelled) setInsights(items);
+      })
+      .finally(() => {
+        if (!cancelled) setInsightsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -215,11 +192,6 @@ export default function StockInvestmentPage({
     );
   }
 
-  const handleAddComment = async (reviewId, body) => {
-    await addReviewComment(reviewId, body);
-    setReviewTick((n) => n + 1);
-  };
-
   return (
     <div>
       <PageHeader desktopOnly>
@@ -254,34 +226,18 @@ export default function StockInvestmentPage({
         onChange={setTab}
       />
 
-      {tab === 'reviews' && (
-        <>
-          <AssetReviewComposer
-            assetType={isEtf ? 'etf' : 'stock'}
-            ticker={ticker}
-            assetLabel={formatTicker(ticker)}
-            isEtf={isEtf}
-            onSubmitted={() => setReviewTick((n) => n + 1)}
-          />
-          {communityReviews.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-              {userReview
-                ? 'No other community signals yet.'
-                : `No community signals yet - be the first to share your take on ${formatTicker(ticker)}.`}
-            </p>
-          ) : (
-            communityReviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                onAddComment={handleAddComment}
-                onOpenProfile={onOpenProfile}
-                onGraphChange={onGraphChange}
-                onReviewChange={() => setReviewTick((n) => n + 1)}
-              />
-            ))
-          )}
-        </>
+      {tab === 'insights' && (
+        insightsLoading ? (
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            Loading insights…
+          </p>
+        ) : insights.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            No insights yet - daily AI summaries for {formatTicker(ticker)} will appear here.
+          </p>
+        ) : (
+          <NewsList items={insights} />
+        )
       )}
 
       {tab === 'discussions' && (
@@ -338,21 +294,6 @@ export default function StockInvestmentPage({
           preview={<NewsBlurPreview />}
         >
           <div>
-            {dailyExplanation && (
-              <section className="border-b border-pe-border bg-pe-surface/40 px-4 py-4">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-bold text-pe-text">Daily market explanation</h2>
-                  {dailyExplanation.confidence && (
-                    <span className="text-xs font-semibold text-pe-text-muted">
-                      {dailyExplanation.confidence} confidence
-                    </span>
-                  )}
-                </div>
-                <p className="whitespace-pre-line text-sm leading-6 text-pe-text-secondary">
-                  {dailyExplanation.explanation}
-                </p>
-              </section>
-            )}
             {newsLoading ? (
               <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
             ) : news.length === 0 ? (

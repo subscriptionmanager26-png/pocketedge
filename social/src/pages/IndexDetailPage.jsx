@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import AssetReviewComposer from '../components/AssetReviewComposer';
-import ReviewCard from '../components/ReviewCard';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
@@ -17,15 +15,6 @@ import {
 import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { hasMarketAssetAccess } from '../lib/assetAccess';
 import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
-import {
-  addReviewComment,
-  getReviewsForIndex,
-  getUserReviewForIndex,
-  hydrateCommunityAccess,
-  loadReviewsForIndex,
-  subscribeReviews,
-} from '../lib/reviewStore';
-import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isDevMockMode } from '../lib/appMode';
 import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
@@ -34,19 +23,10 @@ export default function IndexDetailPage({
   indexId,
   onBack,
   onOpenProfile,
-  onPromptReview,
 }) {
   const [index, setIndex] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('reviews');
-  const [reviewTick, setReviewTick] = useState(0);
-
-  useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
-
-  useEffect(() => {
-    hydrateCommunityAccess();
-    loadReviewsForIndex(indexId).catch(() => {});
-  }, [indexId]);
+  const [tab, setTab] = useState('insights');
 
   useEffect(() => {
     let cancelled = false;
@@ -105,23 +85,8 @@ export default function IndexDetailPage({
     };
   }, [indexId, displayIndex?.name]);
 
-  const me = getAppCurrentUserId();
   // Holders & News are open to everyone for now (was: !hasAccess).
   const holdersLocked = false && !hasAccess;
-  const reviews = useMemo(() => getReviewsForIndex(indexId), [indexId, reviewTick]);
-  const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== me),
-    [reviews, me]
-  );
-  const userReview = useMemo(
-    () => getUserReviewForIndex(indexId),
-    [indexId, reviewTick]
-  );
-
-  const handleAddComment = async (reviewId, body) => {
-    await addReviewComment(reviewId, body);
-    setReviewTick((n) => n + 1);
-  };
 
   if (!loading && !index) {
     return (
@@ -166,32 +131,10 @@ export default function IndexDetailPage({
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
-      {tab === 'reviews' && (
-        <>
-          <AssetReviewComposer
-            assetType="index"
-            indexId={indexId}
-            assetLabel={displayIndex.name}
-            onSubmitted={() => setReviewTick((n) => n + 1)}
-          />
-          {communityReviews.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-              {userReview
-                ? 'No other community signals yet.'
-                : `No community signals yet - be the first to share your view on ${displayIndex.name}.`}
-            </p>
-          ) : (
-            communityReviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                onAddComment={handleAddComment}
-                onOpenProfile={onOpenProfile}
-                onReviewChange={() => setReviewTick((n) => n + 1)}
-              />
-            ))
-          )}
-        </>
+      {tab === 'insights' && (
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+          No insights yet - daily AI summaries will appear here.
+        </p>
       )}
 
       {tab === 'discussions' && (

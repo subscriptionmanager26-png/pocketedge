@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import AssetReviewComposer from '../components/AssetReviewComposer';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
-import ReviewCard from '../components/ReviewCard';
 import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
@@ -28,23 +26,13 @@ import {
   resolveMarketFund,
 } from '../lib/marketDataApi';
 import { formatPrice } from '../lib/format';
-import {
-  addReviewComment,
-  getReviewsForFund,
-  getUserReviewForFund,
-  hydrateCommunityAccess,
-  loadReviewsForFund,
-  subscribeReviews,
-} from '../lib/reviewStore';
-import { getAppCurrentUserId, getPersonSync } from '../lib/socialIdentity';
+import { getPersonSync } from '../lib/socialIdentity';
 import { isDevMockMode } from '../lib/appMode';
 
 export default function InvestmentPage({
   fundId,
   onBack,
   onOpenProfile,
-  onGraphChange,
-  onPromptReview,
 }) {
   const seedFund = getFund(fundId);
   const [marketFund, setMarketFund] = useState(null);
@@ -58,15 +46,7 @@ export default function InvestmentPage({
       category: 'Mutual Fund',
       nav: null,
     });
-  const [tab, setTab] = useState('reviews');
-  const [reviewTick, setReviewTick] = useState(0);
-
-  useEffect(() => subscribeReviews(() => setReviewTick((n) => n + 1)), []);
-
-  useEffect(() => {
-    hydrateCommunityAccess();
-    loadReviewsForFund(fundId).catch(() => {});
-  }, [fundId]);
+  const [tab, setTab] = useState('insights');
 
   useEffect(() => {
     let cancelled = false;
@@ -91,16 +71,6 @@ export default function InvestmentPage({
   }, [fundId, seedFund]);
 
   const hasAccess = hasFundAccess(fundId);
-  const me = getAppCurrentUserId();
-  const reviews = useMemo(() => getReviewsForFund(fundId), [fundId, reviewTick]);
-  const communityReviews = useMemo(
-    () => reviews.filter((r) => r.authorId !== me),
-    [reviews, me]
-  );
-  const userReview = useMemo(
-    () => getUserReviewForFund(fundId),
-    [fundId, reviewTick]
-  );
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getFundDiscussions(fundId) : []
   );
@@ -136,11 +106,6 @@ export default function InvestmentPage({
     );
   }
 
-  const handleAddComment = async (reviewId, body) => {
-    await addReviewComment(reviewId, body);
-    setReviewTick((n) => n + 1);
-  };
-
   return (
     <div>
       <PageHeader desktopOnly>
@@ -165,31 +130,10 @@ export default function InvestmentPage({
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
-      {tab === 'reviews' && (
-        <>
-          <AssetReviewComposer
-            assetType="fund"
-            fundId={fundId}
-            assetLabel={fund.name}
-            onSubmitted={() => setReviewTick((n) => n + 1)}
-          />
-          {communityReviews.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-              {userReview ? 'No other community signals yet.' : 'No community signals yet.'}
-            </p>
-          ) : (
-            communityReviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                onAddComment={handleAddComment}
-                onOpenProfile={onOpenProfile}
-                onGraphChange={onGraphChange}
-                onReviewChange={() => setReviewTick((n) => n + 1)}
-              />
-            ))
-          )}
-        </>
+      {tab === 'insights' && (
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+          No insights yet - daily AI summaries will appear here.
+        </p>
       )}
 
       {tab === 'discussions' && (

@@ -52,6 +52,41 @@ export async function fetchStockNews(ticker, { limit = 20 } = {}) {
   return (data ?? []).map(mapNewsRow);
 }
 
+/** Map a daily explanation row into an accordion item (title = date, body = AI text). */
+function mapExplanationRow(row) {
+  const asOfDate = row.as_of_date;
+  return {
+    id: asOfDate,
+    asOfDate,
+    title: formatNewsDate(asOfDate) || asOfDate,
+    summary: row.explanation ?? '',
+    confidence: row.confidence ?? null,
+    status: row.status,
+  };
+}
+
+/** Daily AI insights for a ticker, newest first, for the Insights tab. */
+export async function fetchStockExplanations(ticker, { limit = 90 } = {}) {
+  const symbol = normalizeTicker(ticker);
+  if (!symbol || !stockNewsClient) return [];
+
+  const { data, error } = await stockNewsClient
+    .from('mn_daily_stock_explanations')
+    .select('as_of_date, status, explanation, confidence, generated_at')
+    .eq('ticker', symbol)
+    .order('as_of_date', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('fetchStockExplanations failed', error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map(mapExplanationRow)
+    .filter((item) => item.status !== 'failed' && item.summary.trim());
+}
+
 export async function fetchLatestStockExplanation(ticker) {
   const symbol = normalizeTicker(ticker);
   if (!symbol || !stockNewsClient) return null;
