@@ -31,8 +31,9 @@ jobs:
           # Stock-news database
           STOCK_NEWS_SUPABASE_URL: ${{ secrets.STOCK_NEWS_SUPABASE_URL }}
           STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY }}
-          # Public JSONL source; override only if the GitHub data path changes.
-          NEWS_GITHUB_RAW_URL: https://raw.githubusercontent.com/subscriptionmanager26-png/nifty-total-market-news/main/data/stories.jsonl
+          # Private GitHub news source
+          NEWS_GITHUB_API_URL: https://api.github.com/repos/subscriptionmanager26-png/nifty-total-market-news/contents/data/stories.jsonl
+          NIFTY_NEWS_REPO_TOKEN: ${{ secrets.NIFTY_NEWS_REPO_TOKEN }}
           # Mistral
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           MISTRAL_MODEL: mistral-small-latest

@@ -10,8 +10,8 @@ const NEWS_WINDOW_DAYS = 7;
 const PRICE_WINDOW_DAYS = 10;
 const MISTRAL_DELAY_MS = 2_000;
 const UPSERT_BATCH_SIZE = 500;
-const DEFAULT_NEWS_URL =
-  'https://raw.githubusercontent.com/subscriptionmanager26-png/nifty-total-market-news/main/data/stories.jsonl';
+const DEFAULT_NEWS_API_URL =
+  'https://api.github.com/repos/subscriptionmanager26-png/nifty-total-market-news/contents/data/stories.jsonl';
 
 const ANALYST_INSTRUCTIONS = `You are an equity market analyst.
 
@@ -97,8 +97,12 @@ async function fetchAllTickers(newsUrl, newsKey) {
 }
 
 async function fetchRecentNewsFromGitHub(fromDate) {
-  const response = await fetch(process.env.NEWS_GITHUB_RAW_URL || DEFAULT_NEWS_URL, {
-    headers: { Accept: 'application/jsonl, text/plain;q=0.9, */*;q=0.8' },
+  const token = process.env.NIFTY_NEWS_REPO_TOKEN;
+  const response = await fetch(process.env.NEWS_GITHUB_API_URL || DEFAULT_NEWS_API_URL, {
+    headers: {
+      Accept: 'application/vnd.github.raw+json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   });
   if (!response.ok) throw new Error(`GitHub news fetch ${response.status}: ${await response.text()}`);
   const cutoff = Date.parse(`${fromDate}T00:00:00Z`);
