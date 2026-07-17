@@ -81,8 +81,8 @@ async function restJson(url, key, path, options = {}) {
     headers: restHeaders(key, options.headers),
   });
   if (!response.ok) throw new Error(`Supabase ${response.status}: ${await response.text()}`);
-  if (response.status === 204) return null;
-  return response.json();
+  const body = await response.text();
+  return body.trim() ? JSON.parse(body) : null;
 }
 
 async function fetchAllTickers(newsUrl, newsKey) {
