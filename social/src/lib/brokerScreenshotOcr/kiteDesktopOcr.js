@@ -260,6 +260,9 @@ function correctOcrSymbol(symbol) {
   s = s.replace(/SGBJ28VIIL\b/g, 'SGBJ28VIII');
   s = s.replace(/SKYGOID\b/g, 'SKYGOLD');
   s = s.replace(/SKYGO1D\b/g, 'SKYGOLD');
+  // Kite renders a series/segment badge next to the symbol (GOLDBEES-E,
+  // SGBFEB32IV-GB, QPOWER-BE). Drop it so the symbol matches our market keys.
+  s = s.replace(/-[A-Z]{1,2}$/, '');
   return s;
 }
 

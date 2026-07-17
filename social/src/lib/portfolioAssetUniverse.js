@@ -148,7 +148,30 @@ async function findPortfolioAssetExactLocal(meta, needle) {
   return found ? toEntry(found, meta) : null;
 }
 
+// Broker screenshots (e.g. Zerodha Kite) render a series/segment badge next to
+// the symbol that OCR captures as a trailing suffix — GOLDBEES-E, SILVERBEES-E,
+// LIQUIDBEES-F, SGBFEB32IV-GB, QPOWER-BE. These never match a market asset_key,
+// so the base symbol must be recovered before resolution.
+const SEGMENT_SUFFIX_RE = /-[A-Z]{1,2}$/;
+
+export function stripBrokerSegmentSuffix(ticker) {
+  const raw = String(ticker ?? '').trim().toUpperCase();
+  if (!raw || !SEGMENT_SUFFIX_RE.test(raw)) return null;
+  const base = raw.replace(SEGMENT_SUFFIX_RE, '');
+  return base && base !== raw ? base : null;
+}
+
 export async function resolvePortfolioAsset(key) {
+  const raw = String(key ?? '').trim();
+  if (!raw) return null;
+  const direct = await resolvePortfolioAssetExact(raw);
+  if (direct) return direct;
+  const base = stripBrokerSegmentSuffix(raw);
+  if (base) return resolvePortfolioAssetExact(base);
+  return null;
+}
+
+async function resolvePortfolioAssetExact(key) {
   const raw = String(key ?? '').trim();
   if (!raw) return null;
 
