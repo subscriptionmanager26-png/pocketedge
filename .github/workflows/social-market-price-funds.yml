@@ -4,8 +4,8 @@ name: Social market price refresh (funds)
 
 on:
   schedule:
-    # ~11:30 PM IST — NAVs are usually published by then
-    - cron: '30 18 * * *'
+    # 10:00 PM IST — NAVs are usually published by then.
+    - cron: '30 16 * * *'
   workflow_dispatch:
 
 concurrency:
