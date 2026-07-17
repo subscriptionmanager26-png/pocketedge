@@ -13,7 +13,7 @@ import {
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets } from '../lib/portfolioAssetUniverse';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
 import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
@@ -50,6 +50,7 @@ export default function PortfolioPage({
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [formByTicker, setFormByTicker] = useState({});
   const [formSheet, setFormSheet] = useState(null);
+  const [assetsByKey, setAssetsByKey] = useState({});
 
   const ownerId = getAppCurrentUserId();
 
@@ -128,9 +129,59 @@ export default function PortfolioPage({
   const activeList = lists.find((l) => l.id === listId) ?? lists[0];
   const isPortfolio = activeList?.kind === 'portfolio' || activeList?.kind === 'watchlist';
 
+  const holdingKeys = useMemo(
+    () =>
+      [...new Set((activeList?.holdings ?? []).map((holding) => holding?.ticker).filter(Boolean))],
+    [activeList?.holdings]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!holdingKeys.length) {
+      setAssetsByKey({});
+      return undefined;
+    }
+
+    resolvePortfolioAssets(holdingKeys).then((resolved) => {
+      if (cancelled) return;
+      setAssetsByKey(Object.fromEntries(resolved.entries()));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [holdingKeys]);
+
+  const liveActiveList = useMemo(() => {
+    if (!activeList?.holdings?.length) return activeList;
+    return {
+      ...activeList,
+      holdings: activeList.holdings.map((holding) => {
+        const asset = assetsByKey[holding.ticker];
+        const livePrice = Number(asset?.price);
+        const savedPrice = Number(holding.price);
+        const averagePrice = Number(holding.avg) || 0;
+        const price =
+          Number.isFinite(livePrice) && livePrice > 0
+            ? livePrice
+            : Number.isFinite(savedPrice) && savedPrice > 0
+              ? savedPrice
+              : averagePrice;
+
+        return {
+          ...holding,
+          assetType: asset?.kind ?? holding.assetType,
+          assetName: asset?.name ?? holding.assetName,
+          price,
+          changePct: asset?.item?.changePct ?? holding.changePct ?? null,
+        };
+      }),
+    };
+  }, [activeList, assetsByKey]);
+
   const holdingsRows = useMemo(() => {
-    if (!activeList) return [];
-    const metrics = computePortfolioDisplayMetrics(activeList);
+    if (!liveActiveList) return [];
+    const metrics = computePortfolioDisplayMetrics(liveActiveList);
     const holdings = metrics.holdings ?? [];
     const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
     return holdings
@@ -139,7 +190,7 @@ export default function PortfolioPage({
         weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
       }))
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
-  }, [activeList]);
+  }, [liveActiveList]);
 
   const formItems = useMemo(
     () =>
@@ -309,16 +360,16 @@ export default function PortfolioPage({
     if (contentTab === 'trades') setContentTab('posts');
   }, [contentTab]);
   const metrics = useMemo(() => {
-    if (!activeList) return null;
-    if (activeList.kind === 'portfolio' || activeList.kind === 'watchlist') {
-      return computePortfolioDisplayMetrics(activeList);
+    if (!liveActiveList) return null;
+    if (liveActiveList.kind === 'portfolio' || liveActiveList.kind === 'watchlist') {
+      return computePortfolioDisplayMetrics(liveActiveList);
     }
     return computePortfolioDisplayMetrics({
-      ...activeList,
+      ...liveActiveList,
       kind: 'portfolio',
       holdings: MY_PORTFOLIO.holdings,
     });
-  }, [activeList]);
+  }, [liveActiveList]);
 
   if (useBackend() && portfoliosLoading) {
     return (
