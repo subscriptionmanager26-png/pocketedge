@@ -71,6 +71,68 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "social.pocketedge.in" }],
+      "destination": "https://www.pocketedge.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "www.pocketedge.in" },
+        { "type": "query", "key": "ucits", "value": "1" }
+      ],
+      "destination": "https://global.pocketedge.in/?ucits=1",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "www.pocketedge.in" },
+        { "type": "query", "key": "leaderboard", "value": "1" }
+      ],
+      "destination": "https://global.pocketedge.in/?leaderboard=1",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "www.pocketedge.in" },
+        { "type": "query", "key": "legal", "value": "(?<legal>.*)" }
+      ],
+      "destination": "https://global.pocketedge.in/?legal=:legal",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "pocketedge.in" },
+        { "type": "query", "key": "ucits", "value": "1" }
+      ],
+      "destination": "https://global.pocketedge.in/?ucits=1",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "pocketedge.in" },
+        { "type": "query", "key": "leaderboard", "value": "1" }
+      ],
+      "destination": "https://global.pocketedge.in/?leaderboard=1",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "pocketedge.in" },
+        { "type": "query", "key": "legal", "value": "(?<legal>.*)" }
+      ],
+      "destination": "https://global.pocketedge.in/?legal=:legal",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }

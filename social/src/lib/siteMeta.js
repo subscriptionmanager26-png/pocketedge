@@ -1,7 +1,8 @@
-/** Static site / share metadata for global.pocketedge.in (mirrored in index.html). */
+/** Static site / share metadata for www.pocketedge.in (mirrored in social/index.html). */
 export const SITE_NAME = 'PocketEdge';
-export const SITE_URL = 'https://global.pocketedge.in';
+export const SITE_URL = 'https://www.pocketedge.in';
 
+/** Keep the ranking copy that previously lived on www — do not drop for social-only messaging. */
 export const SHARE_TITLE = 'Find Your Edge in Global Markets';
 export const SHARE_DESCRIPTION =
   'Discover opportunities. Build smarter portfolios. Grow with a global community.';

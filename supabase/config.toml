@@ -165,6 +165,8 @@ additional_redirect_urls = [
   "https://www.pocketedge.in/**",
   "https://pocketedge.in",
   "https://pocketedge.in/**",
+  "https://global.pocketedge.in",
+  "https://global.pocketedge.in/**",
   "https://social.pocketedge.in",
   "https://social.pocketedge.in/**",
   "https://pocketedge-rho.vercel.app",

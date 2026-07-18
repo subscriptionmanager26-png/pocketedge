@@ -3,7 +3,7 @@ export const SOCIAL_DESIGN_ROOT = 'social-design-guide';
 
 export const SOCIAL_CANVAS = '#ffffff';
 export const SOCIAL_ACCENT = '#ff6719';
-export const SOCIAL_LIVE_URL = 'https://social.pocketedge.in';
+export const SOCIAL_LIVE_URL = 'https://www.pocketedge.in';
 export const SOCIAL_DESIGN_URL = 'https://design.pocketedge.in';
 
 export const SOCIAL_CSS_VARS = {

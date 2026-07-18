@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.pocketedge.in/sitemap.xml
+Sitemap: https://global.pocketedge.in/sitemap.xml

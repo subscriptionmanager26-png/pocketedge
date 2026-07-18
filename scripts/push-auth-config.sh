@@ -2,8 +2,9 @@
 set -euo pipefail
 
 PROJECT_REF="zweqxjeuwwfrlpbuuayg"
+# Social is the primary product on www; global tools live on global.pocketedge.in
 SITE_URL="https://www.pocketedge.in"
-REDIRECT_URLS="https://www.pocketedge.in/**,https://pocketedge.in/**,https://social.pocketedge.in/**,https://pocketedge-rho.vercel.app/**,http://localhost:5174/**,http://127.0.0.1:5174/**,http://localhost:5175/**,http://127.0.0.1:5175/**"
+REDIRECT_URLS="https://www.pocketedge.in/**,https://pocketedge.in/**,https://global.pocketedge.in/**,https://social.pocketedge.in/**,https://pocketedge-rho.vercel.app/**,http://localhost:5174/**,http://127.0.0.1:5174/**,http://localhost:5175/**,http://127.0.0.1:5175/**"
 
 if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
   echo "Missing SUPABASE_ACCESS_TOKEN."

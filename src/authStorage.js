@@ -35,7 +35,7 @@ function deleteCookie(name) {
   document.cookie = cookie;
 }
 
-/** Cross-subdomain post-auth destination (survives OAuth landing on www.pocketedge.in). */
+/** Cross-subdomain post-auth destination (survives OAuth landing on global.pocketedge.in). */
 export function setPostAuthRedirect(url) {
   writeCookie(POST_AUTH_REDIRECT_COOKIE, url, { maxAgeSec: POST_AUTH_REDIRECT_MAX_AGE_SEC });
 }

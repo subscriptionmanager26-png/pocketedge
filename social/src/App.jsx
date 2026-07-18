@@ -25,6 +25,7 @@ import {
   skipAuthForDev,
 } from './lib/sessionStore';
 import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supabase';
+import { identifyPostHogUser, resetPostHogUser } from './lib/posthog';
 import { clearWatchlists } from './lib/watchlistStore';
 import { clearReviewStore } from './lib/reviewStore';
 import { buildPortfolioShare } from './lib/portfolioShare';
@@ -226,6 +227,11 @@ export default function App() {
       const user = session?.user ?? null;
       setAuthUser(user);
       setAuthView(resolveAuthViewForUser(user));
+      if (user) {
+        identifyPostHogUser(user);
+      } else {
+        resetPostHogUser();
+      }
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => syncAuth(session));

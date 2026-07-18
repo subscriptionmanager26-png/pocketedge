@@ -108,7 +108,7 @@ export function cleanOAuthCallbackUrl() {
   window.history.replaceState({}, '', url.pathname);
 }
 
-/** If OAuth landed on the main site but login started on social, send the user back. */
+/** If OAuth landed on global tools but login started on www (social), send the user back. */
 export function redirectToStoredAuthOrigin() {
   const stored = getPostAuthRedirect();
   if (!stored || !isSameSiteUrl(stored)) return false;

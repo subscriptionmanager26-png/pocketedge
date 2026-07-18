@@ -1,5 +1,15 @@
-/** Canonical origin for social.pocketedge OAuth redirects. */
-export const SOCIAL_PRODUCTION_ORIGIN = 'https://social.pocketedge.in';
+/** Canonical origin for social app OAuth redirects. */
+import {
+  GLOBAL_PRODUCTION_ORIGIN,
+  SOCIAL_LEGACY_ORIGIN,
+  SOCIAL_PRODUCTION_ORIGIN,
+} from './origins';
+
+export {
+  GLOBAL_PRODUCTION_ORIGIN,
+  SOCIAL_LEGACY_ORIGIN,
+  SOCIAL_PRODUCTION_ORIGIN,
+};
 
 export function getSocialOrigin() {
   const configured = import.meta.env.VITE_SOCIAL_SITE_URL?.replace(/\/$/, '');
@@ -16,6 +26,7 @@ export function isSocialOrigin(originOrUrl) {
         : originOrUrl;
     if (origin === getSocialOrigin()) return true;
     if (origin === SOCIAL_PRODUCTION_ORIGIN) return true;
+    if (origin === SOCIAL_LEGACY_ORIGIN) return true;
     if (import.meta.env.DEV && origin === 'http://localhost:5175') return true;
     return false;
   } catch {
@@ -27,7 +38,11 @@ export function isAllowedAuthRedirect(urlString) {
   if (!urlString || typeof window === 'undefined') return false;
   try {
     const target = new URL(urlString, window.location.origin);
-    return target.origin === window.location.origin || isSocialOrigin(target.origin);
+    return (
+      target.origin === window.location.origin ||
+      isSocialOrigin(target.origin) ||
+      target.origin === GLOBAL_PRODUCTION_ORIGIN
+    );
   } catch {
     return false;
   }

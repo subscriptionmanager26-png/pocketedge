@@ -220,7 +220,7 @@ export default function SocialDesignGuidePage() {
                 <p className="text-[15px] leading-6 text-pe-text">
                   This guide documents the patterns used to build{' '}
                   <a href={SOCIAL_LIVE_URL} className="font-semibold text-pe-link underline-offset-2 hover:underline">
-                    social.pocketedge.in
+                    www.pocketedge.in
                   </a>
                   . Tokens live in <Code>social/src/index.css</Code> and <Code>social/tailwind.config.js</Code>.
                   Agents should also read <Code>.cursor/rules/social-design.mdc</Code>.
