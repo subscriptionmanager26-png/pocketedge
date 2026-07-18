@@ -47,6 +47,7 @@ const TAB_TO_ASSET_TYPE = {
   etf: 'etf',
   mutual_funds: 'fund',
   commodity: 'commodity',
+  indices: 'index',
 };
 
 const cache = new Map();
@@ -118,6 +119,25 @@ export function marketAssetRowToItem(row) {
       priceSource,
       syncedAt,
       assetType: 'commodity',
+    };
+  }
+
+  if (type === 'index') {
+    return {
+      id: key,
+      symbol: exchangeSymbol ?? key,
+      name: name ?? exchangeSymbol ?? key,
+      group: exchange,
+      value: price,
+      price,
+      change:
+        previousClose != null && price != null ? Number(price) - Number(previousClose) : null,
+      changePct,
+      previousClose,
+      asOfDate,
+      priceSource,
+      syncedAt,
+      assetType: 'index',
     };
   }
 
@@ -265,7 +285,7 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
     return { items: [], total: 0 };
   }
 
-  // Indices stay on static JSON (not in social_market_assets).
+  // Tabs without a mapped asset type stay on static JSON.
   if (!tabToAssetType(tab)) {
     return searchMarketTabLocal(tab, q, limit);
   }
@@ -439,12 +459,43 @@ async function loadFullMarketTab(tab) {
 }
 
 export async function resolveMarketIndex(indexId) {
-  const cached = findCachedMarketItem('indices', indexId);
+  const id = String(indexId ?? '').trim();
+  if (!id) return null;
+
+  const cached = findCachedMarketItem('indices', id);
   if (cached) return cached;
+
+  if (useMarketRpc()) {
+    try {
+      const found = await lookupMarketAssetRpc(id);
+      if (found?.assetType === 'index') return found;
+    } catch (err) {
+      console.warn('lookup_social_market_asset index failed', err);
+    }
+
+    try {
+      const { items } = await searchMarketTab('indices', id, 20);
+      const match = items.find(
+        (item) =>
+          item.id === id ||
+          item.symbol === id ||
+          String(item.id ?? '').toUpperCase() === id.toUpperCase() ||
+          String(item.symbol ?? '').toUpperCase() === id.toUpperCase()
+      );
+      if (match) return match;
+    } catch (err) {
+      console.warn('search index failed, falling back to JSON', err);
+    }
+  }
 
   const items = await loadFullMarketTab('indices');
   return (
-    items.find((item) => item.id === indexId || item.symbol === indexId) ?? null
+    items.find(
+      (item) =>
+        item.id === id ||
+        item.symbol === id ||
+        String(item.id ?? '').toUpperCase() === id.toUpperCase()
+    ) ?? null
   );
 }
 

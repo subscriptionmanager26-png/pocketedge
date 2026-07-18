@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * Refresh PocketEdge social market quotes from NSE (stocks/ETFs/SGBs), AMFI
- * (funds), and MCX (commodities). Also upserts daily close / NAV / spot rows
- * into social_market_price_history.
+ * Refresh PocketEdge social market quotes from NSE (stocks/ETFs/SGBs/indices),
+ * AMFI (funds), and MCX (commodities). Also upserts daily close / NAV / spot
+ * rows into social_market_price_history.
  *
  * Usage:
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=all
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=equity
+ *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=indices
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=funds
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=commodities
  *
@@ -22,6 +23,7 @@ import { fetchMcxSpotPrices } from './lib/indian-markets/mcx.js';
 import {
   createNseSession,
   fetchEtfList,
+  fetchIndices,
   fetchSgbQuotes,
   fetchStocksTraded,
 } from './lib/indian-markets/nse.js';
@@ -54,8 +56,10 @@ function parseArgs(argv) {
     if (arg === '--no-history') args.writeHistory = false;
     if (arg === '--dry-run') args.dryRun = true;
   }
-  if (!['all', 'equity', 'funds', 'fund-history', 'commodities'].includes(args.mode)) {
-    throw new Error(`Invalid --mode=${args.mode}. Use all|equity|funds|fund-history|commodities`);
+  if (!['all', 'equity', 'indices', 'funds', 'fund-history', 'commodities'].includes(args.mode)) {
+    throw new Error(
+      `Invalid --mode=${args.mode}. Use all|equity|indices|funds|fund-history|commodities`
+    );
   }
   if (
     args.mode === 'fund-history' &&
@@ -255,6 +259,70 @@ function equityHistoryRows(quotes, assetType, asOfDate, syncedAt) {
       source: 'nse',
       synced_at: syncedAt,
     }));
+}
+
+function indexAssetRows(indices, asOfDate, syncedAt) {
+  return indices
+    .filter((row) => row.symbol && row.value != null && Number.isFinite(Number(row.value)))
+    .map((row) => {
+      const symbol = String(row.symbol).trim().toUpperCase();
+      return {
+        asset_type: 'index',
+        asset_key: symbol,
+        name: row.name ?? symbol,
+        price: Number(row.value),
+        change_pct: row.changePct ?? null,
+        previous_close: row.previousClose ?? null,
+        as_of_date: asOfDate,
+        price_source: 'nse',
+        // Reuse exchange for NSE index group (no dedicated group column).
+        exchange: row.group ?? null,
+        exchange_symbol: symbol,
+        synced_at: syncedAt,
+      };
+    });
+}
+
+function indexHistoryRows(indices, asOfDate, syncedAt) {
+  return indices
+    .filter((row) => row.symbol && row.value != null && Number.isFinite(Number(row.value)))
+    .map((row) => {
+      const symbol = String(row.symbol).trim().toUpperCase();
+      return {
+        asset_type: 'index',
+        asset_key: symbol,
+        as_of_date: asOfDate,
+        close_price: Number(row.value),
+        previous_close: row.previousClose ?? null,
+        change_pct: row.changePct ?? null,
+        source: 'nse',
+        synced_at: syncedAt,
+      };
+    });
+}
+
+async function refreshIndices({ url, apiKey, writeHistory, asOfDate, syncedAt, dryRun = false }) {
+  console.log('Fetching NSE indices...');
+  const nseFetch = await createNseSession(SOURCES.nseLiveIndices);
+  const indices = await fetchIndices(nseFetch);
+  const assetRows = indexAssetRows(indices, asOfDate, syncedAt);
+  console.log(`NSE indices: ${assetRows.length} quotes (from ${indices.length} rows).`);
+
+  if (dryRun) {
+    return { indexUpdated: 0, historyUpserted: 0, indexCount: assetRows.length };
+  }
+
+  console.log(`Upserting ${assetRows.length} index quotes (as_of ${asOfDate})...`);
+  const indexUpdated = await upsertAssets(url, apiKey, assetRows);
+
+  let historyUpserted = 0;
+  if (writeHistory) {
+    const historyRows = indexHistoryRows(indices, asOfDate, syncedAt);
+    console.log(`Upserting ${historyRows.length} index history points...`);
+    historyUpserted = await upsertHistory(url, apiKey, historyRows);
+  }
+
+  return { indexUpdated, historyUpserted, indexCount: assetRows.length };
 }
 
 function bseRows({ bseQuotes, universe, nseSymbols, asOfDate, syncedAt }) {
@@ -751,6 +819,7 @@ async function main() {
   let equityUpdated = 0;
   let fundUpdated = 0;
   let commodityUpdated = 0;
+  let indexUpdated = 0;
   let historyUpserted = 0;
   const meta = { as_of_date: asOfDate };
 
@@ -783,6 +852,19 @@ async function main() {
         nse_covered: eq.bseMeta.nseCovered.length,
         isins: eq.bseIsinsUpdated,
       };
+    }
+
+    if (args.mode === 'all' || args.mode === 'equity' || args.mode === 'indices') {
+      const ix = await refreshIndices({
+        url,
+        apiKey,
+        writeHistory: args.writeHistory,
+        asOfDate,
+        syncedAt,
+      });
+      indexUpdated = ix.indexUpdated;
+      historyUpserted += ix.historyUpserted;
+      meta.indices = ix.indexCount;
     }
 
     if (args.mode === 'all' || args.mode === 'funds') {
@@ -836,7 +918,7 @@ async function main() {
     }
 
     console.log(
-      `Done. equity=${equityUpdated} funds=${fundUpdated} commodities=${commodityUpdated} history=${historyUpserted}`
+      `Done. equity=${equityUpdated} indices=${indexUpdated} funds=${fundUpdated} commodities=${commodityUpdated} history=${historyUpserted}`
     );
   } catch (err) {
     if (runId) {
