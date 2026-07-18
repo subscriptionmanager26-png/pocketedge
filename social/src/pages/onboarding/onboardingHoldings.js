@@ -150,6 +150,7 @@ export function mergeHoldingsToEditRows(rows) {
 
   for (const row of rows) {
     const ticker = String(row.ticker ?? '').trim();
+    const isin = String(row.isin ?? '').trim().toUpperCase();
     const key = ticker.toUpperCase();
     const qty = Number(row.qty) || 0;
     const invested = Number(row.invested);
@@ -164,6 +165,7 @@ export function mergeHoldingsToEditRows(rows) {
       byTicker.set(key, {
         ticker,
         name: row.name ?? '',
+        isin: /^[A-Z0-9]{12}$/.test(isin) ? isin : null,
         qty,
         invested: rowInvested,
       });
@@ -177,6 +179,7 @@ export function mergeHoldingsToEditRows(rows) {
       qty: nextQty,
       invested: nextInvested,
       name: prior.name || row.name || '',
+      isin: prior.isin || (/^[A-Z0-9]{12}$/.test(isin) ? isin : null),
     });
   }
 
@@ -186,6 +189,7 @@ export function mergeHoldingsToEditRows(rows) {
       id: crypto.randomUUID(),
       ticker: row.ticker,
       name: row.name,
+      isin: row.isin,
       qty: String(row.qty),
       invested: String(Math.round(row.invested * 100) / 100),
       avg: String(Math.round(avg * 10000) / 10000),

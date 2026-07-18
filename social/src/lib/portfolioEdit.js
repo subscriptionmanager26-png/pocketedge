@@ -112,6 +112,7 @@ export function buildLiveHoldings(rows, assetsByKey = new Map()) {
     return recalcHolding({
       ticker: asset?.key ?? ticker,
       assetName: asset?.name ?? row.name?.trim() ?? '',
+      isin: asset?.isin ?? row.isin ?? null,
       qty,
       avg,
       price,

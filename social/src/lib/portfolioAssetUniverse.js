@@ -75,6 +75,7 @@ function toEntry(item, { kind, label }) {
     kind,
     kindLabel: label,
     price: portfolioAssetPrice(item, kind),
+    isin: item.isin ?? null,
     item,
   };
 }

@@ -91,6 +91,19 @@ const PROFILE_TABS = [
 
 const RETURN_PERIODS = ['1D', '1W', '1M', '1Y'];
 const RETURN_PERIOD_KEY = 'pe_profile_return_period';
+const ISIN_RE = /^[A-Z0-9]{12}$/;
+
+function holdingIsin(value) {
+  const isin = String(value ?? '').trim().toUpperCase();
+  return ISIN_RE.test(isin) ? isin : null;
+}
+
+function holdingFallbackName(row) {
+  const value = String(row?.name ?? row?.ticker ?? '').trim().toUpperCase();
+  // Broker/exchange series badges are temporary suffixes: GOLDBEES-X,
+  // GOLDBEES - SE, etc. Keep the stable root for non-ISIN matching.
+  return value.replace(/\s*-\s*[A-Z]{1,3}$/, '').trim();
+}
 
 function getStoredReturnPeriod() {
   try {
@@ -853,6 +866,7 @@ function PortfolioDetailView({
     id: makeRowId(),
     ticker: '',
     name: '',
+    isin: null,
     invested: '',
     qty: '',
     avg: '',
@@ -876,6 +890,7 @@ function PortfolioDetailView({
         id: rowId,
         ticker: h.ticker,
         name: fundName,
+        isin: holdingIsin(h.isin),
         weight: weightPct === '' ? '' : String(Number(weightPct).toFixed(1)),
         invested: '',
         qty: '',
@@ -889,6 +904,7 @@ function PortfolioDetailView({
       id: rowId,
       ticker: h.ticker,
       name: fundName,
+      isin: holdingIsin(h.isin),
       invested: invested ? String(invested) : '',
       qty: String(h.qty ?? ''),
       avg: avg ? String(avg) : '',
@@ -912,6 +928,7 @@ function PortfolioDetailView({
               h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? ''))
                 ? h.assetName ?? ''
                 : '',
+          isin: holdingIsin(h.isin),
             weight:
               h.weightPct != null
                 ? String(h.weightPct)
@@ -961,17 +978,28 @@ function PortfolioDetailView({
         ...current.map((row) => row.ticker),
         ...incoming.map((row) => row.ticker),
       ]);
-      const importedByKey = new Map();
+      const importedByIsin = new Map();
+      const importedByFallbackName = new Map();
+      const importedRowsByKey = new Map();
       for (const row of incoming) {
         const asset = assetsByToken.get(row.ticker);
         const key = asset?.key ?? row.ticker;
-        importedByKey.set(key, {
+        const isin = holdingIsin(row.isin);
+        const prepared = {
           ...row,
           ticker: key,
           name: asset ? (asset.kind === 'fund' ? asset.name : asset.symbol ?? '') : row.name,
+          isin,
           unmapped: !asset,
           missingFromImport: false,
-        });
+        };
+        importedRowsByKey.set(key, prepared);
+        if (isin) {
+          importedByIsin.set(isin, prepared);
+        } else {
+          const fallbackName = holdingFallbackName(prepared);
+          if (fallbackName) importedByFallbackName.set(fallbackName, prepared);
+        }
       }
 
       setEditRows((previous) => {
@@ -979,16 +1007,28 @@ function PortfolioDetailView({
         const consumed = new Set();
         for (const row of previous) {
           if (!String(row.ticker ?? '').trim()) continue;
-          const key = assetsByToken.get(row.ticker)?.key ?? row.ticker;
-          const imported = importedByKey.get(key);
+          const asset = assetsByToken.get(row.ticker);
+          const key = asset?.key ?? row.ticker;
+          const existingIsin = holdingIsin(row.isin) ?? holdingIsin(asset?.isin);
+          // When an ISIN was provided by the import it is the sole identity.
+          // Name/symbol matching is only a fallback for rows with no ISIN.
+          const imported = existingIsin
+            ? importedByIsin.get(existingIsin)
+            : importedByFallbackName.get(holdingFallbackName(row));
           if (imported) {
-            merged.push({ ...row, ...imported, id: row.id, missingFromImport: false });
-            consumed.add(key);
+            merged.push({
+              ...row,
+              ...imported,
+              isin: imported.isin ?? existingIsin,
+              id: row.id,
+              missingFromImport: false,
+            });
+            consumed.add(imported.ticker);
           } else {
-            merged.push({ ...row, missingFromImport: true });
+            merged.push({ ...row, isin: existingIsin, missingFromImport: true });
           }
         }
-        for (const [key, imported] of importedByKey) {
+        for (const [key, imported] of importedRowsByKey) {
           if (consumed.has(key)) continue;
           merged.push({ ...imported, id: makeRowId(), missingFromImport: false });
         }
