@@ -109,7 +109,9 @@ export function parseNavHistory(text) {
       isinPayout: cols[2] && cols[2] !== '-' ? cols[2] : null,
       isinReinvest: cols[3] && cols[3] !== '-' ? cols[3] : null,
       nav,
-      navDate: parseNavDate(cols[8]),
+      // Historical reports use the final populated column for NAV date
+      // (currently index 7), unlike NAVAll.txt where it is index 5.
+      navDate: parseNavDate([...cols].reverse().find((value) => /\d{2}-[A-Za-z]{3}-\d{4}/.test(value))),
     });
   }
 
