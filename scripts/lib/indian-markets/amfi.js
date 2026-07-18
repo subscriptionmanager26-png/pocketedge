@@ -85,3 +85,33 @@ export function parseNavAll(text) {
 
   return schemes;
 }
+
+/**
+ * Parse AMFI's historical NAV report. It is a different semicolon-delimited
+ * layout from NAVAll.txt, but still includes the scheme code, ISINs, NAV, and
+ * effective NAV date needed for a history-only backfill.
+ */
+export function parseNavHistory(text) {
+  const schemes = [];
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!SCHEME_ROW.test(line)) continue;
+
+    const cols = line.split(';').map((column) => column.trim());
+    const nav = Number(cols[4]);
+    if (!cols[0] || !Number.isFinite(nav)) continue;
+
+    schemes.push({
+      id: cols[0],
+      schemeCode: cols[0],
+      name: cols[1] ?? '',
+      isinPayout: cols[2] && cols[2] !== '-' ? cols[2] : null,
+      isinReinvest: cols[3] && cols[3] !== '-' ? cols[3] : null,
+      nav,
+      navDate: parseNavDate(cols[8]),
+    });
+  }
+
+  return schemes;
+}

@@ -15,7 +15,7 @@
  *   SUPABASE_SERVICE_ROLE_KEY (preferred)
  */
 
-import { parseNavAll } from './lib/indian-markets/amfi.js';
+import { parseNavAll, parseNavHistory } from './lib/indian-markets/amfi.js';
 import { fetchBseEquityQuotes, loadBseFallbackUniverse } from './lib/indian-markets/bse.js';
 import { SOURCES, UA } from './lib/indian-markets/constants.js';
 import { fetchMcxSpotPrices } from './lib/indian-markets/mcx.js';
@@ -45,14 +45,23 @@ function optionalEnv(...names) {
 }
 
 function parseArgs(argv) {
-  const args = { mode: 'all', writeHistory: true, dryRun: false };
+  const args = { mode: 'all', writeHistory: true, dryRun: false, fundHistoryDate: null };
   for (const arg of argv) {
     if (arg.startsWith('--mode=')) args.mode = arg.slice('--mode='.length);
+    if (arg.startsWith('--fund-history-date=')) {
+      args.fundHistoryDate = arg.slice('--fund-history-date='.length);
+    }
     if (arg === '--no-history') args.writeHistory = false;
     if (arg === '--dry-run') args.dryRun = true;
   }
-  if (!['all', 'equity', 'funds', 'commodities'].includes(args.mode)) {
-    throw new Error(`Invalid --mode=${args.mode}. Use all|equity|funds|commodities`);
+  if (!['all', 'equity', 'funds', 'fund-history', 'commodities'].includes(args.mode)) {
+    throw new Error(`Invalid --mode=${args.mode}. Use all|equity|funds|fund-history|commodities`);
+  }
+  if (
+    args.mode === 'fund-history' &&
+    !/^\d{4}-\d{2}-\d{2}$/.test(String(args.fundHistoryDate ?? ''))
+  ) {
+    throw new Error('fund-history mode requires --fund-history-date=YYYY-MM-DD');
   }
   return args;
 }
@@ -567,6 +576,46 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   return { fundUpdated, fundIsinsUpdated, historyUpserted, schemeCount: assetRows.length };
 }
 
+function amfiHistoryUrl(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][
+    month - 1
+  ];
+  return `https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=${day
+    .toString()
+    .padStart(2, '0')}-${monthName}-${year}`;
+}
+
+/**
+ * Backfill a historical AMFI date without altering the current fund quote.
+ * The live holdings and daily P&L continue to use the latest NAV in
+ * social_market_assets; this only fills missing price-history points.
+ */
+async function backfillFundHistory({ url, apiKey, historyDate, syncedAt }) {
+  const sourceUrl = amfiHistoryUrl(historyDate);
+  console.log(`Fetching AMFI historical NAV report for ${historyDate}...`);
+  const res = await fetch(sourceUrl, { headers: { 'User-Agent': UA } });
+  if (!res.ok) throw new Error(`AMFI history fetch failed: ${res.status}`);
+
+  const schemes = parseNavHistory(await res.text());
+  const rows = schemes
+    .filter((scheme) => scheme.nav != null && scheme.navDate === historyDate)
+    .map((scheme) => ({
+      asset_type: 'fund',
+      asset_key: String(scheme.schemeCode).trim(),
+      as_of_date: historyDate,
+      close_price: scheme.nav,
+      previous_close: null,
+      change_pct: null,
+      source: 'amfi',
+      synced_at: syncedAt,
+    }));
+
+  console.log(`Upserting ${rows.length} historical fund NAVs for ${historyDate}...`);
+  const historyUpserted = await upsertHistory(url, apiKey, rows);
+  return { historyUpserted, schemeCount: rows.length };
+}
+
 async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedAt }) {
   console.log('Fetching MCX spot market prices...');
   const { items } = await fetchMcxSpotPrices();
@@ -747,6 +796,18 @@ async function main() {
       historyUpserted += fd.historyUpserted;
       meta.funds = fd.schemeCount;
       meta.fund_isins = fd.fundIsinsUpdated;
+    }
+
+    if (args.mode === 'fund-history') {
+      const fd = await backfillFundHistory({
+        url,
+        apiKey,
+        historyDate: args.fundHistoryDate,
+        syncedAt,
+      });
+      historyUpserted += fd.historyUpserted;
+      meta.fund_history_date = args.fundHistoryDate;
+      meta.funds = fd.schemeCount;
     }
 
     if (args.mode === 'all' || args.mode === 'commodities') {

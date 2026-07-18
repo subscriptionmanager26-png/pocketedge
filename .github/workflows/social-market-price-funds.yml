@@ -7,6 +7,11 @@ on:
     # 10:00 PM IST — NAVs are usually published by then.
     - cron: '30 16 * * *'
   workflow_dispatch:
+    inputs:
+      history_date:
+        description: 'Optional historical AMFI date to backfill (YYYY-MM-DD)'
+        required: false
+        type: string
 
 concurrency:
   group: social-market-price-funds
@@ -29,4 +34,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/refresh-social-market-prices.mjs --mode=funds
+        run: |
+          if [ -n "${{ inputs.history_date }}" ]; then
+            node scripts/refresh-social-market-prices.mjs --mode=fund-history --fund-history-date="${{ inputs.history_date }}"
+          else
+            node scripts/refresh-social-market-prices.mjs --mode=funds
+          fi
