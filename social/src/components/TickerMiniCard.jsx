@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { getPortfolioWeightPct, getPosition } from '../data/mockData';
@@ -158,6 +158,7 @@ function TickerCardContent({ ticker, authorId, onClose }) {
 
 export default function TickerMiniCard({ ticker, authorId, onClose }) {
   const ref = useRef(null);
+  const anchorRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const [isMobile, setIsMobile] = useState(() =>
@@ -165,6 +166,7 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
       ? window.matchMedia('(max-width: 767px)').matches
       : false
   );
+  const [desktopPos, setDesktopPos] = useState(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -172,6 +174,40 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
+
+  useLayoutEffect(() => {
+    if (isMobile) {
+      setDesktopPos(null);
+      return undefined;
+    }
+
+    const CARD_WIDTH = 288; // w-72
+    const GAP = 8;
+    const ESTIMATED_HEIGHT = 240;
+
+    const updatePosition = () => {
+      const anchor = anchorRef.current?.parentElement;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      let left = rect.left;
+      left = Math.min(left, window.innerWidth - CARD_WIDTH - GAP);
+      left = Math.max(GAP, left);
+
+      let top = rect.bottom + GAP;
+      if (top + ESTIMATED_HEIGHT > window.innerHeight - GAP) {
+        top = Math.max(GAP, rect.top - ESTIMATED_HEIGHT - GAP);
+      }
+      setDesktopPos({ top, left });
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isMobile, ticker]);
 
   useEffect(() => {
     // Desktop popover only: close on outside click / Escape.
@@ -198,7 +234,10 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
     let remove = () => {};
     const timer = window.setTimeout(() => {
       const onPointerDown = (event) => {
-        if (ref.current && !ref.current.contains(event.target)) onCloseRef.current?.();
+        if (ref.current?.contains(event.target)) return;
+        // Let the chip button handle its own toggle; don't race-close it.
+        if (anchorRef.current?.parentElement?.contains(event.target)) return;
+        onCloseRef.current?.();
       };
       const onKeyDown = (event) => {
         if (event.key === 'Escape') onCloseRef.current?.();
@@ -239,14 +278,25 @@ export default function TickerMiniCard({ ticker, authorId, onClose }) {
     );
   }
 
+  // Anchor stays in-flow so we can measure the chip; the card is portaled so
+  // overflow-x on the disclosure strip cannot clip it into a nested scroller.
   return (
-    <span
-      ref={ref}
-      role="dialog"
-      aria-label={`${ticker} details`}
-      className="absolute left-0 top-full z-30 mt-2 w-72 rounded-[10px] border border-pe-border-strong bg-pe-canvas p-3.5 shadow-lg"
-    >
-      <TickerCardContent ticker={ticker} authorId={authorId} onClose={onClose} />
-    </span>
+    <>
+      <span ref={anchorRef} aria-hidden className="pointer-events-none absolute left-0 top-0 h-0 w-0" />
+      {desktopPos
+        ? createPortal(
+            <div
+              ref={ref}
+              role="dialog"
+              aria-label={`${ticker} details`}
+              style={{ top: desktopPos.top, left: desktopPos.left }}
+              className="fixed z-50 w-72 rounded-[10px] border border-pe-border-strong bg-pe-canvas p-3.5 shadow-lg"
+            >
+              <TickerCardContent ticker={ticker} authorId={authorId} onClose={onClose} />
+            </div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
