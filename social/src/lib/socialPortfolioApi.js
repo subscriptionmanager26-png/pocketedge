@@ -17,7 +17,7 @@ import {
   removeLocalDraft,
 } from './localPortfolioDraftStore';
 import { invalidateAuthorPositions } from './authorPositionsStore';
-import { cachedFetch, invalidateCache } from './queryCache';
+import { cachedFetch, invalidateCache, getCached } from './queryCache';
 
 const PORTFOLIOS_TTL_MS = 45_000;
 
@@ -28,6 +28,12 @@ function useBackend() {
 function invalidatePortfolioCaches(ownerId) {
   invalidateCache('user-portfolios', ownerId);
   invalidateAuthorPositions(ownerId);
+}
+
+/** Sync peek for instant paint; null if cold. */
+export function peekUserPortfolios(ownerId) {
+  if (!useBackend()) return null;
+  return getCached('user-portfolios', ownerId, PORTFOLIOS_TTL_MS) ?? null;
 }
 
 export function isLocalDraftId(portfolioId) {

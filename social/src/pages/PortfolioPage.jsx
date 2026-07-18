@@ -16,7 +16,7 @@ import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
-import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
+import { fetchUserPortfolios, peekUserPortfolios } from '../lib/socialPortfolioApi';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockMode } from '../lib/appMode';
@@ -46,8 +46,14 @@ export default function PortfolioPage({
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [watchlistTick, setWatchlistTick] = useState(0);
   const [portfolioTick, setPortfolioTick] = useState(0);
-  const [remotePortfolios, setRemotePortfolios] = useState([]);
-  const [portfoliosLoading, setPortfoliosLoading] = useState(false);
+  const [remotePortfolios, setRemotePortfolios] = useState(() => {
+    const cached = peekUserPortfolios(getAppCurrentUserId());
+    return Array.isArray(cached) ? cached.filter((p) => !p.isDraft) : [];
+  });
+  const [portfoliosLoading, setPortfoliosLoading] = useState(() => {
+    const cached = peekUserPortfolios(getAppCurrentUserId());
+    return !(Array.isArray(cached) && cached.length);
+  });
   const [formByTicker, setFormByTicker] = useState({});
   const [formSheet, setFormSheet] = useState(null);
   const [assetsByKey, setAssetsByKey] = useState({});
@@ -60,13 +66,23 @@ export default function PortfolioPage({
     let cancelled = false;
 
     if (useBackend()) {
-      setPortfoliosLoading(true);
+      const cached = peekUserPortfolios(ownerId);
+      // Instant paint from cache; only block on cold load.
+      if (Array.isArray(cached) && cached.length) {
+        setRemotePortfolios(cached.filter((p) => !p.isDraft));
+        setPortfoliosLoading(false);
+      } else {
+        setPortfoliosLoading(true);
+      }
+
       fetchUserPortfolios(ownerId)
         .then((rows) => {
           if (!cancelled) setRemotePortfolios(rows.filter((p) => !p.isDraft));
         })
         .catch(() => {
-          if (!cancelled) setRemotePortfolios([]);
+          if (!cancelled && !(Array.isArray(cached) && cached.length)) {
+            setRemotePortfolios([]);
+          }
         })
         .finally(() => {
           if (!cancelled) setPortfoliosLoading(false);
