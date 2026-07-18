@@ -4,6 +4,7 @@ import { formatPct, pnlClass } from '../lib/format';
 import { defaultPortfolioShareBody } from '../lib/portfolioShare';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
 import { searchPortfolioAssets } from '../lib/portfolioAssetUniverse';
+import { classifyPostImageAspect } from './PostImage';
 import {
   formatTicker,
   getMentionSessionQuery,
@@ -12,9 +13,16 @@ import {
   replaceMentionSession,
 } from '../lib/tickers';
 
+const COMPOSE_IMAGE_FRAME = {
+  landscape: 'aspect-video w-full',
+  square: 'aspect-square mx-auto w-full max-w-md',
+  portrait: 'aspect-[9/16] mx-auto w-full max-h-[50vh] max-w-[240px]',
+};
+
 export default function ComposeModal({ open, onClose, onPost, portfolioShare = null }) {
   const [body, setBody] = useState('');
   const [image, setImage] = useState(null);
+  const [imageAspect, setImageAspect] = useState('landscape');
   const [share, setShare] = useState(null);
   const [cursor, setCursor] = useState(0);
   const [mentionStart, setMentionStart] = useState(null);
@@ -49,6 +57,7 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
     setShare(portfolioShare);
     setBody(portfolioShare ? defaultPortfolioShareBody(portfolioShare) : '');
     setImage(null);
+    setImageAspect('landscape');
     setCursor(0);
     exitMentionSearch();
   }, [open, portfolioShare]);
@@ -121,6 +130,7 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
   const reset = () => {
     setBody('');
     setImage(null);
+    setImageAspect('landscape');
     setShare(null);
     setCursor(0);
     exitMentionSearch();
@@ -296,10 +306,21 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
 
           {image && (
             <div className="relative mt-3 overflow-hidden rounded-lg">
-              <img src={image} alt="" className="aspect-[16/10] w-full object-cover" />
+              <img
+                src={image}
+                alt=""
+                className={`${COMPOSE_IMAGE_FRAME[imageAspect] ?? COMPOSE_IMAGE_FRAME.landscape} object-cover`}
+                onLoad={(event) => {
+                  const { naturalWidth, naturalHeight } = event.currentTarget;
+                  setImageAspect(classifyPostImageAspect(naturalWidth, naturalHeight));
+                }}
+              />
               <button
                 type="button"
-                onClick={() => setImage(null)}
+                onClick={() => {
+                  setImage(null);
+                  setImageAspect('landscape');
+                }}
                 className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white"
               >
                 <X className="h-4 w-4" />

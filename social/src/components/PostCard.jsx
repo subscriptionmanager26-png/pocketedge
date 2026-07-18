@@ -3,6 +3,7 @@ import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
 import CommentRow from './CommentRow';
 import DisclosureStrip from './DisclosureStrip';
+import PostImage from './PostImage';
 import TickerText from './TickerText';
 import TradePill from './TradePill';
 import { PortfolioSharePreview } from './ComposeModal';
@@ -159,21 +160,11 @@ export default function PostCard({
           )}
 
           {post.image && (
-            <button
-              type="button"
-              onClick={(event) => {
-                stopBubble(event);
-                if (!isDetail) openPost();
-              }}
-              className={`mt-3.5 block w-full overflow-hidden rounded-lg text-left ${isDetail ? '' : 'cursor-pointer'}`}
-            >
-              <img
-                src={post.image}
-                alt=""
-                className="aspect-[16/10] w-full object-cover"
-                loading="lazy"
-              />
-            </button>
+            <PostImage
+              src={post.image}
+              isDetail={isDetail}
+              onOpenPost={openPost}
+            />
           )}
 
           {tickers.length > 0 && (
