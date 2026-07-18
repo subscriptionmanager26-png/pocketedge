@@ -122,13 +122,38 @@ export default function Shell({
     }
 
     const restore = scrollAction === 'back' ? getScrollPosition(routeKey) : 0;
+    prevRouteKeyRef.current = routeKey;
 
-    requestAnimationFrame(() => {
+    // Feed/detail swaps remount content; a single rAF often runs before layout
+    // finishes, so the browser clamps scroll to 0. Re-apply until it sticks.
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = restore > 0 ? 12 : 1;
+
+    const apply = () => {
+      if (cancelled) return;
       writeScrollTop(container, restore);
-      onScrollActionConsumed?.();
+      attempts += 1;
+      if (restore <= 0 || attempts >= maxAttempts) {
+        onScrollActionConsumed?.();
+        return;
+      }
+      const current = readScrollTop(container);
+      if (current >= restore - 2) {
+        onScrollActionConsumed?.();
+        return;
+      }
+      window.setTimeout(apply, attempts < 4 ? 16 : 50);
+    };
+
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(apply);
     });
 
-    prevRouteKeyRef.current = routeKey;
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
   }, [routeKey, scrollAction, onScrollActionConsumed]);
 
   const selectFeedMode = (mode) => {

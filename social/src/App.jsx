@@ -670,6 +670,13 @@ export default function App() {
     navigate(postPath(postId));
   };
 
+  const closePost = useCallback(() => {
+    backScroll();
+    setSelectedPostId(null);
+    setTab('feed');
+    navigate(tabPath('feed'));
+  }, [backScroll, navigate]);
+
   const openSettings = () => {
     resetScroll();
     setSelectedPostId(null);
@@ -780,7 +787,7 @@ export default function App() {
   const mobileBack = useMemo(() => {
     if (authView !== 'app') return null;
     if (selectedPostId && tab === 'feed') {
-      return { label: 'Back', onBack: () => { backScroll(); navigate(tabPath('feed')); } };
+      return { label: 'Back', onBack: closePost };
     }
     if (tab === 'markets' && selectedCommodityId) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
@@ -846,6 +853,7 @@ export default function App() {
     profilePortfolioId,
     profileFollowListMode,
     backScroll,
+    closePost,
     navigate,
     closeMarketDetail,
     getMarketBackLabel,
@@ -926,10 +934,7 @@ export default function App() {
               <PostDetailPage
                 postId={selectedPostId}
                 posts={posts}
-                onBack={() => {
-                  backScroll();
-                  navigate(tabPath('feed'));
-                }}
+                onBack={closePost}
                 onOpenProfile={openProfile}
                 onAddComment={(text) => handleAddComment(selectedPostId, text)}
                 onToggleLike={handleTogglePostLike}
