@@ -37,7 +37,7 @@ import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } 
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
-import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
 import { FormStatusTag } from '../components/FormStatusIcons';
 import { fetchPortfolioFormByTicker } from '../lib/portfolioForm';
 import PortfolioCard from '../components/PortfolioCard';
@@ -73,7 +73,6 @@ import {
 } from '../lib/portfolioEdit';
 import PortfolioAssetSearchField from '../components/PortfolioAssetSearchField';
 import CostModeToggle from '../components/CostModeToggle';
-import { resolvePortfolioAssets } from '../lib/portfolioAssetUniverse';
 import { parseZerodhaHoldingsScreenshots } from './onboarding/onboardingHoldings';
 import { parseZerodhaHoldingsWorkbook } from './onboarding/zerodhaHoldingsWorkbook';
 import {
@@ -1924,18 +1923,15 @@ function PortfolioDiscussion({
 }
 
 function portfolioHoldingsNeedClientResolve(portfolio) {
-  // Always resolve live market data when the portfolio has any positions: the
-  // stored snapshot carries a name/price from save time but never a live day
-  // change, so relying on it alone would freeze holdings at "no change".
   const holdings = portfolio.holdings ?? [];
-  if (holdings.length) return holdings.some((h) => Boolean(h.ticker));
+  if (holdings.length) return holdingsNeedLiveResolve(holdings);
   return (portfolio.tickers ?? []).length > 0;
 }
 
 function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
-  const [assetsByKey, setAssetsByKey] = useState({});
+  const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [formByTicker, setFormByTicker] = useState({});
   const overallReturn = useMemo(() => {
@@ -1994,6 +1990,11 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   }, [portfolio.id, returnPeriod]);
 
   useEffect(() => {
+    // Seed from enriched holdings immediately so profile paints without waiting.
+    setAssetsByKey(assetsFromHoldings(portfolio.holdings));
+  }, [portfolio.id, portfolio.holdings]);
+
+  useEffect(() => {
     if (!holdingFormItems.length) {
       setFormByTicker({});
       return undefined;
@@ -2011,7 +2012,6 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
 
   useEffect(() => {
     if (!holdingKeys.length || !needsClientResolve) {
-      setAssetsByKey({});
       setAssetsLoading(false);
       return undefined;
     }
@@ -2021,7 +2021,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     resolvePortfolioAssets(holdingKeys)
       .then((map) => {
         if (cancelled) return;
-        const next = {};
+        const next = { ...assetsFromHoldings(portfolio.holdings) };
         for (const [key, asset] of map.entries()) next[key] = asset;
         setAssetsByKey(next);
       })
@@ -2032,7 +2032,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     return () => {
       cancelled = true;
     };
-  }, [portfolio.id, holdingKeys, needsClientResolve]);
+  }, [portfolio.id, holdingKeys, needsClientResolve, portfolio.holdings]);
 
   const rows = useMemo(() => {
     const periodReturnForChangePct = (changePct, fallbackPnl = 0) => {

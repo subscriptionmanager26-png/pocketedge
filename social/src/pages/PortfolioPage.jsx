@@ -13,7 +13,7 @@ import {
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { holdingDisplayLabel, resolvePortfolioAssets } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
 import { fetchUserPortfolios } from '../lib/socialPortfolioApi';
@@ -142,15 +142,22 @@ export default function PortfolioPage({
       return undefined;
     }
 
+    // Paint immediately from server-enriched holdings, then refresh only if gaps remain.
+    setAssetsByKey(assetsFromHoldings(activeList?.holdings));
+    if (!holdingsNeedLiveResolve(activeList?.holdings)) return undefined;
+
     resolvePortfolioAssets(holdingKeys).then((resolved) => {
       if (cancelled) return;
-      setAssetsByKey(Object.fromEntries(resolved.entries()));
+      setAssetsByKey((prev) => ({
+        ...prev,
+        ...Object.fromEntries(resolved.entries()),
+      }));
     });
 
     return () => {
       cancelled = true;
     };
-  }, [holdingKeys]);
+  }, [holdingKeys, activeList?.holdings]);
 
   const liveActiveList = useMemo(() => {
     if (!activeList?.holdings?.length) return activeList;
@@ -217,6 +224,8 @@ export default function PortfolioPage({
   const [postsLoading, setPostsLoading] = useState(false);
 
   useEffect(() => {
+    // DMA form only matters on the performance tab — defer until needed.
+    if (contentTab !== 'performance') return undefined;
     if (!formItems.length) {
       setFormByTicker({});
       return undefined;
@@ -230,7 +239,7 @@ export default function PortfolioPage({
     return () => {
       cancelled = true;
     };
-  }, [formItems]);
+  }, [formItems, contentTab]);
 
   const formBuckets = useMemo(() => {
     const buckets = {
@@ -256,6 +265,7 @@ export default function PortfolioPage({
   }, [holdingsRows, formByTicker]);
 
   useEffect(() => {
+    if (contentTab !== 'news') return undefined;
     if (!tickers.length) {
       setPortfolioNews([]);
       return undefined;
@@ -284,9 +294,10 @@ export default function PortfolioPage({
 
     setPortfolioNews([]);
     return undefined;
-  }, [tickers]);
+  }, [tickers, contentTab]);
 
   useEffect(() => {
+    if (contentTab !== 'corporate_actions') return undefined;
     if (!tickers.length) {
       setCorporateActions([]);
       return undefined;
@@ -310,9 +321,10 @@ export default function PortfolioPage({
     return () => {
       cancelled = true;
     };
-  }, [tickers]);
+  }, [tickers, contentTab]);
 
   useEffect(() => {
+    if (contentTab !== 'posts') return undefined;
     if (!mentionKeys.length) {
       setPortfolioPosts([]);
       return undefined;
@@ -344,7 +356,7 @@ export default function PortfolioPage({
 
     setPortfolioPosts([]);
     return undefined;
-  }, [mentionKeys, tickers]);
+  }, [mentionKeys, tickers, contentTab]);
 
   const activity = useMemo(() => {
     const base = collectActivity(tickers);

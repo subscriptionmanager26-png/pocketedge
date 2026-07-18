@@ -87,6 +87,56 @@ function metaForAssetType(assetType) {
   return PORTFOLIO_TABS[0];
 }
 
+/**
+ * Seed an assetsByKey map from already-enriched holdings so the UI can paint
+ * immediately without waiting on a second market batch lookup.
+ */
+export function assetsFromHoldings(holdings) {
+  const map = {};
+  for (const holding of holdings ?? []) {
+    const ticker = String(holding?.ticker ?? holding?.symbol ?? '').trim();
+    if (!ticker) continue;
+    const price = Number(holding?.price);
+    const changePct = holding?.changePct;
+    const hasLive =
+      (Number.isFinite(price) && price > 0) ||
+      changePct != null ||
+      Boolean(holding?.assetName);
+    if (!hasLive) continue;
+
+    const assetType = holding?.assetType ?? 'stock';
+    const meta = metaForAssetType(assetType);
+    map[ticker] = {
+      key: ticker,
+      symbol: ticker,
+      name: holding?.assetName ?? holding?.name ?? '',
+      kind: meta.kind,
+      kindLabel: meta.label,
+      price: Number.isFinite(price) && price > 0 ? price : null,
+      isin: holding?.isin ?? null,
+      item: {
+        changePct: changePct ?? null,
+        previousClose: holding?.previousClose ?? null,
+        assetType,
+      },
+    };
+  }
+  return map;
+}
+
+/** True when any holding still needs a client-side market resolve. */
+export function holdingsNeedLiveResolve(holdings) {
+  const list = holdings ?? [];
+  if (!list.length) return false;
+  return list.some((holding) => {
+    if (!holding?.ticker) return false;
+    const price = Number(holding?.price);
+    const hasPrice = Number.isFinite(price) && price > 0;
+    const hasChange = holding?.changePct != null;
+    return !hasPrice || !hasChange;
+  });
+}
+
 function scoreEntry(entry, needle) {
   const key = entry.key.toLowerCase();
   const name = entry.name.toLowerCase();

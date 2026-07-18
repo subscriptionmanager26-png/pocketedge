@@ -1,7 +1,10 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { skipAuthForDev } from './sessionStore';
+import { cachedFetch, getCached, setCached } from './queryCache';
 
 const BASE = '/data/markets';
+const MARKET_SEARCH_TTL_MS = 30_000;
+const MARKET_ASSET_TTL_MS = 30_000;
 
 export const MARKET_PREVIEW_LIMIT = 40;
 export const MARKET_SEARCH_LIMIT = 50;
@@ -268,12 +271,17 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
   }
 
   if (useMarketRpc()) {
-    try {
-      const rpcResult = await searchMarketTabRpc(tab, q, limit);
-      if (rpcResult) return rpcResult;
-    } catch (err) {
-      console.warn('search_social_market_assets failed, falling back to JSON', err);
-    }
+    const cacheKey = `${tab}|${q.toLowerCase()}|${limit}`;
+    return cachedFetch('market-search', cacheKey, MARKET_SEARCH_TTL_MS, async () => {
+      try {
+        const rpcResult = await searchMarketTabRpc(tab, q, limit);
+        if (rpcResult) return rpcResult;
+      } catch (err) {
+        console.warn('search_social_market_assets failed', err);
+      }
+      // Soft-fail: never pull multi-MB mutual-funds/stocks search JSON on RPC miss.
+      return { items: [], total: 0 };
+    });
   }
 
   return searchMarketTabLocal(tab, q, limit);
@@ -318,19 +326,49 @@ export async function lookupMarketAssetsBatch(keys) {
   const unique = [...new Set(keys.map((key) => String(key ?? '').trim()).filter(Boolean))];
   if (!unique.length) return new Map();
 
+  const map = new Map();
+  const missing = [];
+  for (const key of unique) {
+    const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
+    if (hit !== undefined) {
+      if (hit) {
+        map.set(key, hit);
+        const alias = hit.symbol ?? hit.schemeCode ?? hit.id;
+        if (alias) map.set(alias, hit);
+      }
+      continue;
+    }
+    missing.push(key);
+  }
+
+  if (!missing.length) return map;
+
   if (useMarketRpc()) {
     try {
       const { data, error } = await supabase.rpc('lookup_social_market_assets_batch', {
-        p_keys: unique,
+        p_keys: missing,
       });
       if (error) throw error;
-      const map = new Map();
+      const foundKeys = new Set();
       for (const row of data ?? []) {
         const item = marketAssetRowToItem(row);
         if (!item) continue;
         const key = row.asset_key ?? item.symbol ?? item.schemeCode;
         map.set(key, item);
-        if (row.query_key) map.set(row.query_key, item);
+        if (row.query_key) {
+          map.set(row.query_key, item);
+          setCached('market-asset', row.query_key, item);
+          foundKeys.add(row.query_key);
+        }
+        if (key) {
+          setCached('market-asset', key, item);
+          foundKeys.add(key);
+        }
+      }
+      for (const key of missing) {
+        if (!foundKeys.has(key) && !map.has(key)) {
+          setCached('market-asset', key, null);
+        }
       }
       return map;
     } catch (err) {
@@ -338,7 +376,7 @@ export async function lookupMarketAssetsBatch(keys) {
     }
   }
 
-  return new Map();
+  return map;
 }
 
 export async function resolveMarketStock(symbol) {

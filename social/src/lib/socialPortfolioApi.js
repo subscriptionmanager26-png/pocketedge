@@ -17,9 +17,17 @@ import {
   removeLocalDraft,
 } from './localPortfolioDraftStore';
 import { invalidateAuthorPositions } from './authorPositionsStore';
+import { cachedFetch, invalidateCache } from './queryCache';
+
+const PORTFOLIOS_TTL_MS = 45_000;
 
 function useBackend() {
   return isSupabaseConfigured() && !skipAuthForDev();
+}
+
+function invalidatePortfolioCaches(ownerId) {
+  invalidateCache('user-portfolios', ownerId);
+  invalidateAuthorPositions(ownerId);
 }
 
 export function isLocalDraftId(portfolioId) {
@@ -76,15 +84,17 @@ export async function fetchUserPortfolios(ownerId) {
     return getUserPortfolios(ownerId);
   }
 
-  const drafts = getLocalDrafts(ownerId).map(enrichUserPortfolio);
+  return cachedFetch('user-portfolios', ownerId, PORTFOLIOS_TTL_MS, async () => {
+    const drafts = getLocalDrafts(ownerId).map(enrichUserPortfolio);
 
-  const { data, error } = await supabase.rpc('list_user_portfolios', {
-    p_owner_id: ownerId,
+    const { data, error } = await supabase.rpc('list_user_portfolios', {
+      p_owner_id: ownerId,
+    });
+
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    return [...drafts, ...rows.map(mapRpcRow)];
   });
-
-  if (error) throw error;
-  const rows = Array.isArray(data) ? data : [];
-  return [...drafts, ...rows.map(mapRpcRow)];
 }
 
 export async function fetchUserPortfolio(ownerId, portfolioId) {
@@ -160,7 +170,7 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
 
     if (error) throw error;
     removeLocalDraft(ownerId, portfolioId);
-    invalidateAuthorPositions(ownerId);
+    invalidatePortfolioCaches(ownerId);
     return mapRpcRow(data);
   }
 
@@ -184,7 +194,7 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
   });
 
   if (error) throw error;
-  invalidateAuthorPositions(ownerId);
+  invalidatePortfolioCaches(ownerId);
   return mapRpcRow(data);
 }
 
