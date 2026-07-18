@@ -41,25 +41,30 @@ export function mentionInsertText(asset) {
 
 export function parseMentionPart(part) {
   if (!part) return null;
-  if (part.startsWith('@[' ) && part.endsWith(']')) {
-    return { raw: part, key: part.slice(2, -1), kind: 'fund' };
+  if (part.startsWith('@[') && part.endsWith(']')) {
+    return { raw: part, key: part.slice(2, -1).trim(), kind: 'fund' };
   }
   if (part.startsWith('@')) {
-    return { raw: part, key: part.slice(1), kind: 'symbol' };
+    return { raw: part, key: part.slice(1).trim().toUpperCase(), kind: 'symbol' };
   }
   if (part.startsWith('$')) {
-    return { raw: part, key: part.slice(1), kind: 'symbol' };
+    return { raw: part, key: part.slice(1).trim().toUpperCase(), kind: 'symbol' };
   }
   return null;
 }
 
 export function mentionDisplayLabel(partOrKey) {
   const parsed =
-    typeof partOrKey === 'string' && partOrKey.startsWith('@')
+    typeof partOrKey === 'string' && (partOrKey.startsWith('@') || partOrKey.startsWith('$'))
       ? parseMentionPart(partOrKey)
       : { key: partOrKey };
   const key = parsed?.key ?? '';
   return key;
+}
+
+/** Case-insensitive ticker/fund-key equality for popups and selection. */
+export function sameTicker(a, b) {
+  return String(a ?? '').trim().toUpperCase() === String(b ?? '').trim().toUpperCase();
 }
 
 export function extractTickers(text = '') {

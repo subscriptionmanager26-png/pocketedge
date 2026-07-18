@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
 import CommentRow from './CommentRow';
+import DisclosureStrip from './DisclosureStrip';
 import PostImage from './PostImage';
 import TickerText from './TickerText';
 import TradePill from './TradePill';
 import { PortfolioSharePreview } from './ComposeModal';
 import { getPersonSync } from '../lib/socialIdentity';
 import { formatCount, timeAgo } from '../lib/format';
+import { extractTickers, sameTicker } from '../lib/tickers';
 
 /** Feed cards truncate long bodies; full text + comments only on the open post. */
 const FEED_PREVIEW_CHARS = 200;
@@ -38,8 +40,17 @@ export default function PostCard({
   const person = getPersonSync(post.authorId);
   const displayBody = isDetail ? post.body : previewBody(post.body).text;
   const truncated = !isDetail && previewBody(post.body).truncated;
+  const tickers = extractTickers(post.body);
+  if (post.trade?.ticker && !tickers.some((t) => sameTicker(t, post.trade.ticker))) {
+    tickers.unshift(post.trade.ticker);
+  }
+  for (const ticker of post.portfolioShare?.tickers ?? []) {
+    if (!tickers.some((t) => sameTicker(t, ticker))) tickers.push(ticker);
+  }
   const [liked, setLiked] = useState(post.liked ?? false);
   const [likes, setLikes] = useState(post.likes ?? 0);
+  // One popup per post: remember which control opened it (mention vs bottom tag).
+  const [tickerPopup, setTickerPopup] = useState(null);
   const commentCount = Math.max(
     Array.isArray(post.comments) ? post.comments.length : 0,
     Number(post.commentCount) || 0
@@ -50,9 +61,15 @@ export default function PostCard({
     setLikes(post.likes ?? 0);
   }, [post.id, post.liked, post.likes]);
 
+  useEffect(() => {
+    setTickerPopup(null);
+  }, [post.id]);
+
   const openAuthor = () => onOpenProfile?.(post.authorId);
   const openPost = () => onOpenPost?.(post.id);
   const stopBubble = (event) => event.stopPropagation();
+  const openTicker = (ticker, source) => setTickerPopup({ ticker, source });
+  const closeTicker = () => setTickerPopup(null);
 
   return (
     <article className="border-b border-pe-border px-4 py-5 md:py-6">
@@ -119,7 +136,14 @@ export default function PostCard({
             role={!isDetail ? 'button' : undefined}
             tabIndex={!isDetail ? 0 : undefined}
           >
-            <TickerText text={displayBody} authorId={post.authorId} />
+            <TickerText
+              text={displayBody}
+              authorId={post.authorId}
+              activeTicker={tickerPopup?.ticker ?? null}
+              activeSource={tickerPopup?.source}
+              onOpenTicker={openTicker}
+              onCloseTicker={closeTicker}
+            />
             {truncated && (
               <span className="mt-1 inline-block text-[14px] font-semibold text-pe-link">
                 See more
@@ -150,6 +174,19 @@ export default function PostCard({
               isDetail={isDetail}
               onOpenPost={openPost}
             />
+          )}
+
+          {tickers.length > 0 && (
+            <div onClick={stopBubble} onKeyDown={stopBubble} role="presentation">
+              <DisclosureStrip
+                tickers={tickers}
+                authorId={post.authorId}
+                activeTicker={tickerPopup?.ticker ?? null}
+                activeSource={tickerPopup?.source}
+                onOpenTicker={openTicker}
+                onCloseTicker={closeTicker}
+              />
+            </div>
           )}
 
           <div

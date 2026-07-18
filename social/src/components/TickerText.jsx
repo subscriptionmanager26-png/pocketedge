@@ -4,6 +4,7 @@ import {
   MENTION_PARTS_RE,
   mentionDisplayLabel,
   parseMentionPart,
+  sameTicker,
   statusStyles,
 } from '../lib/tickers';
 import TickerMiniCard from './TickerMiniCard';
@@ -13,11 +14,14 @@ export default function TickerText({
   authorId,
   className = '',
   activeTicker,
-  onActiveTickerChange,
+  activeSource,
+  onOpenTicker,
+  onCloseTicker,
 }) {
   const [localActive, setLocalActive] = useState(null);
-  const active = activeTicker !== undefined ? activeTicker : localActive;
-  const setActive = onActiveTickerChange ?? setLocalActive;
+  const uncontrolled = activeTicker === undefined;
+  const active = uncontrolled ? localActive : activeTicker;
+  const source = uncontrolled ? 'mention' : activeSource;
   const parts = String(text ?? '').split(MENTION_PARTS_RE);
 
   return (
@@ -32,11 +36,17 @@ export default function TickerText({
         const label = mentionDisplayLabel(part);
         const position = getPosition(authorId, key);
         const styles = statusStyles(position?.status);
-        const isOpen = active === key;
+        const isSelected = sameTicker(active, key);
+        const showCard = isSelected && source === 'mention';
 
         const toggle = (event) => {
           event.stopPropagation();
-          setActive(isOpen ? null : key);
+          if (uncontrolled) {
+            setLocalActive(isSelected ? null : key);
+            return;
+          }
+          if (isSelected && source === 'mention') onCloseTicker?.();
+          else onOpenTicker?.(key, 'mention');
         };
 
         return (
@@ -56,13 +66,16 @@ export default function TickerText({
             >
               @{label}
             </span>
-            {isOpen && (
+            {showCard ? (
               <TickerMiniCard
                 ticker={key}
                 authorId={authorId}
-                onClose={() => setActive(null)}
+                onClose={() => {
+                  if (uncontrolled) setLocalActive(null);
+                  else onCloseTicker?.();
+                }}
               />
-            )}
+            ) : null}
           </span>
         );
       })}
