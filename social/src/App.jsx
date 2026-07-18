@@ -21,7 +21,7 @@ import {
 } from './lib/socialGraphStore';
 import {
   clearSession,
-  resolveAuthViewForUser,
+  resolveAuthViewForUserAsync,
   skipAuthForDev,
 } from './lib/sessionStore';
 import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supabase';
@@ -86,8 +86,10 @@ function initialAuthState() {
   if (cached?.user && cached.view === 'app') {
     return { authView: 'app', authUser: cached.user };
   }
-  if (cached?.user && cached.view === 'onboarding') {
-    return { authView: 'onboarding', authUser: cached.user };
+  // Do not paint onboarding from a stale local guess — domain moves clear
+  // localStorage while the account may already have a portfolio.
+  if (cached?.user) {
+    return { authView: 'bootstrapping', authUser: cached.user };
   }
   return { authView: 'bootstrapping', authUser: null };
 }
@@ -223,14 +225,22 @@ export default function App() {
 
     cleanOAuthCallbackUrl();
 
+    let authGen = 0;
     const syncAuth = (session) => {
       const user = session?.user ?? null;
       setAuthUser(user);
-      setAuthView(resolveAuthViewForUser(user));
       if (user) {
         identifyPostHogUser(user);
+        const gen = ++authGen;
+        setAuthView('bootstrapping');
+        resolveAuthViewForUserAsync(user).then((view) => {
+          if (gen !== authGen) return;
+          setAuthView(view);
+        });
       } else {
+        authGen += 1;
         resetPostHogUser();
+        setAuthView('landing');
       }
     };
 

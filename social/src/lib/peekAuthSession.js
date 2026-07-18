@@ -27,7 +27,9 @@ export function peekCachedAuthSession() {
     if (!user?.id) return null;
 
     // Expired access token still lets us optimistic-render; refresh happens async.
-    const view = isOnboardingComplete(user.id) ? 'app' : 'onboarding';
+    // Only claim "app" when the durable flag is set. Otherwise bootstrap until
+    // the server confirms whether this account already has a portfolio.
+    const view = isOnboardingComplete(user.id) ? 'app' : 'bootstrapping';
     return { user, view };
   } catch {
     return null;
