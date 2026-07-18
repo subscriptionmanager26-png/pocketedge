@@ -819,6 +819,7 @@ function PortfolioDetailView({
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
   const [importNotice, setImportNotice] = useState('');
   const [importingHoldings, setImportingHoldings] = useState(false);
+  const [importProgress, setImportProgress] = useState(null);
   const [socialTick, setSocialTick] = useState(0);
   const [commentDraft, setCommentDraft] = useState('');
   const editSessionRef = useRef(0);
@@ -946,8 +947,14 @@ function PortfolioDetailView({
       return;
     }
 
-    setImportingHoldings(true);
     setImportNotice('');
+    setImportProgress((prev) => ({
+      percent: Math.max(prev?.percent ?? 0, 85),
+      current: prev?.current ?? 1,
+      total: prev?.total ?? 1,
+      fileName: prev?.fileName ?? '',
+      label: 'Matching holdings…',
+    }));
     try {
       const current = editRows.filter((row) => String(row.ticker ?? '').trim());
       const assetsByToken = await resolvePortfolioAssets([
@@ -999,16 +1006,36 @@ function PortfolioDetailView({
       );
     } catch (error) {
       setImportNotice(error?.message ?? `Could not read that ${sourceLabel}.`);
-    } finally {
-      setImportingHoldings(false);
     }
   };
 
   const importExcelHoldings = async (file) => {
     if (!file) return;
+    setImportingHoldings(true);
+    setImportNotice('');
+    setImportProgress({
+      percent: 12,
+      current: 1,
+      total: 1,
+      fileName: file.name || '',
+      label: 'Reading Excel file…',
+    });
     try {
-      await applyImportedHoldings(await parseZerodhaHoldingsWorkbook(file), 'Zerodha Excel file');
+      const rows = await parseZerodhaHoldingsWorkbook(file);
+      setImportProgress({
+        percent: 55,
+        current: 1,
+        total: 1,
+        fileName: file.name || '',
+        label: 'Matching holdings…',
+      });
+      await applyImportedHoldings(rows, 'Zerodha Excel file');
+      setImportProgress((prev) => (prev ? { ...prev, percent: 100, label: 'Done' } : null));
+    } catch (error) {
+      setImportNotice(error?.message ?? 'Could not read that Zerodha Excel file.');
     } finally {
+      setImportingHoldings(false);
+      setImportProgress(null);
       if (excelInputRef.current) excelInputRef.current.value = '';
     }
   };
@@ -1016,12 +1043,44 @@ function PortfolioDetailView({
   const importScreenshotHoldings = async (files) => {
     const images = [...(files ?? [])];
     if (!images.length) return;
+    setImportingHoldings(true);
+    setImportNotice('');
+    setImportProgress({
+      percent: 0,
+      current: 1,
+      total: images.length,
+      fileName: images[0]?.name || '',
+      label: `Reading screenshot 1 of ${images.length}…`,
+    });
     try {
-      await applyImportedHoldings(
-        await parseZerodhaHoldingsScreenshots(images),
-        'holdings screenshot'
-      );
+      const rows = await parseZerodhaHoldingsScreenshots(images, {
+        onProgress: (next) => {
+          if (typeof next === 'number') {
+            setImportProgress((prev) => ({
+              ...(prev ?? { current: 1, total: images.length, fileName: '' }),
+              percent: Math.min(84, Math.round(next * 0.85)),
+              label: prev?.label ?? 'Reading screenshots…',
+            }));
+            return;
+          }
+          const current = next.current ?? 1;
+          const total = next.total ?? images.length;
+          setImportProgress({
+            percent: Math.min(84, Math.round((next.percent ?? 0) * 0.85)),
+            current,
+            total,
+            fileName: next.fileName ?? '',
+            label: `Reading screenshot ${current} of ${total}…`,
+          });
+        },
+      });
+      await applyImportedHoldings(rows, 'holdings screenshot');
+      setImportProgress((prev) => (prev ? { ...prev, percent: 100, label: 'Done' } : null));
+    } catch (error) {
+      setImportNotice(error?.message ?? 'Could not read those holdings screenshots.');
     } finally {
+      setImportingHoldings(false);
+      setImportProgress(null);
       if (screenshotInputRef.current) screenshotInputRef.current.value = '';
     }
   };
@@ -1383,7 +1442,48 @@ function PortfolioDetailView({
                   </button>
                 </div>
               </div>
-              {importNotice ? (
+              {importingHoldings && importProgress ? (
+                <div className="mt-3" role="status" aria-live="polite">
+                  <div className="flex items-center justify-between gap-3 text-[12px]">
+                    <p className="font-semibold text-pe-text">{importProgress.label}</p>
+                    <p className="shrink-0 tabular-nums text-pe-text-muted">
+                      {Math.round(importProgress.percent)}%
+                    </p>
+                  </div>
+                  {importProgress.fileName ? (
+                    <p className="mt-1 truncate text-[11px] text-pe-text-muted">
+                      {importProgress.fileName}
+                    </p>
+                  ) : null}
+                  <div className="relative mt-2.5">
+                    <div className="h-2 overflow-hidden rounded-full bg-pe-canvas">
+                      <div
+                        className="h-full rounded-full bg-pe-accent transition-all duration-300"
+                        style={{ width: `${Math.max(2, importProgress.percent)}%` }}
+                      />
+                    </div>
+                    {(importProgress.total ?? 1) > 1 ? (
+                      <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-0.5">
+                        {Array.from({ length: importProgress.total }).map((_, index) => {
+                          const done =
+                            importProgress.percent >=
+                            ((index + 1) / importProgress.total) * 85;
+                          const active = importProgress.current === index + 1;
+                          return (
+                            <span
+                              key={`import-mile-${index}`}
+                              className={`h-2.5 w-2.5 rounded-full border-2 border-pe-surface ${
+                                done || active ? 'bg-pe-accent' : 'bg-pe-border-strong'
+                              }`}
+                              aria-hidden
+                            />
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : importNotice ? (
                 <p className="mt-2 text-[12px] text-pe-text-secondary">{importNotice}</p>
               ) : null}
               <input
