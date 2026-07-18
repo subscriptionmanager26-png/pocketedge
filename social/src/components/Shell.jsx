@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Bell,
@@ -19,8 +19,10 @@ import { getAppCurrentUser } from '../lib/socialIdentity';
 import {
   getScrollPosition,
   readScrollTop,
+  rememberScrollPosition,
   saveScrollPosition,
   writeScrollTop,
+  disableBrowserScrollRestoration,
 } from '../lib/scrollRestore';
 
 const DESKTOP_TABS = [
@@ -79,6 +81,38 @@ export default function Shell({
   const desktopMenuRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
+  const routeKeyRef = useRef(routeKey);
+  routeKeyRef.current = routeKey;
+
+  useEffect(() => {
+    disableBrowserScrollRestoration();
+  }, []);
+
+  // Continuously remember scroll for the active route. Opening a post remounts
+  // shorter content and can clamp window.scrollY to 0 before a leave-handler runs.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    let ticking = false;
+
+    const persist = () => {
+      ticking = false;
+      rememberScrollPosition(routeKeyRef.current, readScrollTop(container));
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(persist);
+    };
+
+    persist();
+    container?.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      container?.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen && !desktopMenuOpen) return undefined;
@@ -112,23 +146,26 @@ export default function Shell({
     setDesktopMenuOpen(false);
   }, [tab]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     const prevKey = prevRouteKeyRef.current;
     if (prevKey === routeKey) return;
 
     if (prevKey) {
-      saveScrollPosition(prevKey, readScrollTop(container));
+      // Don't overwrite a tracked feed position with a post-collapse clamp to 0.
+      rememberScrollPosition(prevKey, readScrollTop(container));
     }
 
     const restore = scrollAction === 'back' ? getScrollPosition(routeKey) : 0;
+    if (scrollAction !== 'back') {
+      // Fresh forward navigation: start at top and clear any stale restore target.
+      saveScrollPosition(routeKey, 0);
+    }
     prevRouteKeyRef.current = routeKey;
 
-    // Feed/detail swaps remount content; a single rAF often runs before layout
-    // finishes, so the browser clamps scroll to 0. Re-apply until it sticks.
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = restore > 0 ? 12 : 1;
+    const maxAttempts = restore > 0 ? 24 : 1;
 
     const apply = () => {
       if (cancelled) return;
@@ -143,9 +180,10 @@ export default function Shell({
         onScrollActionConsumed?.();
         return;
       }
-      window.setTimeout(apply, attempts < 4 ? 16 : 50);
+      window.setTimeout(apply, attempts < 8 ? 16 : 50);
     };
 
+    apply();
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(apply);
     });
