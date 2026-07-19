@@ -142,8 +142,7 @@ export default function App() {
   const consumeScrollAction = useCallback(() => setScrollAction('reset'), []);
 
   const routeKey = useMemo(() => {
-    // Post detail is an overlay on the feed — keep the feed scroll key so opening
-    // a post does not reset/clamp the underlying list position.
+    if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
     if (tab === 'feed') return 'feed';
     if (tab === 'markets' && selectedCommodityId) return `commodity:${selectedCommodityId}`;
     if (tab === 'markets' && selectedIndexId) return `index:${selectedIndexId}`;
@@ -159,6 +158,7 @@ export default function App() {
     return tab;
   }, [
     tab,
+    selectedPostId,
     selectedFundId,
     selectedIndexId,
     selectedCommodityId,
@@ -678,36 +678,6 @@ export default function App() {
     navigate(tabPath('feed'));
   }, [navigate]);
 
-  // Freeze the feed under the post overlay on mobile so background scroll can't move.
-  useEffect(() => {
-    if (!selectedPostId || tab !== 'feed') return undefined;
-    if (typeof window === 'undefined') return undefined;
-    if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
-
-    const y = readScrollTop(null);
-    const { body } = document;
-    const previous = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-    };
-    body.style.position = 'fixed';
-    body.style.top = `-${y}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    return () => {
-      body.style.position = previous.position;
-      body.style.top = previous.top;
-      body.style.left = previous.left;
-      body.style.right = previous.right;
-      body.style.width = previous.width;
-      writeScrollTop(null, y);
-    };
-  }, [selectedPostId, tab]);
-
   const openSettings = () => {
     resetScroll();
     setSelectedPostId(null);
@@ -959,40 +929,30 @@ export default function App() {
         mobileActions={mobileHeaderActions}
       >
         {tab === 'feed' && (
-          <>
-            <div
-              className={selectedPostId ? 'invisible pointer-events-none' : undefined}
-              aria-hidden={Boolean(selectedPostId)}
-            >
-              <FeedPage
+          selectedPostId ? (
+            <RouteSuspense>
+              <PostDetailPage
+                postId={selectedPostId}
                 posts={posts}
-                feedMode={feedMode}
-                graphTick={graphTick}
-                loading={postsLoading}
-                onGraphChange={() => setGraphTick((n) => n + 1)}
+                onBack={closePost}
                 onOpenProfile={openProfile}
-                onOpenPost={openPost}
+                onAddComment={(text) => handleAddComment(selectedPostId, text)}
                 onToggleLike={handleTogglePostLike}
+                fetchPost={usePostBackend() ? fetchPost : null}
               />
-            </div>
-            {selectedPostId ? (
-              <div className="fixed inset-0 z-30 overflow-y-auto bg-pe-canvas pt-[56px] md:left-[232px] md:px-5 md:pt-0">
-                <div className="mx-auto min-h-full w-full max-w-feed md:mr-[420px]">
-                  <RouteSuspense>
-                    <PostDetailPage
-                      postId={selectedPostId}
-                      posts={posts}
-                      onBack={closePost}
-                      onOpenProfile={openProfile}
-                      onAddComment={(text) => handleAddComment(selectedPostId, text)}
-                      onToggleLike={handleTogglePostLike}
-                      fetchPost={usePostBackend() ? fetchPost : null}
-                    />
-                  </RouteSuspense>
-                </div>
-              </div>
-            ) : null}
-          </>
+            </RouteSuspense>
+          ) : (
+            <FeedPage
+              posts={posts}
+              feedMode={feedMode}
+              graphTick={graphTick}
+              loading={postsLoading}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+              onToggleLike={handleTogglePostLike}
+            />
+          )
         )}
         {tab === 'search' && (
           <RouteSuspense>
