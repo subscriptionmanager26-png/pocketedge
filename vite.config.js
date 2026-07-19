@@ -96,11 +96,11 @@ function assetLogosProxyPlugin() {
     name: 'asset-logos-proxy',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith('/api/asset-logos/')) {
+        if (!req.url?.startsWith('/asset-logos/')) {
           next();
           return;
         }
-        const relative = req.url.slice('/api/asset-logos/'.length).split('?')[0];
+        const relative = req.url.slice('/asset-logos/'.length).split('?')[0];
         if (!relative || relative.includes('..')) {
           res.statusCode = 400;
           res.end('Invalid path');

@@ -71,7 +71,7 @@
       ]
     },
     {
-      "source": "/api/asset-logos/(.*)",
+      "source": "/asset-logos/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -143,7 +143,11 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/asset-logos/:path*",
+      "destination": "https://zweqxjeuwwfrlpbuuayg.supabase.co/storage/v1/object/public/asset-logos/:path*"
+    },
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/|asset-logos/).*)", "destination": "/index.html" }
   ]
 }

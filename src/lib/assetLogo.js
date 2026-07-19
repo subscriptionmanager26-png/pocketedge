@@ -23,13 +23,17 @@ function storageObjectKey(assetKey) {
 }
 
 /**
- * Serve logos via same-origin `/api/asset-logos/...` so Vercel/browser can
- * cache aggressively (upstream Storage sends cache-control: no-cache).
+ * Serve logos via same-origin `/asset-logos/...` (Vercel CDN rewrite + long
+ * Cache-Control). Upstream Storage sends cache-control: no-cache.
  */
 export function toCachedAssetLogoPath(url) {
   const raw = typeof url === 'string' ? url.trim() : '';
   if (!raw) return null;
-  if (raw.startsWith('/api/asset-logos/')) return raw;
+  if (raw.startsWith('/asset-logos/')) return raw;
+  // Legacy proxy path from the first deploy attempt.
+  if (raw.startsWith('/api/asset-logos/')) {
+    return `/asset-logos/${raw.slice('/api/asset-logos/'.length)}`;
+  }
 
   try {
     const absolute = raw.startsWith('http')
@@ -37,7 +41,7 @@ export function toCachedAssetLogoPath(url) {
       : new URL(raw, FALLBACK_SUPABASE_URL);
     const idx = absolute.pathname.indexOf(OBJECT_MARKER);
     if (idx >= 0) {
-      return `/api/asset-logos/${absolute.pathname.slice(idx + OBJECT_MARKER.length)}`;
+      return `/asset-logos/${absolute.pathname.slice(idx + OBJECT_MARKER.length)}`;
     }
   } catch {
     /* keep absolute below */
@@ -60,7 +64,7 @@ function buildPublicStorageUrl(assetType, assetKey) {
 
 /**
  * Prefer `logo_icon_url` from the row; otherwise build the public Storage URL.
- * Always rewrite to the cached same-origin proxy path when possible.
+ * Always rewrite to the cached same-origin path when possible.
  */
 export function resolveAssetLogoUrl({ logoIconUrl, assetType, assetKey } = {}) {
   const fromRow = typeof logoIconUrl === 'string' ? logoIconUrl.trim() : '';
