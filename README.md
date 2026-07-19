@@ -8,6 +8,8 @@ This repo previously hosted both social and global tools. Global lives in [pocke
 
 Auth + social data + DMA signals: `zweqxjeuwwfrlpbuuayg`
 
+This project should only hold social/auth tables (`social_*`, `app_members`, `user_referrals`, `nse_dma_*`). IBKR / UCITS / baskets live in the global Supabase project (`ewmvjbmkfnjpatficony`).
+
 Auth allow-list (includes global.pocketedge.in): `npm run auth:push`
 
 ## Dev

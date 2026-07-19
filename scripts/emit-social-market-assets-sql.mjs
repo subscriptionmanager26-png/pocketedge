@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MARKETS_DIR = path.join(__dirname, '..', 'social', 'public', 'data', 'markets');
+const MARKETS_DIR = path.join(__dirname, '..', 'public', 'data', 'markets');
 const BATCH_SIZE = 400;
 const outDir = path.resolve(process.argv[2] ?? path.join(__dirname, '..', '.tmp', 'market-asset-batches'));
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Sync Indian market master lists + latest quotes into social/public/data/markets/.
+ * Sync Indian market master lists + latest quotes into public/data/markets/.
  * Intended to run weekly for lists; re-run anytime for fresher quotes.
  *
  * Usage: node scripts/sync-indian-markets.mjs
@@ -31,7 +31,7 @@ import {
 } from './lib/indian-markets/publish.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = path.join(__dirname, '..', 'social', 'public', 'data', 'markets');
+const OUT_DIR = path.join(__dirname, '..', 'public', 'data', 'markets');
 
 async function fetchText(url) {
   const res = await fetch(url, { headers: { 'User-Agent': UA } });

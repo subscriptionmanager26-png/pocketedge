@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MARKETS_DIR = path.join(__dirname, '..', 'social', 'public', 'data', 'markets');
+const MARKETS_DIR = path.join(__dirname, '..', 'public', 'data', 'markets');
 const ETF_ISIN_FILE = path.join(__dirname, '..', 'data', 'etf-isin-mapping.csv');
 const BATCH_SIZE = 500;
 
