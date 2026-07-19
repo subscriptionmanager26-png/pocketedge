@@ -38,6 +38,7 @@ import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
+import AssetLogo from '../components/AssetLogo';
 import { FormStatusTag } from '../components/FormStatusIcons';
 import { fetchPortfolioFormByTicker } from '../lib/portfolioForm';
 import PortfolioCard from '../components/PortfolioCard';
@@ -2084,6 +2085,8 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
                   : '',
           weight,
           itemReturn: periodReturnForChangePct(asset?.item?.changePct ?? h.changePct, h.pnlPct),
+          assetType: h.assetType ?? asset?.kind ?? 'stock',
+          logoIconUrl: h.logoIconUrl ?? asset?.logoIconUrl ?? null,
         };
       });
     }
@@ -2105,6 +2108,8 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
               : '',
         weight: equal,
         itemReturn: periodReturnForChangePct(asset?.item?.changePct),
+        assetType: asset?.kind ?? 'stock',
+        logoIconUrl: asset?.logoIconUrl ?? null,
       };
     });
   }, [portfolio, returnPeriod, assetsByKey]);
@@ -2149,10 +2154,19 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
       </div>
       {pageRows.map((row) => (
         <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5">
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
-            <div className="mt-1">
-              <FormStatusTag form={formByTicker[row.key] ?? 'unsure'} />
+          <div className="flex min-w-0 items-center gap-3">
+            <AssetLogo
+              logoIconUrl={row.logoIconUrl}
+              assetType={row.assetType}
+              assetKey={row.key}
+              name={row.title}
+              size="sm"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
+              <div className="mt-1">
+                <FormStatusTag form={formByTicker[row.key] ?? 'unsure'} />
+              </div>
             </div>
           </div>
           <p className="w-[88px] text-right text-sm font-semibold tabular-nums text-pe-text-secondary">

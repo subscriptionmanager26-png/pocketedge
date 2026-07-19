@@ -122,6 +122,9 @@ export default function InvestmentPage({
       <AssetProductHeader
         name={fund.name}
         type={getFundAssetType()}
+        logoIconUrl={fund.logoIconUrl}
+        assetType="fund"
+        assetKey={fund.id ?? fundId}
         price={marketLoading && fund.nav == null ? '…' : fund.nav}
         changePct={fund.changePct}
         previousClose={fund.previousClose}

@@ -12,6 +12,7 @@ import {
   toggleTopicFollow,
 } from '../lib/socialGraphStore';
 import { formatCount } from '../lib/format';
+import AssetLogo from '../components/AssetLogo';
 import { QuoteChangeBlock } from '../components/AssetProductHeader';
 import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';
@@ -280,18 +281,42 @@ export default function SearchPage({
   );
 }
 
+function marketSearchAssetMeta(tab, item) {
+  if (tab === 'stocks') {
+    return { assetType: 'stock', assetKey: item.id ?? item.symbol };
+  }
+  if (tab === 'etf') {
+    return { assetType: 'etf', assetKey: item.id ?? item.symbol };
+  }
+  if (tab === 'mutual_funds') {
+    return { assetType: 'fund', assetKey: item.schemeCode ?? item.id };
+  }
+  return { assetType: 'index', assetKey: item.id };
+}
+
 function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex }) {
+  const { assetType, assetKey } = marketSearchAssetMeta(tab, item);
+
   if (tab === 'stocks' || tab === 'etf') {
     const price = item.price ?? item.ltp;
     return (
       <button
         type="button"
         onClick={() => onSelectStock?.(item.id ?? item.symbol, { kind: tab === 'etf' ? 'etf' : 'stock' })}
-        className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
+        className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
       >
-        <div className="min-w-0 pr-3">
-          <p className="text-[15px] font-semibold text-pe-text">{formatTicker(item.symbol)}</p>
-          <p className="text-sm text-pe-text-muted">{item.name}</p>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <AssetLogo
+            logoIconUrl={item.logoIconUrl}
+            assetType={assetType}
+            assetKey={assetKey}
+            name={item.name}
+            size="sm"
+          />
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-pe-text">{formatTicker(item.symbol)}</p>
+            <p className="truncate text-sm text-pe-text-muted">{item.name}</p>
+          </div>
         </div>
         <QuoteChangeBlock
           className="shrink-0 text-right"
@@ -309,13 +334,22 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
       <button
         type="button"
         onClick={() => onSelectFund?.(item.schemeCode)}
-        className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
+        className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
       >
-        <div className="min-w-0 pr-3">
-          <p className="truncate text-[15px] font-semibold text-pe-text">{item.name}</p>
-          <p className="text-sm text-pe-text-muted">
-            {[item.category, item.subCategory].filter(Boolean).join(' · ') || item.amc}
-          </p>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <AssetLogo
+            logoIconUrl={item.logoIconUrl}
+            assetType={assetType}
+            assetKey={assetKey}
+            name={item.name}
+            size="sm"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold text-pe-text">{item.name}</p>
+            <p className="text-sm text-pe-text-muted">
+              {[item.category, item.subCategory].filter(Boolean).join(' · ') || item.amc}
+            </p>
+          </div>
         </div>
         <QuoteChangeBlock
           className="shrink-0 text-right"
@@ -332,11 +366,20 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
     <button
       type="button"
       onClick={() => onSelectIndex?.(item.id)}
-      className="flex w-full items-center justify-between py-3.5 text-left transition hover:bg-pe-surface/50"
+      className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
     >
-      <div className="min-w-0 pr-3">
-        <p className="text-[15px] font-semibold text-pe-text">{item.name}</p>
-        {item.group ? <p className="text-sm text-pe-text-muted">{item.group}</p> : null}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <AssetLogo
+          logoIconUrl={item.logoIconUrl}
+          assetType={assetType}
+          assetKey={assetKey}
+          name={item.name}
+          size="sm"
+        />
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold text-pe-text">{item.name}</p>
+          {item.group ? <p className="text-sm text-pe-text-muted">{item.group}</p> : null}
+        </div>
       </div>
       <QuoteChangeBlock
         className="shrink-0 text-right"

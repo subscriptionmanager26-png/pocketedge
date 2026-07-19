@@ -118,6 +118,9 @@ export default function IndexDetailPage({
         ticker={displayIndex.symbol !== displayIndex.name ? displayIndex.symbol : null}
         subtitle={formatIndexGroup(displayIndex.group)}
         type="Index"
+        logoIconUrl={displayIndex.logoIconUrl}
+        assetType="index"
+        assetKey={displayIndex.id}
         formatAsCurrency={false}
         price={
           loading && displayIndex.value == null

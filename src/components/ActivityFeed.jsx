@@ -1,5 +1,6 @@
 import NewsList from './NewsList';
 import Avatar from './Avatar';
+import AssetLogo from './AssetLogo';
 import { FormStatusTag } from './FormStatusIcons';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { isDevMockMode } from '../lib/appMode';
@@ -209,22 +210,33 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             }}
             className="grid w-full grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface"
           >
-            <div className="min-w-0">
-              <p className="text-[12px] tabular-nums text-pe-text-muted">
-                Total Invested{' '}
-                {invested != null && Number.isFinite(invested) && invested > 0
-                  ? formatInr(invested, { compact: true })
-                  : '-'}
-                {' · '}
-                QTY{' '}
-                {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'}
-              </p>
-              <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
-                {holdingDisplayLabel(h)}
-              </p>
-              <p className="mt-1 text-[12px] tabular-nums text-pe-text-muted">
-                {weightPct != null ? `${weightPct.toFixed(1)}% of Portfolio` : '-'}
-              </p>
+            <div className="flex min-w-0 items-start gap-3">
+              <AssetLogo
+                logoIconUrl={h.logoIconUrl}
+                assetType={isFund ? 'fund' : isEtf ? 'etf' : h.assetType ?? 'stock'}
+                assetKey={h.ticker}
+                name={holdingDisplayLabel(h)}
+                size="sm"
+                priority
+                className="mt-0.5"
+              />
+              <div className="min-w-0">
+                <p className="text-[12px] tabular-nums text-pe-text-muted">
+                  Total Invested{' '}
+                  {invested != null && Number.isFinite(invested) && invested > 0
+                    ? formatInr(invested, { compact: true })
+                    : '-'}
+                  {' · '}
+                  QTY{' '}
+                  {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'}
+                </p>
+                <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
+                  {holdingDisplayLabel(h)}
+                </p>
+                <p className="mt-1 text-[12px] tabular-nums text-pe-text-muted">
+                  {weightPct != null ? `${weightPct.toFixed(1)}% of Portfolio` : '-'}
+                </p>
+              </div>
             </div>
             <div className="min-w-0 self-start text-right">
               <p className="text-[12px] tabular-nums text-pe-text-muted">

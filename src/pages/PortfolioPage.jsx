@@ -195,6 +195,7 @@ export default function PortfolioPage({
           ...holding,
           assetType: asset?.kind ?? holding.assetType,
           assetName: asset?.name ?? holding.assetName,
+          logoIconUrl: asset?.logoIconUrl ?? holding.logoIconUrl ?? null,
           price,
           changePct: asset?.item?.changePct ?? holding.changePct ?? null,
         };

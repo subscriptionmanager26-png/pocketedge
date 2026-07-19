@@ -83,6 +83,8 @@ export function marketAssetRowToItem(row) {
   const exchange = row.exchange ?? null;
   const exchangeSymbol = row.exchange_symbol ?? row.exchangeSymbol ?? null;
   const isin = row.isin ?? null;
+  const logoIconUrl = row.logo_icon_url ?? row.logoIconUrl ?? null;
+  const logoUrl = row.logo_url ?? row.logoUrl ?? null;
 
   if (type === 'fund') {
     return {
@@ -97,6 +99,8 @@ export function marketAssetRowToItem(row) {
       navDate: asOfDate,
       priceSource,
       syncedAt,
+      logoIconUrl,
+      logoUrl,
       assetType: 'fund',
     };
   }
@@ -118,6 +122,8 @@ export function marketAssetRowToItem(row) {
       asOfDate,
       priceSource,
       syncedAt,
+      logoIconUrl,
+      logoUrl,
       assetType: 'commodity',
     };
   }
@@ -137,6 +143,8 @@ export function marketAssetRowToItem(row) {
       asOfDate,
       priceSource,
       syncedAt,
+      logoIconUrl,
+      logoUrl,
       assetType: 'index',
     };
   }
@@ -154,6 +162,8 @@ export function marketAssetRowToItem(row) {
     syncedAt,
     exchange,
     isin,
+    logoIconUrl,
+    logoUrl,
     assetType: type,
   };
 }
@@ -545,6 +555,9 @@ export function marketFundToDetail(fund) {
     priceSource: fund.priceSource,
     schemeType: fund.schemeType,
     subCategory: fund.subCategory,
+    logoIconUrl: fund.logoIconUrl ?? null,
+    logoUrl: fund.logoUrl ?? null,
+    assetType: fund.assetType ?? 'fund',
   };
 }
 
@@ -564,6 +577,10 @@ export function marketStockToDetail(stock) {
     isin: stock.isin,
     series: stock.series,
     segment: stock.segment,
+    logoIconUrl: stock.logoIconUrl ?? null,
+    logoUrl: stock.logoUrl ?? null,
+    assetType: stock.assetType ?? null,
+    id: stock.id ?? stock.symbol,
   };
 }
 

@@ -89,12 +89,59 @@ function mockDataProdPlugin(isProd) {
   };
 }
 
+function assetLogosProxyPlugin() {
+  const UPSTREAM =
+    'https://zweqxjeuwwfrlpbuuayg.supabase.co/storage/v1/object/public/asset-logos';
+  return {
+    name: 'asset-logos-proxy',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith('/api/asset-logos/')) {
+          next();
+          return;
+        }
+        const relative = req.url.slice('/api/asset-logos/'.length).split('?')[0];
+        if (!relative || relative.includes('..')) {
+          res.statusCode = 400;
+          res.end('Invalid path');
+          return;
+        }
+        try {
+          const upstream = await fetch(`${UPSTREAM}/${relative}`);
+          if (!upstream.ok) {
+            res.statusCode = upstream.status;
+            res.end();
+            return;
+          }
+          res.setHeader('Content-Type', upstream.headers.get('content-type') || 'image/png');
+          res.setHeader(
+            'Cache-Control',
+            'public, max-age=86400, stale-while-revalidate=604800'
+          );
+          const buffer = Buffer.from(await upstream.arrayBuffer());
+          res.end(buffer);
+        } catch {
+          res.statusCode = 502;
+          res.end();
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
   return {
-    plugins: [react(), nseApiPlugin(), socialServiceWorkerPlugin(), mockDataProdPlugin(isProd)],
-    envDir: path.resolve(__dirname, '..'),
+    plugins: [
+      react(),
+      nseApiPlugin(),
+      assetLogosProxyPlugin(),
+      socialServiceWorkerPlugin(),
+      mockDataProdPlugin(isProd),
+    ],
+    // Load `.env` from this app root (was `..` when social lived under a monorepo).
+    envDir: __dirname,
     server: { port: 5175, strictPort: true, open: false },
     build: {
       target: 'es2020',

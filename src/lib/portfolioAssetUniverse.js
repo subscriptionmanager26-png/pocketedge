@@ -76,6 +76,7 @@ function toEntry(item, { kind, label }) {
     kindLabel: label,
     price: portfolioAssetPrice(item, kind),
     isin: item.isin ?? null,
+    logoIconUrl: item.logoIconUrl ?? null,
     item,
   };
 }
@@ -106,6 +107,7 @@ export function assetsFromHoldings(holdings) {
 
     const assetType = holding?.assetType ?? 'stock';
     const meta = metaForAssetType(assetType);
+    const logoIconUrl = holding?.logoIconUrl ?? holding?.logo_icon_url ?? null;
     map[ticker] = {
       key: ticker,
       symbol: ticker,
@@ -114,10 +116,12 @@ export function assetsFromHoldings(holdings) {
       kindLabel: meta.label,
       price: Number.isFinite(price) && price > 0 ? price : null,
       isin: holding?.isin ?? null,
+      logoIconUrl,
       item: {
         changePct: changePct ?? null,
         previousClose: holding?.previousClose ?? null,
         assetType,
+        logoIconUrl,
       },
     };
   }

@@ -120,6 +120,9 @@ export default function CommodityDetailPage({
         ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
         subtitle={subtitle}
         type="Commodity"
+        logoIconUrl={commodity.logoIconUrl}
+        assetType="commodity"
+        assetKey={commodity.id}
         price={
           loading && commodity.spotPrice == null
             ? '…'

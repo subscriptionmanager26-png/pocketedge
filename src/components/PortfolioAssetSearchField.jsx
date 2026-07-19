@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import AssetLogo from './AssetLogo';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
 import { searchPortfolioAssets } from '../lib/portfolioAssetUniverse';
 import { formatTicker } from '../lib/tickers';
@@ -22,15 +23,30 @@ function AssetSuggestionRow({ asset, onSelect }) {
       onClick={() => onSelect(asset)}
       className="w-full border-b border-pe-border px-4 py-3 text-left last:border-b-0 hover:bg-pe-surface"
     >
-      <div className="flex items-center gap-2">
-        <span className="text-[14px] font-semibold text-pe-text">{displaySymbol(asset)}</span>
-        <span className="rounded-full bg-pe-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-text-muted">
-          {asset.kindLabel}
-        </span>
+      <div className="flex items-center gap-2.5">
+        <AssetLogo
+          logoIconUrl={asset.logoIconUrl}
+          assetType={asset.kind}
+          assetKey={asset.key}
+          name={asset.name || asset.symbol}
+          size="sm"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[14px] font-semibold text-pe-text">
+              {displaySymbol(asset)}
+            </span>
+            <span className="shrink-0 rounded-full bg-pe-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-text-muted">
+              {asset.kindLabel}
+            </span>
+          </div>
+          {asset.kind === 'fund' ? null : (
+            <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-pe-text-muted">
+              {asset.name}
+            </p>
+          )}
+        </div>
       </div>
-      {asset.kind === 'fund' ? null : (
-        <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-pe-text-muted">{asset.name}</p>
-      )}
     </button>
   );
 }

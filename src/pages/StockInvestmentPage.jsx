@@ -209,6 +209,9 @@ export default function StockInvestmentPage({
         name={displayStock.name}
         ticker={formatTicker(displayStock.ticker ?? ticker)}
         type={getStockAssetType(ticker, displayStock)}
+        logoIconUrl={displayStock.logoIconUrl}
+        assetType={displayStock.assetType ?? (isEtf ? 'etf' : 'stock')}
+        assetKey={displayStock.id ?? displayStock.symbol ?? ticker}
         price={
           marketLoading && displayStock.price == null
             ? '…'

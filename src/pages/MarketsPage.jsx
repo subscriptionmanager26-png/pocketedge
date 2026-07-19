@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
+import AssetLogo from '../components/AssetLogo';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { useMarketTabData } from '../hooks/useMarketTabData';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
@@ -84,11 +85,15 @@ export default function MarketsPage({
 
         {!loading && !error && tab === 'stocks' ? (
           <MarketList empty={items.length === 0} emptyMessage="No stocks found">
-            {items.map((stock) => (
+            {items.map((stock, index) => (
               <MarketRow
                 key={stock.id ?? stock.symbol}
                 title={formatTicker(stock.symbol)}
                 subtitle={stock.name}
+                logoIconUrl={stock.logoIconUrl}
+                assetType="stock"
+                assetKey={stock.id ?? stock.symbol}
+                logoPriority={index < 8}
                 price={stock.price}
                 changePct={stock.changePct}
                 previousClose={stock.previousClose}
@@ -106,6 +111,9 @@ export default function MarketsPage({
                 key={fund.schemeCode}
                 title={fund.name}
                 subtitle={[fund.category, fund.subCategory].filter(Boolean).join(' · ') || fund.amc}
+                logoIconUrl={fund.logoIconUrl}
+                assetType="fund"
+                assetKey={fund.schemeCode ?? fund.id}
                 price={fund.nav}
                 changePct={fund.changePct}
                 previousClose={fund.previousClose}
@@ -123,6 +131,9 @@ export default function MarketsPage({
                 key={etf.id ?? etf.symbol}
                 title={formatTicker(etf.symbol)}
                 subtitle={etf.name}
+                logoIconUrl={etf.logoIconUrl}
+                assetType="etf"
+                assetKey={etf.id ?? etf.symbol}
                 price={etf.ltp ?? etf.price}
                 changePct={etf.changePct}
                 previousClose={etf.previousClose}
@@ -140,6 +151,9 @@ export default function MarketsPage({
                 key={index.id}
                 title={index.name}
                 subtitle={formatIndexGroup(index.group)}
+                logoIconUrl={index.logoIconUrl}
+                assetType="index"
+                assetKey={index.id}
                 priceText={formatIndexValue(index.value)}
                 price={index.value}
                 formatAsCurrency={false}
@@ -159,6 +173,9 @@ export default function MarketsPage({
                 key={item.id}
                 title={item.name}
                 subtitle={[item.unit, item.location].filter(Boolean).join(' · ')}
+                logoIconUrl={item.logoIconUrl}
+                assetType="commodity"
+                assetKey={item.id}
                 price={item.spotPrice}
                 changePct={item.changePct}
                 previousClose={item.previousClose}
@@ -186,6 +203,10 @@ function MarketList({ children, empty, emptyMessage }) {
 function MarketRow({
   title,
   subtitle,
+  logoIconUrl,
+  assetType,
+  assetKey,
+  logoPriority = false,
   price,
   priceText,
   changePct,
@@ -210,13 +231,23 @@ function MarketRow({
     <Tag
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`flex w-full items-center justify-between py-3.5 text-left ${
+      className={`flex w-full items-center justify-between gap-3 py-3.5 text-left ${
         onClick ? 'transition hover:bg-pe-surface' : ''
       }`}
     >
-      <div className="min-w-0 pr-3">
-        <p className="truncate text-[15px] font-semibold text-pe-text">{title}</p>
-        {subtitle ? <p className="text-sm text-pe-text-muted">{subtitle}</p> : null}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <AssetLogo
+          logoIconUrl={logoIconUrl}
+          assetType={assetType}
+          assetKey={assetKey}
+          name={title}
+          size="sm"
+          priority={logoPriority}
+        />
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold text-pe-text">{title}</p>
+          {subtitle ? <p className="truncate text-sm text-pe-text-muted">{subtitle}</p> : null}
+        </div>
       </div>
       <div className="shrink-0 text-right">
         <p className="text-[15px] font-semibold text-pe-text">

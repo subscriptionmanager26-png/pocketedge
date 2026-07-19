@@ -1,4 +1,5 @@
 import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import AssetLogo from './AssetLogo';
 
 function formatSignedPlain(n) {
   if (n == null || Number.isNaN(n)) return '-';
@@ -112,6 +113,9 @@ export default function AssetProductHeader({
   ticker,
   subtitle,
   type,
+  logoIconUrl,
+  assetType,
+  assetKey,
   price,
   changePct,
   previousClose,
@@ -129,18 +133,31 @@ export default function AssetProductHeader({
           </span>
         </p>
       ) : null}
-      <h1 className="text-2xl font-bold text-pe-text">{name}</h1>
-      {ticker ? (
-        <p className="mt-0.5 flex items-center gap-1.5 text-sm text-pe-text-muted">
-          {ticker}
-          {String(priceSource ?? '').toLowerCase() === 'bse' ? (
-            <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-pe-accent">
-              BSE
-            </span>
+      <div className="flex items-start gap-3">
+        <AssetLogo
+          logoIconUrl={logoIconUrl}
+          assetType={assetType}
+          assetKey={assetKey ?? ticker}
+          name={name}
+          size="md"
+          priority
+          className="mt-0.5"
+        />
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-bold text-pe-text">{name}</h1>
+          {ticker ? (
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-pe-text-muted">
+              {ticker}
+              {String(priceSource ?? '').toLowerCase() === 'bse' ? (
+                <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-pe-accent">
+                  BSE
+                </span>
+              ) : null}
+            </p>
           ) : null}
-        </p>
-      ) : null}
-      {subtitle ? <p className="mt-0.5 text-sm text-pe-text-secondary">{subtitle}</p> : null}
+          {subtitle ? <p className="mt-0.5 text-sm text-pe-text-secondary">{subtitle}</p> : null}
+        </div>
+      </div>
 
       {price != null || changePct != null ? (
         <QuoteChangeBlock

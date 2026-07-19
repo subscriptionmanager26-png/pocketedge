@@ -4,6 +4,7 @@ import { CURRENT_USER, STOCKS, copyPortfolioForUser, getHandleForUserId } from '
 import { formatCount, formatPct, pnlClass } from '../lib/format';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { profilePath } from '../lib/routes';
+import AssetLogo from './AssetLogo';
 import CommentEngagementButton from './CommentEngagementButton';
 import { PortfolioKindMetaTags } from './PortfolioMetaTag';
 import {
@@ -23,6 +24,8 @@ function getPositions(portfolio) {
     return holdings.map((h) => ({
       ticker: h.ticker,
       label: holdingDisplayLabel(h),
+      assetType: h.assetType ?? 'stock',
+      logoIconUrl: h.logoIconUrl ?? null,
       weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
     }));
   }
@@ -32,6 +35,8 @@ function getPositions(portfolio) {
   return tickers.map((ticker) => ({
     ticker,
     label: holdingDisplayLabel({ ticker }),
+    assetType: 'stock',
+    logoIconUrl: null,
     weight,
   }));
 }
@@ -154,7 +159,16 @@ export default function PortfolioCard({
             <div className="mt-3 space-y-2">
               {topHoldings.map((row) => (
                 <div key={row.ticker} className="flex items-center justify-between gap-3">
-                  <p className="truncate text-[14px] font-semibold text-pe-text">{row.label}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <AssetLogo
+                      logoIconUrl={row.logoIconUrl}
+                      assetType={row.assetType}
+                      assetKey={row.ticker}
+                      name={row.label}
+                      size="xs"
+                    />
+                    <p className="truncate text-[14px] font-semibold text-pe-text">{row.label}</p>
+                  </div>
                   <p className="shrink-0 text-[13px] font-semibold tabular-nums text-pe-text-secondary">
                     {row.weight.toFixed(1)}%
                   </p>
