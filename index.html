@@ -2,18 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>PocketEdge — Find Your Edge in Global Markets</title>
     <meta
       name="description"
       content="Discover opportunities. Build smarter portfolios. Grow with a global community on PocketEdge."
     />
     <link rel="icon" type="image/png" href="/logo.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#000000" />
-    <link rel="canonical" href="https://global.pocketedge.in/" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://www.pocketedge.in/" />
 
-    <!-- Open Graph (WhatsApp, iMessage, Slack, LinkedIn, etc.) -->
+    <!-- Open Graph (preserved from parent www ranking surface) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="PocketEdge" />
     <meta property="og:title" content="Find Your Edge in Global Markets" />
@@ -21,9 +21,9 @@
       property="og:description"
       content="Discover opportunities. Build smarter portfolios. Grow with a global community."
     />
-    <meta property="og:url" content="https://global.pocketedge.in/" />
-    <meta property="og:image" content="https://global.pocketedge.in/og-image.jpg" />
-    <meta property="og:image:secure_url" content="https://global.pocketedge.in/og-image.jpg" />
+    <meta property="og:url" content="https://www.pocketedge.in/" />
+    <meta property="og:image" content="https://www.pocketedge.in/og-image.jpg" />
+    <meta property="og:image:secure_url" content="https://www.pocketedge.in/og-image.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -36,17 +36,78 @@
       name="twitter:description"
       content="Discover opportunities. Build smarter portfolios. Grow with a global community."
     />
-    <meta name="twitter:image" content="https://global.pocketedge.in/og-image.jpg" />
+    <meta name="twitter:image" content="https://www.pocketedge.in/og-image.jpg" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" />
+    <style>
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+      }
+      body {
+        background: #ffffff;
+        color: #1a1a1a;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      .pe-boot {
+        display: flex;
+        min-height: 100dvh;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      .pe-boot__mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #ff6719;
+      }
+      .pe-boot__label {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #8a8a8a;
+      }
+      .pe-boot__bar {
+        width: 120px;
+        height: 3px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #f7f6f4;
+      }
+      .pe-boot__bar > span {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: inherit;
+        background: #ff6719;
+        animation: pe-boot-slide 1.1s ease-in-out infinite;
+      }
+      @keyframes pe-boot-slide {
+        0% {
+          transform: translateX(-120%);
+        }
+        100% {
+          transform: translateX(320%);
+        }
+      }
+    </style>
   </head>
-  <body class="font-sans antialiased">
-    <div id="root"></div>
+  <body>
+    <div id="root">
+      <div class="pe-boot" role="status" aria-live="polite" aria-label="Loading PocketEdge">
+        <div class="pe-boot__mark" aria-hidden="true"></div>
+        <div class="pe-boot__label">PocketEdge</div>
+        <div class="pe-boot__bar" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

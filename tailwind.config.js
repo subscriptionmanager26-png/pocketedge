@@ -4,10 +4,39 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
-        label: ['Barlow', 'system-ui', 'sans-serif'],
-        serif: ['"Source Serif 4"', 'Georgia', 'Times New Roman', 'serif'],
+        sans: [
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
+        ],
+        display: [
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
+        ],
+        serif: [
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
+        ],
       },
       colors: {
         pe: {
@@ -21,7 +50,6 @@ export default {
           border: 'var(--pe-border)',
           'border-strong': 'var(--pe-border-strong)',
           accent: 'var(--pe-accent)',
-          'accent-bright': 'var(--pe-accent-bright)',
           'accent-pressed': 'var(--pe-accent-pressed)',
           'accent-wash': 'var(--pe-accent-wash)',
           'accent-border': 'var(--pe-accent-border)',
@@ -34,16 +62,8 @@ export default {
         },
       },
       maxWidth: {
+        // Substack centers the feed column; ~640px reads well beside a 232px nav.
         feed: '40rem',
-      },
-      animation: {
-        'gradient-x': 'gradient-x 3s ease infinite',
-      },
-      keyframes: {
-        'gradient-x': {
-          '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
-          '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
-        },
       },
     },
   },

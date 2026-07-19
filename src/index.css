@@ -2,205 +2,201 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --pe-canvas: #000000;
-    --pe-surface: #000000;
-    --pe-text: #ffffff;
-    --pe-text-secondary: #a0a0a0;
-    --pe-text-muted: #a0a0a0;
-    --pe-border: #1a1a1a;
-    --pe-accent: #ffffff;
-    --pe-accent-bright: #ffffff;
-    --pe-positive: #10b981;
-    --pe-negative: #f43f5e;
-    --pe-warning: #f59e0b;
-  }
+:root {
+  --pe-canvas: #ffffff;
+  --pe-surface: #f7f6f4;
+  --pe-elevated: #ffffff;
+  --pe-sidebar: #ffffff;
+  --pe-text: #1a1a1a;
+  --pe-text-secondary: #6b6b6b;
+  --pe-text-muted: #8a8a8a;
+  --pe-border: #ececec;
+  --pe-border-strong: #e7e5e1;
+  --pe-accent: #ff6719;
+  --pe-accent-pressed: #e5560e;
+  --pe-accent-wash: #fff7f2;
+  --pe-accent-border: #ffd9c2;
+  --pe-link: #4a6fe3;
+  --pe-positive: #1a8917;
+  --pe-negative: #d93025;
+  --pe-warning: #c47b0a;
+  --pe-ticker: #ff6719;
+  --pe-ink: #1f1f1f;
+  color-scheme: light;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
-  @apply font-sans antialiased;
-  background-color: var(--pe-canvas);
+  background: var(--pe-canvas);
   color: var(--pe-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+button,
+input,
+textarea {
+  font: inherit;
 }
 
-@layer components {
-  .pe-page {
-    @apply min-h-screen;
-    background-color: var(--pe-canvas);
-    color: var(--pe-text);
-  }
-
-  /* —— Surfaces —— */
-  .pe-card {
-    @apply rounded-2xl;
-    background-color: var(--pe-surface);
-    border: 1px solid var(--pe-border);
-  }
-
-  .pe-card-hover {
-    @apply transition-all duration-300;
-    border-color: var(--pe-border);
-  }
-
-  .pe-card-hover:hover {
-    border-color: #374151;
-    box-shadow: none;
-  }
-
-  /* —— Typography (Cesto role mapping) —— */
-  .pe-display {
-    @apply font-display font-medium tracking-tight;
-    color: var(--pe-text);
-  }
-
-  .pe-title {
-    @apply font-display text-2xl sm:text-3xl font-semibold tracking-tight;
-    color: var(--pe-text);
-  }
-
-  .pe-section-title {
-    @apply font-display text-xl sm:text-2xl font-semibold tracking-tight;
-    color: var(--pe-text);
-  }
-
-  .pe-card-title {
-    @apply font-sans text-sm sm:text-base font-semibold leading-snug;
-    color: var(--pe-text);
-  }
-
-  .pe-eyebrow {
-    @apply font-label text-xs sm:text-sm font-medium uppercase tracking-widest;
-    color: var(--pe-text-muted);
-  }
-
-  .pe-body {
-    @apply font-sans text-base leading-relaxed;
-    color: var(--pe-text-secondary);
-  }
-
-  .pe-body-s {
-    @apply font-sans text-sm leading-snug;
-    color: var(--pe-text-secondary);
-  }
-
-  .pe-label {
-    @apply font-sans text-sm;
-    color: var(--pe-text-muted);
-  }
-
-  .pe-stat {
-    @apply font-display text-2xl sm:text-3xl font-bold tabular-nums;
-    color: var(--pe-text);
-  }
-
-  .pe-btn-label {
-    @apply font-label font-medium tracking-wide;
-  }
-
-  /* —— Forms —— */
-  .pe-input {
-    @apply w-full rounded-xl px-4 py-3 pe-body-s placeholder:text-pe-text-muted focus:outline-none focus:ring-2;
-    background-color: var(--pe-surface);
-    border: 1px solid var(--pe-border);
-    color: var(--pe-text);
-  }
-
-  .pe-input:focus {
-    border-color: var(--pe-text);
-    --tw-ring-color: rgb(255 255 255 / 0.1);
-  }
-
-  .pe-nav {
-    @apply backdrop-blur-xl border-b;
-    background-color: rgb(0 0 0 / 0.95);
-    border-color: rgb(26 26 26 / 0.6);
-  }
-
-  /* —— Buttons —— */
-  .pe-btn-primary {
-    @apply pe-btn-label inline-flex items-center justify-center rounded-full transition-colors;
-    background-color: var(--pe-text);
-    color: var(--pe-surface);
-  }
-
-  .pe-btn-primary:hover {
-    opacity: 0.9;
-  }
-
-  .pe-btn-secondary {
-    @apply pe-btn-label inline-flex items-center justify-center font-medium rounded-full transition-colors;
-    background-color: #1a1a1a;
-    color: var(--pe-text);
-  }
-
-  .pe-btn-secondary:hover {
-    background-color: #262626;
-  }
-
-  /* —— Chips & nav —— */
-  .pe-pill-active {
-    background-color: var(--pe-text);
-    color: var(--pe-surface);
-  }
-
-  .pe-pill-inactive {
-    @apply border hover:text-pe-text;
-    background-color: #1a1a1a;
-    color: var(--pe-text-secondary);
-    border-color: rgb(55 65 81 / 0.8);
-  }
-
-  .pe-nav-item-active {
-    @apply border;
-    background-color: var(--pe-text);
-    color: var(--pe-surface);
-    border-color: var(--pe-text);
-  }
-
-  .pe-nav-item-inactive {
-    @apply border border-transparent;
-    color: var(--pe-text-secondary);
-  }
-
-  .pe-nav-item-inactive:hover {
-    background-color: #1a1a1a;
-  }
-
-  .pe-nav-item-inactive:hover {
-    color: var(--pe-text);
+/*
+ * iPhone Safari auto-zooms focused inputs when computed font-size < 16px.
+ * That scale shifts the visual viewport, so portal/fixed search menus float
+ * away from the field. Keep form controls at ≥16px on touch Safari.
+ */
+@supports (-webkit-touch-callout: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+      [type='button']
+    ):not([type='submit']):not([type='reset']):not([type='file']):not(
+      [type='image']
+    ):not([type='hidden']):not([type='color']),
+  textarea,
+  select {
+    font-size: 16px !important;
   }
 }
 
-.scrollbar-hide {
+::selection {
+  background: rgba(255, 103, 25, 0.16);
+}
+
+/* Marketing landing — mobile viewport fit for pinned CTA */
+@media (max-width: 1023px) {
+  .pe-landing {
+    height: var(--landing-visible-height, 100dvh);
+    max-height: var(--landing-visible-height, 100dvh);
+    overflow: hidden;
+  }
+
+  .pe-landing-cta-dock {
+    padding-bottom: calc(
+      0.75rem + env(safe-area-inset-bottom, 0px) + var(--landing-browser-bottom, 0px)
+    );
+  }
+}
+
+/* —— Parent landing parity (.pe-redesign-hero-*) —— */
+
+.pe-landing-hero-ui {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1.5rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .pe-landing-hero-ui {
+    padding: 2.5rem 6rem 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pe-landing-hero-ui {
+    padding-left: 8rem;
+    min-height: calc(100dvh - 4.5rem);
+  }
+}
+
+.pe-landing-hero-title {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 2.5rem;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -1px;
+  color: var(--pe-accent);
+  margin-bottom: 0;
+}
+
+@media (min-width: 768px) {
+  .pe-landing-hero-title {
+    font-size: 3.5rem;
+    letter-spacing: -1.5px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pe-landing-hero-title {
+    font-size: 4.5rem;
+  }
+}
+
+.pe-landing-feature-text {
+  font-size: 10px;
+  color: var(--pe-text-secondary);
+  line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+  .pe-landing-feature-text {
+    font-size: 0.85rem;
+  }
+}
+
+/* Same CTA everywhere — parent .pe-redesign-cta shape, social brand color */
+.pe-landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+  background-color: var(--pe-accent);
+  color: #fff;
+  transition: all 0.3s;
+  box-shadow: 0 8px 24px rgb(255 103 25 / 0.25);
+}
+
+.pe-landing-cta:hover:not(:disabled) {
+  background-color: var(--pe-accent-pressed);
+  box-shadow: 0 10px 28px rgb(255 103 25 / 0.32);
+}
+
+.pe-landing-cta:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.pe-landing-cta--nav {
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+.pe-landing-cta--hero {
+  height: 4rem;
+  padding-left: 3rem;
+  padding-right: 3rem;
+  font-size: 1.125rem;
+}
+
+.scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
+.scrollbar-none::-webkit-scrollbar {
   display: none;
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
 @keyframes marquee {
-  0% {
+  from {
     transform: translateX(0);
   }
-  100% {
+  to {
     transform: translateX(-50%);
   }
 }
@@ -209,15 +205,37 @@ body {
   animation: marquee 40s linear infinite;
 }
 
-@keyframes basket-marquee {
-  0% {
-    transform: translateX(0);
-  }
+@keyframes float {
+  0%,
   100% {
-    transform: translateX(-50%);
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 
-.animate-basket-marquee {
-  animation: basket-marquee 50s linear infinite;
+.landing-mockup-glass {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.12),
+    0 8px 16px -8px rgba(0, 0, 0, 0.08);
+}
+
+.pe-landing-mockup-stage::before {
+  content: '';
+  position: absolute;
+  inset: 10% 0 10% 10%;
+  background: radial-gradient(ellipse at 60% 50%, rgb(255 103 25 / 0.08) 0%, transparent 62%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pe-landing-phone-shell {
+  background: #fff;
+  box-shadow:
+    0 28px 56px -14px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
 }

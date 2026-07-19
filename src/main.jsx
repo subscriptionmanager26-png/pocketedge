@@ -1,16 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import { PostHogProvider } from '@posthog/react';
 import App from './App';
 import './index.css';
-import './legacy/light-theme/legacy.css';
-import './redesign/redesignTheme.css';
-import { initAppTheme } from './redesignFlags';
-import RedesignDevBar from './redesign/RedesignDevBar';
-import RedesignRoot from './redesign/RedesignRoot';
-import { initPostHog, isPostHogEnabled, posthog } from './posthog';
-
-initAppTheme();
+import { initPostHog, isPostHogEnabled, posthog } from './lib/posthog';
 
 if (isPostHogEnabled) {
   initPostHog();
@@ -19,10 +13,17 @@ if (isPostHogEnabled) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <PostHogProvider client={isPostHogEnabled ? posthog : undefined}>
-      <RedesignRoot>
+      <BrowserRouter>
         <App />
-      </RedesignRoot>
-      <RedesignDevBar />
+      </BrowserRouter>
     </PostHogProvider>
   </React.StrictMode>
 );
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* offline / unsupported */
+    });
+  });
+}

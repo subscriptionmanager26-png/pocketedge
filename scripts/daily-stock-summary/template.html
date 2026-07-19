@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PocketEdge · Daily Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:        #FF6719;
+      --ink:          #111111;
+      --red:          #E8332A;
+      --red-10:       rgba(232,51,42,0.08);
+      --green:        #00C896;
+      --green-10:     rgba(0,200,150,0.10);
+      --white:        #FFFFFF;
+      --paper:        #EEECEA;
+      --muted:        #6B7280;
+      --dim:          #9CA3AF;
+      --edge:         #E5E5E3;
+      --surface:      #FAFAF8;
+    }
+
+    html, body {
+      background: var(--paper);
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* Capture target for PNG renders */
+    #stage {
+      width: 860px;
+    }
+
+    .card {
+      width: 860px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow:
+        0 48px 96px -24px rgba(0,0,0,0.16),
+        0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    /* ── TOP BAR ─────────────────────────────────────────── */
+    .topbar {
+      padding: 28px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--edge);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: block;
+      object-fit: contain;
+    }
+
+    .wordmark {
+      font-family: Inter, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brief-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px 5px 9px;
+      border-radius: 100px;
+      border: 1.5px solid var(--brand);
+      background: var(--brand);
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.35; }
+    }
+
+    .brief-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--white);
+      animation: blink 2.4s ease infinite;
+    }
+
+    .brief-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .meta-date {
+      font-family: Inter, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── COMPANY + PRICE ─────────────────────────────────── */
+    .company-section {
+      padding: 36px 48px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .company-left {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stock-logo {
+      width: 76px;
+      height: 76px;
+      border-radius: 14px;
+      border: 1.5px solid var(--edge);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .stock-logo img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .stock-logo .fallback {
+      font-family: Inter, sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--red);
+      letter-spacing: -0.04em;
+      text-align: center;
+      line-height: 1.05;
+    }
+
+    .ticker {
+      font-family: Inter, sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 6px;
+    }
+
+    .company-name {
+      font-family: Inter, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .price-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .price-block.is-up .price-arrow,
+    .price-block.is-up .price-pct,
+    .price-block.is-up .pc-val.today { color: var(--green); }
+    .price-block.is-up .price-compare {
+      background: var(--green-10);
+      border-color: rgba(0,200,150,0.18);
+    }
+
+    .price-label {
+      font-family: Inter, sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0;
+    }
+
+    .price-figure {
+      display: flex;
+      align-items: flex-start;
+      line-height: 1;
+    }
+
+    .price-arrow {
+      font-family: Inter, sans-serif;
+      font-size: 50px;
+      font-weight: 700;
+      color: var(--red);
+      margin-top: 12px;
+      margin-right: 1px;
+      line-height: 1;
+    }
+
+    .price-pct {
+      font-family: Inter, sans-serif;
+      font-size: 92px;
+      font-weight: 700;
+      color: var(--red);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .price-compare {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--red-10);
+      border: 1px solid rgba(232,51,42,0.12);
+    }
+
+    .pc-val {
+      font-family: Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .pc-sep {
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 0;
+    }
+
+    .pc-val.today {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* ── BRAND RULE ──────────────────────────────────────── */
+    .rule {
+      height: 2px;
+      margin: 0 48px;
+      background: var(--brand);
+    }
+
+    /* ── BODY ────────────────────────────────────────────── */
+    .body {
+      display: grid;
+      grid-template-columns: 1fr 268px;
+    }
+
+    .why {
+      padding: 38px 48px;
+      border-right: 1px solid var(--edge);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .s-rule {
+      width: 26px;
+      height: 2px;
+      background: var(--brand);
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    .s-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.17em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .why-copy {
+      font-size: 15.5px;
+      line-height: 1.8;
+      color: #2D3240;
+      font-weight: 400;
+    }
+
+    .why-copy p + p { margin-top: 15px; }
+    .em { font-weight: 600; color: var(--ink); }
+
+    .stats {
+      padding: 38px 36px;
+      background: var(--surface);
+      border-left: 1px solid var(--edge);
+    }
+
+    .stat-table {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--edge);
+      gap: 12px;
+    }
+
+    .stat-row:first-child { padding-top: 0; }
+    .stat-row:last-child  { border-bottom: none; padding-bottom: 0; }
+
+    .sk {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .sv {
+      font-family: Inter, sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      text-align: right;
+    }
+
+    .sv.up { color: var(--green); }
+    .sv.dn { color: var(--red); }
+    .sv.sm {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    .footer {
+      border-top: none;
+      background: var(--brand);
+      padding: 22px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-cta {
+      font-family: Inter, sans-serif;
+      font-size: 15.5px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+
+    .footer-cta em { font-style: normal; color: var(--white); }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .footer-brand .logo-mark {
+      width: 20px;
+      height: 20px;
+      filter: brightness(0) invert(1);
+    }
+
+    .footer-brand-text {
+      font-family: Inter, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+  <div class="card">
+
+    <div class="topbar">
+      <div class="logo">
+        <img class="logo-mark" src="./assets/pe-logo-brand.png" alt="PocketEdge" />
+        <span class="wordmark">PocketEdge</span>
+      </div>
+      <div class="topbar-right">
+        <div class="brief-pill">
+          <div class="brief-dot"></div>
+          <span class="brief-label">Daily Brief</span>
+        </div>
+        <span class="meta-date" id="meta-date"></span>
+      </div>
+    </div>
+
+    <div class="company-section">
+      <div class="company-left">
+        <div class="stock-logo" id="stock-logo"></div>
+        <div>
+          <div class="ticker" id="ticker-line"></div>
+          <h1 class="company-name" id="company-name"></h1>
+        </div>
+      </div>
+
+      <div class="price-block" id="price-block">
+        <div class="price-label" id="price-label"></div>
+        <div class="price-figure">
+          <span class="price-arrow" id="price-arrow"></span>
+          <span class="price-pct" id="price-pct"></span>
+        </div>
+        <div class="price-compare" id="price-compare">
+          <span class="pc-val" id="price-prev"></span>
+          <span class="pc-sep">→</span>
+          <span class="pc-val today" id="price-today"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="body">
+      <div class="why">
+        <div class="section-head">
+          <div class="s-rule"></div>
+          <span class="s-label" id="why-label">Why it happened</span>
+        </div>
+        <div class="why-copy" id="why-copy"></div>
+      </div>
+
+      <div class="stats">
+        <div class="section-head">
+          <div class="s-rule"></div>
+          <span class="s-label">Key Metrics</span>
+        </div>
+        <div class="stat-table" id="stat-table"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p class="footer-cta" id="footer-cta">
+        Stay ahead of your portfolio on <em>PocketEdge</em>
+      </p>
+      <div class="footer-brand">
+        <img class="logo-mark" src="./assets/pe-logo.png" alt="" />
+        <span class="footer-brand-text">PocketEdge</span>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <script id="card-data" type="application/json">__CARD_DATA__</script>
+  <script>
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function highlightText(text, highlights) {
+      let out = escapeHtml(text);
+      (highlights || []).slice().sort((a,b)=>b.length-a.length).forEach(term => {
+        const safe = escapeHtml(term);
+        if (!safe) return;
+        out = out.replace(
+          new RegExp(safe.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), "gi"),
+          m => `<span class="em">${m}</span>`
+        );
+      });
+      return out;
+    }
+
+    function shortDateUpper(displayDate, asOfDate) {
+      if (displayDate && /[A-Za-z]/.test(displayDate) && !displayDate.includes("th") && !displayDate.includes("st")) {
+        return String(displayDate).toUpperCase();
+      }
+      // Prefer ISO → "17 JUL 2025"
+      const iso = asOfDate || "";
+      const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+        return `${Number(m[3])} ${months[Number(m[2]) - 1]} ${m[1]}`;
+      }
+      return String(displayDate || iso || "").toUpperCase();
+    }
+
+    function formatPct(n) {
+      const v = Math.abs(Number(n));
+      return Number.isFinite(v) ? v.toFixed(2) + "%" : "—";
+    }
+
+    function render(data) {
+      const company = data.company || {};
+      const perf = data.performance || {};
+      const analysis = data.analysis || {};
+      const prices = data.prices || {};
+      const changePct = Number(perf.changePct || 0);
+      const isUp = changePct >= 0;
+      const ticker = (company.ticker || data.ticker || "").toUpperCase();
+      const exchange = company.exchange || "NSE";
+      const country = company.country || "INDIA";
+
+      document.getElementById("meta-date").textContent = shortDateUpper(data.displayDate, data.asOfDate);
+      document.getElementById("ticker-line").textContent = `${exchange}:${ticker} · ${country}`;
+      document.getElementById("company-name").textContent = company.name || ticker;
+
+      const logoEl = document.getElementById("stock-logo");
+      if (company.logoUrl) {
+        logoEl.innerHTML = `<img src="${escapeHtml(company.logoUrl)}" alt="" />`;
+      } else if (ticker === "ABB") {
+        logoEl.innerHTML = `<img src="./assets/abb-logo.png" alt="ABB" />`;
+      } else {
+        const text = escapeHtml(company.logoText || ticker);
+        const len = (company.logoText || ticker).length;
+        const size = len <= 3 ? 22 : len <= 5 ? 16 : 13;
+        logoEl.innerHTML = `<div class="fallback" style="font-size:${size}px">${text}</div>`;
+      }
+
+      const priceBlock = document.getElementById("price-block");
+      priceBlock.classList.toggle("is-up", isUp);
+      document.getElementById("price-label").textContent = `Close · ${shortDateUpper(data.displayDate, data.asOfDate)}`;
+      document.getElementById("price-arrow").textContent = isUp ? "↑" : "↓";
+      document.getElementById("price-pct").textContent = formatPct(changePct);
+
+      const prev = prices.prev ?? prices.yesterday ?? perf.prevClose;
+      const today = prices.today ?? prices.close ?? perf.close;
+      const compare = document.getElementById("price-compare");
+      if (prev != null && today != null && String(prev) !== "" && String(today) !== "") {
+        compare.style.display = "flex";
+        document.getElementById("price-prev").textContent = String(prev);
+        document.getElementById("price-today").textContent = String(today);
+      } else {
+        compare.style.display = "none";
+      }
+
+      document.getElementById("why-label").textContent =
+        analysis.sectionLabel || (isUp ? "Why it rose" : "Why it happened");
+      document.getElementById("why-copy").innerHTML = (analysis.paragraphs || [])
+        .map(p => `<p>${highlightText(p, analysis.highlights)}</p>`)
+        .join("");
+
+      // Prefer brief.stats rows; else derive from metrics/facts
+      let rows = Array.isArray(data.stats) ? data.stats.slice() : [];
+      if (!rows.length) {
+        const m = data.metrics || [];
+        const by = (label) => m.find(x => String(x.label || "").toLowerCase().includes(label));
+        const sector = by("sector");
+        const eps = by("eps");
+        const founded = by("founded");
+        const oneY = by("1y") || by("return");
+        const mcap = by("market");
+        if (today != null) rows.push({ label: "Close Today", value: String(today), tone: isUp ? "up" : "dn" });
+        if (prev != null) rows.push({ label: "Close Yesterday", value: String(prev) });
+        if (mcap) rows.push({ label: "Market Cap", value: mcap.primary || (mcap.primaryLines || []).join(" ") });
+        if (eps?.rows?.[0]) rows.push({ label: `EPS · ${eps.rows[0].label}`, value: eps.rows[0].value?.startsWith("$") || eps.rows[0].value?.startsWith("₹") ? eps.rows[0].value : `$${eps.rows[0].value}` });
+        if (eps?.rows?.[1]) rows.push({ label: `EPS · ${eps.rows[1].label}`, value: eps.rows[1].value?.startsWith("$") || eps.rows[1].value?.startsWith("₹") ? eps.rows[1].value : `$${eps.rows[1].value}` });
+        if (oneY) rows.push({ label: "1Y Return", value: oneY.primary, tone: oneY.accent === "green" || String(oneY.primary || "").startsWith("+") ? "up" : undefined });
+        if (sector) rows.push({ label: "Sector", value: sector.primary || (sector.primaryLines || []).join(" "), small: true });
+        if (founded) rows.push({ label: "Founded", value: [founded.primary, (founded.secondary || "").replace(/[()]/g, "")].filter(Boolean).join(" · ") });
+      }
+
+      document.getElementById("stat-table").innerHTML = rows.map(r => {
+        const cls = ["sv"];
+        if (r.tone === "up") cls.push("up");
+        if (r.tone === "dn") cls.push("dn");
+        if (r.small) cls.push("sm");
+        return `<div class="stat-row"><span class="sk">${escapeHtml(r.label)}</span><span class="${cls.join(" ")}">${escapeHtml(r.value)}</span></div>`;
+      }).join("");
+
+      const cta = data.cta || {};
+      if (cta.line1 || cta.brand) {
+        document.getElementById("footer-cta").innerHTML =
+          `${escapeHtml(cta.line1 || "Stay ahead of your portfolio on")} <em>${escapeHtml(cta.brand || "PocketEdge")}</em>`;
+      }
+    }
+
+    render(JSON.parse(document.getElementById("card-data").textContent));
+  </script>
+</body>
+</html>

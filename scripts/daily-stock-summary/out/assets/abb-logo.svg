@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 90" fill="none">
+  <!-- Official-style ABB wordmark: red block letters with white grid cuts -->
+  <g fill="#E10600">
+    <!-- A -->
+    <path d="M8 78 L40 8 H52 L84 78 H66 L60 64 H32 L26 78 Z"/>
+    <path d="M36 50 H56 L48 30 Z" fill="#fff"/>
+    <!-- vertical/horizontal cuts on A -->
+    <rect x="45" y="12" width="3" height="58" fill="#fff"/>
+    <rect x="28" y="42" width="36" height="3" fill="#fff"/>
+    <!-- B1 -->
+    <path d="M96 12 H128 C146 12 156 22 156 34 C156 42 152 48 144 50 C154 52 160 60 160 70 C160 82 148 90 128 90 H96 Z"/>
+    <path d="M110 24 V42 H126 C134 42 138 38 138 33 C138 28 134 24 126 24 Z" fill="#fff"/>
+    <path d="M110 54 V78 H128 C138 78 146 74 146 66 C146 58 138 54 128 54 Z" fill="#fff"/>
+    <rect x="118" y="14" width="3" height="72" fill="#fff"/>
+    <rect x="98" y="48" width="58" height="3" fill="#fff"/>
+    <!-- B2 -->
+    <path d="M174 12 H206 C224 12 234 22 234 34 C234 42 230 48 222 50 C232 52 238 60 238 70 C238 82 226 90 206 90 H174 Z"/>
+    <path d="M188 24 V42 H204 C212 42 216 38 216 33 C216 28 212 24 204 24 Z" fill="#fff"/>
+    <path d="M188 54 V78 H206 C216 78 224 74 224 66 C224 58 216 54 206 54 Z" fill="#fff"/>
+    <rect x="196" y="14" width="3" height="72" fill="#fff"/>
+    <rect x="176" y="48" width="58" height="3" fill="#fff"/>
+  </g>
+</svg>

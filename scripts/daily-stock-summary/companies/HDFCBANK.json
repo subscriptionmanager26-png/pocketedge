@@ -1,0 +1,34 @@
+{
+  "ticker": "HDFCBANK",
+  "company": {
+    "name": "HDFCBANK",
+    "ticker": "HDFCBANK",
+    "logoText": "HDFCB",
+    "logoUrl": null,
+    "sector": "Equity"
+  },
+  "facts": {
+    "epsCurrency": "INR",
+    "eps": [
+      {
+        "label": "Q4 FY25",
+        "value": "0.00"
+      },
+      {
+        "label": "Q3 FY25",
+        "value": "0.00"
+      }
+    ],
+    "founded": "1990",
+    "foundedSub": "(India)",
+    "oneYearReturn": "+0.0%",
+    "oneYearReturnAsOf": "16 Jul 2025",
+    "marketCap": "₹0.0B",
+    "marketCapSub": "(Approx.)"
+  },
+  "cta": {
+    "line1": "Stay Updated on Your Portfolio",
+    "line2Prefix": "at",
+    "brand": "PocketEdge"
+  }
+}

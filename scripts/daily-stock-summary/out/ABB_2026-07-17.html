@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily Stock Summary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --body: #111827;
+      --muted: #64748b;
+      --muted-2: #667085;
+      --caption: #475467;
+      --border: #f1f5f9;
+      --orange: #ff6719;
+      --orange-soft: #fff3eb;
+      --orange-footer: #fff7f3;
+      --orange-pill-text: #c2410c;
+      --red: #dc2626;
+      --red-line: #ef4444;
+      --green: #16a34a;
+      --shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: #e8e8e4;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #stage {
+      width: 1080px;
+      height: 1350px;
+      background: var(--bg);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      overflow: hidden;
+    }
+
+    /* —— Header —— */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 4px 4px 0;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      filter: brightness(0);
+    }
+
+    .brand-name {
+      font-size: 52px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .header-right {
+      text-align: right;
+      padding-top: 4px;
+    }
+
+    .header-label {
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.24em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .header-date {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .header-date svg {
+      width: 26px;
+      height: 26px;
+      color: var(--orange);
+      flex-shrink: 0;
+    }
+
+    /* —— Hero —— */
+    .hero {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr) 340px;
+      gap: 24px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .logo-card {
+      width: 280px;
+      height: 280px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .logo-card img {
+      max-width: 200px;
+      max-height: 160px;
+      object-fit: contain;
+    }
+
+    .logo-fallback {
+      font-size: 96px;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      color: #e10600;
+      line-height: 1;
+    }
+
+    .identity {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 22px;
+      min-width: 0;
+      padding: 0 8px;
+    }
+
+    .company-name {
+      font-size: 84px;
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      color: var(--ink);
+      line-height: 0.95;
+      white-space: nowrap;
+    }
+
+    .sector-pill {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      background: var(--orange-soft);
+      color: var(--orange-pill-text);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .move-card {
+      width: 340px;
+      height: 260px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 22px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .move-card.is-up .move-pct { color: var(--green); }
+    .move-card.is-up .sparkline path { stroke: var(--green); }
+    .move-card.is-up .sparkline circle { fill: var(--green); }
+
+    .move-pct {
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--red);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .move-caption {
+      margin-top: 12px;
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--caption);
+    }
+
+    .sparkline-wrap {
+      margin-top: auto;
+      height: 72px;
+    }
+
+    .sparkline-wrap svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* —— Insight —— */
+    .insight {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px 36px 36px;
+      overflow: hidden;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .insight-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .insight-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--orange);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .insight-icon svg {
+      width: 26px;
+      height: 26px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .insight-title {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+
+    .insight-body {
+      position: relative;
+      z-index: 1;
+      max-width: 76%;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .insight-body p {
+      font-size: 30px;
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--body);
+    }
+
+    .insight-body .hl {
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    .globe {
+      position: absolute;
+      right: -60px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 520px;
+      height: 520px;
+      opacity: 0.07;
+      pointer-events: none;
+      color: var(--orange);
+    }
+
+    /* —— Snapshot —— */
+    .snapshot {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 24px 12px;
+      flex-shrink: 0;
+    }
+
+    .snap-col {
+      padding: 4px 18px;
+      border-right: 1px solid #eef2f6;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .snap-col:last-child { border-right: none; }
+
+    .snap-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+    }
+
+    .snap-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .snap-label {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .snap-primary {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1.05;
+    }
+
+    .snap-primary.green { color: var(--green); }
+
+    .snap-secondary {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--muted-2);
+      line-height: 1.3;
+    }
+
+    .snap-eps-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .snap-eps-row .row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 18px;
+      color: var(--muted-2);
+    }
+
+    .snap-eps-row .row strong {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    /* —— Footer —— */
+    .footer {
+      height: 150px;
+      background: var(--orange-footer);
+      border-radius: var(--radius);
+      padding: 0 36px;
+      display: grid;
+      grid-template-columns: auto 1fr minmax(0, 22%);
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-brand img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      filter: brightness(0);
+    }
+
+    .footer-brand span {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+
+    .footer-cta {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--body);
+    }
+
+    .footer-cta .brand-accent {
+      color: var(--orange);
+    }
+
+    .phone-wrap {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .phone {
+      width: 92px;
+      height: 118px;
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 7px 6px 8px;
+      transform: rotate(8deg);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+      position: relative;
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px;
+      height: 3px;
+      border-radius: 999px;
+      background: #334155;
+    }
+
+    .phone-screen {
+      margin-top: 8px;
+      height: calc(100% - 8px);
+      background: #fff;
+      border-radius: 9px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .phone-label {
+      font-size: 7px;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .phone-bal {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.03em;
+    }
+
+    .phone-chg {
+      font-size: 8px;
+      font-weight: 600;
+      color: var(--orange);
+    }
+
+    .phone-chart {
+      margin-top: auto;
+      height: 28px;
+    }
+
+    .phone-chart svg {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <header class="header">
+      <div class="brand">
+        <img src="./logo.png" alt="" />
+        <span class="brand-name">PocketEdge</span>
+      </div>
+      <div class="header-right">
+        <div class="header-label">Daily Stock Summary</div>
+        <div class="header-date">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span id="display-date"></span>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="logo-card" id="company-logo"></div>
+      <div class="identity">
+        <div class="company-name" id="company-name"></div>
+        <div class="sector-pill" id="company-sector"></div>
+      </div>
+      <div class="move-card" id="move-card">
+        <div class="move-pct" id="move-pct"></div>
+        <div class="move-caption" id="move-caption"></div>
+        <div class="sparkline-wrap" id="sparkline"></div>
+      </div>
+    </section>
+
+    <section class="insight">
+      <div class="insight-header">
+        <div class="insight-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
+        </div>
+        <div class="insight-title" id="insight-title"></div>
+      </div>
+      <div class="insight-body" id="insight-body"></div>
+      <svg class="globe" viewBox="0 0 520 520" aria-hidden="true">
+        <circle cx="260" cy="260" r="210" fill="none" stroke="currentColor" stroke-width="3"/>
+        <ellipse cx="260" cy="260" rx="85" ry="210" fill="none" stroke="currentColor" stroke-width="2"/>
+        <ellipse cx="260" cy="260" rx="155" ry="210" fill="none" stroke="currentColor" stroke-width="2"/>
+        <ellipse cx="260" cy="260" rx="210" ry="70" fill="none" stroke="currentColor" stroke-width="2"/>
+        <ellipse cx="260" cy="260" rx="210" ry="135" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="260" cy="260" r="210" fill="currentColor" opacity="0.08"/>
+        <!-- faint halftone dots -->
+        <g fill="currentColor" opacity="0.55">
+          <circle cx="180" cy="160" r="3"/><circle cx="210" cy="145" r="2.5"/><circle cx="240" cy="155" r="3"/>
+          <circle cx="270" cy="140" r="2"/><circle cx="300" cy="160" r="3"/><circle cx="330" cy="150" r="2.5"/>
+          <circle cx="160" cy="200" r="2.5"/><circle cx="200" cy="195" r="3"/><circle cx="240" cy="210" r="2"/>
+          <circle cx="280" cy="200" r="3"/><circle cx="320" cy="215" r="2.5"/><circle cx="360" cy="195" r="3"/>
+          <circle cx="170" cy="250" r="3"/><circle cx="210" cy="260" r="2.5"/><circle cx="250" cy="245" r="3"/>
+          <circle cx="290" cy="255" r="2"/><circle cx="330" cy="250" r="3"/><circle cx="370" cy="265" r="2.5"/>
+          <circle cx="190" cy="300" r="2.5"/><circle cx="230" cy="310" r="3"/><circle cx="270" cy="295" r="2"/>
+          <circle cx="310" cy="305" r="3"/><circle cx="350" cy="315" r="2.5"/>
+          <circle cx="200" cy="350" r="3"/><circle cx="240" cy="360" r="2.5"/><circle cx="280" cy="345" r="3"/>
+          <circle cx="320" cy="355" r="2"/><circle cx="150" cy="280" r="2"/><circle cx="380" cy="230" r="2"/>
+        </g>
+      </svg>
+    </section>
+
+    <section class="snapshot" id="snapshot"></section>
+
+    <footer class="footer">
+      <div class="footer-brand">
+        <img src="./logo.png" alt="" />
+        <span>PocketEdge</span>
+      </div>
+      <div class="footer-cta" id="footer-cta"></div>
+      <div class="phone-wrap" aria-hidden="true">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-label">My Portfolio</div>
+            <div class="phone-bal">₹2.4L</div>
+            <div class="phone-chg">+12.4%</div>
+            <div class="phone-chart">
+              <svg viewBox="0 0 76 28" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FF6719" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0 22 L12 18 L24 20 L36 12 L48 14 L60 8 L76 4 L76 28 L0 28 Z" fill="url(#pg)"/>
+                <path d="M0 22 L12 18 L24 20 L36 12 L48 14 L60 8 L76 4" fill="none" stroke="#FF6719" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script id="card-data" type="application/json">{"ticker":"ABB","displayDate":"17th July 2026","asOfDate":"2026-07-17","company":{"name":"ABB Ltd","ticker":"ABB","logoText":"ABB","logoUrl":null,"sector":"Industrial Automation"},"performance":{"changePct":-2,"caption":"Fell on 17th July","sparkline":[102,104,103,107,110,108,101,96]},"analysis":{"title":"Why Did It Fall?","paragraphs":["The strongest explanation appears to be profit-taking after ABB’s shares surged 6.26% the prior day on strong Q2 earnings and the announcement of a $5.5 billion acquisition of Rotork.","The deal, while strategically sound, was priced at a significant premium, raising concerns about valuation and near-term dilution. Investors likely trimmed positions following the outsized gain."],"highlights":["profit-taking","$5.5 billion acquisition of Rotork","valuation","near-term dilution"]},"metrics":[{"label":"Sector","icon":"building","primaryLines":["Industrial","Automation"]},{"label":"EPS (USD)","icon":"bars","type":"eps","rows":[{"label":"Q2 2025","value":"0.51"},{"label":"Q1 2025","value":"0.45"}]},{"label":"Founded","icon":"calendar","primary":"1988","secondary":"(Sweden)"},{"label":"1Y Returns","icon":"trend","accent":"green","primary":"+21.3%","secondary":"(as of 16 Jul 2026)"},{"label":"Market Cap","icon":"pie","primary":"$95.6B","secondary":"(Approx.)"}],"cta":{"line1":"Stay Updated on Your Portfolio","line2Prefix":"at","brand":"PocketEdge"}}</script>
+  <script>
+    const ICONS = {
+      building: '<svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M9 14h.01"/><path d="M15 14h.01"/></svg>',
+      bars: '<svg viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20V8"/></svg>',
+      calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      trend: '<svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>',
+      pie: '<svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>',
+    };
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function highlightText(text, highlights) {
+      let out = escapeHtml(text);
+      const terms = (highlights || []).slice().sort((a, b) => b.length - a.length);
+      for (const term of terms) {
+        const safe = escapeHtml(term);
+        if (!safe) continue;
+        const re = new RegExp(safe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+        out = out.replace(re, (m) => `<span class="hl">${m}</span>`);
+      }
+      return out;
+    }
+
+    function formatMovePct(n) {
+      const v = Number(n);
+      const abs = Math.abs(v).toFixed(2);
+      const arrow = v > 0 ? "▲" : v < 0 ? "▼" : "";
+      return `${arrow} ${abs}%`.trim();
+    }
+
+    function sparklineSvg(points, isUp) {
+      const vals = (points || []).map(Number).filter((n) => Number.isFinite(n));
+      if (vals.length < 2) return "";
+      const w = 280, h = 72, padX = 4, padY = 8;
+      const min = Math.min(...vals);
+      const max = Math.max(...vals);
+      const span = max - min || 1;
+      const coords = vals.map((v, i) => {
+        const x = padX + (i / (vals.length - 1)) * (w - padX * 2);
+        const y = padY + (1 - (v - min) / span) * (h - padY * 2);
+        return [x, y];
+      });
+      const d = coords.map((c, i) => (i === 0 ? `M ${c[0]} ${c[1]}` : `L ${c[0]} ${c[1]}`)).join(" ");
+      const last = coords[coords.length - 1];
+      const color = isUp ? "#16A34A" : "#EF4444";
+      return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <path d="${d}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${last[0]}" cy="${last[1]}" r="6" fill="${color}"/>
+      </svg>`;
+    }
+
+    function renderSnapshot(metrics) {
+      return (metrics || []).map((m) => {
+        if (m.type === "eps") {
+          const rows = (m.rows || [])
+            .map((r) => `<div class="row">${escapeHtml(r.label)} → <strong>${escapeHtml(r.value)}</strong></div>`)
+            .join("");
+          return `<div class="snap-col">
+            <div class="snap-icon">${ICONS[m.icon] || ICONS.bars}</div>
+            <div class="snap-label">${escapeHtml(m.label)}</div>
+            <div class="snap-eps-row">${rows}</div>
+          </div>`;
+        }
+        const primaryClass = m.accent === "green" ? "snap-primary green" : "snap-primary";
+        const primaryLines = (m.primaryLines || [m.primary])
+          .filter(Boolean)
+          .map((line) => `<div>${escapeHtml(line)}</div>`)
+          .join("");
+        const secondary = (m.secondaryLines || (m.secondary ? [m.secondary] : []))
+          .map((line) => `<div class="snap-secondary">${escapeHtml(line)}</div>`)
+          .join("");
+        return `<div class="snap-col">
+          <div class="snap-icon">${ICONS[m.icon] || ICONS.bars}</div>
+          <div class="snap-label">${escapeHtml(m.label)}</div>
+          <div class="${primaryClass}">${primaryLines}</div>
+          ${secondary}
+        </div>`;
+      }).join("");
+    }
+
+    function render(data) {
+      document.getElementById("display-date").textContent = data.displayDate;
+      document.getElementById("company-name").textContent = data.company.name;
+      document.getElementById("company-sector").textContent = data.company.sector;
+
+      const logoEl = document.getElementById("company-logo");
+      if (data.company.logoUrl) {
+        logoEl.innerHTML = `<img src="${escapeHtml(data.company.logoUrl)}" alt="" />`;
+      } else {
+        logoEl.innerHTML = `<div class="logo-fallback">${escapeHtml(data.company.logoText || data.company.ticker || "")}</div>`;
+      }
+
+      const changePct = Number(data.performance.changePct);
+      const isUp = changePct >= 0;
+      const moveCard = document.getElementById("move-card");
+      moveCard.classList.toggle("is-up", isUp);
+      document.getElementById("move-pct").textContent = formatMovePct(changePct);
+      document.getElementById("move-caption").textContent = data.performance.caption;
+      document.getElementById("sparkline").innerHTML = sparklineSvg(data.performance.sparkline, isUp);
+
+      document.getElementById("insight-title").textContent = data.analysis.title;
+      document.getElementById("insight-body").innerHTML = (data.analysis.paragraphs || [])
+        .map((p) => `<p>${highlightText(p, data.analysis.highlights)}</p>`)
+        .join("");
+
+      document.getElementById("snapshot").innerHTML = renderSnapshot(data.metrics);
+
+      const cta = data.cta || {};
+      document.getElementById("footer-cta").innerHTML =
+        `${escapeHtml(cta.line1 || "Stay Updated on Your Portfolio")}<br>` +
+        `${escapeHtml(cta.line2Prefix || "at")} <span class="brand-accent">${escapeHtml(cta.brand || "PocketEdge")}</span>`;
+    }
+
+    render(JSON.parse(document.getElementById("card-data").textContent));
+  </script>
+</body>
+</html>

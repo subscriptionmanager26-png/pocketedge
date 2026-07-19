@@ -1,38 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://global.pocketedge.in/</loc>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.pocketedge.in/</loc>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://global.pocketedge.in/?ucits=1</loc>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.pocketedge.in/feed</loc>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://global.pocketedge.in/?leaderboard=1</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.pocketedge.in/markets</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://global.pocketedge.in/?legal=terms</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://www.pocketedge.in/search</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://global.pocketedge.in/?legal=privacy</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://global.pocketedge.in/?legal=disclosures</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://global.pocketedge.in/?legal=risk-disclosure</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://www.pocketedge.in/portfolio</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
