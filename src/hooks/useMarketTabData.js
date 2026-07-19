@@ -6,6 +6,7 @@ import {
   fetchMarketPreview,
   searchMarketTab,
 } from '../lib/marketDataApi';
+import { preloadAssetLogos } from '../lib/assetLogo';
 
 function useDebouncedValue(value, delayMs = 250) {
   const [debounced, setDebounced] = useState(value);
@@ -38,8 +39,10 @@ export function useMarketTabData(tab, query = '') {
     fetchMarketPreview(tab)
       .then((payload) => {
         if (cancelled) return;
-        setPreviewItems(payload.items ?? []);
+        const items = payload.items ?? [];
+        setPreviewItems(items);
         setSyncedAt(payload.syncedAt ?? null);
+        preloadAssetLogos(items, { limit: MARKET_PREVIEW_LIMIT });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -71,6 +74,7 @@ export function useMarketTabData(tab, query = '') {
       .then(({ items, total }) => {
         if (cancelled) return;
         setSearchItems(items);
+        preloadAssetLogos(items, { limit: 30 });
         void total;
       })
       .catch((err) => {
