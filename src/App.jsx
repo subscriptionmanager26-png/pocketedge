@@ -52,7 +52,6 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, stockPath, tabPath } from './lib/routes';
-import { readScrollTop, writeScrollTop } from './lib/scrollRestore';
 import {
   navigateToProfile,
   navigateToTab,
