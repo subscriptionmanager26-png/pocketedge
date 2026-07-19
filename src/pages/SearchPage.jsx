@@ -4,7 +4,7 @@ import Avatar from '../components/Avatar';
 import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import { PEOPLE, TOPICS } from '../data/mockData';
 import { isDevMockMode } from '../lib/appMode';
-import { profileToPerson } from '../lib/socialIdentity';
+import { profileToPerson, rememberPerson } from '../lib/socialIdentity';
 import { searchSocialProfiles } from '../lib/socialProfileApi';
 import {
   getFollowedTopicSlugs,
@@ -15,6 +15,7 @@ import { formatCount } from '../lib/format';
 import AssetLogo from '../components/AssetLogo';
 import { QuoteChangeBlock } from '../components/AssetProductHeader';
 import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
+import { preloadAssetLogos } from '../lib/assetLogo';
 import { formatTicker } from '../lib/tickers';
 
 const RESULT_TABS = [
@@ -70,6 +71,7 @@ export default function SearchPage({
       .then(({ items }) => {
         if (!cancelled) {
           setMarketResults((prev) => ({ ...prev, [resultTab]: items }));
+          preloadAssetLogos(items, { limit: 30 });
         }
       })
       .finally(() => {
@@ -92,6 +94,7 @@ export default function SearchPage({
       const filtered = ranked.filter(
         (p) => p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)
       );
+      for (const person of filtered) rememberPerson(person);
       setPeopleResults(filtered);
       setPeopleSearching(false);
       return undefined;
@@ -99,7 +102,10 @@ export default function SearchPage({
 
     searchSocialProfiles(q)
       .then((rows) => {
-        if (!cancelled) setPeopleResults(rows.map(profileToPerson));
+        if (cancelled) return;
+        const people = rows.map(profileToPerson);
+        for (const person of people) rememberPerson(person);
+        setPeopleResults(people);
       })
       .catch(() => {
         if (!cancelled) setPeopleResults([]);
@@ -411,7 +417,10 @@ function PersonRow({ person, onOpenProfile }) {
   return (
     <button
       type="button"
-      onClick={() => onOpenProfile?.(person.id)}
+      onClick={() => {
+        rememberPerson(person);
+        onOpenProfile?.(person.id);
+      }}
       className="flex w-full items-center gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
     >
       <Avatar person={person} />

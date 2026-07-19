@@ -68,6 +68,21 @@ function cacheProfile(profile) {
   if (profile.username) byUsername.set(profile.username.toLowerCase(), profile);
 }
 
+/** Cache a person from search/list rows so sync handle lookups work immediately. */
+export function rememberPerson(person) {
+  if (!person?.id || !person?.handle) return;
+  cacheProfile({
+    user_id: person.id,
+    username: person.handle,
+    display_name: person.name,
+    bio: person.bio ?? '',
+    avatar_url: person.avatarUrl ?? null,
+    location: person.location ?? '',
+    focus: person.focus ?? '',
+    created_at: person.joinedAt ?? null,
+  });
+}
+
 async function fetchProfileByUsername(username) {
   if (!useLiveIdentity()) return null;
   const { data, error } = await supabase.rpc('get_social_profile', { p_username: username });

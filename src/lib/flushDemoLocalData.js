@@ -6,19 +6,6 @@ function isMockUserId(id) {
   return MOCK_USER_ID_RE.test(String(id ?? ''));
 }
 
-function storeHasMockAuthors(key, listKey = 'reviews') {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    const items = Array.isArray(parsed) ? parsed : parsed?.[listKey];
-    if (!Array.isArray(items)) return false;
-    return items.some((item) => isMockUserId(item?.authorId));
-  } catch {
-    return false;
-  }
-}
-
 function followingHasMockIds() {
   try {
     const raw = localStorage.getItem('pe_social_following');
@@ -31,10 +18,6 @@ function followingHasMockIds() {
 }
 
 export function flushDemoLocalData() {
-  if (storeHasMockAuthors('pe_social_fund_reviews')) {
-    localStorage.removeItem('pe_social_fund_reviews');
-    localStorage.removeItem('pe_social_community_reviews_unlocked');
-  }
   if (followingHasMockIds()) {
     localStorage.removeItem('pe_social_following');
   }

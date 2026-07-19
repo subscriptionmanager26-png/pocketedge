@@ -49,8 +49,6 @@ import {
 import { ProfilePageSkeleton } from '../components/PageSkeletons';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
-import ReviewCard from '../components/ReviewCard';
-import { getReviewsByAuthor, loadReviewsByAuthor, subscribeReviews } from '../lib/reviewStore';
 import {
   addPortfolioComment,
   getPortfolioEngagementSync,
@@ -85,7 +83,6 @@ import { profilePath } from '../lib/routes';
 const PROFILE_TABS = [
   { id: 'about', label: 'About me' },
   { id: 'posts', label: 'Posts' },
-  { id: 'reviews', label: 'Signals' },
   { id: 'portfolios', label: 'Portfolio' },
 ];
 
@@ -113,32 +110,6 @@ function getStoredReturnPeriod() {
     /* ignore */
   }
   return '1M';
-}
-
-function ReturnPeriodPicker({ value, onChange, className = '' }) {
-  return (
-    <div className={`flex items-center justify-between gap-3 border-b border-pe-border px-4 py-3 ${className}`}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-        Return period
-      </p>
-      <div className="flex gap-1 rounded-lg bg-pe-surface p-1">
-        {RETURN_PERIODS.map((period) => (
-          <button
-            key={period}
-            type="button"
-            onClick={() => onChange(period)}
-            className={`rounded-md px-2.5 py-1.5 text-[12px] font-bold transition ${
-              value === period
-                ? 'bg-pe-canvas text-pe-text shadow-sm'
-                : 'text-pe-text-secondary hover:text-pe-text'
-            }`}
-          >
-            {period}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function formatJoined(isoDate) {
@@ -184,7 +155,6 @@ export default function ProfilePage({
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [portfolios, setPortfolios] = useState([]);
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
-  const [reviewsVersion, setReviewsVersion] = useState(0);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
 
@@ -219,21 +189,7 @@ export default function ProfilePage({
   const [graphTick, setGraphTick] = useState(0);
 
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
-  useEffect(() => subscribeReviews(() => setReviewsVersion((n) => n + 1)), []);
   useEffect(() => subscribePortfolioEngagement(() => setPortfolioSocialTick((n) => n + 1)), []);
-
-  useEffect(() => {
-    if (!person?.id) return undefined;
-    let cancelled = false;
-    loadReviewsByAuthor(person.id)
-      .then(() => {
-        if (!cancelled) setReviewsVersion((n) => n + 1);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [person?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -312,10 +268,6 @@ export default function ProfilePage({
   const authorPosts = (posts ?? (isDevMockMode() ? POSTS : [])).filter((p) => p.authorId === person?.id);
   const enrichmentTick = usePostEnrichment(authorPosts);
   const tabs = PROFILE_TABS;
-  const authoredReviews = useMemo(
-    () => getReviewsByAuthor(person?.id),
-    [person?.id, reviewsVersion]
-  );
   const publishedPortfolios = useMemo(
     () => portfolios.filter((p) => !p.isDraft),
     [portfolios]
@@ -540,14 +492,6 @@ export default function ProfilePage({
           onPortfolioCopied={bumpPortfolios}
         />
       )}
-
-      {tab === 'reviews' && (
-        <ReviewsPanel
-          reviews={authoredReviews}
-          onOpenProfile={onOpenProfile}
-          onGraphChange={onGraphChange}
-        />
-      )}
     </div>
   );
 }
@@ -717,32 +661,6 @@ function Field({ label, children }) {
   );
 }
 
-function ReviewsPanel({ reviews, onOpenProfile, onGraphChange }) {
-  if (!reviews.length) {
-    return (
-      <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-        Signals you post on funds and stocks will show up here.
-      </p>
-    );
-  }
-
-  return (
-    <div className="divide-y divide-pe-border border-t border-pe-border">
-      {reviews.map((review) => (
-        <ReviewCard
-          key={review.id}
-          review={review}
-          locked={false}
-          onAddComment={() => {}}
-          onOpenProfile={onOpenProfile}
-          onGraphChange={onGraphChange}
-          onReviewChange={() => {}}
-        />
-      ))}
-    </div>
-  );
-}
-
 function PortfoliosListPanel({
   portfolios,
   loading = false,
@@ -759,10 +677,6 @@ function PortfoliosListPanel({
 
   return (
     <div>
-      {/* Return period picker hidden for now - always show 1D returns.
-      <ReturnPeriodPicker value={returnPeriod} onChange={onReturnPeriodChange} />
-      */}
-
       {loading ? (
         <PortfoliosListSkeleton count={2} />
       ) : !portfolios.length ? (

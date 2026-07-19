@@ -10,24 +10,22 @@ import {
   STOCKS,
 } from '../data/mockData';
 import { getPersonSync } from '../lib/socialIdentity';
-import { formatInr, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { formatInr, pnlClass, timeAgo } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 
-/** Aggregate news / trades / posts for a set of tickers (portfolio-level or single stock). */
+/** Aggregate news / posts for a set of tickers (portfolio-level or single stock). */
 export function collectActivity(tickers) {
   if (!isDevMockMode()) {
-    return { news: [], trades: [], posts: [] };
+    return { news: [], posts: [] };
   }
 
   const news = [];
-  const trades = [];
   const posts = [];
 
   for (const ticker of tickers) {
     for (const u of PORTFOLIO_UPDATES[ticker] ?? []) {
       if (u.type === 'news') news.push({ ...u, ticker });
-      if (u.type === 'buy' || u.type === 'sell') trades.push({ ...u, ticker });
       if (u.type === 'post') posts.push({ ...u, ticker });
     }
   }
@@ -48,7 +46,7 @@ export function collectActivity(tickers) {
     });
   }
 
-  return { news, trades, posts };
+  return { news, posts };
 }
 
 /** Map backend posts into the compact PostsFeed shape. */
@@ -75,53 +73,6 @@ export function postsToActivityItems(posts, tickers = []) {
 export function NewsFeed({ items }) {
   if (!items.length) return <Empty label="No news for this list yet." />;
   return <NewsList items={items} showTicker />;
-}
-
-export function TradesFeed({ items, onOpenProfile }) {
-  if (!items.length) return <Empty label="No community trades yet." />;
-  return (
-    <div className="divide-y divide-pe-border">
-      {items.map((item) => {
-        const person = getPersonSync(item.authorId) ?? { name: 'Member', handle: 'member' };
-        const isBuy = item.type === 'buy';
-        return (
-          <div key={item.id} className="flex gap-3 px-4 py-4">
-            <Avatar
-              person={person}
-              size="sm"
-              onClick={() => onOpenProfile?.(item.authorId)}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm">
-                <button
-                  type="button"
-                  onClick={() => onOpenProfile?.(item.authorId)}
-                  className="font-semibold text-pe-text hover:underline"
-                >
-                  @{person.handle}
-                </button>
-                <span className="text-pe-text-muted"> · {item.time}</span>
-              </p>
-              <p className="mt-1 text-sm text-pe-text">
-                <span className={`font-bold uppercase ${isBuy ? 'text-pe-positive' : 'text-pe-negative'}`}>
-                  {item.type}
-                </span>{' '}
-                <span className="font-semibold">{formatTicker(item.ticker)}</span>{' '}
-                <span className="text-pe-text-secondary">
-                  {item.qty} @ {formatPrice(item.price)}
-                </span>
-                {item.pnlPct != null && (
-                  <span className={`ml-2 font-semibold ${pnlClass(item.pnlPct)}`}>
-                    {formatPct(item.pnlPct)}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 export function PostsFeed({ items, onOpenProfile, onOpenPost }) {

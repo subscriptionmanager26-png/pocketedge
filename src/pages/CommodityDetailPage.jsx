@@ -4,15 +4,9 @@ import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
-  BlurredSection,
   DiscussionsList,
-  HoldersBlurPreview,
   INVESTMENT_TABS,
-  NewsBlurPreview,
-  TRACK_MARKET_LOCK,
-  TRACK_MARKET_NEWS_LOCK,
 } from '../components/InvestmentSections';
-import { hasMarketAssetAccess } from '../lib/assetAccess';
 import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
@@ -58,7 +52,6 @@ export default function CommodityDetailPage({
     };
   }, [commodityId]);
 
-  const hasAccess = hasMarketAssetAccess();
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : []
   );
@@ -80,9 +73,6 @@ export default function CommodityDetailPage({
       cancelled = true;
     };
   }, [commodityId, commodity?.name]);
-
-  // Holders & News are open to everyone for now (was: !hasAccess).
-  const holdersLocked = false && !hasAccess;
 
   if (!loading && !commodity) {
     return (
@@ -152,25 +142,13 @@ export default function CommodityDetailPage({
       )}
 
       {tab === 'holders' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_MARKET_LOCK}
-          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-            No disclosed holders yet.
-          </p>
-        </BlurredSection>
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+          No disclosed holders yet.
+        </p>
       )}
 
       {tab === 'news' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_MARKET_NEWS_LOCK}
-          preview={<NewsBlurPreview />}
-        >
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-        </BlurredSection>
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
       )}
     </div>
   );

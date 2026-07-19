@@ -94,8 +94,8 @@ export default function PublicProfilePage({ username }) {
         <div className="mt-10 rounded-[12px] border border-pe-border bg-pe-surface px-5 py-6 text-center">
           <p className="text-[15px] font-semibold text-pe-text">Sign in to see more</p>
           <p className="mt-2 text-sm leading-6 text-pe-text-secondary">
-            Portfolios, posts, reviews, followers, and discussions are available to signed-in
-            members. Profile name and username are public.
+            Portfolios, posts, followers, and discussions are available to signed-in members.
+            Profile name and username are public.
           </p>
           <button
             type="button"

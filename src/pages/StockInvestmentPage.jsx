@@ -3,20 +3,16 @@ import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
-import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
-  BlurredSection,
   DiscussionsList,
-  HoldersBlurPreview,
+  HoldersList,
   INVESTMENT_TABS,
-  NewsBlurPreview,
   STOCK_INVESTMENT_TABS,
-  TRACK_STOCK_LOCK,
-  TRACK_STOCK_NEWS_LOCK,
 } from '../components/InvestmentSections';
-import { getStock, getStockHolders, getStockNews } from '../data/stockData';
+import { getStock, getStockNews } from '../data/stockData';
 import { isDevMockMode } from '../lib/appMode';
+import { fetchAssetHolders } from '../lib/assetHoldersApi';
 import {
   fetchStockNews,
   fetchStockExplanations,
@@ -24,16 +20,12 @@ import {
   isStockNewsConfigured,
 } from '../lib/stockNewsApi';
 import CorporateActionsList from '../components/CorporateActionsList';
-import { hasStockAccess } from '../lib/assetAccess';
 import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
-import { getPersonSync } from '../lib/socialIdentity';
-import { subscribeWatchlists } from '../lib/watchlistStore';
 import {
   marketStockToDetail,
   resolveMarketStock,
 } from '../lib/marketDataApi';
-import { formatPct } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
 export default function StockInvestmentPage({
@@ -65,9 +57,6 @@ export default function StockInvestmentPage({
   }, [marketStock, seedStock, ticker]);
   const displayStock = stock;
   const [tab, setTab] = useState('insights');
-  const [accessTick, setAccessTick] = useState(0);
-
-  useEffect(() => subscribeWatchlists(() => setAccessTick((n) => n + 1)), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,17 +76,35 @@ export default function StockInvestmentPage({
     };
   }, [ticker]);
 
-  const hasAccess = useMemo(() => hasStockAccess(ticker), [ticker, accessTick]);
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getStockDiscussions(ticker) : []
   );
-  const holders = getStockHolders(ticker);
+  const [holders, setHolders] = useState([]);
+  const [holdersLoading, setHoldersLoading] = useState(true);
   const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
   const [newsLoading, setNewsLoading] = useState(false);
   const [insights, setInsights] = useState([]);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [corporateActions, setCorporateActions] = useState([]);
   const [corpActionsLoading, setCorpActionsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHoldersLoading(true);
+    fetchAssetHolders(ticker, { kind: 'stock' })
+      .then((rows) => {
+        if (!cancelled) setHolders(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setHolders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHoldersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,9 +190,6 @@ export default function StockInvestmentPage({
     };
   }, [ticker, isEtf]);
 
-  // Holders & News are open to everyone for now (was: !hasAccess).
-  const holdersLocked = false && !hasAccess;
-
   if (!marketLoading && !marketStock && !seedStock) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Stock not found.</div>
@@ -252,60 +256,24 @@ export default function StockInvestmentPage({
       )}
 
       {tab === 'holders' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_STOCK_LOCK}
-          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <div className="divide-y divide-pe-border">
-            {holders.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-                No disclosed holders yet.
-              </p>
-            ) : (
-              holders.map((userId) => {
-                const person = getPersonSync(userId) ?? {
-                  id: userId,
-                  name: 'Member',
-                  handle: 'member',
-                  avatar: 'M',
-                };
-                return (
-                  <button
-                    key={userId}
-                    type="button"
-                    onClick={() => onOpenProfile?.(userId)}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-pe-surface/50"
-                  >
-                    <Avatar person={person} />
-                    <div>
-                      <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
-                      <p className="text-sm text-pe-text-muted">@{person.handle}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </BlurredSection>
+        <HoldersList
+          holders={holders}
+          loading={holdersLoading}
+          onOpenProfile={onOpenProfile}
+          emptyMessage="No disclosed holders yet."
+        />
       )}
 
       {tab === 'news' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_STOCK_NEWS_LOCK}
-          preview={<NewsBlurPreview />}
-        >
-          <div>
-            {newsLoading ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
-            ) : news.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-            ) : (
-              <NewsList items={news} />
-            )}
-          </div>
-        </BlurredSection>
+        <div>
+          {newsLoading ? (
+            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
+          ) : news.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+          ) : (
+            <NewsList items={news} />
+          )}
+        </div>
       )}
 
       {tab === 'corporate_actions' && (

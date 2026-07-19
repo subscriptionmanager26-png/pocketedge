@@ -153,6 +153,8 @@ export function pathFromAppState({
   if (tab === 'profile') {
     const handle = getHandleForUserId?.(profileUserId);
     if (handle) return profilePath(handle, { portfolioId: profilePortfolioId });
+    // Avoid `/profile` — it is not a known tab and parseAppPath falls back to feed.
+    return null;
   }
   return tabPath(tab);
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseAppPath, pathFromAppState, profilePath, tabPath } from './routes';
-import { getAppCurrentUserId, getHandleForUserIdSync, resolvePersonByHandle } from './socialIdentity';
+import { getAppCurrentUserId, getHandleForUserIdSync, resolvePerson, resolvePersonByHandle } from './socialIdentity';
 
 function clearMarketSelection(setters) {
   setters.setSelectedTicker(null);
@@ -205,7 +205,7 @@ export function useProfileRouting({
       getHandleForUserId: getHandleForUserIdSync,
     });
 
-    if (location.pathname !== target) {
+    if (target && location.pathname !== target) {
       navigate(target, { replace: true });
     }
   }, [
@@ -225,10 +225,18 @@ export function useProfileRouting({
   ]);
 }
 
-export function navigateToProfile(navigate, userId, { portfolioId } = {}) {
-  const handle = getHandleForUserIdSync(userId);
-  if (!handle) return;
-  navigate(profilePath(handle, { portfolioId }));
+export function navigateToProfile(navigate, userId, { portfolioId, handle } = {}) {
+  const syncHandle = handle || getHandleForUserIdSync(userId);
+  if (syncHandle) {
+    navigate(profilePath(syncHandle, { portfolioId }));
+    return;
+  }
+  if (!userId) return;
+  resolvePerson(userId)
+    .then((person) => {
+      if (person?.handle) navigate(profilePath(person.handle, { portfolioId }));
+    })
+    .catch(() => {});
 }
 
 export function navigateToTab(navigate, nextTab) {

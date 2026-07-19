@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { ArrowDown, ArrowUp, Plus, Sparkles, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -381,13 +381,9 @@ export default function PortfolioPage({
       ...base,
       news: isStockNewsConfigured() || !isDevMockMode() ? portfolioNews : base.news,
       posts: useBackend() || !isDevMockMode() ? portfolioPosts : base.posts,
-      trades: [],
     };
   }, [tickers, portfolioNews, portfolioPosts]);
 
-  useEffect(() => {
-    if (contentTab === 'trades') setContentTab('posts');
-  }, [contentTab]);
   const metrics = useMemo(() => {
     if (!liveActiveList) return null;
     if (liveActiveList.kind === 'portfolio' || liveActiveList.kind === 'watchlist') {
@@ -530,21 +526,10 @@ export default function PortfolioPage({
             {FORM_META[formSheet].description}
           </p>
         ) : null}
-
-        {/* Return period picker hidden for now - default 1D only.
-        <div className="mt-5 flex gap-1 rounded-lg bg-pe-surface p-1">
-          {['1D', '1W', '1M', '1Y'].map((per) => (
-            <button key={per} type="button" className="flex-1 rounded-md py-2 text-sm font-semibold">
-              {per}
-            </button>
-          ))}
-        </div>
-        */}
       </section>
 
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
 
-      {contentTab === 'summary' && <PortfolioSummaryComingSoon portfolioName={activeList?.name} />}
       {contentTab === 'performance' && (
         <HoldingsSummary
           holdings={holdingsRows}
@@ -612,7 +597,6 @@ export default function PortfolioPage({
 
 const FORM_METRIC_ORDER = ['out_of_form', 'unsure', 'in_form'];
 const CONTENT_TABS = [
-  { id: 'summary', label: 'Summary' },
   { id: 'performance', label: 'Performance' },
   { id: 'news', label: 'News' },
   { id: 'corporate_actions', label: 'Corporate Actions' },
@@ -651,50 +635,6 @@ function PortfolioDeltaLine({ amount, pct, suffix, align = 'left' }) {
         {pctText ? ` ( ${pctText} )` : ''} {suffix}
       </span>
     </p>
-  );
-}
-
-function PortfolioComingSoonCard({ title, description, showIcon = false }) {
-  return (
-    <div className="px-4 py-10">
-      <div className="rounded-2xl border border-pe-border bg-pe-surface px-5 py-8 text-center">
-        {showIcon ? (
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent-wash">
-            <Sparkles className="h-5 w-5 text-pe-accent" aria-hidden="true" />
-          </div>
-        ) : null}
-        <p className={`text-[11px] font-bold uppercase tracking-[0.08em] text-pe-accent ${showIcon ? 'mt-4' : ''}`}>
-          Coming soon
-        </p>
-        <h3 className="mt-2 text-lg font-semibold text-pe-text">{title}</h3>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-pe-text-secondary">
-          {description}
-        </p>
-        <p className="mx-auto mt-4 max-w-xs text-xs text-pe-text-muted">
-          We&apos;re building this now. You&apos;ll see it here once it&apos;s ready.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function PortfolioSummaryComingSoon({ portfolioName }) {
-  return (
-    <PortfolioComingSoonCard
-      showIcon
-      title="AI portfolio summary"
-      description={
-        portfolioName ? (
-          <>
-            A concise AI read on <span className="font-semibold text-pe-text">{portfolioName}</span>
-            {' '}
-            - allocation, recent moves, and what to watch.
-          </>
-        ) : (
-          'A concise AI read on your holdings - allocation, recent moves, and what to watch.'
-        )
-      }
-    />
   );
 }
 

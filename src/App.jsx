@@ -4,7 +4,6 @@ import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
 import FeedPage from './pages/FeedPage';
 import HomePage from './pages/HomePage';
-import FundReviewModal from './components/FundReviewModal';
 import { RouteFallbackSkeleton } from './components/PageSkeletons';
 import { getActivityFeed } from './lib/activityFeed';
 import {
@@ -27,8 +26,6 @@ import {
 import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supabase';
 import { identifyPostHogUser, resetPostHogUser } from './lib/posthog';
 import { clearWatchlists } from './lib/watchlistStore';
-import { clearReviewStore } from './lib/reviewStore';
-import { buildPortfolioShare } from './lib/portfolioShare';
 import { CURRENT_USER, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
 import { bootstrapSocialApp, ensureSocialProfile } from './lib/socialProfileApi';
@@ -51,7 +48,6 @@ import {
   togglePostLike,
   usePostBackend,
 } from './lib/socialPostApi';
-import { hydrateCommunityAccess } from './lib/reviewStore';
 import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
 import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
@@ -123,13 +119,11 @@ export default function App() {
   const [selectedFundId, setSelectedFundId] = useState(null);
   const [selectedIndexId, setSelectedIndexId] = useState(null);
   const [selectedCommodityId, setSelectedCommodityId] = useState(null);
-  const [fundReviewOpen, setFundReviewOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [profileMode, setProfileMode] = useState('own');
   const [profileUserId, setProfileUserId] = useState(CURRENT_USER.id);
   const [profileReturnTab, setProfileReturnTab] = useState('feed');
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
-  const [fundReviewPrefill, setFundReviewPrefill] = useState(null);
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
@@ -294,8 +288,6 @@ export default function App() {
         });
     }
 
-    hydrateCommunityAccess().catch(() => {});
-
     const applyProfile = (profile) => {
       if (cancelled) return;
       if (isProductionApp()) flushDemoLocalData();
@@ -453,13 +445,6 @@ export default function App() {
 
   const openCompose = () => {
     setComposePortfolioShare(null);
-    setComposeOpen(true);
-  };
-
-  const sharePortfolioAsPost = (portfolio) => {
-    const share = buildPortfolioShare(portfolio, '1M');
-    if (!share) return;
-    setComposePortfolioShare(share);
     setComposeOpen(true);
   };
 
@@ -798,7 +783,6 @@ export default function App() {
     clearSession();
     clearSocialGraph();
     clearWatchlists();
-    clearReviewStore();
     clearCachedBootstrap();
     clearCachedFeedPosts();
     setSocialProfile(null);
@@ -992,7 +976,7 @@ export default function App() {
               />
             </div>
             {selectedPostId ? (
-              <div className="fixed inset-0 z-30 overflow-y-auto bg-pe-canvas pt-[56px] md:left-[232px] md:pt-0">
+              <div className="fixed inset-0 z-30 overflow-y-auto bg-pe-canvas pt-[56px] md:left-[232px] md:px-5 md:pt-0">
                 <div className="mx-auto min-h-full w-full max-w-feed md:mr-[420px]">
                   <RouteSuspense>
                     <PostDetailPage
@@ -1058,10 +1042,6 @@ export default function App() {
                 commodityId={selectedCommodityId}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
-                onPromptReview={() => {
-                  setFundReviewPrefill(null);
-                  setFundReviewOpen(true);
-                }}
               />
             </RouteSuspense>
           ) : selectedIndexId ? (
@@ -1070,10 +1050,6 @@ export default function App() {
                 indexId={selectedIndexId}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
-                onPromptReview={() => {
-                  setFundReviewPrefill(null);
-                  setFundReviewOpen(true);
-                }}
               />
             </RouteSuspense>
           ) : selectedFundId ? (
@@ -1082,11 +1058,6 @@ export default function App() {
                 fundId={selectedFundId}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
-                onGraphChange={() => setGraphTick((n) => n + 1)}
-                onPromptReview={() => {
-                  setFundReviewPrefill(selectedFundId);
-                  setFundReviewOpen(true);
-                }}
               />
             </RouteSuspense>
           ) : selectedTicker ? (
@@ -1095,11 +1066,6 @@ export default function App() {
                 ticker={selectedTicker}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
-                onGraphChange={() => setGraphTick((n) => n + 1)}
-                onPromptReview={() => {
-                  setFundReviewPrefill(null);
-                  setFundReviewOpen(true);
-                }}
               />
             </RouteSuspense>
           ) : (
@@ -1169,19 +1135,6 @@ export default function App() {
           setComposePortfolioShare(null);
         }}
         onPost={handlePost}
-      />
-
-      <FundReviewModal
-        open={fundReviewOpen}
-        prefillFundId={fundReviewPrefill}
-        onClose={() => {
-          setFundReviewOpen(false);
-          setFundReviewPrefill(null);
-        }}
-        onSubmitted={() => {
-          setFundReviewOpen(false);
-          setFundReviewPrefill(null);
-        }}
       />
     </>
   );

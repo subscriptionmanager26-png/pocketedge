@@ -4,16 +4,10 @@ import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
-  BlurredSection,
   DiscussionsList,
-  HoldersBlurPreview,
   INVESTMENT_TABS,
-  NewsBlurPreview,
-  TRACK_MARKET_LOCK,
-  TRACK_MARKET_NEWS_LOCK,
 } from '../components/InvestmentSections';
 import { formatIndexGroup } from '../components/MarketDetailLayout';
-import { hasMarketAssetAccess } from '../lib/assetAccess';
 import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
@@ -62,7 +56,6 @@ export default function IndexDetailPage({
   const liveIndex = useNseIndexLiveQuote(index, Boolean(index && !loading));
   const displayIndex = liveIndex ?? index;
 
-  const hasAccess = hasMarketAssetAccess();
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getIndexDiscussions(indexId, displayIndex?.name) : []
   );
@@ -84,9 +77,6 @@ export default function IndexDetailPage({
       cancelled = true;
     };
   }, [indexId, displayIndex?.name]);
-
-  // Holders & News are open to everyone for now (was: !hasAccess).
-  const holdersLocked = false && !hasAccess;
 
   if (!loading && !index) {
     return (
@@ -149,25 +139,13 @@ export default function IndexDetailPage({
       )}
 
       {tab === 'holders' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_MARKET_LOCK}
-          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-            No disclosed holders yet.
-          </p>
-        </BlurredSection>
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+          No disclosed holders yet.
+        </p>
       )}
 
       {tab === 'news' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_MARKET_NEWS_LOCK}
-          preview={<NewsBlurPreview />}
-        >
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-        </BlurredSection>
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
       )}
     </div>
   );

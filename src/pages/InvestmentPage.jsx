@@ -3,30 +3,23 @@ import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
-import Avatar from '../components/Avatar';
 import NewsList from '../components/NewsList';
 import {
-  BlurredSection,
   DiscussionsList,
-  HoldersBlurPreview,
+  HoldersList,
   INVESTMENT_TABS,
-  NewsBlurPreview,
-  TRACK_FUND_LOCK,
 } from '../components/InvestmentSections';
 import {
   getFund,
-  getFundHolders,
   getFundNews,
 } from '../data/fundData';
-import { hasFundAccess } from '../lib/assetAccess';
 import { getFundDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
 import {
   marketFundToDetail,
   resolveMarketFund,
 } from '../lib/marketDataApi';
-import { formatPrice } from '../lib/format';
-import { getPersonSync } from '../lib/socialIdentity';
+import { fetchAssetHolders } from '../lib/assetHoldersApi';
 import { isDevMockMode } from '../lib/appMode';
 
 export default function InvestmentPage({
@@ -70,12 +63,30 @@ export default function InvestmentPage({
     };
   }, [fundId, seedFund]);
 
-  const hasAccess = hasFundAccess(fundId);
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getFundDiscussions(fundId) : []
   );
-  const holders = getFundHolders(fundId);
+  const [holders, setHolders] = useState([]);
+  const [holdersLoading, setHoldersLoading] = useState(true);
   const news = getFundNews(fundId);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHoldersLoading(true);
+    fetchAssetHolders(fundId, { kind: 'fund' })
+      .then((rows) => {
+        if (!cancelled) setHolders(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setHolders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHoldersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fundId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,8 +107,6 @@ export default function InvestmentPage({
     };
   }, [fundId, fund?.name]);
 
-  // Holders & News are open to everyone for now (was: !hasAccess).
-  const holdersLocked = false && !hasAccess;
   const hasResolvedFund = Boolean(seedFund || marketFund);
 
   if (!marketLoading && !hasResolvedFund) {
@@ -148,56 +157,22 @@ export default function InvestmentPage({
       )}
 
       {tab === 'holders' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_FUND_LOCK}
-          preview={<HoldersBlurPreview onOpenProfile={onOpenProfile} />}
-        >
-          <div className="divide-y divide-pe-border">
-            {holders.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No disclosed holders yet.</p>
-            ) : (
-              holders.map((userId) => {
-                const person = getPersonSync(userId) ?? {
-                  id: userId,
-                  name: 'Member',
-                  handle: 'member',
-                  avatar: 'M',
-                };
-                return (
-                  <button
-                    key={userId}
-                    type="button"
-                    onClick={() => onOpenProfile?.(userId)}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-pe-surface/50"
-                  >
-                    <Avatar person={person} />
-                    <div>
-                      <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
-                      <p className="text-sm text-pe-text-muted">@{person.handle} · holds in portfolio</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </BlurredSection>
+        <HoldersList
+          holders={holders}
+          loading={holdersLoading}
+          onOpenProfile={onOpenProfile}
+          emptyMessage="No disclosed holders yet."
+        />
       )}
 
       {tab === 'news' && (
-        <BlurredSection
-          locked={holdersLocked}
-          lock={TRACK_FUND_LOCK}
-          preview={<NewsBlurPreview />}
-        >
-          <div>
-            {news.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-            ) : (
-              <NewsList items={news} />
-            )}
-          </div>
-        </BlurredSection>
+        <div>
+          {news.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+          ) : (
+            <NewsList items={news} />
+          )}
+        </div>
       )}
     </div>
   );
