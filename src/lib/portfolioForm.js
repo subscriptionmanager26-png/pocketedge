@@ -21,25 +21,6 @@ export function mapDmaRegimeToForm(regime) {
   }
 }
 
-/** @deprecated Prefer mapDmaRegimeToForm - kept for any leftover callers. */
-export function classifySecurityForm({ price, ma50, ma200 }) {
-  const close = Number(price);
-  const dma50 = Number(ma50);
-  const dma200 = Number(ma200);
-
-  if (
-    !Number.isFinite(close) ||
-    !Number.isFinite(dma50) ||
-    !Number.isFinite(dma200)
-  ) {
-    return 'unsure';
-  }
-
-  if (close > dma50 && close > dma200) return 'in_form';
-  if (close < dma50 && close < dma200) return 'out_of_form';
-  return 'unsure';
-}
-
 export const FORM_META = {
   in_form: {
     id: 'in_form',

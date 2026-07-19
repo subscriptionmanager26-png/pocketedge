@@ -4,7 +4,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchNseAllIndices } from './lib/nse-indices-fetch.mjs';
 import { fetchNseStocksTraded } from './lib/nse-stocks-fetch.mjs';
-import { fetchMovingAveragesForSymbols } from './lib/equity-moving-averages.mjs';
 import { socialServiceWorkerPlugin } from './vite.sw-plugin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -43,30 +42,6 @@ function nseApiPlugin() {
           sendJson(res, 200, payload, 's-maxage=900, stale-while-revalidate=1800');
         } catch (error) {
           sendJson(res, 502, { error: error.message || 'Failed to fetch NSE stocks traded' });
-        }
-      });
-
-      server.middlewares.use('/api/equity-moving-averages', async (req, res) => {
-        if (req.method !== 'GET') {
-          sendJson(res, 405, { error: 'Method not allowed' });
-          return;
-        }
-        try {
-          const url = new URL(req.url, 'http://localhost');
-          const symbols = String(url.searchParams.get('symbols') ?? '')
-            .split(',')
-            .map((value) => value.trim().toUpperCase())
-            .filter(Boolean);
-          if (!symbols.length) {
-            sendJson(res, 400, { error: 'symbols query required' });
-            return;
-          }
-          const bySymbol = await fetchMovingAveragesForSymbols(symbols);
-          sendJson(res, 200, { bySymbol }, 's-maxage=3600, stale-while-revalidate=86400');
-        } catch (error) {
-          sendJson(res, 502, {
-            error: error.message || 'Failed to fetch moving averages',
-          });
         }
       });
     },

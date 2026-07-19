@@ -1,3 +1,4 @@
 .vercel
 .env*
 public/landing/assets/*.local.png
+archive/backend-unused-2026-07-19/untracked-local/

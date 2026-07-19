@@ -109,25 +109,6 @@ export async function fetchStockExplanations(ticker, { limit = 90 } = {}) {
     .filter((item) => item.status !== 'failed' && item.summary.trim());
 }
 
-export async function fetchLatestStockExplanation(ticker) {
-  const symbol = normalizeTicker(ticker);
-  if (!symbol || !stockNewsClient) return null;
-
-  const { data, error } = await stockNewsClient
-    .from('mn_daily_stock_explanations')
-    .select('as_of_date, status, explanation, confidence, generated_at')
-    .eq('ticker', symbol)
-    .order('as_of_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error('fetchLatestStockExplanation failed', error);
-    return null;
-  }
-  return data ?? null;
-}
-
 export async function fetchStockNewsForTickers(tickers, { limit = 50 } = {}) {
   const symbols = [...new Set(tickers.map(normalizeTicker).filter(Boolean))];
   if (!symbols.length || !stockNewsClient) return [];
