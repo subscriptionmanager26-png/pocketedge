@@ -53,7 +53,7 @@ export default function AssetLogo({
 
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-pe-border bg-pe-surface font-semibold text-pe-text-secondary ${sizeMeta.className} ${className}`.trim()}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-pe-border bg-transparent font-semibold text-pe-text-secondary ${sizeMeta.className} ${className}`.trim()}
       aria-hidden="true"
     >
       {!loaded || !showImage ? <span className="absolute inset-0 flex items-center justify-center">{initial}</span> : null}
@@ -66,7 +66,7 @@ export default function AssetLogo({
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           fetchPriority={priority ? 'high' : 'low'}
-          className={`relative h-full w-full object-cover transition-opacity duration-150 ${
+          className={`relative h-full w-full object-contain p-0.5 transition-opacity duration-150 ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={() => {

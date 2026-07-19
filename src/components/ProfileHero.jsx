@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
+import { Check, Pencil, X } from 'lucide-react';
 import Avatar from './Avatar';
-import { formatCount, formatInr } from '../lib/format';
+import { formatCount } from '../lib/format';
+import { formatInfluencingBucket } from '../lib/influencingApi';
 
 export default function ProfileHero({
   person,
@@ -8,16 +11,46 @@ export default function ProfileHero({
   following,
   followerCount,
   followingCount,
+  influencingAmount = 0,
+  canEditBio = false,
   onToggleFollow,
   onOpenFollowers,
   onOpenFollowing,
+  onSaveBio,
   showFollowButton = false,
 }) {
   const displayName = name ?? person.name;
-  const displayBio = bio ?? person.bio;
-  const assetsInfluenced = person.assetsInfluenced ?? 0;
+  const [bioDraft, setBioDraft] = useState(bio ?? person.bio ?? '');
+  const [editingBio, setEditingBio] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const followers = followerCount ?? person.followers;
   const followingTotal = followingCount ?? person.following;
+  const influencingLabel = formatInfluencingBucket(influencingAmount);
+
+  useEffect(() => {
+    if (!editingBio) setBioDraft(bio ?? person.bio ?? '');
+  }, [bio, person.bio, editingBio]);
+
+  const saveBio = async () => {
+    if (!onSaveBio) return;
+    setSavingBio(true);
+    try {
+      await onSaveBio(bioDraft);
+      setEditingBio(false);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1600);
+    } catch {
+      /* keep editing open */
+    } finally {
+      setSavingBio(false);
+    }
+  };
+
+  const cancelBio = () => {
+    setBioDraft(bio ?? person.bio ?? '');
+    setEditingBio(false);
+  };
 
   return (
     <section className="border-b border-pe-border px-4 py-5">
@@ -57,12 +90,62 @@ export default function ProfileHero({
               value={formatCount(followingTotal)}
               onClick={onOpenFollowing}
             />
-            <Stat label="Influencing" value={formatInr(assetsInfluenced, { compact: true })} />
+            <Stat label="Influencing" value={influencingLabel} />
           </dl>
 
-          {displayBio ? (
-            <p className="mt-4 text-[15px] leading-6 text-pe-ink">{displayBio}</p>
-          ) : null}
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+                Bio
+              </p>
+              {canEditBio && !editingBio ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingBio(true)}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              ) : null}
+              {canEditBio && editingBio ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={cancelBio}
+                    disabled={savingBio}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveBio}
+                    disabled={savingBio}
+                    className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2 py-1 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
+                  >
+                    {savedFlash ? <Check className="h-3.5 w-3.5" /> : null}
+                    {savingBio ? 'Saving…' : savedFlash ? 'Saved' : 'Save'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            {editingBio ? (
+              <textarea
+                value={bioDraft}
+                onChange={(e) => setBioDraft(e.target.value)}
+                rows={3}
+                placeholder="Add a short bio"
+                className="w-full rounded-lg border border-pe-border-strong bg-pe-canvas px-3 py-2 text-[15px] leading-6 text-pe-ink outline-none focus:border-pe-accent"
+              />
+            ) : bioDraft ? (
+              <p className="text-[15px] leading-6 text-pe-ink">{bioDraft}</p>
+            ) : canEditBio ? (
+              <p className="text-[15px] leading-6 text-pe-text-muted">Add a short bio</p>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>

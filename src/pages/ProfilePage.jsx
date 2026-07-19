@@ -39,8 +39,6 @@ import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydra
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
 import AssetLogo from '../components/AssetLogo';
-import { FormStatusTag } from '../components/FormStatusIcons';
-import { fetchPortfolioFormByTicker } from '../lib/portfolioForm';
 import PortfolioCard from '../components/PortfolioCard';
 import {
   PortfoliosListSkeleton,
@@ -49,6 +47,7 @@ import {
 import { ProfilePageSkeleton } from '../components/PageSkeletons';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
+import { fetchInfluencingAmount } from '../lib/influencingApi';
 import {
   addPortfolioComment,
   getPortfolioEngagementSync,
@@ -81,7 +80,6 @@ import {
 import { profilePath } from '../lib/routes';
 
 const PROFILE_TABS = [
-  { id: 'about', label: 'About me' },
   { id: 'posts', label: 'Posts' },
   { id: 'portfolios', label: 'Portfolio' },
 ];
@@ -110,12 +108,6 @@ function getStoredReturnPeriod() {
     /* ignore */
   }
   return '1M';
-}
-
-function formatJoined(isoDate) {
-  if (!isoDate) return '-';
-  const d = new Date(isoDate);
-  return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
 }
 
 const inputClass =
@@ -149,21 +141,17 @@ export default function ProfilePage({
   const isMePublic = !isOwn && person?.id === appUser.id;
   const canEdit = isOwn && !isMePublic;
 
-  const [tab, setTab] = useState('about');
-  const [aboutEditing, setAboutEditing] = useState(false);
-  const [savedFlash, setSavedFlash] = useState(null);
+  const [tab, setTab] = useState('posts');
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [portfolios, setPortfolios] = useState([]);
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
+  const [influencingAmount, setInfluencingAmount] = useState(0);
 
   const bumpPortfolios = () => setPortfolioVersion((v) => v + 1);
 
-  const [name, setName] = useState(CURRENT_USER.name ?? '');
   const [bio, setBio] = useState(CURRENT_USER.bio ?? '');
-  const [location, setLocation] = useState(CURRENT_USER.location ?? '');
-  const [focus, setFocus] = useState(CURRENT_USER.focus ?? '');
   const [following, setFollowingState] = useState(false);
   const [followListMode, setFollowListMode] = useState(null);
 
@@ -253,11 +241,23 @@ export default function ProfilePage({
 
   useEffect(() => {
     if (!person || !isOwn) return;
-    setName(person.name ?? '');
     setBio(person.bio ?? '');
-    setLocation(person.location ?? '');
-    setFocus(person.focus ?? '');
   }, [person, isOwn]);
+
+  useEffect(() => {
+    if (!person?.id) return undefined;
+    let cancelled = false;
+    fetchInfluencingAmount(person.id)
+      .then((amount) => {
+        if (!cancelled) setInfluencingAmount(amount);
+      })
+      .catch(() => {
+        if (!cancelled) setInfluencingAmount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [person?.id, graphTick]);
 
   useEffect(() => {
     if (!isOwn && person?.id) {
@@ -279,8 +279,7 @@ export default function ProfilePage({
   );
 
   useEffect(() => {
-    setTab(selectedPortfolioId ? 'portfolios' : 'about');
-    setAboutEditing(false);
+    setTab(selectedPortfolioId ? 'portfolios' : 'posts');
     setFollowListMode(null);
   }, [userId, mode, selectedPortfolioId]);
 
@@ -301,43 +300,22 @@ export default function ProfilePage({
     onSelectPortfolio?.(created.id);
   };
 
-  const flashSaved = (section) => {
-    setSavedFlash(section);
-    setTimeout(() => setSavedFlash(null), 1600);
-  };
-
-  const saveAbout = async () => {
-    try {
-      const updated = await updateSocialProfile({
-        display_name: name.trim() || person.name,
-        bio,
-        location,
-        focus,
-      });
-      setPerson((prev) =>
-        prev
-          ? {
-              ...prev,
-              name: updated.display_name ?? prev.name,
-              bio: updated.bio ?? '',
-              location: updated.location ?? '',
-              focus: updated.focus ?? '',
-            }
-          : prev
-      );
-      setAboutEditing(false);
-      flashSaved('about');
-    } catch {
-      /* keep editing open on failure */
-    }
-  };
-
-  const cancelAbout = () => {
-    setName(person.name ?? '');
-    setBio(person.bio ?? '');
-    setLocation(person.location ?? '');
-    setFocus(person.focus ?? '');
-    setAboutEditing(false);
+  const saveBio = async (nextBio) => {
+    const updated = await updateSocialProfile({
+      display_name: person.name,
+      bio: nextBio,
+      location: person.location ?? '',
+      focus: person.focus ?? '',
+    });
+    setPerson((prev) =>
+      prev
+        ? {
+            ...prev,
+            bio: updated.bio ?? '',
+          }
+        : prev
+    );
+    setBio(updated.bio ?? '');
   };
 
   const handleReturnPeriodChange = (period) => {
@@ -351,7 +329,6 @@ export default function ProfilePage({
 
   const handleTabChange = (next) => {
     setTab(next);
-    setAboutEditing(false);
     setFollowListMode(null);
     onClearPortfolio?.();
   };
@@ -411,11 +388,14 @@ export default function ProfilePage({
 
       <ProfileHero
         person={person}
-        name={canEdit ? name : undefined}
+        name={canEdit ? person.name : undefined}
         bio={canEdit ? bio : undefined}
         following={following}
         followerCount={followCounts.followers}
         followingCount={followCounts.following}
+        influencingAmount={influencingAmount}
+        canEditBio={canEdit}
+        onSaveBio={saveBio}
         onOpenFollowers={() => setFollowListMode('followers')}
         onOpenFollowing={() => setFollowListMode('following')}
         onToggleFollow={async () => {
@@ -458,26 +438,6 @@ export default function ProfilePage({
         </div>
       )}
 
-      {tab === 'about' && (
-        <AboutPanel
-          person={person}
-          canEdit={canEdit}
-          editing={aboutEditing}
-          onEdit={() => setAboutEditing(true)}
-          onSave={saveAbout}
-          onCancel={cancelAbout}
-          saved={savedFlash === 'about'}
-          name={name}
-          bio={bio}
-          location={location}
-          focus={focus}
-          onNameChange={setName}
-          onBioChange={setBio}
-          onLocationChange={setLocation}
-          onFocusChange={setFocus}
-        />
-      )}
-
       {tab === 'portfolios' && (
         <PortfoliosListPanel
           portfolios={publishedPortfolios}
@@ -492,171 +452,6 @@ export default function ProfilePage({
           onPortfolioCopied={bumpPortfolios}
         />
       )}
-    </div>
-  );
-}
-
-function SectionHeader({ title, canEdit, editing, onEdit, onSave, onCancel, saved }) {
-  return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-        {title}
-      </p>
-      {canEdit && (
-        <div className="flex items-center gap-2">
-          {editing ? (
-            <>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-text"
-              >
-                <X className="h-3.5 w-3.5" />
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onSave}
-                className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
-              >
-                {saved ? <Check className="h-3.5 w-3.5" /> : null}
-                {saved ? 'Saved' : 'Save'}
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AboutPanel({
-  person,
-  canEdit,
-  editing,
-  onEdit,
-  onSave,
-  onCancel,
-  saved,
-  name,
-  bio,
-  location,
-  focus,
-  onNameChange,
-  onBioChange,
-  onLocationChange,
-  onFocusChange,
-}) {
-  const readOnlyRows = [
-    { label: 'Joined', value: formatJoined(person.joinedAt) },
-    { label: 'XIRR', value: formatPct(person.xirr, { signed: false }), tone: person.xirr },
-  ];
-
-  if (editing) {
-    return (
-      <div className="px-4 py-5">
-        <SectionHeader
-          title="About me"
-          canEdit={canEdit}
-          editing={editing}
-          onEdit={onEdit}
-          onSave={onSave}
-          onCancel={onCancel}
-          saved={saved}
-        />
-        <div className="space-y-4">
-          <Field label="Name">
-            <input value={name} onChange={(e) => onNameChange(e.target.value)} className={inputClass} />
-          </Field>
-          <Field label="Bio">
-            <textarea
-              value={bio}
-              onChange={(e) => onBioChange(e.target.value)}
-              rows={3}
-              className={`${inputClass} resize-none leading-6 text-pe-ink`}
-            />
-          </Field>
-          <Field label="Location">
-            <input
-              value={location}
-              onChange={(e) => onLocationChange(e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Investment focus">
-            <input value={focus} onChange={(e) => onFocusChange(e.target.value)} className={inputClass} />
-          </Field>
-        </div>
-        <dl className="mt-6 divide-y divide-pe-border border-y border-pe-border">
-          {readOnlyRows.map((row) => (
-            <ReadOnlyRow key={row.label} label={row.label} value={row.value} tone={row.tone} />
-          ))}
-        </dl>
-      </div>
-    );
-  }
-
-  const viewRows = [
-    { label: 'Location', value: (canEdit ? location : person.location) || '-' },
-    { label: 'Investment focus', value: (canEdit ? focus : person.focus) || '-' },
-    ...readOnlyRows,
-  ];
-
-  return (
-    <div className="px-4 py-5">
-      <SectionHeader
-        title="About me"
-        canEdit={canEdit}
-        editing={editing}
-        onEdit={onEdit}
-        onSave={onSave}
-        onCancel={onCancel}
-        saved={saved}
-      />
-      <dl className="divide-y divide-pe-border border-y border-pe-border">
-        {viewRows.map((row) => (
-          <ReadOnlyRow
-            key={row.label}
-            label={row.label}
-            value={row.value}
-            multiline={row.multiline}
-            tone={row.tone}
-          />
-        ))}
-      </dl>
-    </div>
-  );
-}
-
-function ReadOnlyRow({ label, value, multiline, tone }) {
-  return (
-    <div className="grid grid-cols-[7.5rem_1fr] gap-3 py-3.5">
-      <dt className="text-sm font-semibold text-pe-text-muted">{label}</dt>
-      <dd
-        className={`text-sm text-pe-text ${multiline ? 'leading-6 text-pe-ink' : ''} ${
-          tone != null ? `${pnlClass(tone)} font-semibold` : ''
-        }`}
-      >
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <div>
-      <label className="text-sm font-semibold text-pe-text-muted">{label}</label>
-      <div className="mt-1.5">{children}</div>
     </div>
   );
 }
@@ -1848,7 +1643,6 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
   const [assetsLoading, setAssetsLoading] = useState(false);
-  const [formByTicker, setFormByTicker] = useState({});
   const overallReturn = useMemo(() => {
     const holdings = portfolio.holdings ?? [];
     let totalValue = 0;
@@ -1874,26 +1668,21 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     return totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
   }, [portfolio.holdings, assetsByKey]);
 
-  const holdingFormItems = useMemo(() => {
-    const items = [];
+  const holdingKeys = useMemo(() => {
+    const keys = [];
     const seen = new Set();
     for (const holding of portfolio.holdings ?? []) {
       if (!holding?.ticker || seen.has(holding.ticker)) continue;
       seen.add(holding.ticker);
-      items.push({ ticker: holding.ticker, assetType: holding.assetType });
+      keys.push(holding.ticker);
     }
     for (const ticker of portfolio.tickers ?? []) {
       if (!ticker || seen.has(ticker)) continue;
       seen.add(ticker);
-      items.push({ ticker });
+      keys.push(ticker);
     }
-    return items;
+    return keys;
   }, [portfolio.holdings, portfolio.tickers]);
-
-  const holdingKeys = useMemo(
-    () => holdingFormItems.map((item) => item.ticker),
-    [holdingFormItems]
-  );
 
   const needsClientResolve = useMemo(
     () => portfolioHoldingsNeedClientResolve(portfolio),
@@ -1908,22 +1697,6 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     // Seed from enriched holdings immediately so profile paints without waiting.
     setAssetsByKey(assetsFromHoldings(portfolio.holdings));
   }, [portfolio.id, portfolio.holdings]);
-
-  useEffect(() => {
-    if (!holdingFormItems.length) {
-      setFormByTicker({});
-      return undefined;
-    }
-
-    let cancelled = false;
-    fetchPortfolioFormByTicker(holdingFormItems).then((map) => {
-      if (!cancelled) setFormByTicker(map);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [holdingFormItems]);
 
   useEffect(() => {
     if (!holdingKeys.length || !needsClientResolve) {
@@ -2078,9 +1851,6 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
             />
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
-              <div className="mt-1">
-                <FormStatusTag form={formByTicker[row.key] ?? 'unsure'} />
-              </div>
             </div>
           </div>
           <p className="w-[88px] text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
