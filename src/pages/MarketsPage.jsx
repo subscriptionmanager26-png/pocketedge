@@ -37,17 +37,19 @@ function formatIndexValue(value) {
 }
 
 export default function MarketsPage({
+  sectionTab = 'stocks',
+  onSectionTabChange,
   onSelectStock,
   onSelectFund,
   onSelectIndex,
   onSelectCommodity,
 }) {
   const [query, setQuery] = useState('');
-  const [tab, setTab] = useState('stocks');
+  const tab = sectionTab;
   const { items, loading, error } = useMarketTabData(tab, query);
 
   const handleTabChange = (next) => {
-    setTab(next);
+    onSectionTabChange?.(next);
     setQuery('');
   };
 

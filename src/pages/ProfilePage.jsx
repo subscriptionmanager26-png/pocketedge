@@ -85,6 +85,12 @@ const PROFILE_TABS = [
 ];
 
 const RETURN_PERIODS = ['1D', '1W', '1M', '1Y'];
+const RETURN_PERIOD_LABELS = {
+  '1D': '1D',
+  '1W': '1W',
+  '1M': '1M',
+  '1Y': '1Y',
+};
 const RETURN_PERIOD_KEY = 'pe_profile_return_period';
 const ISIN_RE = /^[A-Z0-9]{12}$/;
 
@@ -279,9 +285,16 @@ export default function ProfilePage({
   );
 
   useEffect(() => {
-    setTab(selectedPortfolioId ? 'portfolios' : 'posts');
+    setTab('posts');
     setFollowListMode(null);
-  }, [userId, mode, selectedPortfolioId]);
+  }, [userId, mode]);
+
+  useEffect(() => {
+    if (selectedPortfolioId) {
+      setTab('portfolios');
+      setFollowListMode(null);
+    }
+  }, [selectedPortfolioId]);
 
   const followCounts = useMemo(() => {
     void graphTick;
@@ -330,7 +343,7 @@ export default function ProfilePage({
   const handleTabChange = (next) => {
     setTab(next);
     setFollowListMode(null);
-    onClearPortfolio?.();
+    if (selectedPortfolioId) onClearPortfolio?.();
   };
 
   if (followListMode) {
@@ -1392,7 +1405,7 @@ function PortfolioDetailView({
           </div>
         </div>
       ) : (
-        <PortfolioHoldingsList portfolio={portfolio} returnPeriod="1D" />
+        <PortfolioHoldingsList portfolio={portfolio} returnPeriod={returnPeriod} />
       )}
 
       {!editing ? (
@@ -1841,41 +1854,68 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     );
   }
 
+  const periodLabel = RETURN_PERIOD_LABELS[returnPeriod] ?? returnPeriod;
+
   return (
-    <div className="divide-y divide-pe-border px-4">
-      <div className="flex items-center justify-between gap-4 py-3.5">
-        <p className="text-[15px] font-semibold text-pe-text">Overall</p>
-        <div className="shrink-0 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            Total return
-          </p>
-          <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(overallReturn)}`}>
-            {formatPct(overallReturn)}
-          </p>
-        </div>
-      </div>
-      {pageRows.map((row) => (
-        <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5">
-          <div className="flex min-w-0 items-center gap-3">
-            <AssetLogo
-              logoIconUrl={row.logoIconUrl}
-              assetType={row.assetType}
-              assetKey={row.key}
-              name={row.title}
-              size="sm"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
-            </div>
+    <div>
+      <section className="border-b border-pe-border px-4 py-4">
+        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+          Returns
+        </p>
+        <div className="mt-3 flex items-center justify-between gap-4">
+          <p className="text-[15px] font-semibold text-pe-text">Overall</p>
+          <div className="shrink-0 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+              Total return
+            </p>
+            <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(overallReturn)}`}>
+              {formatPct(overallReturn)}
+            </p>
           </div>
-          <p className="w-[88px] text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
-            {row.weight.toFixed(1)}%
+        </div>
+      </section>
+
+      <section className="px-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-end gap-2 border-b border-pe-border py-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+            Holdings & allocations
           </p>
-          <p className={`w-[72px] text-right text-[15px] font-bold tabular-nums ${pnlClass(row.itemReturn)}`}>
-            {formatPct(row.itemReturn)}
+          <p className="text-right text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+            Allocation
+          </p>
+          <p className="text-right text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+            {periodLabel} return
           </p>
         </div>
-      ))}
+        <div className="divide-y divide-pe-border">
+          {pageRows.map((row) => (
+            <div
+              key={row.key}
+              className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <AssetLogo
+                  logoIconUrl={row.logoIconUrl}
+                  assetType={row.assetType}
+                  assetKey={row.key}
+                  name={row.title}
+                  size="sm"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
+                </div>
+              </div>
+              <p className="w-[88px] text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
+                {row.weight.toFixed(1)}%
+              </p>
+              <p
+                className={`w-[72px] text-right text-[15px] font-bold tabular-nums ${pnlClass(row.itemReturn)}`}
+              >
+                {formatPct(row.itemReturn)}
+              </p>
+            </div>
+          ))}
+        </div>
       {sortedRows.length > HOLDINGS_PAGE_SIZE ? (
         <div className="flex items-center justify-between gap-3 border-t border-pe-border py-3.5">
           <button
@@ -1901,6 +1941,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
           </button>
         </div>
       ) : null}
+      </section>
     </div>
   );
 }

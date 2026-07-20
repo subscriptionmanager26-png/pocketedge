@@ -206,7 +206,7 @@ export function useProfileRouting({
     });
 
     if (target && location.pathname !== target) {
-      navigate(target, { replace: true });
+      navigate(target);
     }
   }, [
     authView,
@@ -241,4 +241,13 @@ export function navigateToProfile(navigate, userId, { portfolioId, handle } = {}
 
 export function navigateToTab(navigate, nextTab) {
   navigate(tabPath(nextTab));
+}
+
+/** Browser back when history exists; otherwise navigate to a sensible fallback. */
+export function navigateBack(navigate, location, fallbackPath) {
+  if (location.key !== 'default') {
+    navigate(-1);
+    return;
+  }
+  navigate(fallbackPath);
 }

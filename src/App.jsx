@@ -36,6 +36,7 @@ import {
   resolvePeople,
   setSelfProfile,
   warmPostAuthors,
+  getHandleForUserIdSync,
 } from './lib/socialIdentity';
 import {
   addPostComment,
@@ -51,8 +52,9 @@ import {
 import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
 import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
+  navigateBack,
   navigateToProfile,
   navigateToTab,
   useProfileRouting,
@@ -124,6 +126,7 @@ export default function App() {
   const [profileReturnTab, setProfileReturnTab] = useState('feed');
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
+  const [marketsSectionTab, setMarketsSectionTab] = useState('stocks');
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const portfolioBackRef = useRef(null);
@@ -582,39 +585,21 @@ export default function App() {
     return MARKET_RETURN_LABELS[ctx.tab] ?? 'Back';
   }, []);
 
+  const profileBackFallback = useCallback(() => {
+    const handle = getHandleForUserIdSync(profileUserId);
+    return handle ? profilePath(handle) : tabPath(profileReturnTab || 'feed');
+  }, [profileUserId, profileReturnTab]);
+
   const closeMarketDetail = useCallback(() => {
     backScroll();
-    clearMarketSelection();
-
-    const ctx = marketReturnContextRef.current;
     marketReturnContextRef.current = null;
+    navigateBack(navigate, location, tabPath('markets'));
+  }, [backScroll, location, navigate]);
 
-    if (!ctx || ctx.tab === 'markets') {
-      setTab('markets');
-      navigate(tabPath('markets'));
-      return;
-    }
-
-    setTab(ctx.tab);
-    setProfileUserId(ctx.profileUserId ?? currentUserId);
-    setProfileMode(ctx.profileMode ?? 'own');
-    setProfilePortfolioId(ctx.profilePortfolioId ?? null);
-    setSelectedPostId(ctx.selectedPostId ?? null);
-
-    if (ctx.tab === 'profile') {
-      navigateToProfile(navigate, ctx.profileUserId ?? currentUserId, {
-        portfolioId: ctx.profilePortfolioId ?? undefined,
-      });
-      return;
-    }
-
-    if (ctx.tab === 'feed' && ctx.selectedPostId) {
-      navigate(postPath(ctx.selectedPostId));
-      return;
-    }
-
-    navigate(tabPath(ctx.tab));
-  }, [backScroll, navigate, currentUserId]);
+  const closePost = useCallback(() => {
+    backScroll();
+    navigateBack(navigate, location, tabPath('feed'));
+  }, [backScroll, location, navigate]);
 
   const openFund = (fundId) => {
     captureMarketReturnContext();
@@ -670,12 +655,6 @@ export default function App() {
     setTab('feed');
     navigate(postPath(postId));
   };
-
-  const closePost = useCallback(() => {
-    setSelectedPostId(null);
-    setTab('feed');
-    navigate(tabPath('feed'));
-  }, [navigate]);
 
   const openSettings = () => {
     resetScroll();
@@ -734,6 +713,9 @@ export default function App() {
     setTab(next);
     setSelectedPostId(null);
     setProfilePortfolioId(null);
+    if (next === 'markets') {
+      setMarketsSectionTab('stocks');
+    }
     if (next !== 'markets') {
       clearMarketSelection();
     }
@@ -809,19 +791,28 @@ export default function App() {
         },
       };
     }
+    if (tab === 'settings') {
+      return {
+        label: MARKET_RETURN_LABELS[settingsReturnTab] ?? 'Back',
+        onBack: () => {
+          backScroll();
+          navigateBack(navigate, location, tabPath(settingsReturnTab || 'feed'));
+        },
+      };
+    }
     if (tab === 'profile' && profilePortfolioId) {
       return {
         label: 'Portfolios',
         onBack: () => {
+          const goBack = () => {
+            backScroll();
+            navigateBack(navigate, location, profileBackFallback());
+          };
           if (portfolioBackRef.current) {
-            portfolioBackRef.current(() => {
-              backScroll();
-              navigateToProfile(navigate, profileUserId);
-            });
+            portfolioBackRef.current(goBack);
             return;
           }
-          backScroll();
-          navigateToProfile(navigate, profileUserId);
+          goBack();
         },
       };
     }
@@ -833,7 +824,7 @@ export default function App() {
         label: 'Back',
         onBack: () => {
           backScroll();
-          setTab(profileReturnTab || 'feed');
+          navigateBack(navigate, location, tabPath(profileReturnTab || 'feed'));
         },
       };
     }
@@ -851,11 +842,15 @@ export default function App() {
     profileReturnTab,
     profilePortfolioId,
     profileFollowListMode,
+    settingsReturnTab,
     backScroll,
     closePost,
     navigate,
+    location,
+    profileBackFallback,
     closeMarketDetail,
     getMarketBackLabel,
+    currentUserId,
   ]);
 
   useEffect(() => {
@@ -1030,6 +1025,8 @@ export default function App() {
           ) : (
             <RouteSuspense>
               <MarketsPage
+                sectionTab={marketsSectionTab}
+                onSectionTabChange={setMarketsSectionTab}
                 onSelectStock={openStock}
                 onSelectFund={openFund}
                 onSelectIndex={openIndex}
@@ -1047,14 +1044,15 @@ export default function App() {
               onSelectPortfolio={(id) => {
                 resetScroll();
                 setProfilePortfolioId(id);
+                navigateToProfile(navigate, profileUserId, { portfolioId: id });
               }}
               onClearPortfolio={() => {
                 backScroll();
-                setProfilePortfolioId(null);
+                navigateBack(navigate, location, profileBackFallback());
               }}
               onBack={() => {
                 backScroll();
-                setTab(profileReturnTab || 'feed');
+                navigateBack(navigate, location, tabPath(profileReturnTab || 'feed'));
               }}
               onOpenPublicPreview={() => {
                 setProfileUserId(currentUserId);
