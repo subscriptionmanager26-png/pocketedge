@@ -1,30 +1,37 @@
-/** Round absolute money into integer Indian units — never show paisa / decimals. */
+/**
+ * Compact INR with Indian units.
+ * - Under 1,000: whole rupees only (≤3 digits, no decimals)
+ * - With K / L / Cr: up to 2 decimals after the unit scale
+ * - Coefficient ≥100 (3 digits): whole number, no decimals
+ */
+function formatUnitCoefficient(value) {
+  const rounded = Math.round(value * 100) / 100;
+  if (rounded >= 100) return String(Math.round(rounded));
+  return rounded.toFixed(2).replace(/\.?0+$/, '');
+}
+
 function formatInrCompact(abs, negative) {
   const sign = negative ? '−' : '';
-  if (abs >= 1_00_00_000) {
-    return `${sign}₹${Math.round(abs / 1_00_00_000)}Cr`;
+
+  // Prefer the next unit when rounding would produce a 3-digit coefficient (100K → 1L).
+  if (abs >= 1_00_00_000 || Math.round((abs / 1_00_000) * 100) / 100 >= 100) {
+    return `${sign}₹${formatUnitCoefficient(abs / 1_00_00_000)}Cr`;
   }
-  if (abs >= 1_00_000) {
-    return `${sign}₹${Math.round(abs / 1_00_000)}L`;
+  if (abs >= 1_00_000 || Math.round((abs / 1_000) * 100) / 100 >= 100) {
+    return `${sign}₹${formatUnitCoefficient(abs / 1_00_000)}L`;
   }
   if (abs >= 1_000) {
-    return `${sign}₹${Math.round(abs / 1_000)}K`;
+    return `${sign}₹${formatUnitCoefficient(abs / 1_000)}K`;
   }
   return `${sign}₹${Math.round(abs).toLocaleString('en-IN')}`;
 }
 
-export function formatInr(n, { compact = false } = {}) {
+/** Absolute money amounts — always unit-scaled (K / L / Cr). `compact` kept for call-site compat. */
+export function formatInr(n, { compact: _compact = false } = {}) {
   if (n == null || Number.isNaN(n)) return '-';
   const value = Number(n);
   if (!Number.isFinite(value)) return '-';
-  const abs = Math.abs(value);
-  if (compact) return formatInrCompact(abs, value < 0);
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-    minimumFractionDigits: 0,
-  }).format(Math.round(value));
+  return formatInrCompact(Math.abs(value), value < 0);
 }
 
 export function formatPct(n, { signed = true } = {}) {
