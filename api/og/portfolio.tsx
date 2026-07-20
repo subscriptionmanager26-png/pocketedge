@@ -53,7 +53,7 @@ export default async function handler(request) {
             ) : null}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#6b7280' }}>1M RETURN</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#6b7280' }}>TOTAL RETURN</div>
             <div style={{ fontSize: 40, fontWeight: 700, color: returnColor, marginTop: 8 }}>
               {formatPct(snapshot.returnPct)}
             </div>

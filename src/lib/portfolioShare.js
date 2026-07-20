@@ -1,6 +1,6 @@
 import {
   getHoldingTotalReturnPct,
-  getPortfolioReturn,
+  getPortfolioTotalReturnPct,
   STOCKS,
 } from '../data/mockData';
 import { holdingDisplayLabel } from './portfolioAssetUniverse';
@@ -46,7 +46,6 @@ export function buildPortfolioShareSnapshot(
   portfolio,
   {
     sort = SHARE_SORT_ALLOCATION,
-    period = '1M',
     limit = TOP_SHARE_HOLDINGS,
     assetsByKey = {},
   } = {}
@@ -90,20 +89,17 @@ export function buildPortfolioShareSnapshot(
     portfolioId: portfolio.id,
     name: portfolio.name,
     thesis: portfolio.thesis ?? portfolio.objective ?? '',
-    period,
     sort,
-    returnPct: Number(getPortfolioReturn(portfolio, period)) || 0,
+    returnPct: Number(getPortfolioTotalReturnPct(portfolio)) || 0,
     holdingsCount: rows.length,
     topHoldings,
     tickers,
   };
 }
 
-/** @deprecated Use buildPortfolioShareSnapshot for new share flows. */
-export function buildPortfolioShare(portfolio, period = '1M') {
+export function buildPortfolioShare(portfolio) {
   return buildPortfolioShareSnapshot(portfolio, {
     sort: SHARE_SORT_ALLOCATION,
-    period,
     limit: COMPOSE_SHARE_HOLDINGS,
   });
 }

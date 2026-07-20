@@ -24,8 +24,7 @@ import {
   CURRENT_USER,
   POSTS,
   getPortfolioTotalReturnPct,
-  getPortfolioReturn,
-  getHoldingReturn1M,
+  getHoldingTotalReturnPct,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -1650,7 +1649,7 @@ function PortfolioHoldingsList({ portfolio }) {
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
   const [assetsLoading, setAssetsLoading] = useState(false);
-  const portfolioReturn1M = useMemo(() => getPortfolioReturn(portfolio, '1M'), [portfolio]);
+  const portfolioTotalReturn = useMemo(() => getPortfolioTotalReturnPct(portfolio), [portfolio]);
 
   const holdingKeys = useMemo(() => {
     const keys = [];
@@ -1752,7 +1751,7 @@ function PortfolioHoldingsList({ portfolio }) {
                   ? asset.name
                   : '',
           weight,
-          itemReturn: getHoldingReturn1M(h, asset),
+          itemReturn: getHoldingTotalReturnPct(h, asset),
           assetType: h.assetType ?? asset?.kind ?? 'stock',
           logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
         };
@@ -1775,7 +1774,7 @@ function PortfolioHoldingsList({ portfolio }) {
               ? asset.name
               : '',
         weight: equal,
-        itemReturn: getHoldingReturn1M({ ticker, changePct: asset?.item?.changePct }, asset),
+        itemReturn: getHoldingTotalReturnPct({ ticker, changePct: asset?.item?.changePct }, asset),
         assetType: asset?.kind ?? 'stock',
         logoIconUrl: asset?.logoIconUrl ?? null,
       };
@@ -1807,7 +1806,7 @@ function PortfolioHoldingsList({ portfolio }) {
     );
   }
 
-  const periodLabel = '1M';
+  const periodLabel = 'Total';
 
   return (
     <div>
@@ -1821,8 +1820,8 @@ function PortfolioHoldingsList({ portfolio }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
               {periodLabel} return
             </p>
-            <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(portfolioReturn1M)}`}>
-              {formatPct(portfolioReturn1M)}
+            <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(portfolioTotalReturn)}`}>
+              {formatPct(portfolioTotalReturn)}
             </p>
           </div>
         </div>

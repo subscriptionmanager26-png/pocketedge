@@ -57,16 +57,12 @@ export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = 
       ? rows.sort((a, b) => b.totalReturnPct - a.totalReturnPct)
       : rows.sort((a, b) => b.weight - a.weight);
 
-  const returnPct =
-    estimate1MReturn(holdings) ||
-    Number(portfolio.total_return_pct ?? portfolio.totalReturnPct ?? 0) ||
-    0;
+  const returnPct = Number(portfolio.total_return_pct ?? portfolio.totalReturnPct ?? 0) || 0;
 
   return {
     portfolioId: portfolio.id,
     name: portfolio.name ?? 'Portfolio',
     returnPct,
-    period: '1M',
     holdingsCount: rows.length,
     topHoldings: rows.slice(0, TOP),
     sort,

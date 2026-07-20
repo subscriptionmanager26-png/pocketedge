@@ -62,7 +62,7 @@ export default function PortfolioShareCard({ snapshot, ownerHandle }) {
   if (!snapshot) return null;
 
   const handle = ownerHandle ? `@${String(ownerHandle).replace(/^@/, '')}` : null;
-  const periodLabel = snapshot.period ?? '1M';
+  const periodLabel = 'Total';
   const remaining =
     snapshot.holdingsCount > (snapshot.topHoldings?.length ?? 0)
       ? snapshot.holdingsCount - snapshot.topHoldings.length
