@@ -3,7 +3,9 @@ import {
   LOGO_VARIANT_DETAIL,
   LOGO_VARIANT_LIST,
   assetLogoInitial,
+  detectLogoBackdropTone,
   loadedLogoSrcCache,
+  logoBackdropClass,
   markLogoSrcFailed,
   markLogoSrcLoaded,
   resolveAssetLogoUrl,
@@ -17,6 +19,14 @@ const SIZES = {
 
 function logoAlreadyLoaded(img) {
   return Boolean(img?.complete && img.naturalWidth > 0);
+}
+
+function syncLoadedImage(img, imgSrc, setBackdrop, setFailed, setLoaded) {
+  if (!imgSrc || !logoAlreadyLoaded(img)) return;
+  markLogoSrcLoaded(imgSrc);
+  setBackdrop(detectLogoBackdropTone(img));
+  setFailed(false);
+  setLoaded(true);
 }
 
 /**
@@ -46,10 +56,12 @@ export default function AssetLogo({
   const [imgSrc, setImgSrc] = useState(src);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(() => Boolean(src && loadedLogoSrcCache.has(src)));
+  const [backdrop, setBackdrop] = useState('light');
   const initial = assetLogoInitial(assetKey || name);
 
   useEffect(() => {
     setImgSrc(src);
+    setBackdrop('light');
     if (!src) {
       setFailed(false);
       setLoaded(false);
@@ -67,19 +79,14 @@ export default function AssetLogo({
   // Preload/cache can finish before React attaches onLoad — pick that up here.
   useLayoutEffect(() => {
     if (!imgSrc) return;
-    const img = imgRef.current;
-    if (logoAlreadyLoaded(img)) {
-      markLogoSrcLoaded(imgSrc);
-      setFailed(false);
-      setLoaded(true);
-    }
+    syncLoadedImage(imgRef.current, imgSrc, setBackdrop, setFailed, setLoaded);
   }, [imgSrc]);
 
   const showMonogram = !src || failed || !loaded;
 
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-pe-border bg-transparent font-semibold text-pe-text-secondary ${sizeMeta.className} ${className}`.trim()}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-pe-border font-semibold text-pe-text-secondary ${logoBackdropClass(backdrop)} ${sizeMeta.className} ${className}`.trim()}
       aria-hidden="true"
     >
       {showMonogram ? <span className="absolute inset-0 flex items-center justify-center">{initial}</span> : null}
@@ -93,21 +100,18 @@ export default function AssetLogo({
           loading="eager"
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}
-          className={`relative h-full w-full object-contain p-0.5 transition-opacity duration-150 ${
+          className={`relative h-full w-full object-cover transition-opacity duration-150 ${
             loaded && !failed ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={(event) => {
-            if (imgSrc && logoAlreadyLoaded(event.currentTarget)) {
-              markLogoSrcLoaded(imgSrc);
-            }
-            setFailed(false);
-            setLoaded(true);
+            syncLoadedImage(event.currentTarget, imgSrc, setBackdrop, setFailed, setLoaded);
           }}
           onError={() => {
             // Retry once without the browser's poisoned 404 disk-cache entry.
             if (imgSrc && !/[?&]cb=/.test(imgSrc)) {
               const base = imgSrc.split('?')[0];
               setImgSrc(`${base}?cb=1`);
+              setBackdrop('light');
               setFailed(false);
               setLoaded(false);
               return;

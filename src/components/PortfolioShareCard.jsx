@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { formatPct } from '../lib/format';
-import { assetLogoInitial } from '../lib/assetLogo';
+import { assetLogoInitial, detectLogoBackdropTone, logoBackdropClass } from '../lib/assetLogo';
 
 export const SHARE_CARD_WIDTH = 1080;
 /** Image-only card; link lives in native share text (outside the PNG). */
@@ -19,6 +20,7 @@ function sharePnlColor(n) {
 
 function ShareCardLogo({ logoIconUrl, assetKey, name }) {
   const initial = assetLogoInitial(assetKey || name);
+  const [backdrop, setBackdrop] = useState('light');
 
   return (
     <span
@@ -32,11 +34,11 @@ function ShareCardLogo({ logoIconUrl, assetKey, name }) {
         overflow: 'hidden',
         borderRadius: '50%',
         border: '1px solid #e5e7eb',
-        backgroundColor: '#f9fafb',
         color: '#6b7280',
         fontSize: 16,
         fontWeight: 600,
       }}
+      className={logoBackdropClass(backdrop)}
     >
       {logoIconUrl ? (
         <img
@@ -46,7 +48,10 @@ function ShareCardLogo({ logoIconUrl, assetKey, name }) {
           height={48}
           loading="eager"
           decoding="sync"
-          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onLoad={(event) => {
+            setBackdrop(detectLogoBackdropTone(event.currentTarget));
+          }}
         />
       ) : (
         initial

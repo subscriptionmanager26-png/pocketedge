@@ -146,6 +146,58 @@ export function markLogoSrcFailed(src) {
 }
 
 /**
+ * Pick a circle backdrop so light/white marks stay visible on the UI.
+ * @returns {'light' | 'dark'}
+ */
+export function detectLogoBackdropTone(img) {
+  if (typeof document === 'undefined' || !img?.naturalWidth) return 'light';
+
+  try {
+    const sampleSize = 32;
+    const canvas = document.createElement('canvas');
+    canvas.width = sampleSize;
+    canvas.height = sampleSize;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return 'light';
+
+    ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+    const { data } = ctx.getImageData(0, 0, sampleSize, sampleSize);
+
+    let opaque = 0;
+    let lumSum = 0;
+    let light = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha < 48) continue;
+      opaque++;
+      const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      lumSum += lum;
+      if (lum > 200) light++;
+    }
+
+    if (!opaque) return 'light';
+
+    const avgLum = lumSum / opaque;
+    const lightShare = light / opaque;
+    if (lightShare > 0.45 && avgLum > 160) return 'dark';
+    if (avgLum > 210) return 'dark';
+    return 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+const LOGO_BACKDROP_CLASS = {
+  light: 'bg-pe-surface',
+  dark: 'bg-zinc-800',
+};
+
+export function logoBackdropClass(tone) {
+  return LOGO_BACKDROP_CLASS[tone === 'dark' ? 'dark' : 'light'];
+}
+
+/**
  * Warm the browser HTTP cache for upcoming logo URLs (list-sized 128px).
  * Caps concurrency so we don't flood the connection pool.
  */
