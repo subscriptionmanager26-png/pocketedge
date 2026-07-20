@@ -1,5 +1,7 @@
 name: Social market asset identity sync
 
+# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
+
 on:
   schedule:
     - cron: '30 2 * * 0'

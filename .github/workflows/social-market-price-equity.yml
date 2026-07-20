@@ -4,6 +4,9 @@ name: Social market price refresh (equity)
 # Refresh NSE stocks + ETFs and the approved BSE-only fallback universe into
 # social_market_assets (+ daily history point).
 # Note: indices are refreshed by Supabase cron + edge function.
+# Note: NSE stocks/ETFs also have a parallel Supabase 15s edge writer
+# (refresh-equity-prices). This GH job remains the backup (+ BSE/SGB coverage).
+# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
 
 on:
   schedule:

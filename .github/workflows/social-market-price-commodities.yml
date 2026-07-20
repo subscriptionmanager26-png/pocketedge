@@ -1,6 +1,7 @@
 name: Social market price refresh (commodities)
 
 # MCX spot prices into social_market_assets + social_market_price_history.
+# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
 
 on:
   schedule:

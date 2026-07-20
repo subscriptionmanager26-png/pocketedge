@@ -1,6 +1,7 @@
 name: Social market price refresh (funds)
 
 # Daily AMFI NAV sync into social_market_assets + social_market_price_history.
+# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
 
 on:
   schedule:
