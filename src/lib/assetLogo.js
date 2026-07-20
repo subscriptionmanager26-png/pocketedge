@@ -168,10 +168,11 @@ export function preloadAssetLogos(entries, { limit = 40, variant = LOGO_VARIANT_
       preloadInflight.delete(src);
       preloadDone.add(src);
       if (ok) markLogoSrcLoaded(src);
-      else markLogoSrcFailed(src);
       pump();
     };
     img.onload = () => finish(true);
+    // Do not mark preload failures in failedLogoSrcCache — a transient miss must
+    // not block AssetLogo from mounting the <img> (desktop list rows depend on it).
     img.onerror = () => finish(false);
     img.src = src;
   }

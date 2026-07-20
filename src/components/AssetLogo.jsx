@@ -3,7 +3,6 @@ import {
   LOGO_VARIANT_DETAIL,
   LOGO_VARIANT_LIST,
   assetLogoInitial,
-  failedLogoSrcCache,
   loadedLogoSrcCache,
   markLogoSrcFailed,
   markLogoSrcLoaded,
@@ -44,18 +43,13 @@ export default function AssetLogo({
     variant: sizeMeta.variant,
   });
   const imgRef = useRef(null);
-  const [failed, setFailed] = useState(() => Boolean(src && failedLogoSrcCache.has(src)));
+  const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(() => Boolean(src && loadedLogoSrcCache.has(src)));
   const initial = assetLogoInitial(assetKey || name);
 
   useEffect(() => {
     if (!src) {
       setFailed(false);
-      setLoaded(false);
-      return;
-    }
-    if (failedLogoSrcCache.has(src)) {
-      setFailed(true);
       setLoaded(false);
       return;
     }
@@ -70,7 +64,7 @@ export default function AssetLogo({
 
   // Preload/cache can finish before React attaches onLoad — pick that up here.
   useLayoutEffect(() => {
-    if (!src || failedLogoSrcCache.has(src)) return;
+    if (!src) return;
     const img = imgRef.current;
     if (logoAlreadyLoaded(img)) {
       markLogoSrcLoaded(src);
@@ -79,36 +73,38 @@ export default function AssetLogo({
     }
   }, [src]);
 
-  const showImage = Boolean(src) && !failed;
+  const showMonogram = !src || failed || !loaded;
 
   return (
     <span
       className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-pe-border bg-transparent font-semibold text-pe-text-secondary ${sizeMeta.className} ${className}`.trim()}
       aria-hidden="true"
     >
-      {!loaded || !showImage ? <span className="absolute inset-0 flex items-center justify-center">{initial}</span> : null}
-      {showImage ? (
+      {showMonogram ? <span className="absolute inset-0 flex items-center justify-center">{initial}</span> : null}
+      {src ? (
         <img
           ref={imgRef}
           src={src}
           alt=""
           width={sizeMeta.px}
           height={sizeMeta.px}
-          loading={priority ? 'eager' : 'lazy'}
+          loading="eager"
           decoding="async"
-          fetchPriority={priority ? 'high' : 'low'}
+          fetchPriority={priority ? 'high' : 'auto'}
           className={`relative h-full w-full object-contain p-0.5 transition-opacity duration-150 ${
-            loaded ? 'opacity-100' : 'opacity-0'
+            loaded && !failed ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={(event) => {
             if (src && logoAlreadyLoaded(event.currentTarget)) {
               markLogoSrcLoaded(src);
             }
+            setFailed(false);
             setLoaded(true);
           }}
           onError={() => {
             if (src) markLogoSrcFailed(src);
             setFailed(true);
+            setLoaded(false);
           }}
         />
       ) : null}
