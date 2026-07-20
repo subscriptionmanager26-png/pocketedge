@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
@@ -27,6 +27,7 @@ import {
   resolveMarketStock,
 } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';
+import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 
 export default function StockInvestmentPage({
   ticker,
@@ -75,6 +76,21 @@ export default function StockInvestmentPage({
       cancelled = true;
     };
   }, [ticker]);
+
+  const refreshStock = useCallback(async () => {
+    const resolved = await resolveMarketStock(ticker);
+    if (!resolved) return;
+    if (resolved.assetType === 'etf') setIsEtf(true);
+    else setIsEtf(false);
+    setMarketStock(marketStockToDetail(resolved));
+  }, [ticker]);
+
+  useMarketQuotePolling({
+    assetType: isEtf ? 'etf' : 'stock',
+    enabled: Boolean(ticker) && !marketLoading,
+    onRefresh: refreshStock,
+    deps: [ticker, marketLoading, isEtf],
+  });
 
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getStockDiscussions(ticker) : []

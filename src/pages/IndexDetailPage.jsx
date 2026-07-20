@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
@@ -11,6 +11,7 @@ import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
+import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 
 export default function IndexDetailPage({
   indexId,
@@ -52,25 +53,17 @@ export default function IndexDetailPage({
     };
   }, [indexId]);
 
-  useEffect(() => {
-    if (!indexId || loading) return undefined;
-    let cancelled = false;
+  const refreshIndex = useCallback(async () => {
+    const fresh = await resolveMarketIndex(indexId);
+    if (fresh) setIndex(fresh);
+  }, [indexId]);
 
-    const refresh = async () => {
-      try {
-        const fresh = await resolveMarketIndex(indexId);
-        if (!cancelled && fresh) setIndex(fresh);
-      } catch {
-        // Keep last successful quote if refresh fails.
-      }
-    };
-
-    const timer = window.setInterval(refresh, 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [indexId, loading]);
+  useMarketQuotePolling({
+    assetType: 'index',
+    enabled: Boolean(indexId) && !loading,
+    onRefresh: refreshIndex,
+    deps: [indexId, loading],
+  });
 
   const displayIndex = index;
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
@@ -21,6 +21,7 @@ import {
 } from '../lib/marketDataApi';
 import { fetchAssetHolders } from '../lib/assetHoldersApi';
 import { isDevMockMode } from '../lib/appMode';
+import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 
 export default function InvestmentPage({
   fundId,
@@ -62,6 +63,18 @@ export default function InvestmentPage({
       cancelled = true;
     };
   }, [fundId, seedFund]);
+
+  const refreshFund = useCallback(async () => {
+    const found = await resolveMarketFund(fundId);
+    if (found) setMarketFund(marketFundToDetail(found));
+  }, [fundId]);
+
+  useMarketQuotePolling({
+    assetType: 'fund',
+    enabled: Boolean(fundId) && !marketLoading && !seedFund,
+    onRefresh: refreshFund,
+    deps: [fundId, marketLoading, seedFund],
+  });
 
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getFundDiscussions(fundId) : []

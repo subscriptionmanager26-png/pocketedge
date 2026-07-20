@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
@@ -14,6 +14,11 @@ import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
+import { lookupMarketAssetsBatch } from '../lib/marketDataApi';
+import {
+  PORTFOLIO_POLL_INTERVAL_MS,
+  shouldPollPortfolioRefresh,
+} from '../lib/marketRefreshPolicy';
 import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchlistStore';
 import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
 import { fetchUserPortfolios, peekUserPortfolios } from '../lib/socialPortfolioApi';
@@ -174,6 +179,76 @@ export default function PortfolioPage({
       cancelled = true;
     };
   }, [holdingKeys, activeList?.holdings]);
+
+  const refreshPortfolioAssets = useCallback(async () => {
+    if (!holdingKeys.length) return;
+    const batch = await lookupMarketAssetsBatch(holdingKeys);
+    if (!batch.size) return;
+
+    setAssetsByKey((prev) => {
+      const next = { ...prev };
+      for (const key of holdingKeys) {
+        const item = batch.get(key) ?? batch.get(String(key).toUpperCase());
+        if (!item) continue;
+        const price = item.price ?? item.nav ?? item.ltp ?? null;
+        next[key] = {
+          key,
+          symbol: item.symbol ?? key,
+          name: item.name ?? prev[key]?.name ?? '',
+          kind: item.assetType ?? prev[key]?.kind ?? 'stock',
+          kindLabel: prev[key]?.kindLabel ?? 'Stock',
+          price,
+          isin: item.isin ?? prev[key]?.isin ?? null,
+          logoIconUrl: item.logoIconUrl ?? prev[key]?.logoIconUrl ?? null,
+          item,
+        };
+      }
+      return next;
+    });
+  }, [holdingKeys]);
+
+  useEffect(() => {
+    if (!holdingKeys.length || !useBackend()) return undefined;
+
+    let cancelled = false;
+    let timer = null;
+
+    const tick = async () => {
+      if (cancelled || !shouldPollPortfolioRefresh()) return;
+      try {
+        await refreshPortfolioAssets();
+      } catch {
+        // Keep last successful quote if refresh fails.
+      }
+    };
+
+    const schedule = () => {
+      if (timer) window.clearInterval(timer);
+      if (!shouldPollPortfolioRefresh()) return;
+      timer = window.setInterval(tick, PORTFOLIO_POLL_INTERVAL_MS);
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      } else {
+        tick();
+        schedule();
+      }
+    };
+
+    schedule();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [holdingKeys, refreshPortfolioAssets]);
 
   const liveActiveList = useMemo(() => {
     if (!activeList?.holdings?.length) return activeList;

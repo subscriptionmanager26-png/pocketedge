@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   MARKET_MIN_SEARCH_CHARS,
   MARKET_PREVIEW_LIMIT,
@@ -6,6 +6,8 @@ import {
   searchMarketTab,
 } from '../lib/marketDataApi';
 import { preloadAssetLogos } from '../lib/assetLogo';
+import { tabToAssetType } from '../lib/marketRefreshPolicy';
+import { useMarketQuotePolling } from './useMarketQuoteRefresh';
 
 function useDebouncedValue(value, delayMs = 250) {
   const [debounced, setDebounced] = useState(value);
@@ -29,6 +31,7 @@ export function useMarketTabData(tab, query = '') {
   const [searchError, setSearchError] = useState(null);
 
   const debouncedQuery = useDebouncedValue(query.trim());
+  const assetType = tabToAssetType(tab);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,33 +96,23 @@ export function useMarketTabData(tab, query = '') {
   const isSearching = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
   const items = isSearching ? searchItems : previewItems;
 
-  useEffect(() => {
-    if (tab !== 'indices' || loading || error) return undefined;
+  const refreshQuotes = useCallback(async () => {
+    if (isSearching) {
+      const { items: nextItems } = await searchMarketTab(tab, debouncedQuery);
+      setSearchItems(nextItems);
+      return;
+    }
+    const payload = await fetchMarketPreview(tab);
+    setPreviewItems(payload.items ?? []);
+    setSyncedAt(payload.syncedAt ?? null);
+  }, [tab, debouncedQuery, isSearching]);
 
-    let cancelled = false;
-    const refresh = async () => {
-      try {
-        if (isSearching) {
-          const { items: nextItems } = await searchMarketTab(tab, debouncedQuery);
-          if (!cancelled) setSearchItems(nextItems);
-          return;
-        }
-        const payload = await fetchMarketPreview(tab);
-        if (!cancelled) {
-          setPreviewItems(payload.items ?? []);
-          setSyncedAt(payload.syncedAt ?? null);
-        }
-      } catch {
-        // Keep existing values when a refresh call fails.
-      }
-    };
-
-    const timer = window.setInterval(refresh, 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [tab, debouncedQuery, isSearching, loading, error]);
+  useMarketQuotePolling({
+    assetType,
+    enabled: Boolean(assetType) && !loading && !error,
+    onRefresh: refreshQuotes,
+    deps: [tab, debouncedQuery, isSearching, loading, error],
+  });
 
   const statusMessage = useMemo(() => {
     if (loading) return null;

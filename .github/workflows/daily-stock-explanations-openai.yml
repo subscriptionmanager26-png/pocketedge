@@ -1,0 +1,39 @@
+name: Daily stock market explanations (OpenAI)
+
+on:
+  schedule:
+    # 16:00 IST, Monday–Friday (10:30 UTC)
+    - cron: '30 10 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: daily-stock-explanations-openai
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate daily OpenAI explanations
+        env:
+          # PocketEdge market-price database
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Stock-news database (explanations stored here)
+          STOCK_NEWS_SUPABASE_URL: ${{ secrets.STOCK_NEWS_SUPABASE_URL }}
+          STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY }}
+          # Private GitHub news source
+          NEWS_GITHUB_API_URL: https://api.github.com/repos/subscriptionmanager26-png/nifty-total-market-news/contents/data/stories.jsonl
+          NIFTY_NEWS_REPO_TOKEN: ${{ secrets.NIFTY_NEWS_REPO_TOKEN }}
+          # OpenAI
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-5-nano
+        run: node scripts/generate-daily-stock-explanations.mjs --provider=openai

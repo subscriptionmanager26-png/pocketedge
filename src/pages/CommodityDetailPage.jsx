@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
@@ -10,6 +10,7 @@ import {
 import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
+import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 
 export default function CommodityDetailPage({
   commodityId,
@@ -51,6 +52,18 @@ export default function CommodityDetailPage({
       cancelled = true;
     };
   }, [commodityId]);
+
+  const refreshCommodity = useCallback(async () => {
+    const fresh = await resolveMarketCommodity(commodityId);
+    if (fresh) setCommodity(fresh);
+  }, [commodityId]);
+
+  useMarketQuotePolling({
+    assetType: 'commodity',
+    enabled: Boolean(commodityId) && !loading,
+    onRefresh: refreshCommodity,
+    deps: [commodityId, loading],
+  });
 
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : []
