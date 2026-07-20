@@ -6,7 +6,7 @@ import {
   profilePortfolioUrl,
   shareLandingUrl,
   siteOrigin,
-} from '../../_lib/portfolioShareServer';
+} from '../../_lib/portfolioShareServer.js';
 
 export default async function handler(request, { params }) {
   const portfolioId = params?.id;
@@ -45,7 +45,7 @@ export default async function handler(request, { params }) {
     <meta property="og:url" content="${escapeHtml(shareUrl)}" />
     <meta property="og:image" content="${escapeHtml(imageUrl)}" />
     <meta property="og:image:width" content="1080" />
-    <meta property="og:image:height" content="1350" />
+    <meta property="og:image:height" content="1200" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />

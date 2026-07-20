@@ -3,7 +3,7 @@ import {
   buildSnapshotFromPortfolio,
   fetchPublicPortfolioShareData,
   formatPct,
-} from '../_lib/portfolioShareServer';
+} from '../_lib/portfolioShareServer.js';
 
 export const config = {
   runtime: 'edge',
