@@ -175,19 +175,23 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 className="mt-0.5"
               />
               <div className="min-w-0">
-                <p className="text-[12px] tabular-nums text-pe-text-muted">
-                  Total Invested{' '}
-                  {invested != null && Number.isFinite(invested) && invested > 0
-                    ? formatInr(invested, { compact: true })
-                    : '-'}
-                  {' · '}
-                  QTY{' '}
-                  {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'}
-                </p>
-                <p className="mt-1 truncate text-[15px] font-semibold text-pe-text">
+                <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
                   {holdingDisplayLabel(h)}
                 </p>
                 <p className="mt-1 text-[12px] tabular-nums text-pe-text-muted">
+                  <span className="inline-block">
+                    Invested{' '}
+                    {invested != null && Number.isFinite(invested) && invested > 0
+                      ? formatInr(invested, { compact: true })
+                      : '-'}
+                  </span>
+                  <span className="mx-1.5 text-pe-border-strong">·</span>
+                  <span className="inline-block whitespace-nowrap">
+                    Qty{' '}
+                    {Number.isFinite(qty) && qty > 0 ? qty.toLocaleString('en-IN') : '-'}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[12px] tabular-nums text-pe-text-muted">
                   {weightPct != null ? `${weightPct.toFixed(1)}% of Portfolio` : '-'}
                 </p>
               </div>

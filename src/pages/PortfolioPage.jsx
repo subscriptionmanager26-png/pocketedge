@@ -550,20 +550,9 @@ export default function PortfolioPage({
             <div className="grid grid-cols-2 gap-x-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[13px] font-semibold text-pe-text-muted">Current Value</p>
+                  <p className="text-[13px] font-semibold text-pe-text-muted">Initial Invested</p>
                   <PortfolioKindMetaTags portfolio={activeList} />
                 </div>
-                <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
-                  {formatInr(metrics.totalValue)}
-                </p>
-                <PortfolioDeltaLine
-                  amount={metrics.todayPnl}
-                  pct={metrics.todayPnlPct}
-                  suffix="today"
-                />
-              </div>
-              <div className="min-w-0 text-right">
-                <p className="text-[13px] font-semibold text-pe-text-muted">Initial Invested</p>
                 <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
                   {formatInr(metrics.invested)}
                 </p>
@@ -571,6 +560,17 @@ export default function PortfolioPage({
                   amount={metrics.totalPnl}
                   pct={metrics.totalPnlPct}
                   suffix="total"
+                />
+              </div>
+              <div className="min-w-0 text-right">
+                <p className="text-[13px] font-semibold text-pe-text-muted">Current Value</p>
+                <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
+                  {formatInr(metrics.totalValue)}
+                </p>
+                <PortfolioDeltaLine
+                  amount={metrics.todayPnl}
+                  pct={metrics.todayPnlPct}
+                  suffix="today"
                   align="right"
                 />
               </div>
@@ -592,18 +592,18 @@ export default function PortfolioPage({
                   selected ? 'border-pe-accent' : 'border-pe-border'
                 }`}
               >
-                <div className="flex min-w-0 items-center gap-1">
-                  <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
+                <p className="text-[17px] font-bold tabular-nums leading-none text-pe-text">
+                  {count}
+                </p>
+                <div className="mt-1.5 flex min-w-0 items-start gap-1">
+                  <FormStatusIcon form={formId} className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <p
-                    className="truncate text-[10px] font-bold uppercase tracking-[0.04em] text-pe-text-muted"
+                    className="min-w-0 text-[10px] font-bold uppercase leading-snug tracking-[0.04em] text-pe-text-muted"
                     title={meta.label}
                   >
                     {meta.label}
                   </p>
                 </div>
-                <p className="mt-1.5 text-[17px] font-bold tabular-nums leading-none text-pe-text">
-                  {count}
-                </p>
               </button>
             );
           })}

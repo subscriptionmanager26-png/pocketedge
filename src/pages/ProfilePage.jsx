@@ -403,6 +403,14 @@ export default function ProfilePage({
     );
   }
 
+  if (selectedPortfolioId && !selectedPortfolio) {
+    return (
+      <div className="px-4 py-6">
+        <PortfolioHoldingsSkeleton rows={4} />
+      </div>
+    );
+  }
+
   if (selectedPortfolio) {
     return (
       <PortfolioDetailView
@@ -1694,7 +1702,6 @@ function PortfolioHoldingsList({ portfolio }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
-  const [assetsLoading, setAssetsLoading] = useState(false);
 
   const holdingKeys = useMemo(() => {
     const keys = [];
@@ -1722,28 +1729,19 @@ function PortfolioHoldingsList({ portfolio }) {
   }, [portfolio.id]);
 
   useEffect(() => {
-    // Seed from enriched holdings immediately so profile paints without waiting.
+    // Paint holdings immediately (weights/names from RPC), then fill quotes/logos.
     setAssetsByKey(assetsFromHoldings(portfolio.holdings));
-  }, [portfolio.id, portfolio.holdings]);
-
-  useEffect(() => {
-    if (!holdingKeys.length || !needsClientResolve) {
-      setAssetsLoading(false);
-      return undefined;
-    }
+    if (!holdingKeys.length || !needsClientResolve) return undefined;
 
     let cancelled = false;
-    setAssetsLoading(true);
-    resolvePortfolioAssets(holdingKeys)
-      .then((map) => {
-        if (cancelled) return;
-        const next = { ...assetsFromHoldings(portfolio.holdings) };
+    resolvePortfolioAssets(holdingKeys).then((map) => {
+      if (cancelled) return;
+      setAssetsByKey((prev) => {
+        const next = { ...prev, ...assetsFromHoldings(portfolio.holdings) };
         for (const [key, asset] of map.entries()) next[key] = asset;
-        setAssetsByKey(next);
-      })
-      .finally(() => {
-        if (!cancelled) setAssetsLoading(false);
+        return next;
       });
+    });
 
     return () => {
       cancelled = true;
@@ -1837,12 +1835,6 @@ function PortfolioHoldingsList({ portfolio }) {
     safePage * HOLDINGS_PAGE_SIZE + HOLDINGS_PAGE_SIZE
   );
 
-  if (assetsLoading && holdingKeys.length) {
-    return (
-      <PortfolioHoldingsSkeleton rows={Math.min(holdingKeys.length, HOLDINGS_PAGE_SIZE)} />
-    );
-  }
-
   if (!rows.length) {
     return (
       <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
@@ -1858,7 +1850,7 @@ function PortfolioHoldingsList({ portfolio }) {
       <section className="px-4 pt-4">
         <div className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-end gap-2 border-b border-pe-border py-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-            Holdings & allocations
+            Holdings
           </p>
           <p className="text-right text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Allocation
