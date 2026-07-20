@@ -39,7 +39,7 @@ import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } 
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
-import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
 import AssetLogo from '../components/AssetLogo';
 import PortfolioCard from '../components/PortfolioCard';
 import PortfolioShareSheet from '../components/PortfolioShareSheet';
@@ -1641,7 +1641,7 @@ function PortfolioDiscussion({
 
 function portfolioHoldingsNeedClientResolve(portfolio) {
   const holdings = portfolio.holdings ?? [];
-  if (holdings.length) return holdingsNeedLiveResolve(holdings);
+  if (holdings.length) return holdingsNeedClientResolve(holdings);
   return (portfolio.tickers ?? []).length > 0;
 }
 
@@ -1754,7 +1754,7 @@ function PortfolioHoldingsList({ portfolio }) {
           weight,
           itemReturn: getHoldingReturn1M(h, asset),
           assetType: h.assetType ?? asset?.kind ?? 'stock',
-          logoIconUrl: h.logoIconUrl ?? asset?.logoIconUrl ?? null,
+          logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
         };
       });
     }

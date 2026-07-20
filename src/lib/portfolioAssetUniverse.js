@@ -145,6 +145,54 @@ export function holdingsNeedLiveResolve(holdings) {
   });
 }
 
+/** True when any holding is missing a logo URL for AssetLogo. */
+export function holdingsNeedLogoResolve(holdings) {
+  const list = holdings ?? [];
+  if (!list.length) return false;
+  return list.some((holding) => {
+    if (!holding?.ticker) return false;
+    return !(holding.logoIconUrl ?? holding.logo_icon_url);
+  });
+}
+
+/** Resolve live quotes and/or logos client-side when server holdings are incomplete. */
+export function holdingsNeedClientResolve(holdings) {
+  return holdingsNeedLiveResolve(holdings) || holdingsNeedLogoResolve(holdings);
+}
+
+/** Batch-fill logoIconUrl on portfolio holdings (server enrich may omit logos). */
+export async function enrichPortfolioHoldingsLogos(holdings) {
+  if (!Array.isArray(holdings) || !holdings.length) return holdings;
+  if (!holdingsNeedLogoResolve(holdings)) return holdings;
+
+  const keys = [
+    ...new Set(holdings.map((h) => String(h?.ticker ?? '').trim()).filter(Boolean)),
+  ];
+  if (!keys.length) return holdings;
+
+  try {
+    const batch = await lookupMarketAssetsBatch(keys);
+    return holdings.map((holding) => {
+      const ticker = String(holding?.ticker ?? '').trim();
+      if (!ticker) return holding;
+      const item =
+        batch.get(ticker) ??
+        batch.get(ticker.toUpperCase()) ??
+        batch.get(String(holding?.symbol ?? '').trim());
+      const logoIconUrl =
+        holding.logoIconUrl ??
+        holding.logo_icon_url ??
+        item?.logoIconUrl ??
+        null;
+      if (!logoIconUrl || holding.logoIconUrl === logoIconUrl) return holding;
+      return { ...holding, logoIconUrl };
+    });
+  } catch (err) {
+    console.warn('portfolio holdings logo enrich failed', err);
+    return holdings;
+  }
+}
+
 function scoreEntry(entry, needle) {
   const key = entry.key.toLowerCase();
   const name = entry.name.toLowerCase();

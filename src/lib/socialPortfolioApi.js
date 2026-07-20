@@ -7,6 +7,7 @@ import {
   getUserPortfolio,
   getUserPortfolios,
 } from '../data/mockData';
+import { enrichPortfolioHoldingsLogos } from './portfolioAssetUniverse';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { skipAuthForDev } from './sessionStore';
 import { isBackendPortfolioId } from './portfolioEngagementApi';
@@ -73,6 +74,13 @@ function mapRpcRow(row) {
   return enriched;
 }
 
+async function enrichPortfolioRowLogos(portfolio) {
+  if (!portfolio?.holdings?.length) return portfolio;
+  const holdings = await enrichPortfolioHoldingsLogos(portfolio.holdings);
+  if (holdings === portfolio.holdings) return portfolio;
+  return enrichUserPortfolio({ ...portfolio, holdings });
+}
+
 function mapTableRow(row) {
   return mapRpcRow(row);
 }
@@ -109,7 +117,9 @@ export async function fetchUserPortfolios(ownerId) {
 
     if (error) throw error;
     const rows = Array.isArray(data) ? data : [];
-    return [...drafts, ...rows.map(mapRpcRow)];
+    const mapped = rows.map(mapRpcRow);
+    const withLogos = await Promise.all(mapped.map((p) => enrichPortfolioRowLogos(p)));
+    return [...drafts, ...withLogos];
   });
 }
 
@@ -129,7 +139,8 @@ export async function fetchUserPortfolio(ownerId, portfolioId) {
   });
 
   if (error) throw error;
-  return data ? mapRpcRow(data) : null;
+  const portfolio = data ? mapRpcRow(data) : null;
+  return portfolio ? enrichPortfolioRowLogos(portfolio) : null;
 }
 
 /** Drafts live in the browser only — never written to Supabase until published. */

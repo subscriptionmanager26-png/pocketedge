@@ -13,7 +13,7 @@ import {
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
 import { lookupMarketAssetsBatch } from '../lib/marketDataApi';
 import {
   PORTFOLIO_POLL_INTERVAL_MS,
@@ -163,9 +163,9 @@ export default function PortfolioPage({
       return undefined;
     }
 
-    // Paint immediately from server-enriched holdings, then refresh only if gaps remain.
+    // Paint immediately from server-enriched holdings, then refresh gaps (quotes and/or logos).
     setAssetsByKey(assetsFromHoldings(activeList?.holdings));
-    if (!holdingsNeedLiveResolve(activeList?.holdings)) return undefined;
+    if (!holdingsNeedClientResolve(activeList?.holdings)) return undefined;
 
     resolvePortfolioAssets(holdingKeys).then((resolved) => {
       if (cancelled) return;

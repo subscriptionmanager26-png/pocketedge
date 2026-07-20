@@ -178,7 +178,7 @@ function previewItemKey(row, assetType) {
   return row.symbol ?? row.id ?? row.asset_key ?? row.assetKey;
 }
 
-async function enrichPreviewItemsWithLogos(items, assetType) {
+async function enrichMarketItemsWithLogos(items, assetType) {
   if (!assetType || !useMarketLogoLookup() || !Array.isArray(items) || !items.length) {
     return items;
   }
@@ -274,7 +274,7 @@ export async function fetchMarketPreview(tab) {
   const file = TAB_PREVIEW[tab] ?? TAB_FULL[tab];
   if (!file) throw new Error(`Unknown market tab: ${tab}`);
   const payload = await fetchJson(file);
-  const items = await enrichPreviewItemsWithLogos(payload.items ?? [], assetType);
+  const items = await enrichMarketItemsWithLogos(payload.items ?? [], assetType);
   return {
     syncedAt: payload.syncedAt ?? null,
     items,
@@ -328,7 +328,7 @@ async function searchMarketTabLocal(tab, query, limit) {
 
 async function searchMarketTabRpc(tab, query, limit) {
   const assetType = tabToAssetType(tab);
-  if (!assetType || !useMarketRpc()) return null;
+  if (!assetType || !useMarketLogoLookup()) return null;
 
   const { data, error } = await supabase.rpc('search_social_market_assets', {
     p_query: query,
@@ -350,26 +350,41 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
     return { items: [], total: 0 };
   }
 
+  const assetType = tabToAssetType(tab);
+
   // Tabs without a mapped asset type stay on static JSON.
-  if (!tabToAssetType(tab)) {
+  if (!assetType) {
     return searchMarketTabLocal(tab, q, limit);
   }
 
-  if (useMarketRpc()) {
+  if (useMarketLogoLookup()) {
     const cacheKey = `${tab}|${q.toLowerCase()}|${limit}`;
     return cachedFetch('market-search', cacheKey, MARKET_SEARCH_TTL_MS, async () => {
       try {
         const rpcResult = await searchMarketTabRpc(tab, q, limit);
-        if (rpcResult) return rpcResult;
+        if (rpcResult) {
+          return {
+            ...rpcResult,
+            items: await enrichMarketItemsWithLogos(rpcResult.items ?? [], assetType),
+          };
+        }
       } catch (err) {
         console.warn('search_social_market_assets failed', err);
       }
-      // Soft-fail: never pull multi-MB mutual-funds/stocks search JSON on RPC miss.
-      return { items: [], total: 0 };
+
+      const local = await searchMarketTabLocal(tab, q, limit);
+      return {
+        ...local,
+        items: await enrichMarketItemsWithLogos(local.items ?? [], assetType),
+      };
     });
   }
 
-  return searchMarketTabLocal(tab, q, limit);
+  const local = await searchMarketTabLocal(tab, q, limit);
+  return {
+    ...local,
+    items: await enrichMarketItemsWithLogos(local.items ?? [], assetType),
+  };
 }
 
 export async function searchAllMarkets(query, limitPerTab = 12) {
@@ -399,7 +414,7 @@ export function findCachedMarketItem(tab, id) {
 }
 
 async function lookupMarketAssetRpc(key) {
-  if (!useMarketRpc()) return null;
+  if (!useMarketLogoLookup()) return null;
   const { data, error } = await supabase.rpc('lookup_social_market_asset', {
     p_key: key,
   });
