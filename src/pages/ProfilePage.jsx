@@ -571,6 +571,11 @@ function PortfolioDetailView({
     [portfolio.id, socialTick]
   );
 
+  const portfolioTotalReturn = useMemo(
+    () => getPortfolioTotalReturnPct(portfolio),
+    [portfolio]
+  );
+
   useEffect(() => {
     if (editing) return;
     setName(portfolio.name);
@@ -1103,15 +1108,29 @@ function PortfolioDetailView({
       </PageHeader>
 
       <div className="border-b border-pe-border px-4 py-5">
-        <div className="flex flex-col items-stretch gap-4">
-          {!editing ? (
-            <PortfolioKindMetaTags portfolio={portfolio} />
-          ) : (
+        {!editing ? (
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-bold text-pe-text">{portfolio.name}</h2>
+                <PortfolioKindMetaTags portfolio={portfolio} />
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Total return
+              </p>
+              <p
+                className={`mt-0.5 text-lg font-bold tabular-nums ${pnlClass(portfolioTotalReturn)}`}
+              >
+                {formatPct(portfolioTotalReturn)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-stretch gap-4">
             <PortfolioKindToggle value={portfolioKind} onChange={handleKindChange} />
-          )}
-
-          <div className="min-w-0 w-full flex-1">
-            {editing ? (
+            <div className="min-w-0 w-full flex-1">
               <div className="space-y-4">
                 <Field label="Portfolio name">
                   <input
@@ -1122,27 +1141,10 @@ function PortfolioDetailView({
                   />
                 </Field>
               </div>
-            ) : (
-              <>
-                <h2 className="text-2xl font-bold text-pe-text">{portfolio.name}</h2>
-              </>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
-
-      {!editing ? (
-        <PortfolioSocialBar
-          portfolio={portfolio}
-          social={social}
-          canCopy={canCopy}
-          ownerUserId={userId}
-          showUnreadComments={canEdit}
-          onOpenDiscussion={() => {
-            document.getElementById('portfolio-discussion')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
-      ) : null}
 
       {editing ? (
         <div className="px-4 py-5">
@@ -1398,6 +1400,19 @@ function PortfolioDetailView({
       )}
 
       {!editing ? (
+        <PortfolioSocialBar
+          portfolio={portfolio}
+          social={social}
+          canCopy={canCopy}
+          ownerUserId={userId}
+          showUnreadComments={canEdit}
+          onOpenDiscussion={() => {
+            document.getElementById('portfolio-discussion')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+      ) : null}
+
+      {!editing ? (
         <PortfolioDiscussion
           portfolioId={portfolio.id}
           comments={social.comments ?? []}
@@ -1508,7 +1523,7 @@ function PortfolioSocialBar({
   };
 
   return (
-    <div className="border-b border-pe-border px-4 py-4">
+    <div className="border-t border-pe-border px-4 py-4">
       <div className="flex flex-wrap items-center gap-5 text-pe-text-secondary">
         <button
           type="button"
@@ -1638,7 +1653,6 @@ function PortfolioHoldingsList({ portfolio }) {
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
   const [assetsLoading, setAssetsLoading] = useState(false);
-  const portfolioTotalReturn = useMemo(() => getPortfolioTotalReturnPct(portfolio), [portfolio]);
 
   const holdingKeys = useMemo(() => {
     const keys = [];
@@ -1799,21 +1813,7 @@ function PortfolioHoldingsList({ portfolio }) {
 
   return (
     <div>
-      <section className="border-b border-pe-border px-4 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-[15px] font-semibold text-pe-text">Overall</p>
-          <div className="shrink-0 text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-              {periodLabel} return
-            </p>
-            <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(portfolioTotalReturn)}`}>
-              {formatPct(portfolioTotalReturn)}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4">
+      <section className="px-4 pt-4">
         <div className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-end gap-2 border-b border-pe-border py-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
             Holdings & allocations
