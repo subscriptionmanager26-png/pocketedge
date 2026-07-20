@@ -19,6 +19,16 @@ export const LOGO_VARIANT_DETAIL = 'icon-256.png';
 
 const ICON_FILE_RE = /\/icon-(?:64|128|256)\.png$/i;
 
+/** Bump when logo paths/variants change — busts poisoned browser 404 disk cache. */
+export const LOGO_ASSET_CACHE_VERSION = '3';
+
+function withLogoCacheBust(path) {
+  const raw = typeof path === 'string' ? path.trim() : '';
+  if (!raw.startsWith('/asset-logos/')) return raw || null;
+  const base = raw.split('?')[0];
+  return `${base}?v=${LOGO_ASSET_CACHE_VERSION}`;
+}
+
 /**
  * Storage object keys sanitize some characters (e.g. M&M → M_M).
  */
@@ -51,10 +61,10 @@ export function withLogoVariant(url, variant = LOGO_VARIANT_LIST) {
 export function toCachedAssetLogoPath(url) {
   const raw = typeof url === 'string' ? url.trim() : '';
   if (!raw) return null;
-  if (raw.startsWith('/asset-logos/')) return raw;
+  if (raw.startsWith('/asset-logos/')) return withLogoCacheBust(raw);
   // Legacy proxy path from the first deploy attempt.
   if (raw.startsWith('/api/asset-logos/')) {
-    return `/asset-logos/${raw.slice('/api/asset-logos/'.length)}`;
+    return withLogoCacheBust(`/asset-logos/${raw.slice('/api/asset-logos/'.length)}`);
   }
 
   try {
@@ -63,7 +73,9 @@ export function toCachedAssetLogoPath(url) {
       : new URL(raw, FALLBACK_SUPABASE_URL);
     const idx = absolute.pathname.indexOf(OBJECT_MARKER);
     if (idx >= 0) {
-      return `/asset-logos/${absolute.pathname.slice(idx + OBJECT_MARKER.length)}`;
+      return withLogoCacheBust(
+        `/asset-logos/${absolute.pathname.slice(idx + OBJECT_MARKER.length)}`
+      );
     }
   } catch {
     /* keep absolute below */

@@ -43,11 +43,13 @@ export default function AssetLogo({
     variant: sizeMeta.variant,
   });
   const imgRef = useRef(null);
+  const [imgSrc, setImgSrc] = useState(src);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(() => Boolean(src && loadedLogoSrcCache.has(src)));
   const initial = assetLogoInitial(assetKey || name);
 
   useEffect(() => {
+    setImgSrc(src);
     if (!src) {
       setFailed(false);
       setLoaded(false);
@@ -64,14 +66,14 @@ export default function AssetLogo({
 
   // Preload/cache can finish before React attaches onLoad — pick that up here.
   useLayoutEffect(() => {
-    if (!src) return;
+    if (!imgSrc) return;
     const img = imgRef.current;
     if (logoAlreadyLoaded(img)) {
-      markLogoSrcLoaded(src);
+      markLogoSrcLoaded(imgSrc);
       setFailed(false);
       setLoaded(true);
     }
-  }, [src]);
+  }, [imgSrc]);
 
   const showMonogram = !src || failed || !loaded;
 
@@ -81,10 +83,10 @@ export default function AssetLogo({
       aria-hidden="true"
     >
       {showMonogram ? <span className="absolute inset-0 flex items-center justify-center">{initial}</span> : null}
-      {src ? (
+      {imgSrc ? (
         <img
           ref={imgRef}
-          src={src}
+          src={imgSrc}
           alt=""
           width={sizeMeta.px}
           height={sizeMeta.px}
@@ -95,14 +97,22 @@ export default function AssetLogo({
             loaded && !failed ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={(event) => {
-            if (src && logoAlreadyLoaded(event.currentTarget)) {
-              markLogoSrcLoaded(src);
+            if (imgSrc && logoAlreadyLoaded(event.currentTarget)) {
+              markLogoSrcLoaded(imgSrc);
             }
             setFailed(false);
             setLoaded(true);
           }}
           onError={() => {
-            if (src) markLogoSrcFailed(src);
+            // Retry once without the browser's poisoned 404 disk-cache entry.
+            if (imgSrc && !/[?&]cb=/.test(imgSrc)) {
+              const base = imgSrc.split('?')[0];
+              setImgSrc(`${base}?cb=1`);
+              setFailed(false);
+              setLoaded(false);
+              return;
+            }
+            if (imgSrc) markLogoSrcFailed(imgSrc);
             setFailed(true);
             setLoaded(false);
           }}
