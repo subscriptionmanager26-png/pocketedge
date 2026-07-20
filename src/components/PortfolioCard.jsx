@@ -3,13 +3,12 @@ import { ClipboardCheck, Copy, Heart, Share2 } from 'lucide-react';
 import { CURRENT_USER, copyPortfolioForUser, getHandleForUserId, getHoldingTotalReturnPct } from '../data/mockData';
 import { formatCount, formatPct, pnlClass } from '../lib/format';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
-import { profilePath } from '../lib/routes';
 import AssetLogo from './AssetLogo';
 import CommentEngagementButton from './CommentEngagementButton';
+import PortfolioShareSheet from './PortfolioShareSheet';
 import { PortfolioKindMetaTags } from './PortfolioMetaTag';
 import {
   confirmPortfolioCopy,
-  recordPortfolioShare,
   togglePortfolioCopy,
   togglePortfolioLike,
 } from '../lib/portfolioEngagementApi';
@@ -75,6 +74,7 @@ export default function PortfolioCard({
   const [likes, setLikes] = useState(social?.likes ?? 0);
   const [copies, setCopies] = useState(social?.copies ?? 0);
   const [shares, setShares] = useState(social?.shares ?? 0);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     setLiked(social?.liked ?? false);
@@ -113,25 +113,9 @@ export default function PortfolioCard({
     }
   };
 
-  const handleShare = async (event) => {
+  const handleShare = (event) => {
     event.stopPropagation();
-    const ownerHandle = getHandleForUserId(sourceOwnerId ?? CURRENT_USER.id);
-    const url = `${window.location.origin}${profilePath(ownerHandle, { portfolioId: portfolio.id })}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: portfolio.name,
-          text: portfolio.objective || 'Portfolio on PocketEdge',
-          url,
-        });
-      } else {
-        await navigator.clipboard.writeText(url);
-      }
-      const next = await recordPortfolioShare(portfolio.id);
-      setShares(next.shares);
-    } catch {
-      /* user cancelled share sheet */
-    }
+    setShareOpen(true);
   };
 
   const handleDiscuss = (event) => {
@@ -249,6 +233,14 @@ export default function PortfolioCard({
           </span>
         )}
       </div>
+
+      <PortfolioShareSheet
+        open={shareOpen}
+        portfolio={portfolio}
+        ownerHandle={getHandleForUserId(sourceOwnerId ?? CURRENT_USER.id)}
+        onClose={() => setShareOpen(false)}
+        onSharesUpdated={setShares}
+      />
     </article>
   );
 }

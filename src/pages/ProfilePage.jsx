@@ -42,6 +42,7 @@ import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/f
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve } from '../lib/portfolioAssetUniverse';
 import AssetLogo from '../components/AssetLogo';
 import PortfolioCard from '../components/PortfolioCard';
+import PortfolioShareSheet from '../components/PortfolioShareSheet';
 import {
   PortfoliosListSkeleton,
   PortfolioHoldingsSkeleton,
@@ -54,7 +55,6 @@ import {
   addPortfolioComment,
   getPortfolioEngagementSync,
   markPortfolioCommentsRead,
-  recordPortfolioShare,
   subscribePortfolioEngagement,
   togglePortfolioCopy,
   togglePortfolioLike,
@@ -79,7 +79,6 @@ import {
   PortfolioKindMetaTags,
   PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
-import { profilePath } from '../lib/routes';
 
 const PROFILE_TABS = [
   { id: 'posts', label: 'Posts' },
@@ -1500,6 +1499,7 @@ function PortfolioSocialBar({
   const [likes, setLikes] = useState(social.likes);
   const [copies, setCopies] = useState(social.copies);
   const [shares, setShares] = useState(social.shares);
+  const [shareOpen, setShareOpen] = useState(false);
   const commentCount = social.comments?.length ?? 0;
 
   const handleLike = () => {
@@ -1515,24 +1515,8 @@ function PortfolioSocialBar({
     setCopies(next.copies);
   };
 
-  const handleShare = async () => {
-    const ownerHandle = getHandleForUserIdSync(ownerUserId);
-    const url = `${window.location.origin}${profilePath(ownerHandle, { portfolioId: portfolio.id })}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: portfolio.name,
-          text: portfolio.thesis || portfolio.objective || 'Portfolio on PocketEdge',
-          url,
-        });
-      } else {
-        await navigator.clipboard.writeText(url);
-      }
-      const next = await recordPortfolioShare(portfolio.id);
-      setShares(next.shares);
-    } catch {
-      /* cancelled */
-    }
+  const handleShare = () => {
+    setShareOpen(true);
   };
 
   return (
@@ -1585,6 +1569,14 @@ function PortfolioSocialBar({
           </span>
         )}
       </div>
+
+      <PortfolioShareSheet
+        open={shareOpen}
+        portfolio={portfolio}
+        ownerHandle={getHandleForUserIdSync(ownerUserId)}
+        onClose={() => setShareOpen(false)}
+        onSharesUpdated={setShares}
+      />
     </div>
   );
 }

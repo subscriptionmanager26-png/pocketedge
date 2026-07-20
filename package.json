@@ -11,11 +11,14 @@
     "sync:indian-markets": "node scripts/sync-indian-markets.mjs",
     "sync:social-market-assets": "node --env-file=.env scripts/sync-social-market-assets.mjs",
     "refresh:social-market-prices": "node --env-file=.env scripts/refresh-social-market-prices.mjs",
-    "generate:daily-stock-explanations": "node --env-file=.env scripts/generate-daily-stock-explanations.mjs"
+    "generate:daily-stock-explanations": "node --env-file=.env scripts/generate-daily-stock-explanations.mjs",
+    "render:daily-brief-pdf": "node --env-file=.env scripts/render-daily-brief-pdf.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.10.1",
     "@supabase/supabase-js": "^2.110.1",
+    "@vercel/og": "^0.11.1",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.469.0",
     "posthog-js": "^1.386.6",
     "react": "^18.3.1",
@@ -31,6 +34,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
+    "puppeteer-core": "^24.43.1",
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.3"
   }

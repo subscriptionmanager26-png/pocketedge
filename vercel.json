@@ -147,6 +147,10 @@
       "source": "/asset-logos/:path*",
       "destination": "https://zweqxjeuwwfrlpbuuayg.supabase.co/storage/v1/object/public/asset-logos/:path*"
     },
+    {
+      "source": "/share/portfolio/:id",
+      "destination": "/api/share/portfolio/:id"
+    },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!api/|asset-logos/).*)", "destination": "/index.html" }
   ]
