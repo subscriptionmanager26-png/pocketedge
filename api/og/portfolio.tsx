@@ -3,11 +3,23 @@ import {
   buildSnapshotFromPortfolio,
   fetchPublicPortfolioShareData,
   formatPct,
+  ownerPossessiveLabel,
 } from '../_lib/portfolioShareServer.js';
 
 export const config = {
   runtime: 'edge',
 };
+
+const BUBBLE_COLORS = ['#1e4635', '#499d6d', '#addba5', '#d6eed0', '#fae5d3'];
+const BUBBLE_TEXT = ['#ffffff', '#ffffff', '#1f2937', '#1f2937', '#1f2937'];
+const BUBBLE_SIZES = [150, 130, 116, 104, 84];
+const BUBBLE_POS = [
+  { top: 120, left: 280 },
+  { top: 40, left: 480 },
+  { top: 70, left: 80 },
+  { top: 210, left: 140 },
+  { top: 220, left: 400 },
+];
 
 export default async function handler(request) {
   const { searchParams } = new URL(request.url);
@@ -24,9 +36,11 @@ export default async function handler(request) {
   }
 
   const snapshot = buildSnapshotFromPortfolio(payload.portfolio, { sort });
-  const handle = payload.ownerHandle ? `@${payload.ownerHandle}` : null;
+  const ownerLine = ownerPossessiveLabel(payload.ownerHandle);
   const returnColor =
-    snapshot.returnPct > 0 ? '#059669' : snapshot.returnPct < 0 ? '#dc2626' : '#374151';
+    snapshot.returnPct > 0 ? '#10b981' : snapshot.returnPct < 0 ? '#dc2626' : '#6b7280';
+  const performers = snapshot.topPerformers ?? [];
+  const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 10);
 
   return new ImageResponse(
     (
@@ -37,47 +51,111 @@ export default async function handler(request) {
           display: 'flex',
           flexDirection: 'column',
           background: '#ffffff',
-          padding: 48,
+          padding: '28px 32px 24px',
           fontFamily: 'system-ui, sans-serif',
           color: '#111827',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '70%' }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#6b7280', letterSpacing: 2 }}>
-              POCKETEDGE
-            </div>
-            <div style={{ fontSize: 44, fontWeight: 700, marginTop: 12 }}>{snapshot.name}</div>
-            {handle ? (
-              <div style={{ fontSize: 28, color: '#6b7280', marginTop: 8 }}>{handle}</div>
-            ) : null}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', fontSize: 22, fontWeight: 700 }}>
+            PocketEdge
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#6b7280' }}>TOTAL RETURN</div>
-            <div style={{ fontSize: 40, fontWeight: 700, color: returnColor, marginTop: 8 }}>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#6b7280',
+              letterSpacing: 2,
+            }}
+          >
+            PORTFOLIO SNAPSHOT
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.1 }}>{ownerLine}</div>
+            <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: '#1e4635' }}>
+              Portfolio
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              border: '1px solid #f3f4f6',
+              borderRadius: 16,
+              padding: 18,
+              minWidth: 160,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#9ca3af',
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+              }}
+            >
+              Total Return
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: returnColor, marginTop: 4 }}>
               {formatPct(snapshot.returnPct)}
             </div>
+            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>All time</div>
           </div>
         </div>
 
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#6b7280', marginTop: 36 }}>
-          TOP {snapshot.topHoldings.length} HOLDINGS
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 20, gap: 14, flex: 1 }}>
-          {snapshot.topHoldings.map((row) => {
-            const rowColor =
-              row.totalReturnPct > 0 ? '#059669' : row.totalReturnPct < 0 ? '#dc2626' : '#374151';
+        <div
+          style={{
+            display: 'flex',
+            position: 'relative',
+            width: '100%',
+            height: 300,
+            marginBottom: 12,
+          }}
+        >
+          {performers.map((row, index) => {
+            const size = BUBBLE_SIZES[index] ?? 84;
+            const pos = BUBBLE_POS[index] ?? BUBBLE_POS[4];
             return (
               <div
                 key={row.ticker}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                style={{
+                  position: 'absolute',
+                  top: pos.top,
+                  left: pos.left,
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  background: BUBBLE_COLORS[index] ?? '#fae5d3',
+                  color: BUBBLE_TEXT[index] ?? '#1f2937',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: size >= 130 ? 14 : 11,
+                  fontWeight: 600,
+                }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '72%' }}>
-                  <div style={{ fontSize: 28, fontWeight: 600 }}>{row.label}</div>
-                  <div style={{ fontSize: 22, color: '#6b7280' }}>{row.weight.toFixed(1)}% allocation</div>
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 700, color: rowColor }}>
+                <div style={{ display: 'flex' }}>{String(row.label).slice(0, 10)}</div>
+                <div style={{ display: 'flex', fontWeight: 700, fontSize: size >= 130 ? 16 : 12 }}>
                   {formatPct(row.totalReturnPct)}
                 </div>
               </div>
@@ -87,22 +165,88 @@ export default async function handler(request) {
 
         <div
           style={{
-            marginTop: 'auto',
-            paddingTop: 24,
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: 3,
-            textAlign: 'center',
-            color: '#9ca3af',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 40,
+            border: '1px solid #f3f4f6',
+            borderRadius: 16,
+            padding: 12,
+            marginBottom: 14,
           }}
         >
-          POCKETEDGE
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{snapshot.holdingsCount}</div>
+            <div style={{ fontSize: 13, color: '#6b7280' }}>Holdings</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{snapshot.sectorsCount ?? 1}</div>
+            <div style={{ fontSize: 13, color: '#6b7280' }}>Sectors</div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: 10,
+            fontSize: 11,
+            color: '#9ca3af',
+            fontWeight: 600,
+            letterSpacing: 1,
+          }}
+        >
+          <div style={{ display: 'flex' }}>TOP HOLDINGS (BY ALLOCATION)</div>
+          <div style={{ display: 'flex' }}>
+            Showing {allocation.length} of {snapshot.holdingsCount}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          {allocation.map((row) => (
+            <div
+              key={row.ticker}
+              style={{
+                width: 138,
+                border: '1px solid #f3f4f6',
+                borderRadius: 12,
+                padding: 10,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ fontSize: 11, color: '#4b5563' }}>{String(row.label).slice(0, 12)}</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{Number(row.weight).toFixed(1)}%</div>
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            marginTop: 'auto',
+            background: '#f6f9f7',
+            borderRadius: 16,
+            padding: 14,
+            justifyContent: 'center',
+            fontSize: 14,
+            color: '#374151',
+          }}
+        >
+          Stay Updated On Your Portfolio with PocketEdge at www.pocketedge.in
         </div>
       </div>
     ),
     {
-      width: 1080,
-      height: 1200,
+      width: 800,
+      height: 1120,
     }
   );
 }

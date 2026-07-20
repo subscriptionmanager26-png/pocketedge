@@ -30,18 +30,29 @@ async function prefetchLogoDataUrl(url) {
 }
 
 async function enrichSnapshotLogos(snapshot) {
-  const topHoldings = snapshot?.topHoldings ?? [];
-  if (!topHoldings.length) return snapshot;
+  if (!snapshot) return snapshot;
 
-  const enriched = await Promise.all(
-    topHoldings.map(async (row) => {
-      if (!row.logoIconUrl) return row;
-      const dataUrl = await prefetchLogoDataUrl(row.logoIconUrl);
-      return dataUrl ? { ...row, logoIconUrl: dataUrl } : row;
-    })
-  );
+  const enrichList = async (rows = []) =>
+    Promise.all(
+      rows.map(async (row) => {
+        if (!row?.logoIconUrl) return row;
+        const dataUrl = await prefetchLogoDataUrl(row.logoIconUrl);
+        return dataUrl ? { ...row, logoIconUrl: dataUrl } : row;
+      })
+    );
 
-  return { ...snapshot, topHoldings: enriched };
+  const [topHoldings, topByAllocation, topPerformers] = await Promise.all([
+    enrichList(snapshot.topHoldings),
+    enrichList(snapshot.topByAllocation),
+    enrichList(snapshot.topPerformers),
+  ]);
+
+  return {
+    ...snapshot,
+    topHoldings,
+    topByAllocation,
+    topPerformers,
+  };
 }
 
 async function resolveAssetsForPortfolio(portfolio) {
@@ -73,7 +84,7 @@ async function waitForShareCard(host, timeoutMs = 3000) {
   throw new Error('Share card element missing');
 }
 
-function mountShareCard(snapshot, ownerHandle, shareUrl) {
+function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   const host = document.createElement('div');
   host.setAttribute('aria-hidden', 'true');
   host.style.position = 'fixed';
@@ -86,7 +97,11 @@ function mountShareCard(snapshot, ownerHandle, shareUrl) {
   const root = createRoot(host);
   flushSync(() => {
     root.render(
-      <PortfolioShareCard snapshot={snapshot} ownerHandle={ownerHandle} />
+      <PortfolioShareCard
+        snapshot={snapshot}
+        ownerHandle={ownerHandle}
+        brandLogoUrl={brandLogoUrl}
+      />
     );
   });
 
@@ -205,8 +220,12 @@ export async function sharePortfolio({
 
   snapshot = await enrichSnapshotLogos(snapshot);
   const caption = portfolioShareCaption(snapshot, shareUrl);
+  const brandLogoUrl =
+    (await prefetchLogoDataUrl(`${window.location.origin}/Pocketedge_logo.png`)) ||
+    (await prefetchLogoDataUrl(`${window.location.origin}/logo.png`)) ||
+    '/Pocketedge_logo.png';
 
-  const mounted = mountShareCard(snapshot, ownerHandle, shareUrl);
+  const mounted = mountShareCard(snapshot, ownerHandle, brandLogoUrl);
   let method = 'fallback';
 
   try {

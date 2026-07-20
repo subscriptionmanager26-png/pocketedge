@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const TOP = 10;
+const TOP_PERFORMERS = 5;
 
 export function getSupabaseAdmin() {
   const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -28,6 +29,10 @@ function holdingReturnPct(h) {
   return 0;
 }
 
+function holdingSectorKey(h) {
+  return String(h?.sector || h?.category || h?.assetType || 'Other').trim() || 'Other';
+}
+
 export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = {}) {
   const holdings = (portfolio.holdings ?? []).filter((h) => h?.ticker);
   const totalValue = holdings.reduce((sum, h) => {
@@ -36,17 +41,19 @@ export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = 
     return sum + (Number(h?.value) || qty * price);
   }, 0);
 
-  let rows = holdings.map((h) => ({
+  const rows = holdings.map((h) => ({
     ticker: h.ticker,
     label: h.assetName || h.ticker,
+    logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? null,
     weight: Number(holdingWeight(h, totalValue).toFixed(1)),
     totalReturnPct: holdingReturnPct(h),
+    sector: holdingSectorKey(h),
   }));
 
-  rows =
-    sort === 'performance'
-      ? rows.sort((a, b) => b.totalReturnPct - a.totalReturnPct)
-      : rows.sort((a, b) => b.weight - a.weight);
+  const byAllocation = [...rows].sort((a, b) => b.weight - a.weight);
+  const byPerformance = [...rows].sort((a, b) => b.totalReturnPct - a.totalReturnPct);
+  const topHoldings =
+    sort === 'performance' ? byPerformance.slice(0, TOP) : byAllocation.slice(0, TOP);
 
   const returnPct = Number(portfolio.total_return_pct ?? portfolio.totalReturnPct ?? 0) || 0;
 
@@ -55,7 +62,10 @@ export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = 
     name: portfolio.name ?? 'Portfolio',
     returnPct,
     holdingsCount: rows.length,
-    topHoldings: rows.slice(0, TOP),
+    sectorsCount: new Set(rows.map((r) => r.sector)).size,
+    topHoldings,
+    topByAllocation: byAllocation.slice(0, TOP),
+    topPerformers: byPerformance.slice(0, TOP_PERFORMERS),
     sort,
   };
 }
@@ -135,5 +145,14 @@ export function formatPct(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '—';
   const sign = n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${n.toFixed(2)}%`;
+}
+
+export function ownerPossessiveLabel(handle) {
+  const raw = String(handle ?? '')
+    .replace(/^@/, '')
+    .trim();
+  if (!raw) return 'My';
+  const label = raw.charAt(0).toUpperCase() + raw.slice(1);
+  return /s$/i.test(label) ? `${label}'` : `${label}'s`;
 }
