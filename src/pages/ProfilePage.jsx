@@ -76,7 +76,6 @@ import { parseZerodhaHoldingsScreenshots } from './onboarding/onboardingHoldings
 import { parseZerodhaHoldingsWorkbook } from './onboarding/zerodhaHoldingsWorkbook';
 import {
   PortfolioKindMetaTags,
-  PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
 
 const PROFILE_TABS = [
@@ -879,8 +878,8 @@ function PortfolioDetailView({
     try {
       const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
         name: name.trim(),
-        objective: objective.trim(),
-        thesis: thesis.trim(),
+        objective: '',
+        thesis: '',
         kind: portfolioKind,
         isDraft: false,
         tickers: holdings.map((h) => h.ticker),
@@ -1126,16 +1125,6 @@ function PortfolioDetailView({
             ) : (
               <>
                 <h2 className="text-2xl font-bold text-pe-text">{portfolio.name}</h2>
-                {portfolio.objective ? (
-                  <p className="mt-2 text-sm text-pe-text-secondary">{portfolio.objective}</p>
-                ) : null}
-                {portfolio.thesis ? (
-                  <p className="mt-2 text-sm leading-6 text-pe-ink">{portfolio.thesis}</p>
-                ) : null}
-                <PortfolioSourceAttribution
-                  portfolio={portfolio}
-                  onSeeOriginal={onOpenSourcePortfolio}
-                />
               </>
             )}
           </div>
@@ -1811,10 +1800,7 @@ function PortfolioHoldingsList({ portfolio }) {
   return (
     <div>
       <section className="border-b border-pe-border px-4 py-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-          Returns
-        </p>
-        <div className="mt-3 flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <p className="text-[15px] font-semibold text-pe-text">Overall</p>
           <div className="shrink-0 text-right">
             <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">

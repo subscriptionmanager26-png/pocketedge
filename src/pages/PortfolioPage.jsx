@@ -32,7 +32,6 @@ import { skipAuthForDev } from '../lib/sessionStore';
 import { fetchPortfolioFormByTicker, FORM_META } from '../lib/portfolioForm';
 import {
   PortfolioKindMetaTags,
-  PortfolioSourceAttribution,
 } from '../components/PortfolioMetaTag';
 
 function useBackend() {
@@ -531,10 +530,6 @@ export default function PortfolioPage({
       <section className="border-b border-pe-border px-4 py-5">
         {metrics?.kind === 'portfolio' ? (
           <>
-            <PortfolioSourceAttribution
-              portfolio={activeList}
-              onSeeOriginal={onOpenSourcePortfolio}
-            />
             <div className="grid grid-cols-2 gap-x-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

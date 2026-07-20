@@ -132,9 +132,6 @@ export default function PortfolioCard({
               <h3 className="text-xl font-bold text-pe-text">{portfolio.name}</h3>
               <PortfolioKindMetaTags portfolio={portfolio} />
             </div>
-            {portfolio.objective ? (
-              <p className="mt-1 text-sm text-pe-text-secondary">{portfolio.objective}</p>
-            ) : null}
           </div>
           <div className="shrink-0 text-right">
             <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">

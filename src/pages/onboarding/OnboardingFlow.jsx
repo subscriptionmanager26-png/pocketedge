@@ -66,8 +66,8 @@ export default function OnboardingFlow({ userId, onComplete }) {
         kind: 'live',
         isDraft: false,
         name: 'My portfolio',
-        objective: 'Built during onboarding',
-        thesis: 'Form checked against the daily NSE 50/200 DMA momentum screen.',
+        objective: '',
+        thesis: '',
         holdings: built,
         tickers: built.map((h) => h.ticker),
       });
