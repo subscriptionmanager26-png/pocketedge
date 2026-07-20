@@ -105,7 +105,7 @@ export default function MarketsPage({
                 changePct={stock.changePct}
                 previousClose={stock.previousClose}
                 change={stock.change}
-                onClick={() => onSelectStock?.(stock.id ?? stock.symbol)}
+                onClick={() => onSelectStock?.(stock.id ?? stock.symbol, { seed: stock })}
               />
             ))}
           </MarketList>
@@ -126,7 +126,7 @@ export default function MarketsPage({
                 changePct={fund.changePct}
                 previousClose={fund.previousClose}
                 change={fund.change}
-                onClick={() => onSelectFund?.(fund.schemeCode)}
+                onClick={() => onSelectFund?.(fund.schemeCode, fund)}
               />
             ))}
           </MarketList>
@@ -146,7 +146,7 @@ export default function MarketsPage({
                 changePct={etf.changePct}
                 previousClose={etf.previousClose}
                 change={etf.change}
-                onClick={() => onSelectStock?.(etf.id ?? etf.symbol, { kind: 'etf' })}
+                onClick={() => onSelectStock?.(etf.id ?? etf.symbol, { kind: 'etf', seed: etf })}
               />
             ))}
           </MarketList>
@@ -168,7 +168,7 @@ export default function MarketsPage({
                 changePct={index.changePct}
                 previousClose={index.previousClose}
                 change={index.change}
-                onClick={() => onSelectIndex?.(index.id)}
+                onClick={() => onSelectIndex?.(index.id, index)}
               />
             ))}
           </MarketList>
@@ -188,7 +188,7 @@ export default function MarketsPage({
                 changePct={item.changePct}
                 previousClose={item.previousClose}
                 change={item.change}
-                onClick={() => onSelectCommodity?.(item.id)}
+                onClick={() => onSelectCommodity?.(item.id, item)}
               />
             ))}
           </MarketList>

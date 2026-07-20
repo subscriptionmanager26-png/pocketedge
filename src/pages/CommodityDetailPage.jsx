@@ -9,7 +9,7 @@ import {
 } from '../components/InvestmentSections';
 import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
+import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 
 export default function CommodityDetailPage({
@@ -17,28 +17,59 @@ export default function CommodityDetailPage({
   onBack,
   onOpenProfile,
 }) {
-  const [commodity, setCommodity] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('insights');
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setCommodity({
+  const [commodity, setCommodity] = useState(() => {
+    const cached = findCachedMarketItem('commodity', commodityId);
+    if (cached) return cached;
+    return {
       id: commodityId,
       name: commodityId,
       symbol: commodityId,
       spotPrice: null,
       unit: null,
       location: null,
-    });
+    };
+  });
+  const [loading, setLoading] = useState(() => !findCachedMarketItem('commodity', commodityId));
+  const [tab, setTab] = useState('insights');
+
+  useEffect(() => {
+    let cancelled = false;
+    const cached = findCachedMarketItem('commodity', commodityId);
+    if (cached) {
+      setCommodity(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      setCommodity({
+        id: commodityId,
+        name: commodityId,
+        symbol: commodityId,
+        spotPrice: null,
+        unit: null,
+        location: null,
+      });
+    }
 
     (async () => {
-      const preview = await fetchMarketPreview('commodity');
-      let found = preview.items.find((item) => item.id === commodityId);
-      if (!found) found = await resolveMarketCommodity(commodityId);
+      const peek = peekMarketPreview('commodity');
+      const fromPeek = peek?.items?.find(
+        (item) => item.id === commodityId || item.symbol === commodityId
+      );
+      if (fromPeek && !cancelled) {
+        setCommodity(fromPeek);
+        setLoading(false);
+      }
+
+      const [preview, resolved] = await Promise.all([
+        fromPeek ? Promise.resolve({ items: [fromPeek] }) : fetchMarketPreview('commodity'),
+        resolveMarketCommodity(commodityId),
+      ]);
+      const found =
+        resolved ??
+        preview.items.find((item) => item.id === commodityId || item.symbol === commodityId) ??
+        null;
       if (!cancelled) {
-        setCommodity(found ?? null);
+        setCommodity(found);
         setLoading(false);
       }
     })().catch(() => {
@@ -70,6 +101,7 @@ export default function CommodityDetailPage({
   );
 
   useEffect(() => {
+    if (tab !== 'discussions') return undefined;
     let cancelled = false;
     if (isDevMockMode()) {
       setDiscussions(getCommodityDiscussions(commodityId, commodity?.name));
@@ -85,7 +117,7 @@ export default function CommodityDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [commodityId, commodity?.name]);
+  }, [commodityId, commodity?.name, tab]);
 
   if (!loading && !commodity) {
     return (

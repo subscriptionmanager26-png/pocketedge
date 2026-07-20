@@ -16,6 +16,7 @@ import {
 import { getFundDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getFundAssetType } from '../lib/assetTypes';
 import {
+  findCachedMarketItem,
   marketFundToDetail,
   resolveMarketFund,
 } from '../lib/marketDataApi';
@@ -29,8 +30,13 @@ export default function InvestmentPage({
   onOpenProfile,
 }) {
   const seedFund = getFund(fundId);
-  const [marketFund, setMarketFund] = useState(null);
-  const [marketLoading, setMarketLoading] = useState(true);
+  const [marketFund, setMarketFund] = useState(() => {
+    const cached = findCachedMarketItem('mutual_funds', fundId);
+    return cached ? marketFundToDetail(cached) : null;
+  });
+  const [marketLoading, setMarketLoading] = useState(
+    () => !seedFund && !findCachedMarketItem('mutual_funds', fundId)
+  );
   const fund =
     seedFund ??
     marketFund ??
@@ -44,20 +50,25 @@ export default function InvestmentPage({
 
   useEffect(() => {
     let cancelled = false;
-    setMarketLoading(true);
+    const cached = findCachedMarketItem('mutual_funds', fundId);
+    if (seedFund) {
+      setMarketLoading(false);
+      return undefined;
+    }
+    if (cached) {
+      setMarketFund(marketFundToDetail(cached));
+      setMarketLoading(false);
+    } else {
+      setMarketLoading(true);
+    }
 
-    (async () => {
-      try {
-        if (seedFund) {
-          if (!cancelled) setMarketLoading(false);
-          return;
-        }
-        const found = await resolveMarketFund(fundId);
+    resolveMarketFund(fundId)
+      .then((found) => {
         if (!cancelled) setMarketFund(found ? marketFundToDetail(found) : null);
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) setMarketLoading(false);
-      }
-    })();
+      });
 
     return () => {
       cancelled = true;
@@ -80,10 +91,11 @@ export default function InvestmentPage({
     isDevMockMode() ? getFundDiscussions(fundId) : []
   );
   const [holders, setHolders] = useState([]);
-  const [holdersLoading, setHoldersLoading] = useState(true);
+  const [holdersLoading, setHoldersLoading] = useState(false);
   const news = getFundNews(fundId);
 
   useEffect(() => {
+    if (tab !== 'holders') return undefined;
     let cancelled = false;
     setHoldersLoading(true);
     fetchAssetHolders(fundId, { kind: 'fund' })
@@ -99,9 +111,10 @@ export default function InvestmentPage({
     return () => {
       cancelled = true;
     };
-  }, [fundId]);
+  }, [fundId, tab]);
 
   useEffect(() => {
+    if (tab !== 'discussions') return undefined;
     let cancelled = false;
     if (isDevMockMode()) {
       setDiscussions(getFundDiscussions(fundId));
@@ -118,7 +131,7 @@ export default function InvestmentPage({
     return () => {
       cancelled = true;
     };
-  }, [fundId, fund?.name]);
+  }, [fundId, fund?.name, tab]);
 
   const hasResolvedFund = Boolean(seedFund || marketFund);
 

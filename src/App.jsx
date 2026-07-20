@@ -24,6 +24,7 @@ import {
   skipAuthForDev,
 } from './lib/sessionStore';
 import { cleanOAuthCallbackUrl, ensureSupabase, isSupabaseConfigured, shouldLoadSupabaseEarly, signOutFromSupabase } from './lib/supabase';
+import { seedMarketAssetCache } from './lib/marketAssetSeed';
 import { identifyPostHogUser, resetPostHogUser } from './lib/posthog';
 import { clearWatchlists } from './lib/watchlistStore';
 import { CURRENT_USER, getPerson, STOCKS } from './data/mockData';
@@ -538,27 +539,30 @@ export default function App() {
     navigateBack(navigate, location, tabPath('feed'));
   }, [backScroll, location, navigate]);
 
-  const openFund = (fundId) => {
+  const openFund = (fundId, seed = null) => {
     captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
-    setSelectedFundId(String(fundId ?? '').trim());
+    const id = String(fundId ?? '').trim();
+    if (seed) seedMarketAssetCache(seed, id);
+    setSelectedFundId(id);
     setSelectedPostId(null);
     setTab('markets');
     navigate(fundPath(fundId));
   };
 
-  const openStock = (ticker, { kind = 'stock', assetType } = {}) => {
+  const openStock = (ticker, { kind = 'stock', assetType, seed = null } = {}) => {
     const key = String(ticker ?? '').trim();
     const resolvedKind = assetType || kind;
     // Portfolio holdings use AMFI scheme codes for mutual funds — never open as stocks.
     if (resolvedKind === 'fund' || /^\d{6,}$/.test(key)) {
-      openFund(key);
+      openFund(key, seed);
       return;
     }
     captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
+    if (seed) seedMarketAssetCache(seed, key);
     setSelectedTicker(key);
     setSelectedTickerKind(resolvedKind === 'etf' ? 'etf' : 'stock');
     setSelectedPostId(null);
@@ -566,20 +570,24 @@ export default function App() {
     navigate(resolvedKind === 'etf' ? etfPath(key) : stockPath(key));
   };
 
-  const openIndex = (indexId) => {
+  const openIndex = (indexId, seed = null) => {
     captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
+    const id = String(indexId ?? '').trim();
+    if (seed) seedMarketAssetCache(seed, id);
     setSelectedIndexId(indexId);
     setSelectedPostId(null);
     setTab('markets');
     navigate(indexPath(indexId));
   };
 
-  const openCommodity = (commodityId) => {
+  const openCommodity = (commodityId, seed = null) => {
     captureMarketReturnContext();
     resetScroll();
     clearMarketSelection();
+    const id = String(commodityId ?? '').trim();
+    if (seed) seedMarketAssetCache(seed, id);
     setSelectedCommodityId(commodityId);
     setSelectedPostId(null);
     setTab('markets');

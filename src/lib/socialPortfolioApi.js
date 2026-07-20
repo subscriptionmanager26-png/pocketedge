@@ -156,7 +156,28 @@ export async function fetchUserPortfolio(ownerId, portfolioId) {
 
   if (error) throw error;
   const portfolio = data ? mapRpcRow(data) : null;
-  return portfolio ? enrichPortfolioRowLogos(portfolio) : null;
+  if (!portfolio) return null;
+
+  // Return immediately; logos fill in the background (same as list fetch).
+  enrichPortfolioRowLogos(portfolio)
+    .then((withLogos) => {
+      if (!withLogos) return;
+      const list = getCached('user-portfolios', ownerId, PORTFOLIOS_TTL_MS);
+      if (Array.isArray(list)) {
+        const idx = list.findIndex((p) => p.id === withLogos.id);
+        const next = idx < 0 ? [...list, withLogos] : list.map((p, i) => (i === idx ? withLogos : p));
+        setCached('user-portfolios', ownerId, next);
+      }
+      const peek = peekPortfoliosCache(ownerId);
+      if (Array.isArray(peek)) {
+        const idx = peek.findIndex((p) => p.id === withLogos.id);
+        const next = idx < 0 ? [...peek, withLogos] : peek.map((p, i) => (i === idx ? withLogos : p));
+        writePortfoliosCache(ownerId, next);
+      }
+    })
+    .catch(() => {});
+
+  return portfolio;
 }
 
 /** Drafts live in the browser only — never written to Supabase until published. */
@@ -214,7 +235,9 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
     if (error) throw error;
     removeLocalDraft(ownerId, portfolioId);
     invalidatePortfolioCaches(ownerId);
-    return mapRpcRow(data);
+    const mapped = mapRpcRow(data);
+    seedPortfoliosCacheAfterSave(ownerId, mapped, portfolioId);
+    return mapped;
   }
 
   if (!useBackend()) {
@@ -238,7 +261,21 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
 
   if (error) throw error;
   invalidatePortfolioCaches(ownerId);
-  return mapRpcRow(data);
+  const mapped = mapRpcRow(data);
+  seedPortfoliosCacheAfterSave(ownerId, mapped, portfolioId);
+  return mapped;
+}
+
+function seedPortfoliosCacheAfterSave(ownerId, saved, previousId = null) {
+  if (!saved || !ownerId) return;
+  const peek = peekPortfoliosCache(ownerId);
+  const base = Array.isArray(peek) ? peek : [];
+  const without = base.filter(
+    (p) => p.id !== saved.id && (previousId == null || p.id !== previousId)
+  );
+  const next = [saved, ...without];
+  setCached('user-portfolios', ownerId, next);
+  writePortfoliosCache(ownerId, next);
 }
 
 /** Drop an in-progress local draft. Published portfolios cannot be deleted. */

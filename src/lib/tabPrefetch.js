@@ -21,6 +21,10 @@ export function prefetchTab(tab, ownerId = getAppCurrentUserId()) {
   switch (tab) {
     case 'markets':
       prefetchChunk(() => import('../pages/MarketsPage'), 'markets');
+      prefetchChunk(() => import('../pages/StockInvestmentPage'), 'stock-detail');
+      prefetchChunk(() => import('../pages/InvestmentPage'), 'fund-detail');
+      prefetchChunk(() => import('../pages/IndexDetailPage'), 'index-detail');
+      prefetchChunk(() => import('../pages/CommodityDetailPage'), 'commodity-detail');
       import('../lib/marketDataApi')
         .then((m) => m.fetchMarketPreview('stocks'))
         .catch(() => {});

@@ -33,6 +33,7 @@ import {
   fetchUserPortfolios,
   peekUserPortfolios,
   saveSocialPortfolio,
+  isLocalDraftId,
 } from '../lib/socialPortfolioApi';
 import { updateSocialProfile, fetchProfileHeader } from '../lib/socialProfileApi';
 import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } from '../lib/socialIdentity';
@@ -426,7 +427,18 @@ export default function ProfilePage({
         portfolio={selectedPortfolio}
         userId={person.id}
         canEdit={canEdit}
-        onPortfolioUpdated={() => {
+        onPortfolioUpdated={(updated) => {
+          if (updated) {
+            setPortfolios((prev) => {
+              const without = prev.filter(
+                (p) =>
+                  p.id !== updated.id &&
+                  !(isLocalDraftId(p.id) && selectedPortfolioId && p.id === selectedPortfolioId)
+              );
+              return [updated, ...without];
+            });
+            return;
+          }
           bumpPortfolios();
         }}
         onBack={onClearPortfolio}
@@ -603,6 +615,7 @@ function PortfolioDetailView({
   const isDraft = Boolean(portfolio.isDraft);
   const [editing, setEditing] = useState(startInEditMode);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState(portfolio.name);
   const [objective, setObjective] = useState(portfolio.objective ?? '');
   const [thesis, setThesis] = useState(portfolio.thesis ?? '');
@@ -921,6 +934,8 @@ function PortfolioDetailView({
   }, [portfolio.id, startInEditMode]);
 
   const saveEdits = async () => {
+    if (saving) return;
+
     const validation = validatePortfolioDraft({
       kind: portfolioKind,
       name,
@@ -931,15 +946,19 @@ function PortfolioDetailView({
     setFieldErrors(validation.errors);
     if (!validation.valid) return;
 
-    const assetsByKey = await resolvePortfolioAssets(
-      validation.completeRows.map((row) => row.ticker.trim())
-    );
-
-    const holdings = isWatchlist
-      ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
-      : buildLiveHoldings(validation.completeRows, assetsByKey);
-
+    setSaving(true);
     try {
+      // Live portfolios: skip client market resolve — server enrich_portfolio_holdings
+      // already maps tickers/ISINs and fills prices. Watchlists need prices to derive qty.
+      const tickers = validation.completeRows.map((row) => row.ticker.trim());
+      const assetsByKey = isWatchlist
+        ? await resolvePortfolioAssets(tickers)
+        : new Map();
+
+      const holdings = isWatchlist
+        ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
+        : buildLiveHoldings(validation.completeRows, assetsByKey);
+
       const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
         name: name.trim(),
         objective: '',
@@ -950,7 +969,7 @@ function PortfolioDetailView({
         holdings,
         ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
       });
-      onPortfolioUpdated?.();
+      onPortfolioUpdated?.(savedPortfolio);
       if (savedPortfolio?.id && savedPortfolio.id !== portfolio.id) {
         onSelectPortfolio?.(savedPortfolio.id);
       }
@@ -962,6 +981,8 @@ function PortfolioDetailView({
     } catch (error) {
       console.error('Failed to save portfolio', error);
       window.alert(error?.message ?? 'Could not save portfolio. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -992,6 +1013,7 @@ function PortfolioDetailView({
   cancelEditsRef.current = cancelEdits;
 
   const requestBack = (proceed) => {
+    if (saving) return;
     if (!editing && !isDraft) {
       proceed();
       return;
@@ -1049,7 +1071,10 @@ function PortfolioDetailView({
         <PortfolioDetailMobileActions
           editing
           saved={saved}
-          onCancel={() => cancelEditsRef.current()}
+          saving={saving}
+          onCancel={() => {
+            if (!saving) cancelEditsRef.current();
+          }}
           onSave={() => {
             void saveEditsRef.current();
           }}
@@ -1061,7 +1086,7 @@ function PortfolioDetailView({
 
     return () => onMobileHeaderActionsChange(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, editing, saved, onMobileHeaderActionsChange]);
+  }, [canEdit, editing, saved, saving, onMobileHeaderActionsChange]);
 
   const handleKindChange = (nextKind) => {
     setPortfolioKind(nextKind);
@@ -1138,7 +1163,8 @@ function PortfolioDetailView({
                 <button
                   type="button"
                   onClick={cancelEdits}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+                  disabled={saving}
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface disabled:opacity-50"
                 >
                   <X className="h-3.5 w-3.5" />
                   Cancel
@@ -1146,10 +1172,11 @@ function PortfolioDetailView({
                 <button
                   type="button"
                   onClick={saveEdits}
-                  className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+                  disabled={saving}
+                  className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-70"
                 >
-                  {saved ? <Check className="h-3.5 w-3.5" /> : null}
-                  {saved ? 'Saved' : 'Save'}
+                  {saved && !saving ? <Check className="h-3.5 w-3.5" /> : null}
+                  {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
                 </button>
               </div>
             ) : (
@@ -1512,14 +1539,22 @@ function PortfolioKindToggle({ value, onChange }) {
   );
 }
 
-function PortfolioDetailMobileActions({ editing = false, saved = false, onEdit, onCancel, onSave }) {
+function PortfolioDetailMobileActions({
+  editing = false,
+  saved = false,
+  saving = false,
+  onEdit,
+  onCancel,
+  onSave,
+}) {
   if (editing) {
     return (
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+          disabled={saving}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" />
           Cancel
@@ -1527,10 +1562,11 @@ function PortfolioDetailMobileActions({ editing = false, saved = false, onEdit, 
         <button
           type="button"
           onClick={onSave}
-          className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+          disabled={saving}
+          className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-70"
         >
-          {saved ? <Check className="h-3.5 w-3.5" /> : null}
-          {saved ? 'Saved' : 'Save'}
+          {saved && !saving ? <Check className="h-3.5 w-3.5" /> : null}
+          {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
         </button>
       </div>
     );

@@ -308,7 +308,12 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
     return (
       <button
         type="button"
-        onClick={() => onSelectStock?.(item.id ?? item.symbol, { kind: tab === 'etf' ? 'etf' : 'stock' })}
+        onClick={() =>
+          onSelectStock?.(item.id ?? item.symbol, {
+            kind: tab === 'etf' ? 'etf' : 'stock',
+            seed: item,
+          })
+        }
         className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -339,7 +344,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
     return (
       <button
         type="button"
-        onClick={() => onSelectFund?.(item.schemeCode)}
+        onClick={() => onSelectFund?.(item.schemeCode, item)}
         className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -371,7 +376,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
   return (
     <button
       type="button"
-      onClick={() => onSelectIndex?.(item.id)}
+      onClick={() => onSelectIndex?.(item.id, item)}
       className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">

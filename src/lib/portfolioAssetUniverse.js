@@ -310,7 +310,7 @@ async function resolvePortfolioAssetExact(key) {
   return null;
 }
 
-export async function resolvePortfolioAssets(keys) {
+export async function resolvePortfolioAssets(keys, { fallback = true } = {}) {
   const unique = [...new Set(keys.map((key) => String(key ?? '').trim()).filter(Boolean))];
   const map = new Map();
   if (!unique.length) return map;
@@ -326,11 +326,14 @@ export async function resolvePortfolioAssets(keys) {
         map.set(entry.key, entry);
         map.set(key, entry);
       }
-      if (map.size >= unique.length) return map;
+      if (map.size >= unique.length || !fallback) return map;
     } catch {
+      if (!fallback) return map;
       /* fall through to parallel local resolve */
     }
   }
+
+  if (!fallback) return map;
 
   const remaining = unique.filter((key) => !map.has(key));
   const resolved = await Promise.all(remaining.map((key) => resolvePortfolioAsset(key)));

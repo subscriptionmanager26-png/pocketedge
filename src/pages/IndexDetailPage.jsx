@@ -10,7 +10,7 @@ import {
 import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
+import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 
 export default function IndexDetailPage({
@@ -18,27 +18,55 @@ export default function IndexDetailPage({
   onBack,
   onOpenProfile,
 }) {
-  const [index, setIndex] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('insights');
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setIndex({
+  const [index, setIndex] = useState(() => {
+    const cached = findCachedMarketItem('indices', indexId);
+    if (cached) return cached;
+    return {
       id: indexId,
       name: indexId,
       symbol: indexId,
       value: null,
       group: null,
-    });
+    };
+  });
+  const [loading, setLoading] = useState(() => !findCachedMarketItem('indices', indexId));
+  const [tab, setTab] = useState('insights');
+
+  useEffect(() => {
+    let cancelled = false;
+    const cached = findCachedMarketItem('indices', indexId);
+    if (cached) {
+      setIndex(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      setIndex({
+        id: indexId,
+        name: indexId,
+        symbol: indexId,
+        value: null,
+        group: null,
+      });
+    }
 
     (async () => {
-      const preview = await fetchMarketPreview('indices');
-      let found = preview.items.find((item) => item.id === indexId);
-      if (!found) found = await resolveMarketIndex(indexId);
+      const peek = peekMarketPreview('indices');
+      const fromPeek = peek?.items?.find((item) => item.id === indexId || item.symbol === indexId);
+      if (fromPeek && !cancelled) {
+        setIndex(fromPeek);
+        setLoading(false);
+      }
+
+      const [preview, resolved] = await Promise.all([
+        fromPeek ? Promise.resolve({ items: [fromPeek] }) : fetchMarketPreview('indices'),
+        resolveMarketIndex(indexId),
+      ]);
+      const found =
+        resolved ??
+        preview.items.find((item) => item.id === indexId || item.symbol === indexId) ??
+        null;
       if (!cancelled) {
-        setIndex(found ?? null);
+        setIndex(found);
         setLoading(false);
       }
     })().catch(() => {
@@ -72,6 +100,7 @@ export default function IndexDetailPage({
   );
 
   useEffect(() => {
+    if (tab !== 'discussions') return undefined;
     let cancelled = false;
     if (isDevMockMode()) {
       setDiscussions(getIndexDiscussions(indexId, displayIndex?.name));
@@ -87,7 +116,7 @@ export default function IndexDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [indexId, displayIndex?.name]);
+  }, [indexId, displayIndex?.name, tab]);
 
   if (!loading && !index) {
     return (

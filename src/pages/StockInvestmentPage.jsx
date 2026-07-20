@@ -23,11 +23,18 @@ import CorporateActionsList from '../components/CorporateActionsList';
 import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
 import {
+  findCachedMarketItem,
   marketStockToDetail,
   resolveMarketStock,
 } from '../lib/marketDataApi';
 import { formatTicker } from '../lib/tickers';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
+
+function peekCachedStockDetail(ticker) {
+  const cached =
+    findCachedMarketItem('stocks', ticker) ?? findCachedMarketItem('etf', ticker);
+  return cached ? marketStockToDetail(cached) : null;
+}
 
 export default function StockInvestmentPage({
   ticker,
@@ -35,9 +42,15 @@ export default function StockInvestmentPage({
   onOpenProfile,
 }) {
   const seedStock = getStock(ticker);
-  const [marketStock, setMarketStock] = useState(null);
-  const [isEtf, setIsEtf] = useState(false);
-  const [marketLoading, setMarketLoading] = useState(true);
+  const [marketStock, setMarketStock] = useState(() => peekCachedStockDetail(ticker));
+  const [isEtf, setIsEtf] = useState(() => {
+    const cached =
+      findCachedMarketItem('etf', ticker) ?? findCachedMarketItem('stocks', ticker);
+    return cached?.assetType === 'etf';
+  });
+  const [marketLoading, setMarketLoading] = useState(
+    () => !peekCachedStockDetail(ticker) && !seedStock
+  );
   const stock = useMemo(() => {
     if (marketStock) return marketStock;
     if (seedStock) {
@@ -61,7 +74,18 @@ export default function StockInvestmentPage({
 
   useEffect(() => {
     let cancelled = false;
-    setMarketLoading(true);
+    const cached = peekCachedStockDetail(ticker);
+    if (cached) {
+      setMarketStock(cached);
+      setIsEtf(
+        cached.assetType === 'etf' ||
+          findCachedMarketItem('etf', ticker)?.assetType === 'etf'
+      );
+      setMarketLoading(false);
+    } else {
+      setMarketLoading(true);
+    }
+
     resolveMarketStock(ticker)
       .then((resolved) => {
         if (cancelled) return;
@@ -96,7 +120,7 @@ export default function StockInvestmentPage({
     isDevMockMode() ? getStockDiscussions(ticker) : []
   );
   const [holders, setHolders] = useState([]);
-  const [holdersLoading, setHoldersLoading] = useState(true);
+  const [holdersLoading, setHoldersLoading] = useState(false);
   const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
   const [newsLoading, setNewsLoading] = useState(false);
   const [insights, setInsights] = useState([]);
@@ -105,6 +129,27 @@ export default function StockInvestmentPage({
   const [corpActionsLoading, setCorpActionsLoading] = useState(false);
 
   useEffect(() => {
+    if (tab !== 'insights') return undefined;
+    if (!isStockNewsConfigured()) {
+      setInsights([]);
+      return undefined;
+    }
+    let cancelled = false;
+    setInsightsLoading(true);
+    fetchStockExplanations(ticker, { limit: 14 })
+      .then((items) => {
+        if (!cancelled) setInsights(items);
+      })
+      .finally(() => {
+        if (!cancelled) setInsightsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, tab]);
+
+  useEffect(() => {
+    if (tab !== 'holders') return undefined;
     let cancelled = false;
     setHoldersLoading(true);
     fetchAssetHolders(ticker, { kind: 'stock' })
@@ -120,9 +165,10 @@ export default function StockInvestmentPage({
     return () => {
       cancelled = true;
     };
-  }, [ticker]);
+  }, [ticker, tab]);
 
   useEffect(() => {
+    if (tab !== 'discussions') return undefined;
     let cancelled = false;
     if (isDevMockMode()) {
       setDiscussions(getStockDiscussions(ticker));
@@ -138,28 +184,11 @@ export default function StockInvestmentPage({
     return () => {
       cancelled = true;
     };
-  }, [ticker]);
+  }, [ticker, tab]);
 
   useEffect(() => {
-    if (!isStockNewsConfigured()) {
-      setInsights([]);
-      return undefined;
-    }
-    let cancelled = false;
-    setInsightsLoading(true);
-    fetchStockExplanations(ticker)
-      .then((items) => {
-        if (!cancelled) setInsights(items);
-      })
-      .finally(() => {
-        if (!cancelled) setInsightsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [ticker]);
+    if (tab !== 'news') return undefined;
 
-  useEffect(() => {
     if (isStockNewsConfigured()) {
       let cancelled = false;
       setNewsLoading(true);
@@ -183,9 +212,10 @@ export default function StockInvestmentPage({
 
     setNews([]);
     return undefined;
-  }, [ticker]);
+  }, [ticker, tab]);
 
   useEffect(() => {
+    if (tab !== 'corporate_actions') return undefined;
     if (!isStockNewsConfigured() || isEtf) {
       setCorporateActions([]);
       return undefined;
@@ -204,7 +234,7 @@ export default function StockInvestmentPage({
     return () => {
       cancelled = true;
     };
-  }, [ticker, isEtf]);
+  }, [ticker, isEtf, tab]);
 
   if (!marketLoading && !marketStock && !seedStock) {
     return (

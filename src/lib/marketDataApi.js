@@ -2,6 +2,9 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { skipAuthForDev } from './sessionStore';
 import { cachedFetch, getCached, setCached } from './queryCache';
 import { peekMarketPreviewCache, writeMarketPreviewCache } from './tabCache';
+import { seedMarketAssetCache } from './marketAssetSeed';
+
+export { seedMarketAssetCache } from './marketAssetSeed';
 
 const BASE = '/data/markets';
 const MARKET_SEARCH_TTL_MS = 30_000;
@@ -467,27 +470,63 @@ export async function searchAllMarkets(query, limitPerTab = 12) {
 }
 
 export function findCachedMarketItem(tab, id) {
+  const needle = String(id ?? '').trim();
+  if (!needle) return null;
+  const needleUpper = needle.toUpperCase();
+
+  const matchItem = (item) => {
+    if (!item) return false;
+    const candidates = [item.id, item.symbol, item.schemeCode, item.assetKey];
+    return candidates.some((c) => {
+      const s = String(c ?? '').trim();
+      return s === needle || s.toUpperCase() === needleUpper;
+    });
+  };
+
+  // Hot queryCache from prior list/detail/batch lookups.
+  const fromQuery = getCached('market-asset', needle, MARKET_ASSET_TTL_MS);
+  if (fromQuery) return fromQuery;
+  const fromQueryUpper = getCached('market-asset', needleUpper, MARKET_ASSET_TTL_MS);
+  if (fromQueryUpper) return fromQueryUpper;
+
+  // Session tab preview (boot / Markets list) — often warmer than module JSON cache.
+  const preview = peekMarketPreviewCache(tab);
+  if (Array.isArray(preview?.items)) {
+    const found = preview.items.find(matchItem);
+    if (found) {
+      seedMarketAssetCache(found, needle);
+      return found;
+    }
+  }
+
   const previewFile = TAB_PREVIEW[tab];
   const searchFile = TAB_SEARCH[tab];
   for (const file of [previewFile, searchFile]) {
     if (!file) continue;
     const cached = cache.get(file);
     if (!cached?.items) continue;
-    const found = cached.items.find(
-      (item) => item.id === id || item.symbol === id || item.schemeCode === id
-    );
-    if (found) return found;
+    const found = cached.items.find(matchItem);
+    if (found) {
+      seedMarketAssetCache(found, needle);
+      return found;
+    }
   }
   return null;
 }
 
 async function lookupMarketAssetRpc(key) {
   if (!useMarketLogoLookup()) return null;
+  const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
+  if (hit !== undefined) return hit;
+
   const { data, error } = await supabase.rpc('lookup_social_market_asset', {
     p_key: key,
   });
   if (error) throw error;
-  return data ? marketAssetRowToItem(data) : null;
+  const item = data ? marketAssetRowToItem(data) : null;
+  setCached('market-asset', key, item);
+  if (item) seedMarketAssetCache(item, key);
+  return item;
 }
 
 export async function lookupMarketAssetsBatch(keys) {
@@ -558,6 +597,7 @@ export async function resolveMarketStock(symbol) {
     try {
       const found = await lookupMarketAssetRpc(symbol);
       if (found && (found.assetType === 'stock' || found.assetType === 'etf')) {
+        seedMarketAssetCache(found, symbol);
         return found;
       }
     } catch (err) {
@@ -570,11 +610,12 @@ export async function resolveMarketStock(symbol) {
     searchMarketTab('etf', symbol, 5),
   ]);
 
-  return (
+  const match =
     stockMatches.items.find((item) => item.symbol === symbol) ??
     etfMatches.items.find((item) => item.symbol === symbol) ??
-    null
-  );
+    null;
+  if (match) seedMarketAssetCache(match, symbol);
+  return match;
 }
 
 export async function resolveMarketFund(schemeCode) {
@@ -587,16 +628,20 @@ export async function resolveMarketFund(schemeCode) {
   if (useMarketRpc()) {
     try {
       const found = await lookupMarketAssetRpc(code);
-      if (found && found.assetType === 'fund') return found;
+      if (found && found.assetType === 'fund') {
+        seedMarketAssetCache(found, code);
+        return found;
+      }
     } catch (err) {
       console.warn('lookup_social_market_asset failed', err);
     }
   }
 
   const { items } = await searchMarketTab('mutual_funds', code, 20);
-  return (
-    items.find((item) => String(item.schemeCode ?? item.id ?? '') === code) ?? null
-  );
+  const match =
+    items.find((item) => String(item.schemeCode ?? item.id ?? '') === code) ?? null;
+  if (match) seedMarketAssetCache(match, code);
+  return match;
 }
 
 async function loadFullMarketTab(tab) {
@@ -616,7 +661,10 @@ export async function resolveMarketIndex(indexId) {
   if (useMarketRpc()) {
     try {
       const found = await lookupMarketAssetRpc(id);
-      if (found?.assetType === 'index') return found;
+      if (found?.assetType === 'index') {
+        seedMarketAssetCache(found, id);
+        return found;
+      }
     } catch (err) {
       console.warn('lookup_social_market_asset index failed', err);
     }
@@ -630,21 +678,25 @@ export async function resolveMarketIndex(indexId) {
           String(item.id ?? '').toUpperCase() === id.toUpperCase() ||
           String(item.symbol ?? '').toUpperCase() === id.toUpperCase()
       );
-      if (match) return match;
+      if (match) {
+        seedMarketAssetCache(match, id);
+        return match;
+      }
     } catch (err) {
       console.warn('search index failed, falling back to JSON', err);
     }
   }
 
   const items = await loadFullMarketTab('indices');
-  return (
+  const match =
     items.find(
       (item) =>
         item.id === id ||
         item.symbol === id ||
         String(item.id ?? '').toUpperCase() === id.toUpperCase()
-    ) ?? null
-  );
+    ) ?? null;
+  if (match) seedMarketAssetCache(match, id);
+  return match;
 }
 
 export async function resolveMarketCommodity(commodityId) {
@@ -657,22 +709,26 @@ export async function resolveMarketCommodity(commodityId) {
   if (useMarketRpc()) {
     try {
       const live = await lookupMarketAssetRpc(id);
-      if (live?.assetType === 'commodity') return live;
+      if (live?.assetType === 'commodity') {
+        seedMarketAssetCache(live, id);
+        return live;
+      }
     } catch (err) {
       console.warn('lookup commodity failed, falling back to JSON', err);
     }
   }
 
   const items = await loadFullMarketTab('commodity');
-  return (
+  const match =
     items.find(
       (item) =>
         item.id === id ||
         item.symbol === id ||
         `${item.symbol}-${item.location}` === id ||
         String(item.id ?? '').toUpperCase() === id.toUpperCase()
-    ) ?? null
-  );
+    ) ?? null;
+  if (match) seedMarketAssetCache(match, id);
+  return match;
 }
 
 export function marketFundToDetail(fund) {
