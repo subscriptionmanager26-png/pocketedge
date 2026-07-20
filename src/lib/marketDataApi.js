@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, ensureSupabase } from './supabase';
 import { skipAuthForDev } from './sessionStore';
 import { cachedFetch, getCached, setCached } from './queryCache';
 import { peekMarketPreviewCache, writeMarketPreviewCache } from './tabCache';
@@ -75,7 +75,39 @@ export function subscribeMarketPreview(tab, listener) {
 }
 
 export function peekMarketPreview(tab) {
-  return peekMarketPreviewCache(tab);
+  const cached = peekMarketPreviewCache(tab);
+  if (!cached) return null;
+  return normalizeMarketPreviewPayload(cached);
+}
+
+/** Boot / RPC rows use snake_case; UI expects camelCase from marketAssetRowToItem. */
+export function normalizeMarketPreviewItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => {
+      if (!item) return null;
+      if (
+        item.asset_key != null ||
+        item.asset_type != null ||
+        item.change_pct != null ||
+        item.logo_icon_url != null ||
+        item.previous_close != null
+      ) {
+        return marketAssetRowToItem(item);
+      }
+      return item;
+    })
+    .filter(Boolean);
+}
+
+function normalizeMarketPreviewPayload(payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const items = normalizeMarketPreviewItems(payload.items);
+  return {
+    ...payload,
+    items,
+    syncedAt: payload.syncedAt ?? payload.synced_at ?? null,
+  };
 }
 
 function useMarketRpc() {
@@ -295,9 +327,15 @@ async function fetchMarketPreviewFromRpc(tab, assetType) {
 }
 
 function reconcileMarketPreviewInBackground(tab, assetType) {
-  if (!assetType || !useMarketRpc()) return;
-  fetchMarketPreviewFromRpc(tab, assetType)
+  if (!assetType || !isSupabaseConfigured() || skipAuthForDev()) return;
+  Promise.resolve()
+    .then(() => ensureSupabase())
+    .then(() => {
+      if (!useMarketRpc()) return null;
+      return fetchMarketPreviewFromRpc(tab, assetType);
+    })
     .then((payload) => {
+      if (!payload) return;
       notifyMarketPreviewUpdated(tab, payload);
     })
     .catch((err) => {
@@ -305,15 +343,27 @@ function reconcileMarketPreviewInBackground(tab, assetType) {
     });
 }
 
-export async function fetchMarketPreview(tab) {
+export async function fetchMarketPreview(tab, { force = false } = {}) {
   const assetType = tabToAssetType(tab);
   const cached = peekMarketPreviewCache(tab);
-  if (cached?.source === 'rpc' && Array.isArray(cached.items) && cached.items.length) {
-    return cached;
+  if (
+    !force &&
+    cached?.source === 'rpc' &&
+    Array.isArray(cached.items) &&
+    cached.items.length
+  ) {
+    const normalized = normalizeMarketPreviewPayload(cached);
+    // Rewrite poisoned boot cache (raw snake_case rows) so later peeks are correct.
+    if (normalized.items !== cached.items) {
+      writeMarketPreviewCache(tab, { ...normalized, source: 'rpc' });
+    }
+    // Always refresh in background — previously we returned forever and polling stalled.
+    reconcileMarketPreviewInBackground(tab, assetType);
+    return normalized;
   }
 
   const previewFile = TAB_PREVIEW[tab];
-  if (previewFile) {
+  if (previewFile && !force) {
     try {
       const payload = await fetchJson(previewFile);
       const staticResult = {
@@ -331,9 +381,12 @@ export async function fetchMarketPreview(tab) {
     }
   }
 
-  if (assetType && useMarketRpc()) {
+  if (assetType && isSupabaseConfigured() && !skipAuthForDev()) {
     try {
-      return await fetchMarketPreviewFromRpc(tab, assetType);
+      await ensureSupabase();
+      if (useMarketRpc()) {
+        return await fetchMarketPreviewFromRpc(tab, assetType);
+      }
     } catch (err) {
       console.warn('list_social_market_preview failed, falling back to JSON', err);
     }

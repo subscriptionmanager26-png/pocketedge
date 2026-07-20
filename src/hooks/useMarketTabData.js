@@ -127,7 +127,7 @@ export function useMarketTabData(tab, query = '') {
       setSearchItems(nextItems);
       return;
     }
-    const payload = await fetchMarketPreview(tab);
+    const payload = await fetchMarketPreview(tab, { force: true });
     setPreviewItems(payload.items ?? []);
     setSyncedAt(payload.syncedAt ?? null);
   }, [tab, debouncedQuery, isSearching]);

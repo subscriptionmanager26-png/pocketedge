@@ -136,6 +136,8 @@ export function applyBootPayloadToTabCache(boot) {
   }
 
   if (boot.marketsPreview?.items) {
+    // Boot returns raw RPC rows (snake_case). Markets UI peeks via
+    // peekMarketPreview / fetchMarketPreview which normalize to camelCase.
     writeMarketPreviewCache('stocks', {
       items: boot.marketsPreview.items,
       syncedAt: boot.marketsPreview.synced_at ?? boot.marketsPreview.syncedAt ?? null,
