@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNseIndexLiveItems } from './useNseIndexStream';
 import {
   MARKET_MIN_SEARCH_CHARS,
   MARKET_PREVIEW_LIMIT,
@@ -92,28 +91,35 @@ export function useMarketTabData(tab, query = '') {
   }, [tab, debouncedQuery]);
 
   const isSearching = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
-  const baseItems = isSearching ? searchItems : previewItems;
-  const [liveReady, setLiveReady] = useState(false);
+  const items = isSearching ? searchItems : previewItems;
 
   useEffect(() => {
-    if (loading || error) {
-      setLiveReady(false);
-      return undefined;
-    }
+    if (tab !== 'indices' || loading || error) return undefined;
 
     let cancelled = false;
-    const timer = window.setTimeout(() => {
-      if (!cancelled) setLiveReady(true);
-    }, 150);
+    const refresh = async () => {
+      try {
+        if (isSearching) {
+          const { items: nextItems } = await searchMarketTab(tab, debouncedQuery);
+          if (!cancelled) setSearchItems(nextItems);
+          return;
+        }
+        const payload = await fetchMarketPreview(tab);
+        if (!cancelled) {
+          setPreviewItems(payload.items ?? []);
+          setSyncedAt(payload.syncedAt ?? null);
+        }
+      } catch {
+        // Keep existing values when a refresh call fails.
+      }
+    };
 
+    const timer = window.setInterval(refresh, 30_000);
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
+      window.clearInterval(timer);
     };
-  }, [loading, error, tab]);
-
-  const streamIndices = tab === 'indices' && !loading && !error && liveReady;
-  const items = useNseIndexLiveItems(baseItems, streamIndices);
+  }, [tab, debouncedQuery, isSearching, loading, error]);
 
   const statusMessage = useMemo(() => {
     if (loading) return null;

@@ -854,7 +854,9 @@ async function main() {
       };
     }
 
-    if (args.mode === 'all' || args.mode === 'equity' || args.mode === 'indices') {
+    // Indices are managed by Supabase cron/edge updater in production.
+    // Keep manual index runs available via --mode=indices or --mode=all.
+    if (args.mode === 'all' || args.mode === 'indices') {
       const ix = await refreshIndices({
         url,
         apiKey,

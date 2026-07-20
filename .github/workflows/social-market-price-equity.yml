@@ -3,6 +3,7 @@ name: Social market price refresh (equity)
 # PocketEdge is the quote source for search/detail.
 # Refresh NSE stocks + ETFs and the approved BSE-only fallback universe into
 # social_market_assets (+ daily history point).
+# Note: indices are refreshed by Supabase cron + edge function.
 
 on:
   schedule:

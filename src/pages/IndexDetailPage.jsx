@@ -10,7 +10,6 @@ import {
 import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
-import { useNseIndexLiveQuote } from '../hooks/useNseIndexStream';
 import { fetchMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 
 export default function IndexDetailPage({
@@ -53,8 +52,27 @@ export default function IndexDetailPage({
     };
   }, [indexId]);
 
-  const liveIndex = useNseIndexLiveQuote(index, Boolean(index && !loading));
-  const displayIndex = liveIndex ?? index;
+  useEffect(() => {
+    if (!indexId || loading) return undefined;
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const fresh = await resolveMarketIndex(indexId);
+        if (!cancelled && fresh) setIndex(fresh);
+      } catch {
+        // Keep last successful quote if refresh fails.
+      }
+    };
+
+    const timer = window.setInterval(refresh, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [indexId, loading]);
+
+  const displayIndex = index;
 
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getIndexDiscussions(indexId, displayIndex?.name) : []
