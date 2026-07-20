@@ -26,7 +26,10 @@ export default function ProfileHero({
   const [savedFlash, setSavedFlash] = useState(false);
   const followers = followerCount ?? person.followers;
   const followingTotal = followingCount ?? person.following;
-  const influencingLabel = formatInfluencingBucket(influencingAmount);
+  const influencingLabel =
+    typeof influencingAmount === 'string' && influencingAmount.trim()
+      ? influencingAmount.trim()
+      : formatInfluencingBucket(influencingAmount);
 
   useEffect(() => {
     if (!editingBio) setBioDraft(bio ?? person.bio ?? '');
@@ -94,11 +97,8 @@ export default function ProfileHero({
           </dl>
 
           <div className="mt-4">
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-                Bio
-              </p>
-              {canEditBio && !editingBio ? (
+            {canEditBio && !editingBio ? (
+              <div className="mb-1.5 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setEditingBio(true)}
@@ -107,30 +107,30 @@ export default function ProfileHero({
                   <Pencil className="h-3.5 w-3.5" />
                   Edit
                 </button>
-              ) : null}
-              {canEditBio && editingBio ? (
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={cancelBio}
-                    disabled={savingBio}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveBio}
-                    disabled={savingBio}
-                    className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2 py-1 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
-                  >
-                    {savedFlash ? <Check className="h-3.5 w-3.5" /> : null}
-                    {savingBio ? 'Saving…' : savedFlash ? 'Saved' : 'Save'}
-                  </button>
-                </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
+            {canEditBio && editingBio ? (
+              <div className="mb-1.5 flex justify-end gap-1">
+                <button
+                  type="button"
+                  onClick={cancelBio}
+                  disabled={savingBio}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveBio}
+                  disabled={savingBio}
+                  className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2 py-1 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
+                >
+                  {savedFlash ? <Check className="h-3.5 w-3.5" /> : null}
+                  {savingBio ? 'Saving…' : savedFlash ? 'Saved' : 'Save'}
+                </button>
+              </div>
+            ) : null}
 
             {editingBio ? (
               <textarea

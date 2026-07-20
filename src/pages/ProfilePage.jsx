@@ -147,7 +147,7 @@ export default function ProfilePage({
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
-  const [influencingAmount, setInfluencingAmount] = useState(0);
+  const [influencingAmount, setInfluencingAmount] = useState('< 1 Cr');
 
   const bumpPortfolios = () => setPortfolioVersion((v) => v + 1);
 
@@ -252,7 +252,7 @@ export default function ProfilePage({
         if (!cancelled) setInfluencingAmount(amount);
       })
       .catch(() => {
-        if (!cancelled) setInfluencingAmount(0);
+        if (!cancelled) setInfluencingAmount('< 1 Cr');
       });
     return () => {
       cancelled = true;
@@ -1644,7 +1644,15 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
   const [assetsLoading, setAssetsLoading] = useState(false);
   const overallReturn = useMemo(() => {
+    const serverPct = Number(portfolio.totalReturnPct ?? portfolio.totalPnlPct);
     const holdings = portfolio.holdings ?? [];
+    const hasAbsolutes = holdings.some((h) => {
+      const qty = Number(h?.qty);
+      return Number.isFinite(qty) && qty > 0;
+    });
+
+    if (!hasAbsolutes && Number.isFinite(serverPct)) return serverPct;
+
     let totalValue = 0;
     let totalCost = 0;
 
@@ -1665,8 +1673,9 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
       totalCost += qty * avg;
     }
 
-    return totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
-  }, [portfolio.holdings, assetsByKey]);
+    if (totalCost > 0) return ((totalValue - totalCost) / totalCost) * 100;
+    return Number.isFinite(serverPct) ? serverPct : 0;
+  }, [portfolio.holdings, portfolio.totalReturnPct, portfolio.totalPnlPct, assetsByKey]);
 
   const holdingKeys = useMemo(() => {
     const keys = [];
@@ -1758,7 +1767,13 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
               ? savedPrice
               : Number(h.avg) || 0;
         const value = (Number(h.qty) || 0) * price;
-        const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
+        const fromWeight = Number(h.weightPct ?? h.weight);
+        const weight =
+          Number.isFinite(fromWeight) && fromWeight > 0
+            ? fromWeight
+            : totalValue > 0
+              ? (value / totalValue) * 100
+              : 0;
         return {
           key: h.ticker,
           title: holdingDisplayLabel(h, asset),

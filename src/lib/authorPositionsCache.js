@@ -44,6 +44,10 @@ export function readCachedPortfolioWeightPct(authorId, ticker) {
   const index = cache.get(String(authorId));
   const entry = lookupEntry(index, ticker);
   if (!entry || entry.status !== 'holds') return null;
+  // Prefer server-provided weight (public/redacted payloads).
+  if (entry.weightPct != null && Number.isFinite(Number(entry.weightPct))) {
+    return Number(entry.weightPct);
+  }
   if (!index?.totalHeldValue || entry.value == null) return null;
   return (entry.value / index.totalHeldValue) * 100;
 }

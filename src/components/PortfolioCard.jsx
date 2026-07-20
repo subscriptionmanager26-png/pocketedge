@@ -20,14 +20,23 @@ const TOP_N = 4;
 function getPositions(portfolio) {
   const holdings = portfolio.holdings ?? [];
   if (holdings.length) {
-    const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
-    return holdings.map((h) => ({
-      ticker: h.ticker,
-      label: holdingDisplayLabel(h),
-      assetType: h.assetType ?? 'stock',
-      logoIconUrl: h.logoIconUrl ?? null,
-      weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
-    }));
+    const totalValue = holdings.reduce((sum, h) => sum + (Number(h.value) || 0), 0);
+    return holdings.map((h) => {
+      const fromWeight = Number(h.weightPct ?? h.weight);
+      const weight =
+        Number.isFinite(fromWeight) && fromWeight > 0
+          ? fromWeight
+          : totalValue > 0
+            ? ((Number(h.value) || 0) / totalValue) * 100
+            : 0;
+      return {
+        ticker: h.ticker,
+        label: holdingDisplayLabel(h),
+        assetType: h.assetType ?? 'stock',
+        logoIconUrl: h.logoIconUrl ?? null,
+        weight,
+      };
+    });
   }
 
   const tickers = portfolio.tickers ?? [];

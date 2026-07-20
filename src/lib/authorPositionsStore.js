@@ -27,20 +27,27 @@ function buildAuthorIndex(portfolios) {
     for (const holding of portfolio?.holdings ?? []) {
       const ticker = normalizeKey(holding?.ticker ?? holding?.symbol);
       const name = normalizeKey(holding?.assetName ?? holding?.name);
-      const qty = Number(holding?.qty) || 0;
       if (!ticker && !name) continue;
-      if (qty <= 0) continue;
 
+      const qty = Number(holding?.qty);
       const value = Number(holding?.value);
+      const weightPct = Number(holding?.weightPct ?? holding?.weight);
+      const pnlPct = Number(holding?.pnlPct);
+      const hasQty = Number.isFinite(qty) && qty > 0;
+      const hasWeight = Number.isFinite(weightPct) && weightPct > 0;
+
+      // Public (redacted) holdings omit qty/value but keep weightPct.
+      if (!hasQty && !hasWeight) continue;
+
       const heldValue = Number.isFinite(value) && value > 0 ? value : 0;
       totalHeldValue += heldValue;
 
-      const pnlPct = Number(holding?.pnlPct);
       const entry = {
         status: 'holds',
-        qty,
-        avg: Number(holding?.avg) || 0,
+        qty: hasQty ? qty : null,
+        avg: Number(holding?.avg) || null,
         value: heldValue || null,
+        weightPct: hasWeight ? weightPct : null,
         pnlPct: Number.isFinite(pnlPct) ? pnlPct : null,
       };
 
@@ -55,6 +62,7 @@ function buildAuthorIndex(portfolios) {
         qty: null,
         avg: null,
         value: null,
+        weightPct: null,
         pnlPct: null,
       });
     }

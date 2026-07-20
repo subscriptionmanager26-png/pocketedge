@@ -42,6 +42,7 @@ export function isLocalDraftId(portfolioId) {
 
 function mapRpcRow(row) {
   if (!row) return null;
+  const totalReturnPct = Number(row.total_return_pct ?? row.totalReturnPct);
   const portfolio = {
     id: row.id,
     kind: row.kind ?? 'live',
@@ -57,10 +58,19 @@ function mapRpcRow(row) {
     watchlistBaseInvestment: row.watchlist_base_investment ?? null,
     tickers: row.tickers ?? [],
     holdings: row.holdings ?? [],
+    // Present on public (non-owner) payloads; owner rows omit and derive client-side.
+    totalReturnPct: Number.isFinite(totalReturnPct) ? totalReturnPct : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-  return enrichUserPortfolio(portfolio);
+  const enriched = enrichUserPortfolio(portfolio);
+  if (portfolio.totalReturnPct != null && !Number.isFinite(Number(enriched.totalPnlPct))) {
+    enriched.totalPnlPct = portfolio.totalReturnPct;
+  }
+  if (portfolio.totalReturnPct != null) {
+    enriched.totalReturnPct = portfolio.totalReturnPct;
+  }
+  return enriched;
 }
 
 function mapTableRow(row) {

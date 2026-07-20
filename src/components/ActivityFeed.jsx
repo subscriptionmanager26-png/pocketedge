@@ -141,8 +141,11 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
         const currentValue = h.value != null ? Number(h.value) : null;
         const todayPnl = h.todayPnl;
         const todayPnlPct = h.todayPnlPct ?? h.changePct ?? stock?.changePct;
-        const weightPct =
-          typeof h.weight === 'number' && Number.isFinite(h.weight) ? h.weight : null;
+        const weightPct = (() => {
+          const fromHolding = Number(h.weight ?? h.weightPct);
+          if (Number.isFinite(fromHolding) && fromHolding > 0) return fromHolding;
+          return null;
+        })();
 
         return (
           <button

@@ -157,8 +157,22 @@ export function getPortfolioReturn(portfolio, period = '1M') {
 
 /** Lifetime total return % = (current value − invested) / invested. */
 export function getPortfolioTotalReturnPct(portfolio) {
+  const serverPct = Number(portfolio?.totalReturnPct ?? portfolio?.totalPnlPct);
   const holdings = portfolio?.holdings ?? [];
-  if (holdings.length) {
+  const hasAbsolutes = holdings.some((h) => {
+    const qty = Number(h?.qty);
+    const value = Number(h?.value);
+    const invested = Number(h?.invested);
+    return (
+      (Number.isFinite(qty) && qty > 0) ||
+      (Number.isFinite(value) && value > 0) ||
+      (Number.isFinite(invested) && invested > 0)
+    );
+  });
+
+  if (!hasAbsolutes && Number.isFinite(serverPct)) return serverPct;
+
+  if (holdings.length && hasAbsolutes) {
     let totalValue = 0;
     let invested = 0;
     for (const h of holdings) {
@@ -180,6 +194,8 @@ export function getPortfolioTotalReturnPct(portfolio) {
     }
     if (invested > 0) return ((totalValue - invested) / invested) * 100;
   }
+
+  if (Number.isFinite(serverPct)) return serverPct;
 
   const metrics = computePortfolioDisplayMetrics(portfolio);
   if (metrics.invested > 0 && Number.isFinite(metrics.totalPnlPct)) {
