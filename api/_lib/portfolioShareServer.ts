@@ -28,15 +28,6 @@ function holdingReturnPct(h) {
   return 0;
 }
 
-function estimate1MReturn(holdings) {
-  const pcts = (holdings ?? [])
-    .map((h) => Number(h?.changePct ?? h?.change_pct))
-    .filter((n) => Number.isFinite(n));
-  if (!pcts.length) return 0;
-  const avg = pcts.reduce((sum, n) => sum + n, 0) / pcts.length;
-  return Number((avg * 8).toFixed(1));
-}
-
 export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = {}) {
   const holdings = (portfolio.holdings ?? []).filter((h) => h?.ticker);
   const totalValue = holdings.reduce((sum, h) => {
