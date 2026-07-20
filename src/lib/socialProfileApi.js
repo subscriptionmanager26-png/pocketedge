@@ -69,6 +69,16 @@ export async function bootstrapSocialApp({ feedLimit = 50 } = {}) {
   };
 }
 
+/** Profile header stats in one RPC (counts + influencing). */
+export async function fetchProfileHeader(userId) {
+  if (!useBackend() || !userId) return null;
+  const { data, error } = await supabase.rpc('get_profile_header', {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchSocialProfile(username) {
   const handle = username?.toLowerCase?.().replace(/^@/, '');
   if (!handle) return null;

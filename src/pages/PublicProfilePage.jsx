@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { signInWithGoogle } from '../lib/supabase';
+import { ensureSupabase, signInWithGoogle } from '../lib/supabase';
 import { fetchPublicProfile } from '../lib/socialProfileApi';
 
 function avatarInitial(name, username) {
@@ -18,7 +18,8 @@ export default function PublicProfilePage({ username }) {
     setLoading(true);
     setError(null);
 
-    fetchPublicProfile(username)
+    ensureSupabase()
+      .then(() => fetchPublicProfile(username))
       .then((data) => {
         if (!cancelled) {
           setProfile(data);

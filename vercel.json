@@ -4,6 +4,15 @@
   "framework": "vite",
   "headers": [
     {
+      "source": "/markets",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "</data/markets/stocks-preview.json>; rel=preload; as=fetch"
+        }
+      ]
+    },
+    {
       "source": "/og-image.jpg",
       "headers": [
         {
@@ -30,7 +39,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
+          "value": "public, max-age=14400, stale-while-revalidate=86400"
         }
       ]
     },

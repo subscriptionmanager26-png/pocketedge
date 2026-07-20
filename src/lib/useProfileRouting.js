@@ -36,6 +36,7 @@ export function useProfileRouting({
   setSelectedFundId,
   setSelectedIndexId,
   setSelectedCommodityId,
+  onProfileResolved,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -81,6 +82,7 @@ export function useProfileRouting({
         setProfileUserId(person.id);
         setProfileMode(person.id === getAppCurrentUserId() ? 'own' : 'public');
         setProfilePortfolioId(parsed.portfolioId);
+        onProfileResolved?.(person);
         setTab('profile');
         finish();
       });

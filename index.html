@@ -40,6 +40,19 @@
 
     <link rel="preconnect" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" />
+    <script>
+      window.__PE_BOOT_PROMISE__ = fetch('/api/boot', { credentials: 'include' })
+        .then(function (r) {
+          return r.ok ? r.json() : null;
+        })
+        .then(function (d) {
+          window.__PE_BOOT__ = d;
+          return d;
+        })
+        .catch(function () {
+          return null;
+        });
+    </script>
     <style>
       html,
       body,

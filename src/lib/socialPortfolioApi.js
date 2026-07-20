@@ -18,7 +18,8 @@ import {
   removeLocalDraft,
 } from './localPortfolioDraftStore';
 import { invalidateAuthorPositions } from './authorPositionsStore';
-import { cachedFetch, invalidateCache, getCached } from './queryCache';
+import { cachedFetch, invalidateCache, getCached, setCached } from './queryCache';
+import { peekPortfoliosCache, writePortfoliosCache, invalidatePortfoliosTabCache } from './tabCache';
 
 const PORTFOLIOS_TTL_MS = 45_000;
 
@@ -29,12 +30,17 @@ function useBackend() {
 function invalidatePortfolioCaches(ownerId) {
   invalidateCache('user-portfolios', ownerId);
   invalidateAuthorPositions(ownerId);
+  invalidatePortfoliosTabCache(ownerId);
 }
 
 /** Sync peek for instant paint; null if cold. */
 export function peekUserPortfolios(ownerId) {
   if (!useBackend()) return null;
-  return getCached('user-portfolios', ownerId, PORTFOLIOS_TTL_MS) ?? null;
+  const mem = getCached('user-portfolios', ownerId, PORTFOLIOS_TTL_MS);
+  if (mem !== undefined) return mem;
+  const session = peekPortfoliosCache(ownerId);
+  if (!Array.isArray(session) || !session.length) return null;
+  return session.map(mapRpcRow);
 }
 
 export function isLocalDraftId(portfolioId) {
@@ -118,8 +124,18 @@ export async function fetchUserPortfolios(ownerId) {
     if (error) throw error;
     const rows = Array.isArray(data) ? data : [];
     const mapped = rows.map(mapRpcRow);
-    const withLogos = await Promise.all(mapped.map((p) => enrichPortfolioRowLogos(p)));
-    return [...drafts, ...withLogos];
+    const immediate = [...drafts, ...mapped];
+    writePortfoliosCache(ownerId, immediate);
+
+    Promise.all(mapped.map((p) => enrichPortfolioRowLogos(p)))
+      .then((withLogos) => {
+        const enriched = [...drafts, ...withLogos];
+        setCached('user-portfolios', ownerId, enriched);
+        writePortfoliosCache(ownerId, enriched);
+      })
+      .catch(() => {});
+
+    return immediate;
   });
 }
 

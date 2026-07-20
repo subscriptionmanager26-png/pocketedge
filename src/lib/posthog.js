@@ -1,5 +1,3 @@
-import posthog from 'posthog-js';
-
 const apiKey = import.meta.env.VITE_POSTHOG_PROJECT_TOKEN;
 const apiHost = import.meta.env.VITE_POSTHOG_HOST;
 
@@ -17,35 +15,50 @@ function isPocketEdgeHost() {
 
 export const isPostHogEnabled = Boolean(apiKey && apiHost && !isLocalhost());
 
+let posthog = null;
 let initialized = false;
+let initPromise = null;
 
-export function initPostHog() {
+async function loadPostHog() {
+  if (!isPostHogEnabled) return null;
+  if (posthog) return posthog;
+  if (!initPromise) {
+    initPromise = import('posthog-js').then(({ default: ph }) => {
+      posthog = ph;
+      return ph;
+    });
+  }
+  return initPromise;
+}
+
+export async function initPostHog() {
   if (!isPostHogEnabled || initialized) return posthog;
+  const ph = await loadPostHog();
+  if (!ph || initialized) return ph;
 
-  posthog.init(apiKey, {
+  ph.init(apiKey, {
     api_host: apiHost,
     defaults: '2026-01-30',
     capture_pageview: 'history_change',
     person_profiles: 'identified_only',
     enableExceptionAutocapture: true,
-    // Share distinct_id across www / global / social / design.
     cross_subdomain_cookie: isPocketEdgeHost(),
     persistence: 'localStorage+cookie',
   });
 
   initialized = true;
-  return posthog;
+  return ph;
 }
 
 export function identifyPostHogUser(user) {
   if (!isPostHogEnabled || !user?.id) return;
-  posthog.identify(user.id, {
-    email: user.email ?? undefined,
+  initPostHog().then((ph) => {
+    ph?.identify(user.id, { email: user.email ?? undefined });
   });
 }
 
 export function resetPostHogUser() {
-  if (!isPostHogEnabled) return;
+  if (!isPostHogEnabled || !posthog) return;
   posthog.reset();
 }
 

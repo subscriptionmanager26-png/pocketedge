@@ -16,6 +16,7 @@ import Avatar from './Avatar';
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
 import { getAppCurrentUser } from '../lib/socialIdentity';
+import { prefetchTab } from '../lib/tabPrefetch';
 import {
   getScrollPosition,
   readScrollTop,
@@ -201,6 +202,7 @@ export default function Shell({
   };
 
   const goTab = (id) => {
+    prefetchTab(id);
     if (id === 'profile') onProfile?.();
     else if (id === 'settings') onSettings?.();
     else onTabChange(id);
@@ -230,6 +232,8 @@ export default function Shell({
                 key={id}
                 type="button"
                 onClick={() => goTab(id)}
+                onMouseEnter={() => prefetchTab(id)}
+                onTouchStart={() => prefetchTab(id)}
                 className={`flex min-h-12 items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
                   active
                     ? 'font-semibold text-pe-accent'
@@ -445,6 +449,8 @@ export default function Shell({
                 key={id}
                 type="button"
                 onClick={() => goTab(id)}
+                onMouseEnter={() => prefetchTab(id)}
+                onTouchStart={() => prefetchTab(id)}
                 className={`relative flex h-full min-w-[4.25rem] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition ${
                   active ? 'text-pe-accent' : 'text-pe-text-muted'
                 }`}

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { fetchNseStocksTraded } from './lib/nse-stocks-fetch.mjs';
 import { socialServiceWorkerPlugin } from './vite.sw-plugin.js';
 
@@ -92,6 +93,7 @@ function assetLogosProxyPlugin() {
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
+  const analyze = Boolean(process.env.ANALYZE);
 
   return {
     plugins: [
@@ -100,7 +102,13 @@ export default defineConfig(({ mode }) => {
       assetLogosProxyPlugin(),
       socialServiceWorkerPlugin(),
       mockDataProdPlugin(isProd),
-    ],
+      analyze &&
+        visualizer({
+          filename: 'dist/stats.html',
+          gzipSize: true,
+          open: false,
+        }),
+    ].filter(Boolean),
     // Load `.env` from this app root (was `..` when social lived under a monorepo).
     envDir: __dirname,
     server: { port: 5175, strictPort: true, open: false },
@@ -110,7 +118,10 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (!id.includes('node_modules')) return undefined;
+            if (!id.includes('node_modules')) {
+              if (id.includes('marketDataApi')) return 'market-data';
+              return undefined;
+            }
             if (id.includes('@supabase')) return 'supabase';
             if (
               id.includes('/react/') ||

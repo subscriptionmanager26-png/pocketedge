@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "ANALYZE=1 vite build",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
     "preview": "vite preview",
     "auth:push": "bash scripts/push-auth-config.sh",
     "sync:indian-markets": "node scripts/sync-indian-markets.mjs",
@@ -27,7 +29,6 @@
     "react-router-dom": "^6.30.4",
     "remark-gfm": "^4.0.1",
     "tesseract.js": "^5.1.1",
-    "three": "^0.170.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -35,6 +36,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "puppeteer-core": "^24.43.1",
+    "rollup-plugin-visualizer": "^5.14.0",
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.3"
   }

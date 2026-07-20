@@ -31,9 +31,10 @@ import {
   createDraftPortfolio,
   fetchUserPortfolio,
   fetchUserPortfolios,
+  peekUserPortfolios,
   saveSocialPortfolio,
 } from '../lib/socialPortfolioApi';
-import { updateSocialProfile } from '../lib/socialProfileApi';
+import { updateSocialProfile, fetchProfileHeader } from '../lib/socialProfileApi';
 import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } from '../lib/socialIdentity';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
@@ -50,6 +51,8 @@ import { ProfilePageSkeleton } from '../components/PageSkeletons';
 import CommentEngagementButton from '../components/CommentEngagementButton';
 import CommentRow from '../components/CommentRow';
 import { fetchInfluencingAmount } from '../lib/influencingApi';
+import { peekInfluencingCache, writeProfileGraphCache } from '../lib/tabCache';
+import { markTabDataReady, markTabPaint } from '../lib/perfMarks';
 import {
   addPortfolioComment,
   getPortfolioEngagementSync,
@@ -123,6 +126,7 @@ export default function ProfilePage({
   userId = CURRENT_USER.id,
   posts,
   selectedPortfolioId,
+  initialPerson = null,
   onSelectPortfolio,
   onClearPortfolio,
   onBack,
@@ -140,6 +144,7 @@ export default function ProfilePage({
   const appUser = getAppCurrentUser();
   const isOwn = mode === 'own';
   const [person, setPerson] = useState(() => {
+    if (initialPerson && String(initialPerson.id) === String(userId)) return initialPerson;
     if (isOwn) return appUser;
     return peekPerson(userId);
   });
@@ -152,7 +157,14 @@ export default function ProfilePage({
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
-  const [influencingAmount, setInfluencingAmount] = useState('< 1 Cr');
+  const [influencingAmount, setInfluencingAmount] = useState(() => {
+    const cached = peekInfluencingCache(userId);
+    return cached ?? '< 1 Cr';
+  });
+
+  useEffect(() => {
+    markTabPaint('profile');
+  }, []);
 
   const bumpPortfolios = () => setPortfolioVersion((v) => v + 1);
 
@@ -186,6 +198,9 @@ export default function ProfilePage({
 
   useEffect(() => {
     let cancelled = false;
+    if (initialPerson && String(initialPerson.id) === String(userId)) {
+      setPerson(initialPerson);
+    }
     const cached = peekPerson(userId);
     if (cached) setPerson(cached);
 
@@ -197,7 +212,7 @@ export default function ProfilePage({
     return () => {
       cancelled = true;
     };
-  }, [userId, mode]);
+  }, [userId, mode, initialPerson]);
 
   useEffect(() => {
     if (!person?.id) return undefined;
@@ -216,10 +231,19 @@ export default function ProfilePage({
   useEffect(() => {
     if (!person?.id) return;
     let cancelled = false;
-    setPortfoliosLoading(true);
+    const cached = peekUserPortfolios(person.id);
+    if (Array.isArray(cached) && cached.length) {
+      setPortfolios(cached);
+      setPortfoliosLoading(false);
+    } else {
+      setPortfoliosLoading(true);
+    }
     fetchUserPortfolios(person.id)
       .then((rows) => {
-        if (!cancelled) setPortfolios(rows);
+        if (!cancelled) {
+          setPortfolios(rows);
+          markTabDataReady('profile', 'network');
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -251,14 +275,32 @@ export default function ProfilePage({
 
   useEffect(() => {
     if (!person?.id) return undefined;
+    const cached = peekInfluencingCache(person.id);
+    if (cached != null) setInfluencingAmount(cached);
     let cancelled = false;
-    fetchInfluencingAmount(person.id)
-      .then((amount) => {
-        if (!cancelled) setInfluencingAmount(amount);
+
+    fetchProfileHeader(person.id)
+      .then((header) => {
+        if (cancelled || !header) return;
+        if (header.influencing != null) setInfluencingAmount(header.influencing);
+        if (header.follow_counts) {
+          writeProfileGraphCache(person.id, {
+            counts: header.follow_counts,
+            source: 'header',
+          });
+        }
       })
       .catch(() => {
-        if (!cancelled) setInfluencingAmount('< 1 Cr');
+        if (cancelled) return;
+        fetchInfluencingAmount(person.id)
+          .then((amount) => {
+            if (!cancelled) setInfluencingAmount(amount);
+          })
+          .catch(() => {
+            if (!cancelled) setInfluencingAmount('< 1 Cr');
+          });
       });
+
     return () => {
       cancelled = true;
     };

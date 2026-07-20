@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { ensureSupabase, isSupabaseConfigured } from './supabase';
 
 const ONBOARDING_PREFIX = 'pe_social_onboarding';
 const ONBOARDING_COOKIE_PREFIX = 'pe_onboarded_';
@@ -76,9 +76,11 @@ export function clearOnboarding(userId) {
 
 /** Durable server check: published portfolio means onboarding already happened. */
 export async function userHasPublishedPortfolio(userId) {
-  if (!supabase || !userId) return false;
+  if (!isSupabaseConfigured() || !userId) return false;
   try {
-    const { data, error } = await supabase.rpc('list_user_portfolios', {
+    const client = await ensureSupabase();
+    if (!client) return false;
+    const { data, error } = await client.rpc('list_user_portfolios', {
       p_owner_id: userId,
     });
     if (error) return false;
@@ -121,8 +123,9 @@ export async function getAuthUser() {
       email: 'demo@pocketedge.in',
     };
   }
-  if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
+  const client = await ensureSupabase();
+  if (!client) return null;
+  const { data } = await client.auth.getUser();
   return data.user ?? null;
 }
 

@@ -3,9 +3,12 @@ import {
   MARKET_MIN_SEARCH_CHARS,
   MARKET_PREVIEW_LIMIT,
   fetchMarketPreview,
+  peekMarketPreview,
   searchMarketTab,
+  subscribeMarketPreview,
 } from '../lib/marketDataApi';
 import { preloadAssetLogos } from '../lib/assetLogo';
+import { markTabDataReady } from '../lib/perfMarks';
 import { tabToAssetType } from '../lib/marketRefreshPolicy';
 import { useMarketQuotePolling } from './useMarketQuoteRefresh';
 
@@ -20,11 +23,21 @@ function useDebouncedValue(value, delayMs = 250) {
   return debounced;
 }
 
+function scheduleLogoPreload(items) {
+  const run = () => preloadAssetLogos(items, { limit: MARKET_PREVIEW_LIMIT });
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(run, { timeout: 1200 });
+  } else {
+    queueMicrotask(run);
+  }
+}
+
 export function useMarketTabData(tab, query = '') {
-  const [previewItems, setPreviewItems] = useState([]);
+  const cachedPreview = peekMarketPreview(tab);
+  const [previewItems, setPreviewItems] = useState(() => cachedPreview?.items ?? []);
   const [searchItems, setSearchItems] = useState([]);
-  const [syncedAt, setSyncedAt] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [syncedAt, setSyncedAt] = useState(() => cachedPreview?.syncedAt ?? null);
+  const [loading, setLoading] = useState(() => !cachedPreview?.items?.length);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
 
@@ -35,7 +48,10 @@ export function useMarketTabData(tab, query = '') {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    const cached = peekMarketPreview(tab);
+    if (!cached?.items?.length) {
+      setLoading(true);
+    }
     setError(null);
 
     fetchMarketPreview(tab)
@@ -44,19 +60,28 @@ export function useMarketTabData(tab, query = '') {
         const items = payload.items ?? [];
         setPreviewItems(items);
         setSyncedAt(payload.syncedAt ?? null);
-        preloadAssetLogos(items, { limit: MARKET_PREVIEW_LIMIT });
+        markTabDataReady('markets', payload.source ?? 'network');
+        scheduleLogoPreload(items);
       })
       .catch((err) => {
         if (cancelled) return;
         setError(err.message || 'Failed to load market data');
-        setPreviewItems([]);
+        if (!cached?.items?.length) setPreviewItems([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
 
+    const unsubscribe = subscribeMarketPreview(tab, (payload) => {
+      if (cancelled) return;
+      setPreviewItems(payload.items ?? []);
+      setSyncedAt(payload.syncedAt ?? null);
+      scheduleLogoPreload(payload.items ?? []);
+    });
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [tab]);
 
@@ -76,7 +101,7 @@ export function useMarketTabData(tab, query = '') {
       .then(({ items, total }) => {
         if (cancelled) return;
         setSearchItems(items);
-        preloadAssetLogos(items, { limit: 30 });
+        scheduleLogoPreload(items.slice(0, 30));
         void total;
       })
       .catch((err) => {

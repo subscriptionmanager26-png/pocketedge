@@ -23,35 +23,31 @@ import {
   resolveAuthViewForUserAsync,
   skipAuthForDev,
 } from './lib/sessionStore';
-import { cleanOAuthCallbackUrl, signOutFromSupabase, supabase } from './lib/supabase';
+import { cleanOAuthCallbackUrl, ensureSupabase, isSupabaseConfigured, shouldLoadSupabaseEarly, signOutFromSupabase } from './lib/supabase';
 import { identifyPostHogUser, resetPostHogUser } from './lib/posthog';
 import { clearWatchlists } from './lib/watchlistStore';
 import { CURRENT_USER, getPerson, STOCKS } from './data/mockData';
 import { getFund } from './data/fundData';
-import { bootstrapSocialApp, ensureSocialProfile } from './lib/socialProfileApi';
 import { isProductionApp } from './lib/appMode';
-import { flushDemoLocalData } from './lib/flushDemoLocalData';
+import { startAppBootstrap } from './lib/appBootstrap';
 import {
   getAppCurrentUser,
   resolvePeople,
   setSelfProfile,
-  warmPostAuthors,
   getHandleForUserIdSync,
 } from './lib/socialIdentity';
 import {
   addPostComment,
   buildOptimisticPostComment,
   createPost,
-  fetchFeedPosts,
   fetchPost,
-  mapPostRow,
-  notePostLikeSynced,
   togglePostLike,
   usePostBackend,
 } from './lib/socialPostApi';
 import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
-import { clearCachedBootstrap, readCachedBootstrap, writeCachedBootstrap } from './lib/bootstrapCache';
+import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
+import { markAuthReady, markTabPaint } from './lib/perfMarks';
 import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
@@ -126,6 +122,7 @@ export default function App() {
   const [profileReturnTab, setProfileReturnTab] = useState('feed');
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
+  const [profileSeedPerson, setProfileSeedPerson] = useState(null);
   const [marketsSectionTab, setMarketsSectionTab] = useState('stocks');
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
@@ -193,6 +190,7 @@ export default function App() {
     setSelectedFundId,
     setSelectedIndexId,
     setSelectedCommodityId,
+    onProfileResolved: setProfileSeedPerson,
   });
 
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
@@ -214,42 +212,65 @@ export default function App() {
       return undefined;
     }
 
-    if (!supabase) {
+    if (!isSupabaseConfigured()) {
       setAuthView('landing');
       return undefined;
     }
 
-    cleanOAuthCallbackUrl();
+    let cancelled = false;
+    let subscription = null;
 
-    let authGen = 0;
-    const syncAuth = (session) => {
-      const user = session?.user ?? null;
-      setAuthUser(user);
-      if (user) {
-        identifyPostHogUser(user);
-        const gen = ++authGen;
-        setAuthView('bootstrapping');
-        resolveAuthViewForUserAsync(user).then((view) => {
-          if (gen !== authGen) return;
-          setAuthView(view);
-        });
-      } else {
-        authGen += 1;
-        resetPostHogUser();
+    const bootAuth = async () => {
+      if (!shouldLoadSupabaseEarly()) {
         setAuthView('landing');
+        return;
       }
+
+      const client = await ensureSupabase();
+      if (cancelled || !client) {
+        if (!cancelled) setAuthView('landing');
+        return;
+      }
+
+      cleanOAuthCallbackUrl();
+
+      let authGen = 0;
+      const syncAuth = (session) => {
+        if (cancelled) return;
+        const user = session?.user ?? null;
+        setAuthUser(user);
+        if (user) {
+          identifyPostHogUser(user);
+          markAuthReady();
+          const gen = ++authGen;
+          setAuthView('bootstrapping');
+          resolveAuthViewForUserAsync(user).then((view) => {
+            if (cancelled || gen !== authGen) return;
+            setAuthView(view);
+          });
+        } else {
+          authGen += 1;
+          resetPostHogUser();
+          setAuthView('landing');
+        }
+      };
+
+      const { data: { session } } = await client.auth.getSession();
+      syncAuth(session);
+
+      const { data: { subscription: sub } } = client.auth.onAuthStateChange((_event, session) => {
+        cleanOAuthCallbackUrl();
+        syncAuth(session);
+      });
+      subscription = sub;
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => syncAuth(session));
+    bootAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      cleanOAuthCallbackUrl();
-      syncAuth(session);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -261,113 +282,29 @@ export default function App() {
     }
 
     let cancelled = false;
-    const bootCache = readCachedBootstrap();
-    const hasCachedProfile = Boolean(bootCache?.profile);
-    const hasCachedFeed =
-      (bootCache?.posts?.length ?? 0) > 0 || (readCachedFeedPosts()?.length ?? 0) > 0;
-    if (!hasCachedProfile) setProfileReady(false);
-    if (!hasCachedFeed) setPostsLoading(true);
-    if (bootCache?.profile) {
-      setSocialProfile(bootCache.profile);
-      setSelfProfile(bootCache.profile);
-      setProfileReady(true);
-      hydrateMyFollowing()
-        .then(() => {
-          const followerIds = getMyRecentFollowerEvents().map((event) => event.followerId);
-          if (followerIds.length) return resolvePeople(followerIds);
-          return null;
-        })
-        .catch(() => {});
-    }
-    if (bootCache?.posts?.length) {
-      // Warm author profiles before first paint so cards don't flash "Member".
-      warmPostAuthors(bootCache.posts)
-        .catch(() => {})
-        .finally(() => {
-          if (cancelled) return;
-          setPosts(bootCache.posts);
-          setPostsLoading(false);
-        });
-    }
-
-    const applyProfile = (profile) => {
-      if (cancelled) return;
-      if (isProductionApp()) flushDemoLocalData();
-      setSocialProfile(profile);
-      setSelfProfile(profile);
-      setProfileReady(true);
-      hydrateMyFollowing()
-        .then(() => {
-          const followerIds = getMyRecentFollowerEvents().map((event) => event.followerId);
-          if (followerIds.length) return resolvePeople(followerIds);
-          return null;
-        })
-        .catch(() => {});
-    };
-
-    const applyFeed = async (items, profileForCache) => {
-      if (cancelled) return;
-      await warmPostAuthors(items).catch(() => {});
-      if (cancelled) return;
-      setPosts(items);
-      writeCachedFeedPosts(items);
-      if (profileForCache) {
-        writeCachedBootstrap({ profile: profileForCache, posts: items });
-      }
-      setPostsLoading(false);
-    };
-
-    if (usePostBackend()) {
-      bootstrapSocialApp({ feedLimit: 50 })
-        .then(async ({ profile, feed }) => {
-          applyProfile(profile);
-          const nextPosts = (feed?.items ?? []).map((row) => {
-            const post = mapPostRow(row);
-            notePostLikeSynced(post.id, post.liked);
-            return post;
-          });
-          await applyFeed(nextPosts, profile);
-        })
-        .catch(async () => {
-          // Fallback to separate calls if bootstrap RPC is unavailable.
-          let profile = null;
-          try {
-            profile = await ensureSocialProfile();
-            applyProfile(profile);
-          } catch {
-            if (!cancelled) {
-              setSocialProfile(null);
-              setSelfProfile(null);
-              setProfileReady(true);
-            }
-          }
-          try {
-            const items = await fetchFeedPosts();
-            await applyFeed(items, profile);
-          } catch {
-            await applyFeed([], profile);
-          }
-        });
-    } else {
-      ensureSocialProfile()
-        .then((profile) => {
-          applyProfile(profile);
-          writeCachedBootstrap({ profile, posts: readCachedFeedPosts() ?? [] });
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setSocialProfile(null);
-            setSelfProfile(null);
-            setProfileReady(true);
-          }
-        });
-      setPostsLoading(false);
-    }
+    const cancelledRef = { current: false };
+    startAppBootstrap({
+      authUserId: authUser.id,
+      cancelledRef,
+      setSocialProfile,
+      setSelfProfile,
+      setProfileReady,
+      setPosts,
+      setPostsLoading,
+    });
 
     return () => {
       cancelled = true;
+      cancelledRef.current = true;
     };
   }, [authView, authUser?.id]);
+
+  useEffect(() => {
+    if (authView !== 'app') return;
+    if (tab === 'markets' || tab === 'portfolio' || tab === 'profile') {
+      markTabPaint(tab);
+    }
+  }, [authView, tab]);
 
   const activityItems = useMemo(
     () => getActivityFeed(),
@@ -1039,6 +976,9 @@ export default function App() {
             <ProfilePage
               mode={profileMode}
               userId={profileUserId}
+              initialPerson={
+                profileSeedPerson?.id === profileUserId ? profileSeedPerson : null
+              }
               posts={posts}
               selectedPortfolioId={profilePortfolioId}
               onSelectPortfolio={(id) => {

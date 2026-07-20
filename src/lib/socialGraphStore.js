@@ -10,6 +10,9 @@ import {
   unfollowUser,
   useFollowBackend,
 } from './socialGraphApi';
+import { peekProfileGraphCache, writeProfileGraphCache, invalidateProfileGraphTabCache } from './tabCache';
+
+const GRAPH_HYDRATE_TTL_MS = 45_000;
 
 const FOLLOWING_KEY = 'pe_social_following';
 const TOPICS_KEY = 'pe_social_topics';
@@ -28,6 +31,8 @@ const followingListCache = new Map();
 const followersListCache = new Map();
 /** Live cache: {followers, following} counts per profile user id. */
 const countsCache = new Map();
+/** Last successful hydrate timestamp per user id. */
+const graphHydratedAt = new Map();
 /** Live cache: recent follower events for the current user (activity). */
 let myFollowerEventsCache = [];
 
@@ -133,6 +138,8 @@ export async function toggleFollow(userId) {
         hydrateFollowGraph(targetId).catch(() => {}),
         me ? hydrateFollowGraph(me).catch(() => {}) : Promise.resolve(),
       ]);
+      invalidateProfileGraphTabCache(targetId);
+      if (me) invalidateProfileGraphTabCache(me);
     } catch {
       // Revert optimistic update.
       if (nextFollowing) next.delete(targetId);
@@ -268,6 +275,28 @@ export async function hydrateFollowGraph(userId) {
     return getFollowCounts(id);
   }
 
+  const hydratedAt = graphHydratedAt.get(id);
+  const isFresh =
+    hydratedAt != null &&
+    Date.now() - hydratedAt < GRAPH_HYDRATE_TTL_MS &&
+    countsCache.has(id) &&
+    followingListCache.has(id) &&
+    followersListCache.has(id);
+
+  if (isFresh) {
+    return getFollowCounts(id);
+  }
+
+  const sessionGraph = peekProfileGraphCache(id);
+  if (sessionGraph?.counts) {
+    countsCache.set(id, sessionGraph.counts);
+    if (Array.isArray(sessionGraph.following)) followingListCache.set(id, sessionGraph.following);
+    if (Array.isArray(sessionGraph.followers)) followersListCache.set(id, sessionGraph.followers);
+    graphHydratedAt.set(id, Date.now());
+    emit();
+    return sessionGraph.counts;
+  }
+
   const me = getAppCurrentUserId();
   const isSelf = id === me;
 
@@ -291,6 +320,16 @@ export async function hydrateFollowGraph(userId) {
   } else {
     followersListCache.set(id, followersPayload);
   }
+
+  graphHydratedAt.set(id, Date.now());
+  writeProfileGraphCache(id, {
+    counts,
+    following,
+    followers: isSelf
+      ? followersPayload.map((event) => event.followerId)
+      : followersPayload,
+    source: 'network',
+  });
 
   emit();
   return counts;

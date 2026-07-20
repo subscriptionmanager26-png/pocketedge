@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { skipAuthForDev } from './sessionStore';
 import { cachedFetch, getCached, setCached } from './queryCache';
+import { peekMarketPreviewCache, writeMarketPreviewCache } from './tabCache';
 
 const BASE = '/data/markets';
 const MARKET_SEARCH_TTL_MS = 30_000;
@@ -51,6 +52,28 @@ const TAB_TO_ASSET_TYPE = {
 };
 
 const cache = new Map();
+const previewListeners = new Map();
+
+function notifyMarketPreviewUpdated(tab, payload) {
+  previewListeners.get(tab)?.forEach((listener) => {
+    try {
+      listener(payload);
+    } catch {
+      /* ignore listener errors */
+    }
+  });
+}
+
+export function subscribeMarketPreview(tab, listener) {
+  const key = String(tab);
+  if (!previewListeners.has(key)) previewListeners.set(key, new Set());
+  previewListeners.get(key).add(listener);
+  return () => previewListeners.get(key)?.delete(listener);
+}
+
+export function peekMarketPreview(tab) {
+  return peekMarketPreviewCache(tab);
+}
 
 function useMarketRpc() {
   return Boolean(supabase) && isSupabaseConfigured() && !skipAuthForDev();
@@ -250,22 +273,64 @@ export async function fetchMarketManifest() {
   return fetchJson('manifest.json');
 }
 
+async function fetchMarketPreviewFromRpc(tab, assetType) {
+  const { data, error } = await supabase.rpc('list_social_market_preview', {
+    p_asset_type: assetType,
+    p_limit: MARKET_PREVIEW_LIMIT,
+  });
+  if (error) throw error;
+  const rows = Array.isArray(data?.items) ? data.items : [];
+  const result = {
+    syncedAt: data?.synced_at ?? null,
+    items: rows.map(marketAssetRowToItem).filter(Boolean),
+    asOn: null,
+    isPreview: true,
+    source: 'rpc',
+  };
+  writeMarketPreviewCache(tab, result);
+  return result;
+}
+
+function reconcileMarketPreviewInBackground(tab, assetType) {
+  if (!assetType || !useMarketRpc()) return;
+  fetchMarketPreviewFromRpc(tab, assetType)
+    .then((payload) => {
+      notifyMarketPreviewUpdated(tab, payload);
+    })
+    .catch((err) => {
+      console.warn('list_social_market_preview reconcile failed', err);
+    });
+}
+
 export async function fetchMarketPreview(tab) {
   const assetType = tabToAssetType(tab);
+  const cached = peekMarketPreviewCache(tab);
+  if (cached?.source === 'rpc' && Array.isArray(cached.items) && cached.items.length) {
+    return cached;
+  }
+
+  const previewFile = TAB_PREVIEW[tab];
+  if (previewFile) {
+    try {
+      const payload = await fetchJson(previewFile);
+      const staticResult = {
+        syncedAt: payload.syncedAt ?? null,
+        items: payload.items ?? [],
+        asOn: payload.asOn ?? null,
+        isPreview: true,
+        source: 'static',
+      };
+      writeMarketPreviewCache(tab, staticResult);
+      reconcileMarketPreviewInBackground(tab, assetType);
+      return staticResult;
+    } catch (err) {
+      console.warn('market preview JSON failed, falling back to RPC', err);
+    }
+  }
+
   if (assetType && useMarketRpc()) {
     try {
-      const { data, error } = await supabase.rpc('list_social_market_preview', {
-        p_asset_type: assetType,
-        p_limit: MARKET_PREVIEW_LIMIT,
-      });
-      if (error) throw error;
-      const rows = Array.isArray(data?.items) ? data.items : [];
-      return {
-        syncedAt: data?.synced_at ?? null,
-        items: rows.map(marketAssetRowToItem).filter(Boolean),
-        asOn: null,
-        isPreview: true,
-      };
+      return await fetchMarketPreviewFromRpc(tab, assetType);
     } catch (err) {
       console.warn('list_social_market_preview failed, falling back to JSON', err);
     }
@@ -275,12 +340,15 @@ export async function fetchMarketPreview(tab) {
   if (!file) throw new Error(`Unknown market tab: ${tab}`);
   const payload = await fetchJson(file);
   const items = await enrichMarketItemsWithLogos(payload.items ?? [], assetType);
-  return {
+  const result = {
     syncedAt: payload.syncedAt ?? null,
     items,
     asOn: payload.asOn ?? null,
     isPreview: Boolean(TAB_PREVIEW[tab]),
+    source: 'static',
   };
+  writeMarketPreviewCache(tab, result);
+  return result;
 }
 
 export async function loadSearchIndex(tab) {

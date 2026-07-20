@@ -99,7 +99,9 @@ function buildPublicStorageUrl(assetType, assetKey, variant = LOGO_VARIANT_LIST)
   if (!base || !key || !STORAGE_ASSET_TYPES.has(type)) return null;
   // AMC logos live under stock/amc_{id}/ — not fund/{schemeCode}/.
   if (type === 'fund') return null;
-  return `${base}${OBJECT_MARKER}${type}/${encodeURIComponent(key)}/${variant}`;
+  // Index/commodity/ETF logos are ingested under stock/{asset_key}/ (same bucket layout as equities).
+  const folder = type === 'index' || type === 'commodity' || type === 'etf' ? 'stock' : type;
+  return `${base}${OBJECT_MARKER}${folder}/${encodeURIComponent(key)}/${variant}`;
 }
 
 /**

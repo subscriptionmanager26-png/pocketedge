@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import AssetLogo from '../components/AssetLogo';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { useMarketTabData } from '../hooks/useMarketTabData';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
+import { markTabPaint } from '../lib/perfMarks';
 import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
 import { formatTicker } from '../lib/tickers';
 
@@ -47,6 +48,10 @@ export default function MarketsPage({
   const [query, setQuery] = useState('');
   const tab = sectionTab;
   const { items, loading, error } = useMarketTabData(tab, query);
+
+  useEffect(() => {
+    markTabPaint('markets');
+  }, []);
 
   const handleTabChange = (next) => {
     onSectionTabChange?.(next);

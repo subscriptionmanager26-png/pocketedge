@@ -23,6 +23,7 @@ import { addWatchlist, getWatchlists, subscribeWatchlists } from '../lib/watchli
 import { PortfolioPageSkeleton } from '../components/PortfolioSkeletons';
 import { fetchUserPortfolios, peekUserPortfolios } from '../lib/socialPortfolioApi';
 import { getAppCurrentUserId } from '../lib/socialIdentity';
+import { markTabDataReady, markTabPaint } from '../lib/perfMarks';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchStockNewsForTickers, fetchCorporateActionsForTickers, isStockNewsConfigured } from '../lib/stockNewsApi';
@@ -64,6 +65,10 @@ export default function PortfolioPage({
 
   const ownerId = getAppCurrentUserId();
 
+  useEffect(() => {
+    markTabPaint('portfolio');
+  }, []);
+
   useEffect(() => subscribeWatchlists(() => setWatchlistTick((n) => n + 1)), []);
 
   useEffect(() => {
@@ -81,7 +86,10 @@ export default function PortfolioPage({
 
       fetchUserPortfolios(ownerId)
         .then((rows) => {
-          if (!cancelled) setRemotePortfolios(rows.filter((p) => !p.isDraft));
+          if (!cancelled) {
+            setRemotePortfolios(rows.filter((p) => !p.isDraft));
+            markTabDataReady('portfolio', 'network');
+          }
         })
         .catch(() => {
           if (!cancelled && !(Array.isArray(cached) && cached.length)) {
@@ -277,18 +285,29 @@ export default function PortfolioPage({
     };
   }, [activeList, assetsByKey]);
 
-  const holdingsRows = useMemo(() => {
-    if (!liveActiveList) return [];
-    const metrics = computePortfolioDisplayMetrics(liveActiveList);
+  const displayMetrics = useMemo(() => {
+    if (!liveActiveList) return { metrics: null, holdingsRows: [] };
+    const metricsSource =
+      liveActiveList.kind === 'portfolio' || liveActiveList.kind === 'watchlist'
+        ? liveActiveList
+        : {
+            ...liveActiveList,
+            kind: 'portfolio',
+            holdings: MY_PORTFOLIO.holdings,
+          };
+    const metrics = computePortfolioDisplayMetrics(metricsSource);
     const holdings = metrics.holdings ?? [];
     const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
-    return holdings
+    const holdingsRows = holdings
       .map((h) => ({
         ...h,
         weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
       }))
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
+    return { metrics, holdingsRows };
   }, [liveActiveList]);
+
+  const { metrics, holdingsRows } = displayMetrics;
 
   const formItems = useMemo(
     () =>
@@ -315,7 +334,6 @@ export default function PortfolioPage({
   const [postsLoading, setPostsLoading] = useState(false);
 
   useEffect(() => {
-    // DMA form only matters on the performance tab — defer until needed.
     if (contentTab !== 'performance') return undefined;
     if (!formItems.length) {
       setFormByTicker({});
@@ -323,10 +341,21 @@ export default function PortfolioPage({
     }
 
     let cancelled = false;
-    fetchPortfolioFormByTicker(formItems).then((map) => {
-      if (!cancelled) setFormByTicker(map);
-    });
+    const loadForm = () => {
+      fetchPortfolioFormByTicker(formItems).then((map) => {
+        if (!cancelled) setFormByTicker(map);
+      });
+    };
 
+    if (typeof requestIdleCallback === 'function') {
+      const idleId = requestIdleCallback(loadForm, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(idleId);
+      };
+    }
+
+    loadForm();
     return () => {
       cancelled = true;
     };
@@ -457,18 +486,6 @@ export default function PortfolioPage({
       posts: useBackend() || !isDevMockMode() ? portfolioPosts : base.posts,
     };
   }, [tickers, portfolioNews, portfolioPosts]);
-
-  const metrics = useMemo(() => {
-    if (!liveActiveList) return null;
-    if (liveActiveList.kind === 'portfolio' || liveActiveList.kind === 'watchlist') {
-      return computePortfolioDisplayMetrics(liveActiveList);
-    }
-    return computePortfolioDisplayMetrics({
-      ...liveActiveList,
-      kind: 'portfolio',
-      holdings: MY_PORTFOLIO.holdings,
-    });
-  }, [liveActiveList]);
 
   if (useBackend() && portfoliosLoading) {
     return (

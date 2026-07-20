@@ -17,10 +17,19 @@ export function socialServiceWorkerPlugin() {
 
       const assets = Object.keys(bundle)
         .filter((fileName) => !fileName.endsWith('.map'))
+        .filter((fileName) => !fileName.includes('ocr-') && !fileName.includes('spreadsheet-'))
         .map((fileName) => `/${fileName.replace(/^\/+/, '')}`);
 
+      const marketPreviews = [
+        '/data/markets/stocks-preview.json',
+        '/data/markets/mutual-funds-preview.json',
+        '/data/markets/etf-preview.json',
+        '/data/markets/indices-preview.json',
+        '/data/markets/commodities-preview.json',
+      ];
+
       const precache = Array.from(
-        new Set(['/', '/index.html', '/manifest.webmanifest', ...assets])
+        new Set(['/', '/index.html', '/manifest.webmanifest', ...assets, ...marketPreviews])
       );
 
       const sw = `/* Generated — do not edit */
