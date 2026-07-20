@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ClipboardCheck, Copy, Heart, Share2 } from 'lucide-react';
-import { CURRENT_USER, STOCKS, copyPortfolioForUser, getHandleForUserId } from '../data/mockData';
+import { CURRENT_USER, copyPortfolioForUser, getHandleForUserId, getHoldingTotalReturnPct } from '../data/mockData';
 import { formatCount, formatPct, pnlClass } from '../lib/format';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { profilePath } from '../lib/routes';
@@ -35,6 +35,7 @@ function getPositions(portfolio) {
         assetType: h.assetType ?? 'stock',
         logoIconUrl: h.logoIconUrl ?? null,
         weight,
+        totalReturn: getHoldingTotalReturnPct(h),
       };
     });
   }
@@ -47,7 +48,14 @@ function getPositions(portfolio) {
     assetType: 'stock',
     logoIconUrl: null,
     weight,
+    totalReturn: 0,
   }));
+}
+
+function getTopPerformers(portfolio) {
+  return getPositions(portfolio)
+    .sort((a, b) => b.totalReturn - a.totalReturn)
+    .slice(0, TOP_N);
 }
 
 export default function PortfolioCard({
@@ -76,7 +84,7 @@ export default function PortfolioCard({
     setShares(social?.shares ?? 0);
   }, [social?.liked, social?.copied, social?.likes, social?.copies, social?.shares, portfolio.id]);
 
-  const topHoldings = getPositions(portfolio).sort((a, b) => b.weight - a.weight).slice(0, TOP_N);
+  const topHoldings = getTopPerformers(portfolio);
   const commentCount = social?.comments?.length ?? 0;
 
   const handleLike = (event) => {
@@ -163,7 +171,7 @@ export default function PortfolioCard({
         >
           <div className="rounded-[12px] border border-pe-border bg-white px-3.5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
             <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-              Top {TOP_N} holdings & allocations
+              Top {TOP_N} performers
             </p>
             <div className="mt-3 space-y-2">
               {topHoldings.map((row) => (
@@ -178,8 +186,10 @@ export default function PortfolioCard({
                     />
                     <p className="truncate text-[14px] font-semibold text-pe-text">{row.label}</p>
                   </div>
-                  <p className="shrink-0 text-[13px] font-semibold tabular-nums text-pe-text-secondary">
-                    {row.weight.toFixed(1)}%
+                  <p
+                    className={`shrink-0 text-[13px] font-semibold tabular-nums ${pnlClass(row.totalReturn)}`}
+                  >
+                    {formatPct(row.totalReturn)}
                   </p>
                 </div>
               ))}

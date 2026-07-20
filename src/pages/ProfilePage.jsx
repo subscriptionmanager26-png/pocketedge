@@ -24,6 +24,8 @@ import {
   CURRENT_USER,
   POSTS,
   getPortfolioTotalReturnPct,
+  getPortfolioReturn,
+  getHoldingReturn1M,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -1405,7 +1407,7 @@ function PortfolioDetailView({
           </div>
         </div>
       ) : (
-        <PortfolioHoldingsList portfolio={portfolio} returnPeriod={returnPeriod} />
+        <PortfolioHoldingsList portfolio={portfolio} />
       )}
 
       {!editing ? (
@@ -1651,44 +1653,12 @@ function portfolioHoldingsNeedClientResolve(portfolio) {
   return (portfolio.tickers ?? []).length > 0;
 }
 
-function PortfolioHoldingsList({ portfolio, returnPeriod }) {
+function PortfolioHoldingsList({ portfolio }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
   const [assetsLoading, setAssetsLoading] = useState(false);
-  const overallReturn = useMemo(() => {
-    const serverPct = Number(portfolio.totalReturnPct ?? portfolio.totalPnlPct);
-    const holdings = portfolio.holdings ?? [];
-    const hasAbsolutes = holdings.some((h) => {
-      const qty = Number(h?.qty);
-      return Number.isFinite(qty) && qty > 0;
-    });
-
-    if (!hasAbsolutes && Number.isFinite(serverPct)) return serverPct;
-
-    let totalValue = 0;
-    let totalCost = 0;
-
-    for (const holding of holdings) {
-      const qty = Number(holding?.qty) || 0;
-      const avg = Number(holding?.avg) || 0;
-      const asset = assetsByKey[holding?.ticker];
-      const livePrice = Number(asset?.price);
-      const savedPrice = Number(holding?.price);
-      const price =
-        Number.isFinite(livePrice) && livePrice > 0
-          ? livePrice
-          : Number.isFinite(savedPrice) && savedPrice > 0
-            ? savedPrice
-            : avg;
-
-      totalValue += qty * price;
-      totalCost += qty * avg;
-    }
-
-    if (totalCost > 0) return ((totalValue - totalCost) / totalCost) * 100;
-    return Number.isFinite(serverPct) ? serverPct : 0;
-  }, [portfolio.holdings, portfolio.totalReturnPct, portfolio.totalPnlPct, assetsByKey]);
+  const portfolioReturn1M = useMemo(() => getPortfolioReturn(portfolio, '1M'), [portfolio]);
 
   const holdingKeys = useMemo(() => {
     const keys = [];
@@ -1713,7 +1683,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
 
   useEffect(() => {
     setPage(0);
-  }, [portfolio.id, returnPeriod]);
+  }, [portfolio.id]);
 
   useEffect(() => {
     // Seed from enriched holdings immediately so profile paints without waiting.
@@ -1745,15 +1715,6 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
   }, [portfolio.id, holdingKeys, needsClientResolve, portfolio.holdings]);
 
   const rows = useMemo(() => {
-    const periodReturnForChangePct = (changePct, fallbackPnl = 0) => {
-      const day = changePct ?? fallbackPnl ?? 0;
-      const month = Number((day * 8).toFixed(1));
-      if (returnPeriod === '1D') return day;
-      if (returnPeriod === '1W') return Number((day * 5).toFixed(1));
-      if (returnPeriod === '1Y') return Number((month * 8).toFixed(1));
-      return month;
-    };
-
     const liveHoldings = (portfolio.holdings ?? []).filter(Boolean);
     if (liveHoldings.length) {
       const totalValue = liveHoldings.reduce((sum, h) => {
@@ -1799,7 +1760,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
                   ? asset.name
                   : '',
           weight,
-          itemReturn: periodReturnForChangePct(asset?.item?.changePct ?? h.changePct, h.pnlPct),
+          itemReturn: getHoldingReturn1M(h, asset),
           assetType: h.assetType ?? asset?.kind ?? 'stock',
           logoIconUrl: h.logoIconUrl ?? asset?.logoIconUrl ?? null,
         };
@@ -1822,12 +1783,12 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
               ? asset.name
               : '',
         weight: equal,
-        itemReturn: periodReturnForChangePct(asset?.item?.changePct),
+        itemReturn: getHoldingReturn1M({ ticker, changePct: asset?.item?.changePct }, asset),
         assetType: asset?.kind ?? 'stock',
         logoIconUrl: asset?.logoIconUrl ?? null,
       };
     });
-  }, [portfolio, returnPeriod, assetsByKey]);
+  }, [portfolio, assetsByKey]);
 
   const sortedRows = useMemo(
     () => [...rows].sort((a, b) => b.weight - a.weight),
@@ -1854,7 +1815,7 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
     );
   }
 
-  const periodLabel = RETURN_PERIOD_LABELS[returnPeriod] ?? returnPeriod;
+  const periodLabel = '1M';
 
   return (
     <div>
@@ -1866,10 +1827,10 @@ function PortfolioHoldingsList({ portfolio, returnPeriod }) {
           <p className="text-[15px] font-semibold text-pe-text">Overall</p>
           <div className="shrink-0 text-right">
             <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-              Total return
+              {periodLabel} return
             </p>
-            <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(overallReturn)}`}>
-              {formatPct(overallReturn)}
+            <p className={`mt-0.5 text-[15px] font-bold tabular-nums ${pnlClass(portfolioReturn1M)}`}>
+              {formatPct(portfolioReturn1M)}
             </p>
           </div>
         </div>

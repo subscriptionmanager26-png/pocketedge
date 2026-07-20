@@ -1173,6 +1173,43 @@ export function getPortfolioReturn(portfolio, period = '1M') {
   return returns[period] ?? returns['1M'] ?? 0;
 }
 
+/** Lifetime total return % for a single holding. */
+export function getHoldingTotalReturnPct(holding, asset = null) {
+  const stored = Number(holding?.pnlPct ?? holding?.pnl_pct ?? holding?.totalReturnPct);
+  if (Number.isFinite(stored)) return stored;
+
+  const qty = Number(holding?.qty) || 0;
+  const avg = Number(holding?.avg) || 0;
+  if (qty > 0 && avg > 0) {
+    const livePrice = Number(asset?.price);
+    const savedPrice = Number(holding?.price);
+    const price =
+      Number.isFinite(livePrice) && livePrice > 0
+        ? livePrice
+        : Number.isFinite(savedPrice) && savedPrice > 0
+          ? savedPrice
+          : avg;
+    return ((price - avg) / avg) * 100;
+  }
+  return 0;
+}
+
+/** 1-month return % for a single holding. */
+export function getHoldingReturn1M(holding, asset = null) {
+  const stored = Number(holding?.return1M ?? holding?.return_1m);
+  if (Number.isFinite(stored)) return stored;
+
+  const item = asset?.item ?? null;
+  const fromItem = Number(item?.return1M ?? item?.return_1m);
+  if (Number.isFinite(fromItem)) return fromItem;
+
+  const changePct = Number(
+    asset?.item?.changePct ?? holding?.changePct ?? asset?.changePct
+  );
+  if (Number.isFinite(changePct)) return Number((changePct * 8).toFixed(1));
+  return 0;
+}
+
 /** Lifetime total return % = (current value − invested) / invested. */
 export function getPortfolioTotalReturnPct(portfolio) {
   const serverPct = Number(portfolio?.totalReturnPct ?? portfolio?.totalPnlPct);
