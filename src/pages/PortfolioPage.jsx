@@ -690,24 +690,18 @@ const CONTENT_TABS = [
   { id: 'posts', label: 'Posts' },
 ];
 
-function formatDeltaAmount(n) {
-  if (n == null || Number.isNaN(n)) return '-';
-  const abs = Math.abs(n);
-  if (abs >= 1_00_00_000) return `${(abs / 1_00_00_000).toFixed(2)}Cr`;
-  if (abs >= 1_00_000) return `${(abs / 1_00_000).toFixed(2)}L`;
-  if (abs >= 1_000) return `${(abs / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
-  return `${Math.round(abs).toLocaleString('en-IN')}`;
-}
-
 function PortfolioDeltaLine({ amount, pct, suffix, align = 'left' }) {
   const tone = amount ?? pct ?? 0;
   const up = tone > 0;
   const down = tone < 0;
   const Icon = up ? ArrowUp : down ? ArrowDown : null;
-  const amountText = formatDeltaAmount(amount);
+  const amountText =
+    amount == null || Number.isNaN(amount)
+      ? '-'
+      : formatInr(Math.abs(Number(amount)), { compact: true }).replace(/^₹/, '');
   const pctText =
     pct != null && Number.isFinite(Number(pct))
-      ? `${Math.abs(Number(pct)).toFixed(Math.abs(Number(pct)) >= 10 ? 0 : 1)}%`
+      ? `${Math.abs(Number(pct)).toFixed(2)}%`
       : null;
 
   return (

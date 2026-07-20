@@ -228,9 +228,7 @@ function HoldingTodayDelta({ amount, pct }) {
   const up = tone > 0;
   const down = tone < 0;
   const Icon = up ? ArrowUp : down ? ArrowDown : null;
-  const pctText = hasPct
-    ? `${Math.abs(Number(pct)).toFixed(Math.abs(Number(pct)) >= 10 ? 0 : 1)}%`
-    : null;
+  const pctText = hasPct ? `${Math.abs(Number(pct)).toFixed(2)}%` : null;
 
   return (
     <p

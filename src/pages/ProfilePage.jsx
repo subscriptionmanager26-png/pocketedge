@@ -121,6 +121,15 @@ function getStoredReturnPeriod() {
 const inputClass =
   'w-full rounded-lg border border-pe-border-strong bg-pe-canvas px-3 py-2 text-[15px] text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent';
 
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="text-sm font-semibold text-pe-text-muted">{label}</label>
+      <div className="mt-1.5">{children}</div>
+    </div>
+  );
+}
+
 export default function ProfilePage({
   mode = 'own',
   userId = CURRENT_USER.id,

@@ -1,16 +1,30 @@
+/** Round absolute money into integer Indian units — never show paisa / decimals. */
+function formatInrCompact(abs, negative) {
+  const sign = negative ? '−' : '';
+  if (abs >= 1_00_00_000) {
+    return `${sign}₹${Math.round(abs / 1_00_00_000)}Cr`;
+  }
+  if (abs >= 1_00_000) {
+    return `${sign}₹${Math.round(abs / 1_00_000)}L`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}₹${Math.round(abs / 1_000)}K`;
+  }
+  return `${sign}₹${Math.round(abs).toLocaleString('en-IN')}`;
+}
+
 export function formatInr(n, { compact = false } = {}) {
   if (n == null || Number.isNaN(n)) return '-';
-  const abs = Math.abs(n);
-  if (compact) {
-    if (abs >= 1_00_00_000) return `${n < 0 ? '−' : ''}₹${(abs / 1_00_00_000).toFixed(2)}Cr`;
-    if (abs >= 1_00_000) return `${n < 0 ? '−' : ''}₹${(abs / 1_00_000).toFixed(2)}L`;
-    if (abs >= 1_000) return `${n < 0 ? '−' : ''}₹${(abs / 1_000).toFixed(1)}K`;
-  }
+  const value = Number(n);
+  if (!Number.isFinite(value)) return '-';
+  const abs = Math.abs(value);
+  if (compact) return formatInrCompact(abs, value < 0);
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    maximumFractionDigits: abs >= 100 ? 0 : 2,
-  }).format(n);
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  }).format(Math.round(value));
 }
 
 export function formatPct(n, { signed = true } = {}) {
@@ -40,9 +54,11 @@ export function dayChangeAmount({ price, changePct, previousClose, change } = {}
 }
 
 export function formatCount(n) {
-  if (n >= 1_00_000) return `${(n / 1_00_000).toFixed(1)}L`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
+  if (n == null || Number.isNaN(n)) return '0';
+  const value = Math.round(Number(n));
+  if (value >= 1_00_000) return `${Math.round(value / 1_00_000)}L`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
+  return String(value);
 }
 
 export function formatNewsDate(iso) {
