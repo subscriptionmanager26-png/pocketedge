@@ -19,6 +19,10 @@ function useMarketRpc() {
   return Boolean(supabase) && isSupabaseConfigured() && !skipAuthForDev();
 }
 
+function useMarketLogoLookup() {
+  return Boolean(supabase) && isSupabaseConfigured();
+}
+
 export function portfolioAssetKey(item, kind) {
   if (kind === 'fund') return String(item.schemeCode ?? item.id ?? '').trim();
   if (
@@ -230,7 +234,7 @@ async function resolvePortfolioAssetExact(key) {
   const raw = String(key ?? '').trim();
   if (!raw) return null;
 
-  if (useMarketRpc()) {
+  if (useMarketLogoLookup()) {
     try {
       const map = await lookupMarketAssetsBatch([raw]);
       const item = map.get(raw) ?? map.get(raw.toUpperCase());
@@ -263,7 +267,7 @@ export async function resolvePortfolioAssets(keys) {
   const map = new Map();
   if (!unique.length) return map;
 
-  if (useMarketRpc()) {
+  if (useMarketLogoLookup()) {
     try {
       const batch = await lookupMarketAssetsBatch(unique);
       for (const key of unique) {

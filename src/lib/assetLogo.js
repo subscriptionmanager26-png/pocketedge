@@ -85,6 +85,8 @@ function buildPublicStorageUrl(assetType, assetKey, variant = LOGO_VARIANT_LIST)
       .toLowerCase() || 'stock';
   const key = storageObjectKey(assetKey);
   if (!base || !key || !STORAGE_ASSET_TYPES.has(type)) return null;
+  // AMC logos live under stock/amc_{id}/ — not fund/{schemeCode}/.
+  if (type === 'fund') return null;
   return `${base}${OBJECT_MARKER}${type}/${encodeURIComponent(key)}/${variant}`;
 }
 
@@ -115,6 +117,21 @@ export function assetLogoInitial(label) {
 
 const preloadInflight = new Set();
 const preloadDone = new Set();
+
+/** Shared with AssetLogo — warmed by preloadAssetLogos. */
+export const loadedLogoSrcCache = new Set();
+/** Skip re-requesting icons that 404 (common for ETF/fund/index). */
+export const failedLogoSrcCache = new Set();
+
+export function markLogoSrcLoaded(src) {
+  if (!src) return;
+  loadedLogoSrcCache.add(src);
+  failedLogoSrcCache.delete(src);
+}
+
+export function markLogoSrcFailed(src) {
+  if (src) failedLogoSrcCache.add(src);
+}
 
 /**
  * Warm the browser HTTP cache for upcoming logo URLs (list-sized 128px).
@@ -147,13 +164,15 @@ export function preloadAssetLogos(entries, { limit = 40, variant = LOGO_VARIANT_
     preloadInflight.add(src);
     const img = new Image();
     img.decoding = 'async';
-    const finish = () => {
+    const finish = (ok) => {
       preloadInflight.delete(src);
       preloadDone.add(src);
+      if (ok) markLogoSrcLoaded(src);
+      else markLogoSrcFailed(src);
       pump();
     };
-    img.onload = finish;
-    img.onerror = finish;
+    img.onload = () => finish(true);
+    img.onerror = () => finish(false);
     img.src = src;
   }
 

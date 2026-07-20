@@ -56,6 +56,11 @@ function useMarketRpc() {
   return Boolean(supabase) && isSupabaseConfigured() && !skipAuthForDev();
 }
 
+/** Logo batch lookup works whenever Supabase is configured (incl. dev skipAuth). */
+function useMarketLogoLookup() {
+  return Boolean(supabase) && isSupabaseConfigured();
+}
+
 function tabToAssetType(tab) {
   return TAB_TO_ASSET_TYPE[tab] ?? null;
 }
@@ -168,6 +173,55 @@ export function marketAssetRowToItem(row) {
   };
 }
 
+function previewItemKey(row, assetType) {
+  if (assetType === 'fund') return row.schemeCode ?? row.id ?? row.asset_key ?? row.assetKey;
+  return row.symbol ?? row.id ?? row.asset_key ?? row.assetKey;
+}
+
+async function enrichPreviewItemsWithLogos(items, assetType) {
+  if (!assetType || !useMarketLogoLookup() || !Array.isArray(items) || !items.length) {
+    return items;
+  }
+
+  const needsLogo = items.some((row) => !(row.logoIconUrl ?? row.logo_icon_url));
+  if (!needsLogo) return items;
+
+  const keys = [
+    ...new Set(
+      items
+        .map((row) => String(previewItemKey(row, assetType) ?? '').trim())
+        .filter(Boolean)
+    ),
+  ];
+  if (!keys.length) return items;
+
+  try {
+    const { data, error } = await supabase.rpc('lookup_social_market_assets_batch', {
+      p_keys: keys,
+    });
+    if (error) throw error;
+
+    const logoByKey = new Map();
+    for (const row of data ?? []) {
+      const item = marketAssetRowToItem(row);
+      if (!item?.logoIconUrl) continue;
+      const key = row.asset_key ?? row.assetKey ?? previewItemKey(item, assetType);
+      if (key) logoByKey.set(String(key), item.logoIconUrl);
+      if (row.query_key) logoByKey.set(String(row.query_key), item.logoIconUrl);
+    }
+
+    return items.map((row) => {
+      const key = String(previewItemKey(row, assetType) ?? '');
+      const logoIconUrl = row.logoIconUrl ?? row.logo_icon_url ?? logoByKey.get(key) ?? null;
+      if (!logoIconUrl || row.logoIconUrl === logoIconUrl) return row;
+      return { ...row, logoIconUrl };
+    });
+  } catch (err) {
+    console.warn('preview logo enrich failed', err);
+    return items;
+  }
+}
+
 async function fetchJson(file) {
   if (cache.has(file)) {
     const cached = cache.get(file);
@@ -220,9 +274,10 @@ export async function fetchMarketPreview(tab) {
   const file = TAB_PREVIEW[tab] ?? TAB_FULL[tab];
   if (!file) throw new Error(`Unknown market tab: ${tab}`);
   const payload = await fetchJson(file);
+  const items = await enrichPreviewItemsWithLogos(payload.items ?? [], assetType);
   return {
     syncedAt: payload.syncedAt ?? null,
-    items: payload.items ?? [],
+    items,
     asOn: payload.asOn ?? null,
     isPreview: Boolean(TAB_PREVIEW[tab]),
   };
@@ -373,7 +428,7 @@ export async function lookupMarketAssetsBatch(keys) {
 
   if (!missing.length) return map;
 
-  if (useMarketRpc()) {
+  if (useMarketLogoLookup()) {
     try {
       const { data, error } = await supabase.rpc('lookup_social_market_assets_batch', {
         p_keys: missing,

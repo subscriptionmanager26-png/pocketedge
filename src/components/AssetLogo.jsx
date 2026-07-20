@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   LOGO_VARIANT_DETAIL,
   LOGO_VARIANT_LIST,
   assetLogoInitial,
+  failedLogoSrcCache,
+  loadedLogoSrcCache,
+  markLogoSrcFailed,
+  markLogoSrcLoaded,
   resolveAssetLogoUrl,
 } from '../lib/assetLogo';
 
@@ -12,10 +16,9 @@ const SIZES = {
   md: { className: 'h-12 w-12 text-base', px: 48, variant: LOGO_VARIANT_DETAIL },
 };
 
-/** Remember successful loads so remounts skip the monogram flash. */
-const loadedSrcCache = new Set();
-/** Skip re-requesting icons that 404 (common for ETF/fund/index). */
-const failedSrcCache = new Set();
+function logoAlreadyLoaded(img) {
+  return Boolean(img?.complete && img.naturalWidth > 0);
+}
 
 /**
  * Circular market-asset logo. Prefers `logoIconUrl` / resolved Storage URL;
@@ -40,13 +43,40 @@ export default function AssetLogo({
     assetKey,
     variant: sizeMeta.variant,
   });
-  const [failed, setFailed] = useState(() => Boolean(src && failedSrcCache.has(src)));
-  const [loaded, setLoaded] = useState(() => Boolean(src && loadedSrcCache.has(src)));
+  const imgRef = useRef(null);
+  const [failed, setFailed] = useState(() => Boolean(src && failedLogoSrcCache.has(src)));
+  const [loaded, setLoaded] = useState(() => Boolean(src && loadedLogoSrcCache.has(src)));
   const initial = assetLogoInitial(assetKey || name);
 
   useEffect(() => {
-    setFailed(Boolean(src && failedSrcCache.has(src)));
-    setLoaded(Boolean(src && loadedSrcCache.has(src)));
+    if (!src) {
+      setFailed(false);
+      setLoaded(false);
+      return;
+    }
+    if (failedLogoSrcCache.has(src)) {
+      setFailed(true);
+      setLoaded(false);
+      return;
+    }
+    if (loadedLogoSrcCache.has(src)) {
+      setFailed(false);
+      setLoaded(true);
+      return;
+    }
+    setFailed(false);
+    setLoaded(false);
+  }, [src]);
+
+  // Preload/cache can finish before React attaches onLoad — pick that up here.
+  useLayoutEffect(() => {
+    if (!src || failedLogoSrcCache.has(src)) return;
+    const img = imgRef.current;
+    if (logoAlreadyLoaded(img)) {
+      markLogoSrcLoaded(src);
+      setFailed(false);
+      setLoaded(true);
+    }
   }, [src]);
 
   const showImage = Boolean(src) && !failed;
@@ -59,6 +89,7 @@ export default function AssetLogo({
       {!loaded || !showImage ? <span className="absolute inset-0 flex items-center justify-center">{initial}</span> : null}
       {showImage ? (
         <img
+          ref={imgRef}
           src={src}
           alt=""
           width={sizeMeta.px}
@@ -69,15 +100,14 @@ export default function AssetLogo({
           className={`relative h-full w-full object-contain p-0.5 transition-opacity duration-150 ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
-          onLoad={() => {
-            if (src) {
-              loadedSrcCache.add(src);
-              failedSrcCache.delete(src);
+          onLoad={(event) => {
+            if (src && logoAlreadyLoaded(event.currentTarget)) {
+              markLogoSrcLoaded(src);
             }
             setLoaded(true);
           }}
           onError={() => {
-            if (src) failedSrcCache.add(src);
+            if (src) markLogoSrcFailed(src);
             setFailed(true);
           }}
         />

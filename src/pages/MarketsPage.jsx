@@ -108,7 +108,7 @@ export default function MarketsPage({
 
         {!loading && !error && tab === 'mutual_funds' ? (
           <MarketList empty={items.length === 0} emptyMessage="No mutual funds found">
-            {items.map((fund) => (
+            {items.map((fund, index) => (
               <MarketRow
                 key={fund.schemeCode}
                 title={fund.name}
@@ -116,6 +116,7 @@ export default function MarketsPage({
                 logoIconUrl={fund.logoIconUrl}
                 assetType="fund"
                 assetKey={fund.schemeCode ?? fund.id}
+                logoPriority={index < 8}
                 price={fund.nav}
                 changePct={fund.changePct}
                 previousClose={fund.previousClose}
