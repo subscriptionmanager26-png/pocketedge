@@ -1,14 +1,9 @@
 /**
  * Vercel Cron → GitHub Actions workflow_dispatch.
- * Keeps market price / asset-sync jobs starting on time (GH schedule alone is often delayed).
  *
  * Required env (Production):
  *   CRON_SECRET              — Vercel sends Authorization: Bearer <CRON_SECRET>
- *   GITHUB_DISPATCH_TOKEN    — PAT with `repo` + `workflow` (or Actions: write)
- * Optional:
- *   GITHUB_DISPATCH_OWNER    — default subscriptionmanager26-png
- *   GITHUB_DISPATCH_REPO     — default pocketedge
- *   GITHUB_DISPATCH_REF      — default main
+ *   GITHUB_DISPATCH_TOKEN    — fine-grained PAT with Actions: write
  */
 
 export const config = {
@@ -22,6 +17,9 @@ const JOB_TO_WORKFLOW: Record<string, string> = {
   'asset-sync': 'social-market-asset-sync.yml',
 };
 
+/** Jobs scheduled via vercel.json — reject others even if secret is known. */
+const VERCEL_SCHEDULED_JOBS = new Set(['funds', 'asset-sync']);
+
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
     status,
@@ -33,7 +31,11 @@ function authorize(request: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return false;
   const auth = request.headers.get('authorization') ?? '';
-  return auth === `Bearer ${cronSecret}`;
+  if (auth !== `Bearer ${cronSecret}`) return false;
+  // Vercel Cron always sends this; block casual secret replay from browsers.
+  const vercelCron = request.headers.get('x-vercel-cron');
+  if (vercelCron !== '1') return false;
+  return true;
 }
 
 export default async function handler(request: Request) {
@@ -47,13 +49,17 @@ export default async function handler(request: Request) {
 
   const url = new URL(request.url);
   const job = url.pathname.split('/').filter(Boolean).pop() ?? '';
-  const workflowFile = JOB_TO_WORKFLOW[job];
-  if (!workflowFile) {
+  if (!VERCEL_SCHEDULED_JOBS.has(job)) {
     return json(400, {
       ok: false,
-      error: `Unknown job "${job}"`,
-      allowed: Object.keys(JOB_TO_WORKFLOW),
+      error: `Job "${job}" is not enabled on Vercel cron`,
+      allowed: [...VERCEL_SCHEDULED_JOBS],
     });
+  }
+
+  const workflowFile = JOB_TO_WORKFLOW[job];
+  if (!workflowFile) {
+    return json(400, { ok: false, error: `Unknown job "${job}"` });
   }
 
   const token = process.env.GITHUB_DISPATCH_TOKEN;

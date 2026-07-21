@@ -2,32 +2,10 @@ export const config = {
   runtime: 'edge',
 };
 
-function supabaseConfig() {
-  const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return null;
-  let ref = null;
-  try {
-    ref = new URL(url).hostname.split('.')[0];
-  } catch {
-    return null;
-  }
-  return { url, anonKey, ref };
-}
-
-function readAccessToken(request, ref) {
-  const cookieName = `pe_sb_sb-${ref}-auth-token`;
-  const header = request.headers.get('cookie') ?? '';
-  const escaped = cookieName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = header.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
-  if (!match) return null;
-  try {
-    const parsed = JSON.parse(decodeURIComponent(match[1]));
-    return parsed?.access_token ?? null;
-  } catch {
-    return null;
-  }
-}
+import {
+  readAccessTokenFromRequest,
+  supabaseServerConfig,
+} from './_lib/supabaseServer.js';
 
 async function callRpc(config, token, name, body = {}) {
   const res = await fetch(`${config.url}/rest/v1/rpc/${name}`, {
@@ -62,8 +40,8 @@ export default async function handler(request) {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
-  const cfg = supabaseConfig();
-  if (!cfg) {
+  const raw = supabaseServerConfig();
+  if (!raw.url || !raw.anonKey || !raw.ref) {
     return new Response(JSON.stringify({ authenticated: false }), {
       status: 200,
       headers: {
@@ -72,8 +50,9 @@ export default async function handler(request) {
       },
     });
   }
+  const cfg = { url: raw.url, anonKey: raw.anonKey, ref: raw.ref };
 
-  const token = readAccessToken(request, cfg.ref);
+  const token = readAccessTokenFromRequest(request, cfg.ref);
   if (!token) {
     return new Response(JSON.stringify({ authenticated: false }), {
       status: 200,

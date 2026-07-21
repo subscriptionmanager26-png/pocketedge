@@ -5,7 +5,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
  * Used for sub-daily jobs that Vercel Hobby cannot schedule.
  *
  * Auth: x-dispatch-token == social_market_job_config.auth_token for job_name
- * Secrets: GITHUB_DISPATCH_TOKEN (edge secret)
+ * Secrets: GITHUB_DISPATCH_TOKEN (Supabase edge secret only — never store PAT in DB)
  */
 
 const JOB_TO_WORKFLOW: Record<string, string> = {
@@ -33,6 +33,9 @@ Deno.serve(async (req: Request) => {
   });
 
   let githubToken = Deno.env.get('GITHUB_DISPATCH_TOKEN') ?? '';
+  // Temporary fallback until Edge secret GITHUB_DISPATCH_TOKEN is configured.
+  // Remove after: Dashboard → Edge Functions → Secrets → GITHUB_DISPATCH_TOKEN
+  // then: delete from social_market_job_config where job_name = 'github-dispatch-pat';
   if (!githubToken) {
     const { data: patRow } = await client
       .from('social_market_job_config')
@@ -42,7 +45,7 @@ Deno.serve(async (req: Request) => {
     githubToken = patRow?.auth_token ?? '';
   }
   if (!githubToken) {
-    return new Response(JSON.stringify({ error: 'Missing GITHUB_DISPATCH_TOKEN' }), {
+    return new Response(JSON.stringify({ error: 'Missing GITHUB_DISPATCH_TOKEN secret' }), {
       status: 500,
     });
   }

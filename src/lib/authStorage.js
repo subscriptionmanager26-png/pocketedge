@@ -1,4 +1,10 @@
-/** Shared auth storage across pocketedge.in subdomains (social + main). */
+/** Shared auth storage across pocketedge.in subdomains (social + main).
+ *
+ * Session lives in a first-party cookie (JS-readable so Supabase client can
+ * attach the user JWT — required while we still call Supabase from the browser).
+ * We no longer mirror the session into localStorage (reduces XSS blast radius).
+ * Full httpOnly-only auth needs a BFF and is intentionally not enabled yet.
+ */
 
 const COOKIE_PREFIX = 'pe_sb_';
 const POST_AUTH_REDIRECT_COOKIE = 'pe_post_auth_redirect';
@@ -53,18 +59,25 @@ export function createSharedAuthStorage() {
     getItem(key) {
       const fromCookie = readCookie(`${COOKIE_PREFIX}${key}`);
       if (fromCookie != null) return fromCookie;
+      // One-time migration from legacy localStorage sessions, then clear.
       try {
-        return window.localStorage.getItem(key);
+        const legacy = window.localStorage.getItem(key);
+        if (legacy != null) {
+          writeCookie(`${COOKIE_PREFIX}${key}`, legacy);
+          window.localStorage.removeItem(key);
+          return legacy;
+        }
       } catch {
-        return null;
+        /* ignore */
       }
+      return null;
     },
     setItem(key, value) {
       writeCookie(`${COOKIE_PREFIX}${key}`, value);
       try {
-        window.localStorage.setItem(key, value);
+        window.localStorage.removeItem(key);
       } catch {
-        /* ignore quota errors */
+        /* ignore */
       }
     },
     removeItem(key) {

@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { supabaseServerConfig } from './supabaseServer.js';
 
 const TOP = 10;
 const TOP_PERFORMERS = 5;
 
 export function getSupabaseAdmin() {
-  const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { url, serviceRoleKey } = supabaseServerConfig();
+  if (!url || !serviceRoleKey) return null;
+  return createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
 function holdingWeight(h, totalValue) {
@@ -74,31 +74,19 @@ export async function fetchPublicPortfolioShareData(portfolioId) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
 
-  const { data: portfolio, error } = await supabase
-    .from('social_portfolios')
-    .select('id, name, objective, thesis, holdings, owner_id, is_draft, is_archived')
-    .eq('id', portfolioId)
-    .maybeSingle();
-
-  if (error || !portfolio || portfolio.is_draft || portfolio.is_archived) return null;
-
-  const { data: profile } = await supabase
-    .from('social_profiles')
-    .select('username, display_name')
-    .eq('user_id', portfolio.owner_id)
-    .maybeSingle();
-
-  const { data: totalReturn } = await supabase.rpc('portfolio_total_return_pct', {
-    p_holdings: portfolio.holdings ?? [],
+  const { data, error } = await supabase.rpc('get_public_portfolio_share', {
+    p_portfolio_id: portfolioId,
   });
 
+  if (error || !data) return null;
+
+  const portfolio = data.portfolio ?? data?.portfolio;
+  if (!portfolio) return null;
+
   return {
-    portfolio: {
-      ...portfolio,
-      total_return_pct: totalReturn,
-    },
-    ownerHandle: profile?.username ?? null,
-    ownerName: profile?.display_name ?? null,
+    portfolio,
+    ownerHandle: data.ownerHandle ?? data.owner_handle ?? null,
+    ownerName: data.ownerName ?? data.owner_name ?? null,
   };
 }
 
