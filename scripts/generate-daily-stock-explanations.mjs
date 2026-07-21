@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
  * Produces one evidence-bound market explainer per stock after the NSE close.
- * News is read from the nifty-total-market-news GitHub repository. The
- * generated explanations live in the stock-news Supabase project; price
+ * News is read from the stock-news Supabase project (`mn_news_items`). Price
  * history lives in the PocketEdge market-data project.
  */
 
@@ -10,8 +9,7 @@ const NEWS_WINDOW_DAYS = 7;
 const PRICE_WINDOW_DAYS = 10;
 const MISTRAL_DELAY_MS = 2_000;
 const UPSERT_BATCH_SIZE = 500;
-const DEFAULT_NEWS_API_URL =
-  'https://api.github.com/repos/subscriptionmanager26-png/nifty-total-market-news/contents/data/stories.jsonl';
+const NEWS_PAGE_SIZE = 1000;
 
 const ANALYST_INSTRUCTIONS = `You are an experienced equity market journalist.
 
@@ -131,42 +129,36 @@ async function fetchAllTickers(newsUrl, newsKey) {
     .filter((row) => row.ticker);
 }
 
-async function fetchRecentNewsFromGitHub(fromDate) {
-  const token = process.env.NIFTY_NEWS_REPO_TOKEN;
-  const response = await fetch(process.env.NEWS_GITHUB_API_URL || DEFAULT_NEWS_API_URL, {
-    headers: {
-      Accept: 'application/vnd.github.raw+json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!response.ok) throw new Error(`GitHub news fetch ${response.status}: ${await response.text()}`);
-  const cutoff = Date.parse(`${fromDate}T00:00:00Z`);
+async function fetchRecentNewsFromSupabase(newsUrl, newsKey, fromDate) {
   const byTicker = new Map();
-  for (const line of (await response.text()).split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    let row;
-    try {
-      row = JSON.parse(line);
-    } catch {
-      console.warn('Skipping malformed GitHub news JSONL record.');
-      continue;
-    }
-    const timestamp = row.published_iso ?? row.fetched_at;
-    if (!Number.isFinite(Date.parse(timestamp)) || Date.parse(timestamp) < cutoff) continue;
-    const ticker = String(row.symbol ?? '').trim().toUpperCase();
-    if (!ticker) continue;
-    const items = byTicker.get(ticker) ?? [];
-    // Pass the full article body (stored in `description`); no truncation.
-    items.push({
-      id: row.id,
-      title: String(row.title ?? '').trim(),
-      article: String(row.description ?? row.short_description ?? '').trim(),
-      published_at: timestamp,
-      date: String(timestamp).slice(0, 10),
-      source: row.provider?.name ?? row.provider?.id ?? null,
-      link: row.link ?? null,
+  let offset = 0;
+  while (true) {
+    const params = new URLSearchParams({
+      select: 'id,ticker,title,summary,published_at,source',
+      published_at: `gte.${fromDate}T00:00:00Z`,
+      order: 'published_at.desc',
+      limit: String(NEWS_PAGE_SIZE),
+      offset: String(offset),
     });
-    byTicker.set(ticker, items);
+    const rows = await restJson(newsUrl, newsKey, `mn_news_items?${params}`);
+    if (!rows?.length) break;
+    for (const row of rows) {
+      const ticker = String(row.ticker ?? '').trim().toUpperCase();
+      if (!ticker) continue;
+      const items = byTicker.get(ticker) ?? [];
+      items.push({
+        id: row.id,
+        title: String(row.title ?? '').trim(),
+        article: String(row.summary ?? '').trim(),
+        published_at: row.published_at,
+        date: String(row.published_at ?? '').slice(0, 10),
+        source: row.source ?? null,
+        link: null,
+      });
+      byTicker.set(ticker, items);
+    }
+    if (rows.length < NEWS_PAGE_SIZE) break;
+    offset += NEWS_PAGE_SIZE;
   }
   for (const [ticker, items] of byTicker) {
     byTicker.set(
@@ -356,7 +348,7 @@ async function main() {
   const asOfDate = istDate();
   const [tickers, newsByTicker] = await Promise.all([
     fetchAllTickers(newsUrl, newsKey),
-    fetchRecentNewsFromGitHub(shiftDate(asOfDate, NEWS_WINDOW_DAYS)),
+    fetchRecentNewsFromSupabase(newsUrl, newsKey, shiftDate(asOfDate, NEWS_WINDOW_DAYS)),
   ]);
   const selectedTickers = args.tickers.length
     ? tickers.filter(({ ticker }) => args.tickers.includes(ticker))

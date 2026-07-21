@@ -1,9 +1,8 @@
 name: Daily stock market explanations
 
 on:
-  schedule:
-    # 16:00 IST, Monday–Friday (10:30 UTC)
-    - cron: '30 10 * * 1-5'
+  # Scheduled via Vercel Cron → /api/cron/dispatch-github/stock-explanations
+  # (GHA native schedule is unreliable; do not re-add schedule: here)
   workflow_dispatch:
 
 concurrency:
@@ -31,9 +30,6 @@ jobs:
           # Stock-news database
           STOCK_NEWS_SUPABASE_URL: ${{ secrets.STOCK_NEWS_SUPABASE_URL }}
           STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY }}
-          # Private GitHub news source
-          NEWS_GITHUB_API_URL: https://api.github.com/repos/subscriptionmanager26-png/nifty-total-market-news/contents/data/stories.jsonl
-          NIFTY_NEWS_REPO_TOKEN: ${{ secrets.NIFTY_NEWS_REPO_TOKEN }}
           # Mistral
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           MISTRAL_MODEL: mistral-small-latest

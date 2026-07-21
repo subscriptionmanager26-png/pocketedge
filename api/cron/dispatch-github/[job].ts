@@ -15,10 +15,17 @@ const JOB_TO_WORKFLOW: Record<string, string> = {
   funds: 'social-market-price-funds.yml',
   commodities: 'social-market-price-commodities.yml',
   'asset-sync': 'social-market-asset-sync.yml',
+  'stock-explanations': 'daily-stock-explanations.yml',
+  'stock-explanations-openai': 'daily-stock-explanations-openai.yml',
 };
 
 /** Jobs scheduled via vercel.json — reject others even if secret is known. */
-const VERCEL_SCHEDULED_JOBS = new Set(['funds', 'asset-sync']);
+const VERCEL_SCHEDULED_JOBS = new Set([
+  'funds',
+  'asset-sync',
+  'stock-explanations',
+  'stock-explanations-openai',
+]);
 
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {

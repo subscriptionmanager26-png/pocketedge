@@ -10,6 +10,14 @@
     {
       "path": "/api/cron/dispatch-github/asset-sync",
       "schedule": "30 2 * * 0"
+    },
+    {
+      "path": "/api/cron/dispatch-github/stock-explanations",
+      "schedule": "30 10 * * 1-5"
+    },
+    {
+      "path": "/api/cron/dispatch-github/stock-explanations-openai",
+      "schedule": "30 10 * * 1-5"
     }
   ],
   "headers": [
