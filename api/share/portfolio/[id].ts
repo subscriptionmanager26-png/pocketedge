@@ -13,12 +13,15 @@ export const config = {
 };
 
 export default async function handler(request, { params }) {
-  const portfolioId = params?.id;
-  if (!portfolioId) {
+  const url = new URL(request.url);
+  const portfolioId =
+    params?.id ||
+    url.pathname.split('/').filter(Boolean).pop() ||
+    null;
+  if (!portfolioId || portfolioId === 'portfolio') {
     return new Response('Missing portfolio id', { status: 400 });
   }
 
-  const url = new URL(request.url);
   const sort = url.searchParams.get('sort') === 'performance' ? 'performance' : 'allocation';
   const origin = siteOrigin(request);
   const payload = await fetchPublicPortfolioShareData(portfolioId);
