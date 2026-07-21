@@ -233,8 +233,6 @@ export default function App() {
         return;
       }
 
-      cleanOAuthCallbackUrl();
-
       let authGen = 0;
       const syncAuth = (session) => {
         if (cancelled) return;
