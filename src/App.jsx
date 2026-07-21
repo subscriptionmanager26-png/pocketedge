@@ -135,7 +135,7 @@ export default function App() {
   const [scrollAction, setScrollAction] = useState('reset');
   const [profileReady, setProfileReady] = useState(initialBoot.profileReady);
   const [socialProfile, setSocialProfile] = useState(initialBoot.socialProfile);
-  const currentUserId = socialProfile?.user_id ?? CURRENT_USER.id;
+  const currentUserId = socialProfile?.user_id ?? authUser?.id ?? CURRENT_USER.id;
 
   const resetScroll = useCallback(() => setScrollAction('reset'), []);
   const backScroll = useCallback(() => setScrollAction('back'), []);
@@ -197,14 +197,14 @@ export default function App() {
   useEffect(() => subscribeActivity(() => setActivityTick((n) => n + 1)), []);
   useEffect(() => subscribeSocialGraph(() => setGraphTick((n) => n + 1)), []);
 
-  // Own profile must use the live auth UUID, not demo CURRENT_USER.id (`u_me`).
+  // Own profile must use the live auth UUID, not demo CURRENT_USER.id (`u_me` → @investor).
   useEffect(() => {
-    const liveId = socialProfile?.user_id;
-    if (!liveId) return;
+    const liveId = socialProfile?.user_id ?? authUser?.id;
+    if (!liveId || liveId === 'u_me') return;
     if (profileUserId === CURRENT_USER.id || profileUserId === 'u_me') {
       setProfileUserId(liveId);
     }
-  }, [socialProfile?.user_id, profileUserId]);
+  }, [socialProfile?.user_id, authUser?.id, profileUserId]);
 
   useEffect(() => {
     if (skipAuthForDev()) {

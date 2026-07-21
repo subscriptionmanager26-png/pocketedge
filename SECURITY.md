@@ -22,9 +22,11 @@ Anon and service_role JWTs from the same project often share the **same JWT head
 
 ## Auth session
 
-- Session cookie (`pe_sb_sb-{ref}-auth-token`) is used by the Supabase browser client and by `/api/boot`.
-- Session is **not** mirrored to `localStorage` (legacy values are migrated once then cleared).
-- Full httpOnly-only auth requires a Backend-for-Frontend; not enabled yet so direct Supabase RPC calls keep working.
+- Session is stored in **localStorage** (primary) so large Supabase sessions are not truncated.
+- A cookie mirror is written only when the encoded session fits under ~3.2KB (cross-subdomain OAuth handoff).
+- Oversized/corrupt cookies are ignored and cleared so they cannot override a good localStorage session.
+- `/api/boot` reads the cookie when present; otherwise the client hydrates from localStorage after load.
+- Full httpOnly-only auth requires a Backend-for-Frontend; not enabled yet.
 
 ## Portfolio privacy
 

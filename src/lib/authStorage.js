@@ -1,14 +1,14 @@
 /** Shared auth storage across pocketedge.in subdomains (social + main).
  *
- * Session lives in a first-party cookie (JS-readable so Supabase client can
- * attach the user JWT — required while we still call Supabase from the browser).
- * We no longer mirror the session into localStorage (reduces XSS blast radius).
- * Full httpOnly-only auth needs a BFF and is intentionally not enabled yet.
+ * Session is stored in localStorage (primary — sessions often exceed cookie size
+ * limits) and mirrored to a cookie when small enough for cross-subdomain OAuth.
  */
 
 const COOKIE_PREFIX = 'pe_sb_';
 const POST_AUTH_REDIRECT_COOKIE = 'pe_post_auth_redirect';
 const POST_AUTH_REDIRECT_MAX_AGE_SEC = 30 * 60;
+/** Browsers typically reject cookies above ~4KB; leave headroom for attributes. */
+const MAX_COOKIE_VALUE_CHARS = 3200;
 
 function sharedCookieDomain() {
   if (typeof window === 'undefined') return null;
@@ -41,6 +41,16 @@ function deleteCookie(name) {
   document.cookie = cookie;
 }
 
+function looksLikeSession(raw) {
+  if (!raw || typeof raw !== 'string') return false;
+  try {
+    const parsed = JSON.parse(raw);
+    return Boolean(parsed?.access_token || parsed?.currentSession?.access_token);
+  } catch {
+    return false;
+  }
+}
+
 /** Cross-subdomain post-auth destination (survives OAuth landing on global.pocketedge.in). */
 export function setPostAuthRedirect(url) {
   writeCookie(POST_AUTH_REDIRECT_COOKIE, url, { maxAgeSec: POST_AUTH_REDIRECT_MAX_AGE_SEC });
@@ -57,27 +67,41 @@ export function clearPostAuthRedirect() {
 export function createSharedAuthStorage() {
   return {
     getItem(key) {
-      const fromCookie = readCookie(`${COOKIE_PREFIX}${key}`);
-      if (fromCookie != null) return fromCookie;
-      // One-time migration from legacy localStorage sessions, then clear.
+      // Prefer localStorage — full session survives; oversized cookies can truncate.
       try {
-        const legacy = window.localStorage.getItem(key);
-        if (legacy != null) {
-          writeCookie(`${COOKIE_PREFIX}${key}`, legacy);
-          window.localStorage.removeItem(key);
-          return legacy;
-        }
+        const fromLs = window.localStorage.getItem(key);
+        if (looksLikeSession(fromLs)) return fromLs;
       } catch {
         /* ignore */
       }
+
+      const fromCookie = readCookie(`${COOKIE_PREFIX}${key}`);
+      if (looksLikeSession(fromCookie)) {
+        try {
+          window.localStorage.setItem(key, fromCookie);
+        } catch {
+          /* ignore */
+        }
+        return fromCookie;
+      }
+
+      // Drop corrupt/truncated cookie so it cannot poison boot.
+      if (fromCookie != null) deleteCookie(`${COOKIE_PREFIX}${key}`);
       return null;
     },
     setItem(key, value) {
-      writeCookie(`${COOKIE_PREFIX}${key}`, value);
       try {
-        window.localStorage.removeItem(key);
+        window.localStorage.setItem(key, value);
       } catch {
-        /* ignore */
+        /* ignore quota errors */
+      }
+
+      const encodedLen = encodeURIComponent(value).length;
+      if (encodedLen <= MAX_COOKIE_VALUE_CHARS) {
+        writeCookie(`${COOKIE_PREFIX}${key}`, value);
+      } else {
+        // Avoid writing a truncated cookie that would break the next read.
+        deleteCookie(`${COOKIE_PREFIX}${key}`);
       }
     },
     removeItem(key) {
