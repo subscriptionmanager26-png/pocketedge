@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatPct } from '../lib/format';
-import { assetLogoInitial, detectLogoBackdropTone, logoBackdropClass } from '../lib/assetLogo';
+import { assetLogoInitial, detectLogoBackdropTone } from '../lib/assetLogo';
 import { ownerPossessiveLabel } from '../lib/portfolioShare';
 
 /** Matches Gemini share template width (CSS px). */
@@ -9,6 +9,12 @@ export const SHARE_CARD_WIDTH = 800;
 export const SHARE_CARD_HEIGHT = 920;
 /** Retina capture scale — 2× yields ~1600px-wide PNGs that stay sharp on phone screens. */
 export const SHARE_CARD_PIXEL_RATIO = 2;
+
+/** Hex only — html-to-image breaks on Tailwind/CSS variables. */
+const LOGO_BACKDROP = {
+  light: '#f7f6f4',
+  dark: '#27272a',
+};
 
 const BUBBLE_SIZES = [170, 148, 132, 120, 88];
 const BUBBLE_POSITIONS = [
@@ -48,11 +54,11 @@ function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb
         overflow: 'hidden',
         borderRadius: '50%',
         border: `1px solid ${ring}`,
-        color: '#6b7280',
+        backgroundColor: LOGO_BACKDROP[backdrop] ?? LOGO_BACKDROP.light,
+        color: backdrop === 'dark' ? '#e5e7eb' : '#6b7280',
         fontSize: Math.max(10, Math.round(size * 0.38)),
         fontWeight: 600,
       }}
-      className={logoBackdropClass(backdrop)}
     >
       {logoIconUrl ? (
         <img

@@ -91,11 +91,14 @@ async function waitForShareCard(host, timeoutMs = 3000) {
 function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   const host = document.createElement('div');
   host.setAttribute('aria-hidden', 'true');
+  // Keep in-viewport (opacity 0) so layout/fonts measure correctly on mobile Safari.
   host.style.position = 'fixed';
-  host.style.left = '-10000px';
+  host.style.left = '0';
   host.style.top = '0';
+  host.style.opacity = '0';
   host.style.pointerEvents = 'none';
   host.style.zIndex = '-1';
+  host.style.overflow = 'hidden';
   document.body.appendChild(host);
 
   const root = createRoot(host);
@@ -122,6 +125,25 @@ function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   };
 }
 
+async function toPngWithRatio(element, width, height, pixelRatio) {
+  return toPng(element, {
+    width,
+    height,
+    pixelRatio,
+    cacheBust: true,
+    skipFonts: true,
+    filter: (node) => {
+      if (node.tagName === 'LINK' && node.rel === 'stylesheet') {
+        const href = node.getAttribute('href') || '';
+        if (href.startsWith('http') && !href.startsWith(window.location.origin)) {
+          return false;
+        }
+      }
+      return true;
+    },
+  });
+}
+
 export async function captureShareCard(element) {
   if (!element) throw new Error('Share card element missing');
 
@@ -146,26 +168,26 @@ export async function captureShareCard(element) {
 
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-  const height = Math.ceil(element.getBoundingClientRect().height);
-  const dataUrl = await toPng(element, {
-    width: SHARE_CARD_WIDTH,
-    height: height || SHARE_CARD_HEIGHT,
-    pixelRatio: SHARE_CARD_PIXEL_RATIO,
-    cacheBust: true,
-    skipFonts: true,
-    filter: (node) => {
-      if (node.tagName === 'LINK' && node.rel === 'stylesheet') {
-        const href = node.getAttribute('href') || '';
-        if (href.startsWith('http') && !href.startsWith(window.location.origin)) {
-          return false;
-        }
-      }
-      return true;
-    },
-  });
+  const height = Math.max(
+    Math.ceil(element.getBoundingClientRect().height),
+    Math.ceil(element.scrollHeight),
+    SHARE_CARD_HEIGHT
+  );
+
+  let dataUrl;
+  try {
+    dataUrl = await toPngWithRatio(element, SHARE_CARD_WIDTH, height, SHARE_CARD_PIXEL_RATIO);
+  } catch (err) {
+    console.warn('Share capture at 2× failed, retrying at 1×', err);
+    dataUrl = await toPngWithRatio(element, SHARE_CARD_WIDTH, height, 1);
+  }
 
   const response = await fetch(dataUrl);
-  return response.blob();
+  const blob = await response.blob();
+  if (!blob || blob.size < 1000) {
+    throw new Error('Share image capture produced an empty image');
+  }
+  return blob;
 }
 
 function canSharePayload(data) {
@@ -241,21 +263,34 @@ export async function sharePortfolio({
     const fileSharePayload = { title, text: caption, files: [file] };
     const textSharePayload = { title, text: caption, url: shareUrl };
 
-    if (canSharePayload(fileSharePayload)) {
-      await navigator.share(fileSharePayload);
-      method = 'native';
-    } else if (canSharePayload(textSharePayload)) {
-      await navigator.share(textSharePayload);
-      method = 'native_text_only';
-    } else if (navigator.share) {
-      await navigator.share(textSharePayload);
-      method = 'native_text_only';
-    } else {
+    try {
+      if (canSharePayload(fileSharePayload)) {
+        await navigator.share(fileSharePayload);
+        method = 'native';
+      } else if (canSharePayload(textSharePayload)) {
+        await navigator.share(textSharePayload);
+        method = 'native_text_only';
+      } else if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share(textSharePayload);
+        method = 'native_text_only';
+      } else {
+        method = await fallbackShare(blob, shareUrl, caption);
+      }
+    } catch (shareError) {
+      if (shareError?.name === 'AbortError') {
+        return { ok: false, reason: 'cancelled' };
+      }
+      // Native share can reject for payload/size reasons — still deliver the image.
+      console.warn('Native share failed, using download fallback', shareError);
       method = await fallbackShare(blob, shareUrl, caption);
     }
 
-    const next = await recordPortfolioShare(portfolio.id);
-    onSharesUpdated?.(next.shares);
+    try {
+      const next = await recordPortfolioShare(portfolio.id);
+      onSharesUpdated?.(next.shares);
+    } catch (recordError) {
+      console.warn('recordPortfolioShare failed after share', recordError);
+    }
     trackShare(method, sort);
 
     return { ok: true, method, shareUrl };
@@ -263,6 +298,7 @@ export async function sharePortfolio({
     if (error?.name === 'AbortError') {
       return { ok: false, reason: 'cancelled' };
     }
+    console.error('sharePortfolio failed', error);
     throw error;
   } finally {
     await mounted.unmount();

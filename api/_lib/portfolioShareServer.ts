@@ -10,6 +10,15 @@ export function getSupabaseAdmin() {
   return createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
+/** Prefer service role; fall back to anon for the public redacted share RPC. */
+export function getSupabaseForPublicShare() {
+  const admin = getSupabaseAdmin();
+  if (admin) return admin;
+  const { url, anonKey } = supabaseServerConfig();
+  if (!url || !anonKey) return null;
+  return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
 function holdingWeight(h, totalValue) {
   const fromWeight = Number(h?.weightPct ?? h?.weight);
   if (Number.isFinite(fromWeight) && fromWeight > 0) return fromWeight;
@@ -71,23 +80,27 @@ export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = 
 }
 
 export async function fetchPublicPortfolioShareData(portfolioId) {
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseForPublicShare();
   if (!supabase) return null;
 
-  const { data, error } = await supabase.rpc('get_public_portfolio_share', {
-    p_portfolio_id: portfolioId,
-  });
+  try {
+    const { data, error } = await supabase.rpc('get_public_portfolio_share', {
+      p_portfolio_id: portfolioId,
+    });
 
-  if (error || !data) return null;
+    if (error || !data) return null;
 
-  const portfolio = data.portfolio ?? data?.portfolio;
-  if (!portfolio) return null;
+    const portfolio = data.portfolio ?? data?.portfolio;
+    if (!portfolio) return null;
 
-  return {
-    portfolio,
-    ownerHandle: data.ownerHandle ?? data.owner_handle ?? null,
-    ownerName: data.ownerName ?? data.owner_name ?? null,
-  };
+    return {
+      portfolio,
+      ownerHandle: data.ownerHandle ?? data.owner_handle ?? null,
+      ownerName: data.ownerName ?? data.owner_name ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function siteOrigin(request) {

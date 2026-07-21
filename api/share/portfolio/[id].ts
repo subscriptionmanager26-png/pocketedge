@@ -8,6 +8,10 @@ import {
   siteOrigin,
 } from '../../_lib/portfolioShareServer.js';
 
+export const config = {
+  runtime: 'edge',
+};
+
 export default async function handler(request, { params }) {
   const portfolioId = params?.id;
   if (!portfolioId) {

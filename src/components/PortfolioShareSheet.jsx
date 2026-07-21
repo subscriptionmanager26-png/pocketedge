@@ -40,7 +40,8 @@ export default function PortfolioShareSheet({
       } else {
         onClose?.();
       }
-    } catch {
+    } catch (error) {
+      console.error('Portfolio share failed', error);
       setNotice('Could not share this portfolio. Try again.');
     } finally {
       setSharing(false);
