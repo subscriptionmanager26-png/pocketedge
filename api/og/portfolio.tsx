@@ -4,22 +4,37 @@ import {
   fetchPublicPortfolioShareData,
   formatPct,
   ownerPossessiveLabel,
+  SHARE_CARD_HEIGHT,
+  SHARE_CARD_WIDTH,
+  SHARE_LABEL_BUBBLE_LG,
+  SHARE_LABEL_BUBBLE_SM,
+  SHARE_LABEL_TILE,
+  SHARE_OG_SCALE,
+  shortShareLabel,
 } from '../_lib/portfolioShareServer.js';
 
 export const config = {
   runtime: 'edge',
 };
 
+const S = SHARE_OG_SCALE;
+const WIDTH = SHARE_CARD_WIDTH * S;
+const HEIGHT = SHARE_CARD_HEIGHT * S;
+
 const BUBBLE_COLORS = ['#1e4635', '#499d6d', '#addba5', '#d6eed0', '#fae5d3'];
 const BUBBLE_TEXT = ['#ffffff', '#ffffff', '#1f2937', '#1f2937', '#1f2937'];
-const BUBBLE_SIZES = [150, 130, 116, 104, 84];
+const BUBBLE_SIZES = [150, 130, 116, 104, 84].map((n) => n * S);
 const BUBBLE_POS = [
   { top: 120, left: 280 },
   { top: 40, left: 480 },
   { top: 70, left: 80 },
   { top: 210, left: 140 },
   { top: 220, left: 400 },
-];
+].map((p) => ({ top: p.top * S, left: p.left * S }));
+
+function px(n) {
+  return n * S;
+}
 
 function initialFor(label) {
   const text = String(label ?? '').trim();
@@ -81,6 +96,63 @@ function LogoMark({ src, label, size, light = false }) {
   );
 }
 
+function BubbleLabel({ label, bubbleSize }) {
+  const large = bubbleSize >= px(130);
+  const fontSize = large ? px(14) : px(11);
+  const maxChars = large ? SHARE_LABEL_BUBBLE_LG : SHARE_LABEL_BUBBLE_SM;
+  const text = shortShareLabel(label, maxChars);
+  const lineHeight = px(14);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        maxWidth: bubbleSize * 0.9,
+        textAlign: 'center',
+        lineHeight: `${lineHeight}px`,
+        fontSize,
+        fontWeight: 600,
+      }}
+    >
+      {text.split(' ').length > 1 && text.length > 12 ? (
+        <>
+          <div style={{ display: 'flex' }}>{text.split(' ').slice(0, 2).join(' ')}</div>
+          <div style={{ display: 'flex' }}>{text.split(' ').slice(2).join(' ') || ''}</div>
+        </>
+      ) : (
+        <div style={{ display: 'flex' }}>{text}</div>
+      )}
+    </div>
+  );
+}
+
+function TileLabel({ label }) {
+  const text = shortShareLabel(label, SHARE_LABEL_TILE);
+  const parts = text.split(' ');
+  const line1 = parts.slice(0, 2).join(' ');
+  const line2 = parts.slice(2).join(' ');
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        fontSize: px(11),
+        color: '#4b5563',
+        textAlign: 'center',
+        maxWidth: px(120),
+        lineHeight: `${px(13)}px`,
+      }}
+    >
+      <div style={{ display: 'flex' }}>{line1}</div>
+      {line2 ? <div style={{ display: 'flex' }}>{line2}</div> : null}
+    </div>
+  );
+}
+
 export default async function handler(request) {
   const { searchParams, origin } = new URL(request.url);
   const portfolioId = searchParams.get('id');
@@ -102,6 +174,7 @@ export default async function handler(request) {
   const performers = snapshot.topPerformers ?? [];
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 10);
   const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
+  const tileWidth = px(138);
 
   return new ImageResponse(
     (
@@ -112,7 +185,7 @@ export default async function handler(request) {
           display: 'flex',
           flexDirection: 'column',
           background: '#ffffff',
-          padding: '28px 32px 24px',
+          padding: `${px(28)}px ${px(32)}px ${px(24)}px`,
           fontFamily: 'system-ui, sans-serif',
           color: '#111827',
         }}
@@ -122,25 +195,25 @@ export default async function handler(request) {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 20,
+            marginBottom: px(20),
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: px(10) }}>
             {brandLogoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={brandLogoUrl}
-                width={32}
-                height={32}
-                style={{ width: 32, height: 32, objectFit: 'contain' }}
+                width={px(32)}
+                height={px(32)}
+                style={{ width: px(32), height: px(32), objectFit: 'contain' }}
               />
             ) : null}
-            <div style={{ display: 'flex', fontSize: 22, fontWeight: 700 }}>PocketEdge</div>
+            <div style={{ display: 'flex', fontSize: px(22), fontWeight: 700 }}>PocketEdge</div>
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: 12,
+              fontSize: px(12),
               fontWeight: 600,
               color: '#6b7280',
               letterSpacing: 2,
@@ -155,17 +228,17 @@ export default async function handler(request) {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            marginBottom: 12,
+            marginBottom: px(12),
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', fontSize: 40, fontWeight: 700, lineHeight: 1.1 }}>
+            <div style={{ display: 'flex', fontSize: px(40), fontWeight: 700, lineHeight: 1.1 }}>
               {ownerLine}
             </div>
             <div
               style={{
                 display: 'flex',
-                fontSize: 40,
+                fontSize: px(40),
                 fontWeight: 700,
                 lineHeight: 1.1,
                 color: '#1e4635',
@@ -179,15 +252,15 @@ export default async function handler(request) {
               display: 'flex',
               flexDirection: 'column',
               border: '1px solid #f3f4f6',
-              borderRadius: 16,
-              padding: 18,
-              minWidth: 160,
+              borderRadius: px(16),
+              padding: px(18),
+              minWidth: px(160),
             }}
           >
             <div
               style={{
                 display: 'flex',
-                fontSize: 11,
+                fontSize: px(11),
                 fontWeight: 600,
                 color: '#9ca3af',
                 letterSpacing: 2,
@@ -199,15 +272,15 @@ export default async function handler(request) {
             <div
               style={{
                 display: 'flex',
-                fontSize: 28,
+                fontSize: px(28),
                 fontWeight: 700,
                 color: returnColor,
-                marginTop: 4,
+                marginTop: px(4),
               }}
             >
               {formatPct(snapshot.returnPct)}
             </div>
-            <div style={{ display: 'flex', fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+            <div style={{ display: 'flex', fontSize: px(13), color: '#6b7280', marginTop: px(2) }}>
               All time
             </div>
           </div>
@@ -218,12 +291,12 @@ export default async function handler(request) {
             display: 'flex',
             position: 'relative',
             width: '100%',
-            height: 360,
-            marginBottom: 16,
+            height: px(360),
+            marginBottom: px(16),
           }}
         >
           {performers.map((row, index) => {
-            const size = BUBBLE_SIZES[index] ?? 84;
+            const size = BUBBLE_SIZES[index] ?? px(84);
             const pos = BUBBLE_POS[index] ?? BUBBLE_POS[4];
             const logoSize = Math.round(size * 0.28);
             const light = index >= 2;
@@ -244,15 +317,22 @@ export default async function handler(request) {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: size >= 130 ? 14 : 11,
                   fontWeight: 600,
+                  padding: px(8),
                 }}
               >
-                <div style={{ display: 'flex', marginBottom: 6 }}>
+                <div style={{ display: 'flex', marginBottom: px(6) }}>
                   <LogoMark src={logoSrc} label={row.label} size={logoSize} light={light} />
                 </div>
-                <div style={{ display: 'flex' }}>{String(row.label).slice(0, 10)}</div>
-                <div style={{ display: 'flex', fontWeight: 700, fontSize: size >= 130 ? 16 : 12 }}>
+                <BubbleLabel label={row.label} bubbleSize={size} />
+                <div
+                  style={{
+                    display: 'flex',
+                    fontWeight: 700,
+                    fontSize: size >= px(130) ? px(16) : px(12),
+                    marginTop: px(2),
+                  }}
+                >
                   {formatPct(row.totalReturnPct)}
                 </div>
               </div>
@@ -264,24 +344,24 @@ export default async function handler(request) {
           style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: 40,
+            gap: px(40),
             border: '1px solid #f3f4f6',
-            borderRadius: 16,
-            padding: 12,
-            marginBottom: 14,
+            borderRadius: px(16),
+            padding: px(12),
+            marginBottom: px(14),
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ display: 'flex', fontSize: 18, fontWeight: 700 }}>
+            <div style={{ display: 'flex', fontSize: px(18), fontWeight: 700 }}>
               {String(snapshot.holdingsCount)}
             </div>
-            <div style={{ display: 'flex', fontSize: 13, color: '#6b7280' }}>Holdings</div>
+            <div style={{ display: 'flex', fontSize: px(13), color: '#6b7280' }}>Holdings</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ display: 'flex', fontSize: 18, fontWeight: 700 }}>
+            <div style={{ display: 'flex', fontSize: px(18), fontWeight: 700 }}>
               {String(snapshot.sectorsCount ?? 1)}
             </div>
-            <div style={{ display: 'flex', fontSize: 13, color: '#6b7280' }}>Sectors</div>
+            <div style={{ display: 'flex', fontSize: px(13), color: '#6b7280' }}>Sectors</div>
           </div>
         </div>
 
@@ -289,8 +369,8 @@ export default async function handler(request) {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            marginBottom: 10,
-            fontSize: 11,
+            marginBottom: px(10),
+            fontSize: px(11),
             color: '#9ca3af',
             fontWeight: 600,
             letterSpacing: 1,
@@ -306,8 +386,8 @@ export default async function handler(request) {
           style={{
             display: 'flex',
             flexWrap: 'wrap',
-            gap: 8,
-            marginBottom: 14,
+            gap: px(8),
+            marginBottom: px(14),
           }}
         >
           {allocation.map((row) => {
@@ -316,22 +396,27 @@ export default async function handler(request) {
               <div
                 key={row.ticker}
                 style={{
-                  width: 138,
+                  width: tileWidth,
                   border: '1px solid #f3f4f6',
-                  borderRadius: 12,
-                  padding: 10,
+                  borderRadius: px(12),
+                  padding: px(10),
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                 }}
               >
-                <div style={{ display: 'flex', marginBottom: 6 }}>
-                  <LogoMark src={logoSrc} label={row.label} size={28} light />
+                <div style={{ display: 'flex', marginBottom: px(6) }}>
+                  <LogoMark src={logoSrc} label={row.label} size={px(28)} light />
                 </div>
-                <div style={{ display: 'flex', fontSize: 11, color: '#4b5563' }}>
-                  {String(row.label).slice(0, 12)}
-                </div>
-                <div style={{ display: 'flex', fontSize: 14, fontWeight: 700 }}>
+                <TileLabel label={row.label} />
+                <div
+                  style={{
+                    display: 'flex',
+                    fontSize: px(14),
+                    fontWeight: 700,
+                    marginTop: px(4),
+                  }}
+                >
                   {`${Number(row.weight).toFixed(1)}%`}
                 </div>
               </div>
@@ -343,10 +428,10 @@ export default async function handler(request) {
           style={{
             display: 'flex',
             background: '#f6f9f7',
-            borderRadius: 16,
-            padding: 14,
+            borderRadius: px(16),
+            padding: px(14),
             justifyContent: 'center',
-            fontSize: 14,
+            fontSize: px(14),
             color: '#374151',
           }}
         >
@@ -355,8 +440,8 @@ export default async function handler(request) {
       </div>
     ),
     {
-      width: 800,
-      height: 920,
+      width: WIDTH,
+      height: HEIGHT,
     }
   );
 }

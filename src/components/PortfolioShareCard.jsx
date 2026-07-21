@@ -1,14 +1,21 @@
 import { useState } from 'react';
 import { formatPct } from '../lib/format';
 import { assetLogoInitial, detectLogoBackdropTone } from '../lib/assetLogo';
-import { ownerPossessiveLabel } from '../lib/portfolioShare';
+import {
+  ownerPossessiveLabel,
+  shortShareLabel,
+  SHARE_LABEL_BUBBLE_LG,
+  SHARE_LABEL_BUBBLE_SM,
+  SHARE_LABEL_TILE,
+} from '../lib/portfolioShare';
 
 /** Matches Gemini share template width (CSS px). */
 export const SHARE_CARD_WIDTH = 800;
 /** Natural content height at 800px width (template has no fixed height). Used for OG meta. */
 export const SHARE_CARD_HEIGHT = 920;
-/** Retina capture scale — 2× yields ~1600px-wide PNGs that stay sharp on phone screens. */
-export const SHARE_CARD_PIXEL_RATIO = 2;
+/** Retina capture — up to 3× for sharp shares on high-DPI phones. */
+export const SHARE_CARD_PIXEL_RATIO =
+  typeof window !== 'undefined' ? Math.min(3, Math.max(2, window.devicePixelRatio || 2)) : 3;
 
 /** Hex only — html-to-image breaks on Tailwind/CSS variables. */
 const LOGO_BACKDROP = {
@@ -31,12 +38,6 @@ const BUBBLE_COLORS = [
   { bg: '#d6eed0', fg: '#1f2937' },
   { bg: '#fae5d3', fg: '#1f2937' },
 ];
-
-function shortLabel(label, max = 16) {
-  const text = String(label ?? '').trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, max - 1)}…`;
-}
 
 function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb' }) {
   const initial = assetLogoInitial(assetKey || name);
@@ -411,14 +412,19 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
                 style={{
                   fontWeight: size >= 148 ? 600 : 500,
                   fontSize: nameSize,
-                  lineHeight: 1.15,
-                  maxWidth: '90%',
+                  lineHeight: 1.2,
+                  maxWidth: '92%',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  textAlign: 'center',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  maxHeight: nameSize * 2.5,
                 }}
               >
-                {shortLabel(row.label, size >= 148 ? 14 : 11)}
+                {shortShareLabel(
+                  row.label,
+                  size >= 148 ? SHARE_LABEL_BUBBLE_LG : SHARE_LABEL_BUBBLE_SM
+                )}
               </span>
               <span
                 style={{
@@ -556,14 +562,16 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
                   marginTop: 6,
                   fontSize: 11,
                   color: '#4b5563',
-                  lineHeight: 1.2,
+                  lineHeight: 1.25,
                   maxWidth: '100%',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  textAlign: 'center',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  maxHeight: 28,
                 }}
               >
-                {shortLabel(row.label, 12)}
+                {shortShareLabel(row.label, SHARE_LABEL_TILE)}
               </span>
               <span
                 style={{

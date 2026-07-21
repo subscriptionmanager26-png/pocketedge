@@ -31,7 +31,9 @@ export default function PortfolioShareSheet({
       });
       if (result.ok) {
         if (result.method === 'fallback') {
-          setNotice('Image downloaded. Share caption copied — paste it with the image.');
+          setNotice('Image downloaded. Caption copied — paste it with the image.');
+        } else if (result.method === 'native_text_only') {
+          onClose?.();
         } else {
           onClose?.();
         }
@@ -41,6 +43,8 @@ export default function PortfolioShareSheet({
         setNotice('Add holdings before sharing this portfolio.');
       } else if (result.reason === 'capture_failed') {
         setNotice('Could not create the share image. Check your connection and try again.');
+      } else if (result.reason === 'share_unavailable') {
+        setNotice('Sharing is not supported in this browser. Try copying the link from your profile.');
       } else {
         setNotice('Could not share this portfolio. Try again.');
       }
