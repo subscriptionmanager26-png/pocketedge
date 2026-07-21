@@ -32,18 +32,7 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
-  let githubToken = Deno.env.get('GITHUB_DISPATCH_TOKEN') ?? '';
-  // Temporary fallback until Edge secret GITHUB_DISPATCH_TOKEN is configured.
-  // Remove after: Dashboard → Edge Functions → Secrets → GITHUB_DISPATCH_TOKEN
-  // then: delete from social_market_job_config where job_name = 'github-dispatch-pat';
-  if (!githubToken) {
-    const { data: patRow } = await client
-      .from('social_market_job_config')
-      .select('auth_token')
-      .eq('job_name', 'github-dispatch-pat')
-      .maybeSingle();
-    githubToken = patRow?.auth_token ?? '';
-  }
+  const githubToken = Deno.env.get('GITHUB_DISPATCH_TOKEN') ?? '';
   if (!githubToken) {
     return new Response(JSON.stringify({ error: 'Missing GITHUB_DISPATCH_TOKEN secret' }), {
       status: 500,
