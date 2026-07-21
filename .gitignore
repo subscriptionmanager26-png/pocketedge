@@ -1,6 +1,31 @@
+# Env / secrets
 .vercel
 .env*
-public/landing/assets/*.local.png
-archive/backend-unused-2026-07-19/untracked-local/
 .env.vercel.cron
 .env.vercel
+
+# Dependencies & build
+node_modules/
+dist/
+
+# Local scratch / IDE
+.tmp/
+.claude/
+.cursor/
+.DS_Store
+**/.DS_Store
+
+# Generated script outputs
+scripts/daily-stock-summary/out/
+scripts/**/out/*.pdf
+scripts/**/out/*.html
+scripts/**/out/*.png
+
+# Local-only landing assets
+public/landing/assets/*.local.png
+archive/backend-unused-2026-07-19/untracked-local/
+
+# Disposable local experiments / wizard leftovers
+ui-prototype/
+public/ui-overview/
+posthog-setup-report.md
