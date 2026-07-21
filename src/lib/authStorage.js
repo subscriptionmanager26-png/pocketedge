@@ -1,7 +1,7 @@
 /** Shared auth storage across pocketedge.in subdomains (social + main).
  *
- * Session is stored in localStorage (primary — sessions often exceed cookie size
- * limits) and mirrored to a cookie when small enough for cross-subdomain OAuth.
+ * localStorage is the source of truth (sessions + PKCE code verifiers).
+ * Cookie mirror is best-effort for small values / cross-subdomain handoff.
  */
 
 const COOKIE_PREFIX = 'pe_sb_';
@@ -41,11 +41,13 @@ function deleteCookie(name) {
   document.cookie = cookie;
 }
 
-function looksLikeSession(raw) {
+/** True if this looks like a (possibly truncated) session blob — not a PKCE verifier. */
+function isSessionShaped(raw) {
   if (!raw || typeof raw !== 'string') return false;
+  if (!raw.startsWith('{')) return false;
   try {
     const parsed = JSON.parse(raw);
-    return Boolean(parsed?.access_token || parsed?.currentSession?.access_token);
+    return Boolean(parsed?.access_token || parsed?.currentSession?.access_token || parsed?.user);
   } catch {
     return false;
   }
@@ -67,16 +69,19 @@ export function clearPostAuthRedirect() {
 export function createSharedAuthStorage() {
   return {
     getItem(key) {
-      // Prefer localStorage — full session survives; oversized cookies can truncate.
+      // Always return localStorage as-is — includes PKCE code-verifier strings.
       try {
         const fromLs = window.localStorage.getItem(key);
-        if (looksLikeSession(fromLs)) return fromLs;
+        if (fromLs != null) return fromLs;
       } catch {
         /* ignore */
       }
 
       const fromCookie = readCookie(`${COOKIE_PREFIX}${key}`);
-      if (looksLikeSession(fromCookie)) {
+      if (fromCookie == null) return null;
+
+      // Prefer valid session cookies; ignore truncated junk.
+      if (isSessionShaped(fromCookie) || !fromCookie.startsWith('{')) {
         try {
           window.localStorage.setItem(key, fromCookie);
         } catch {
@@ -85,8 +90,7 @@ export function createSharedAuthStorage() {
         return fromCookie;
       }
 
-      // Drop corrupt/truncated cookie so it cannot poison boot.
-      if (fromCookie != null) deleteCookie(`${COOKIE_PREFIX}${key}`);
+      deleteCookie(`${COOKIE_PREFIX}${key}`);
       return null;
     },
     setItem(key, value) {
@@ -96,11 +100,10 @@ export function createSharedAuthStorage() {
         /* ignore quota errors */
       }
 
-      const encodedLen = encodeURIComponent(value).length;
+      const encodedLen = encodeURIComponent(String(value ?? '')).length;
       if (encodedLen <= MAX_COOKIE_VALUE_CHARS) {
         writeCookie(`${COOKIE_PREFIX}${key}`, value);
       } else {
-        // Avoid writing a truncated cookie that would break the next read.
         deleteCookie(`${COOKIE_PREFIX}${key}`);
       }
     },

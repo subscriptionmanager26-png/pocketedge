@@ -256,11 +256,15 @@ export default function App() {
         }
       };
 
+      // Exchange PKCE code before stripping it from the URL.
       const { data: { session } } = await client.auth.getSession();
+      if (!cancelled) cleanOAuthCallbackUrl();
       syncAuth(session);
 
       const { data: { subscription: sub } } = client.auth.onAuthStateChange((_event, session) => {
-        cleanOAuthCallbackUrl();
+        if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'INITIAL_SESSION') {
+          cleanOAuthCallbackUrl();
+        }
         syncAuth(session);
       });
       subscription = sub;
