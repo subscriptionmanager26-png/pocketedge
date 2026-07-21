@@ -46,8 +46,14 @@ function initialFor(label) {
   return (text[0] || '?').toUpperCase();
 }
 
-function absoluteLogoUrl(url, origin) {
+function toDetailLogoPath(url) {
   const raw = typeof url === 'string' ? url.trim() : '';
+  if (!raw) return '';
+  return raw.replace(/\/icon-(?:64|128|256)\.png$/i, '/icon-256.png') || raw;
+}
+
+function absoluteLogoUrl(url, origin) {
+  const raw = toDetailLogoPath(url);
   if (!raw) return null;
   if (raw.startsWith('data:') || raw.startsWith('http://') || raw.startsWith('https://')) {
     return raw;
@@ -102,16 +108,18 @@ function ItemLogo({ src, label, size }) {
 
 function ListRow({ label, logoSrc, value, valueColor, isLast }) {
   const lines = wrapShareLabel(label, SHARE_NAME_CHARS_PER_LINE);
-  const nameWidth =
-    SHARE_CARD_WIDTH - 20 - SHARE_COL_LOGO - SHARE_COL_VALUE - SHARE_COL_GAP * 2;
+  const nameMax =
+    SHARE_CARD_WIDTH - 16 - SHARE_COL_LOGO - SHARE_COL_VALUE - SHARE_COL_GAP * 2;
+  const isSingleLine = lines.length <= 1;
 
   return (
     <div
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        padding: `${px(6)}px ${px(10)}px`,
-        minHeight: px(SHARE_ROW_MIN_HEIGHT),
+        justifyContent: 'flex-start',
+        padding: `${px(5)}px ${px(8)}px`,
+        minHeight: px(isSingleLine ? SHARE_ROW_MIN_HEIGHT : SHARE_ROW_MIN_HEIGHT + 10),
         borderBottom: isLast ? 'none' : `1px solid ${COLORS.rowBorder}`,
         gap: px(SHARE_COL_GAP),
       }}
@@ -121,7 +129,8 @@ function ListRow({ label, logoSrc, value, valueColor, isLast }) {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          width: px(nameWidth),
+          /* Content-sized up to max — value packs right after name, no dead middle gap. */
+          maxWidth: px(nameMax),
           fontSize: px(SHARE_NAME_FONT_SIZE),
           fontWeight: 500,
           color: COLORS.text,
@@ -138,6 +147,7 @@ function ListRow({ label, logoSrc, value, valueColor, isLast }) {
         style={{
           display: 'flex',
           width: px(SHARE_COL_VALUE),
+          flexShrink: 0,
           fontSize: px(12),
           fontWeight: 700,
           color: valueColor,
@@ -162,13 +172,13 @@ function ListSection({
   origin,
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: px(10) }}>
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: px(8) }}>
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: px(6),
+          marginBottom: px(5),
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: px(6) }}>
@@ -188,7 +198,7 @@ function ListSection({
           >
             {iconChar}
           </div>
-          <div style={{ display: 'flex', fontSize: px(13), fontWeight: 600, color: COLORS.text }}>
+          <div style={{ display: 'flex', fontSize: px(13), fontWeight: 700, color: COLORS.text }}>
             {title}
           </div>
         </div>
@@ -251,7 +261,7 @@ export default async function handler(request) {
             display: 'flex',
             flexDirection: 'column',
             background: '#ffffff',
-            padding: `${px(14)}px ${px(14)}px ${px(12)}px`,
+            padding: `${px(12)}px ${px(12)}px ${px(10)}px`,
             fontFamily: 'system-ui, sans-serif',
             color: COLORS.text,
           }}
@@ -260,12 +270,12 @@ export default async function handler(request) {
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              marginBottom: px(10),
+              alignItems: 'center',
+              marginBottom: px(8),
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: px(6), marginBottom: px(6) }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: px(6), marginBottom: px(4) }}>
                 {brandLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -280,13 +290,15 @@ export default async function handler(request) {
               <div
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  fontSize: px(26),
+                  flexDirection: 'row',
+                  alignItems: 'baseline',
+                  fontSize: px(24),
                   fontWeight: 800,
-                  lineHeight: 1.05,
+                  lineHeight: 1.1,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <div style={{ display: 'flex' }}>{"Member's"}</div>
+                <div style={{ display: 'flex' }}>My&nbsp;</div>
                 <div style={{ display: 'flex', color: COLORS.brandGreen }}>Portfolio</div>
               </div>
             </div>
@@ -297,7 +309,7 @@ export default async function handler(request) {
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: px(12),
                 padding: `${px(8)}px ${px(10)}px`,
-                minWidth: px(100),
+                minWidth: px(96),
               }}
             >
               <div
@@ -322,23 +334,13 @@ export default async function handler(request) {
               >
                 {formatPct(returnPct)}
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: px(10),
-                  color: COLORS.text,
-                  marginTop: px(2),
-                }}
-              >
-                All time
-              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', height: 1, background: COLORS.border, marginBottom: px(10) }} />
+          <div style={{ display: 'flex', height: 1, background: COLORS.border, marginBottom: px(8) }} />
 
           <ListSection
-            title="Top 5 Performing Stocks"
+            title="Top 5 Performing Stocks/Funds"
             subtitle="By returns"
             iconBg={COLORS.bgGreenLight}
             iconColor={COLORS.brandGreen}
@@ -350,7 +352,7 @@ export default async function handler(request) {
           />
 
           <ListSection
-            title="Top 5 Stocks by Weight"
+            title="Top 5 Stocks/Funds by Weight"
             subtitle="By allocation"
             iconBg="#fff4ed"
             iconColor={COLORS.brandOrange}

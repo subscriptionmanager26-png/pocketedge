@@ -179,14 +179,16 @@ export const SHARE_LABEL_TILE = 48;
 
 /** Invisible share-row columns (logo | name | value). */
 export const SHARE_COL_LOGO = 28;
-export const SHARE_COL_VALUE = 58;
-export const SHARE_COL_GAP = 8;
-export const SHARE_ROW_MIN_HEIGHT = 48;
+/** ~10% wider than prior 58px so +/- percentages don't clip. */
+export const SHARE_COL_VALUE = 64;
+export const SHARE_COL_GAP = 6;
+/** Single-line row; two-line names grow naturally. */
+export const SHARE_ROW_MIN_HEIGHT = 34;
 export const SHARE_NAME_FONT_SIZE = 10;
 export const SHARE_NAME_LINE_HEIGHT = 1.3;
 export const SHARE_NAME_MAX_LINES = 2;
-/** Approx chars per line for OG/Satori 2-line wrap (375px canvas). */
-export const SHARE_NAME_CHARS_PER_LINE = 28;
+/** Approx chars per line for OG/Satori 2-line wrap (tighter name column). */
+export const SHARE_NAME_CHARS_PER_LINE = 32;
 
 export const SHARE_COLOR_TEXT = '#111827';
 export const SHARE_COLOR_GREEN = '#16a34a';

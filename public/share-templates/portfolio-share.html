@@ -56,7 +56,7 @@
             height: var(--canvas-h);
             background-color: var(--bg-card);
             border-radius: 0;
-            padding: 14px 14px 12px;
+            padding: 12px 12px 10px;
             overflow: hidden;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
             display: flex;
@@ -66,9 +66,9 @@
         .header-section {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
@@ -76,7 +76,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .brand img {
@@ -92,10 +92,11 @@
         }
 
         .main-title {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
-            line-height: 1.05;
+            line-height: 1.1;
             letter-spacing: -0.03em;
+            white-space: nowrap;
         }
 
         .main-title .highlight {
@@ -107,7 +108,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 8px 10px;
-            min-width: 100px;
+            min-width: 96px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
             flex-shrink: 0;
         }
@@ -126,26 +127,19 @@
             font-weight: 700;
             color: #16a34a;
             line-height: 1;
-            margin-bottom: 2px;
             letter-spacing: -0.03em;
-        }
-
-        .return-widget-subtitle {
-            font-size: 10px;
-            font-weight: 500;
-            color: #111827;
         }
 
         .divider {
             border: 0;
             height: 1px;
             background-color: var(--border-color);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
         .section {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             flex-shrink: 1;
             min-height: 0;
         }
@@ -158,7 +152,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
 
         .section-title-wrap {
@@ -189,7 +183,7 @@
 
         .section-title {
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .section-subtitle {
@@ -207,14 +201,14 @@
         }
 
         .list-item {
-            display: grid;
-            grid-template-columns: 28px 1fr 58px;
-            column-gap: 8px;
-            align-items: start;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 6px;
             text-align: left;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-bottom: 1px solid #f8fafc;
-            min-height: 48px;
+            min-height: 34px;
         }
 
         .list-item:last-child {
@@ -223,9 +217,11 @@
 
         .item-left {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            align-items: flex-start;
+            gap: 6px;
+            flex: 0 1 auto;
             min-width: 0;
+            max-width: calc(100% - 70px);
         }
 
         .item-icon {
@@ -268,11 +264,14 @@
         }
 
         .item-value {
+            flex: 0 0 auto;
+            width: 64px;
             font-weight: 700;
             letter-spacing: -0.025em;
             font-size: 12px;
             text-align: left;
             color: #111827;
+            font-variant-numeric: tabular-nums;
         }
 
         .item-value.green { color: #16a34a; }
@@ -372,15 +371,13 @@
                     <span>PocketEdge</span>
                 </div>
                 <h1 class="main-title">
-                    Member's<br>
-                    <span class="highlight">Portfolio</span>
+                    My <span class="highlight">Portfolio</span>
                 </h1>
             </div>
 
             <div class="return-widget">
                 <p class="return-widget-title">Total Return</p>
                 <p class="return-widget-value">+24.7%</p>
-                <p class="return-widget-subtitle">All time</p>
             </div>
         </header>
 
@@ -395,7 +392,7 @@
                             <polyline points="16 7 22 7 22 13"></polyline>
                         </svg>
                     </div>
-                    <h2 class="section-title">Top 5 Performing Stocks</h2>
+                    <h2 class="section-title">Top 5 Performing Stocks/Funds</h2>
                 </div>
                 <span class="section-subtitle">By returns</span>
             </header>
@@ -475,7 +472,7 @@
                             <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
                         </svg>
                     </div>
-                    <h2 class="section-title">Top 5 Stocks by Weight</h2>
+                    <h2 class="section-title">Top 5 Stocks/Funds by Weight</h2>
                 </div>
                 <span class="section-subtitle">By allocation</span>
             </header>

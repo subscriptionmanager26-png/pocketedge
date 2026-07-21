@@ -6,7 +6,11 @@ import PortfolioShareCard, {
   SHARE_CARD_PIXEL_RATIO,
   SHARE_CARD_WIDTH,
 } from '../components/PortfolioShareCard';
-import { toCachedAssetLogoPath } from './assetLogo';
+import {
+  LOGO_VARIANT_DETAIL,
+  toCachedAssetLogoPath,
+  withLogoVariant,
+} from './assetLogo';
 import {
   absolutePortfolioShareUrl,
   buildPortfolioShareSnapshot,
@@ -52,7 +56,9 @@ async function enrichSnapshotLogos(snapshot) {
     Promise.all(
       rows.map(async (row) => {
         if (!row?.logoIconUrl) return row;
-        const dataUrl = await prefetchLogoDataUrl(row.logoIconUrl);
+        // Prefetch sharper 256px icons (list URLs are often icon-128).
+        const hiRes = withLogoVariant(row.logoIconUrl, LOGO_VARIANT_DETAIL) || row.logoIconUrl;
+        const dataUrl = await prefetchLogoDataUrl(hiRes);
         return dataUrl ? { ...row, logoIconUrl: dataUrl } : { ...row, logoIconUrl: null };
       })
     );
