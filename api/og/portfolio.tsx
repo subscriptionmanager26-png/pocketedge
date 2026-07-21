@@ -21,8 +21,68 @@ const BUBBLE_POS = [
   { top: 220, left: 400 },
 ];
 
+function initialFor(label) {
+  const text = String(label ?? '').trim();
+  return (text[0] || '?').toUpperCase();
+}
+
+function absoluteLogoUrl(url, origin) {
+  const raw = typeof url === 'string' ? url.trim() : '';
+  if (!raw) return null;
+  if (raw.startsWith('data:') || raw.startsWith('http://') || raw.startsWith('https://')) {
+    return raw;
+  }
+  if (raw.startsWith('/')) {
+    try {
+      return new URL(raw, origin).toString();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function LogoMark({ src, label, size, light = false }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        width={size}
+        height={size}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          objectFit: 'cover',
+          background: light ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.18)',
+        }}
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        background: light ? 'rgba(30,70,53,0.12)' : 'rgba(255,255,255,0.2)',
+        color: light ? '#1e4635' : '#ffffff',
+        fontSize: Math.round(size * 0.4),
+        fontWeight: 700,
+      }}
+    >
+      {initialFor(label)}
+    </div>
+  );
+}
+
 export default async function handler(request) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
   const portfolioId = searchParams.get('id');
   const sort = searchParams.get('sort') === 'performance' ? 'performance' : 'allocation';
 
@@ -41,6 +101,7 @@ export default async function handler(request) {
     snapshot.returnPct > 0 ? '#10b981' : snapshot.returnPct < 0 ? '#dc2626' : '#6b7280';
   const performers = snapshot.topPerformers ?? [];
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 10);
+  const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
 
   return new ImageResponse(
     (
@@ -64,8 +125,17 @@ export default async function handler(request) {
             marginBottom: 20,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', fontSize: 22, fontWeight: 700 }}>
-            PocketEdge
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {brandLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brandLogoUrl}
+                width={32}
+                height={32}
+                style={{ width: 32, height: 32, objectFit: 'contain' }}
+              />
+            ) : null}
+            <div style={{ display: 'flex', fontSize: 22, fontWeight: 700 }}>PocketEdge</div>
           </div>
           <div
             style={{
@@ -155,6 +225,9 @@ export default async function handler(request) {
           {performers.map((row, index) => {
             const size = BUBBLE_SIZES[index] ?? 84;
             const pos = BUBBLE_POS[index] ?? BUBBLE_POS[4];
+            const logoSize = Math.round(size * 0.28);
+            const light = index >= 2;
+            const logoSrc = absoluteLogoUrl(row.logoIconUrl, origin);
             return (
               <div
                 key={row.ticker}
@@ -175,6 +248,9 @@ export default async function handler(request) {
                   fontWeight: 600,
                 }}
               >
+                <div style={{ display: 'flex', marginBottom: 6 }}>
+                  <LogoMark src={logoSrc} label={row.label} size={logoSize} light={light} />
+                </div>
                 <div style={{ display: 'flex' }}>{String(row.label).slice(0, 10)}</div>
                 <div style={{ display: 'flex', fontWeight: 700, fontSize: size >= 130 ? 16 : 12 }}>
                   {formatPct(row.totalReturnPct)}
@@ -234,27 +310,33 @@ export default async function handler(request) {
             marginBottom: 14,
           }}
         >
-          {allocation.map((row) => (
-            <div
-              key={row.ticker}
-              style={{
-                width: 138,
-                border: '1px solid #f3f4f6',
-                borderRadius: 12,
-                padding: 10,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <div style={{ display: 'flex', fontSize: 11, color: '#4b5563' }}>
-                {String(row.label).slice(0, 12)}
+          {allocation.map((row) => {
+            const logoSrc = absoluteLogoUrl(row.logoIconUrl, origin);
+            return (
+              <div
+                key={row.ticker}
+                style={{
+                  width: 138,
+                  border: '1px solid #f3f4f6',
+                  borderRadius: 12,
+                  padding: 10,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ display: 'flex', marginBottom: 6 }}>
+                  <LogoMark src={logoSrc} label={row.label} size={28} light />
+                </div>
+                <div style={{ display: 'flex', fontSize: 11, color: '#4b5563' }}>
+                  {String(row.label).slice(0, 12)}
+                </div>
+                <div style={{ display: 'flex', fontSize: 14, fontWeight: 700 }}>
+                  {`${Number(row.weight).toFixed(1)}%`}
+                </div>
               </div>
-              <div style={{ display: 'flex', fontSize: 14, fontWeight: 700 }}>
-                {`${Number(row.weight).toFixed(1)}%`}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div
