@@ -1,7 +1,11 @@
 import { toPng } from 'html-to-image';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import PortfolioShareCard, { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH } from '../components/PortfolioShareCard';
+import PortfolioShareCard, {
+  SHARE_CARD_HEIGHT,
+  SHARE_CARD_PIXEL_RATIO,
+  SHARE_CARD_WIDTH,
+} from '../components/PortfolioShareCard';
 import {
   absolutePortfolioShareUrl,
   buildPortfolioShareSnapshot,
@@ -146,7 +150,7 @@ export async function captureShareCard(element) {
   const dataUrl = await toPng(element, {
     width: SHARE_CARD_WIDTH,
     height: height || SHARE_CARD_HEIGHT,
-    pixelRatio: 1,
+    pixelRatio: SHARE_CARD_PIXEL_RATIO,
     cacheBust: true,
     skipFonts: true,
     filter: (node) => {

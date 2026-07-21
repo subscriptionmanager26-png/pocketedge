@@ -3,10 +3,12 @@ import { formatPct } from '../lib/format';
 import { assetLogoInitial, detectLogoBackdropTone, logoBackdropClass } from '../lib/assetLogo';
 import { ownerPossessiveLabel } from '../lib/portfolioShare';
 
-/** Matches Gemini share template width. */
+/** Matches Gemini share template width (CSS px). */
 export const SHARE_CARD_WIDTH = 800;
 /** Natural content height at 800px width (template has no fixed height). Used for OG meta. */
 export const SHARE_CARD_HEIGHT = 920;
+/** Retina capture scale — 2× yields ~1600px-wide PNGs that stay sharp on phone screens. */
+export const SHARE_CARD_PIXEL_RATIO = 2;
 
 const BUBBLE_SIZES = [170, 148, 132, 120, 88];
 const BUBBLE_POSITIONS = [
