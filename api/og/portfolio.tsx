@@ -62,27 +62,6 @@ function absoluteLogoUrl(url, origin) {
   return null;
 }
 
-async function loadInterFont() {
-  try {
-    const cssUrl =
-      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
-    const css = await fetch(cssUrl, {
-      headers: {
-        // Request a single woff2 URL Satori can load.
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    }).then((r) => r.text());
-    const match = css.match(/src: url\(([^)]+)\) format\('woff2'\)/);
-    if (!match?.[1]) return null;
-    const fontRes = await fetch(match[1]);
-    if (!fontRes.ok) return null;
-    return await fontRes.arrayBuffer();
-  } catch {
-    return null;
-  }
-}
-
 function ItemLogo({ src, label, size }) {
   if (src) {
     return (
@@ -261,7 +240,6 @@ export default async function handler(request) {
   const performers = (snapshot.topPerformers ?? snapshot.topHoldings ?? []).slice(0, 5);
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 5);
   const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
-  const interData = await loadInterFont();
 
   try {
     return new ImageResponse(
@@ -274,7 +252,7 @@ export default async function handler(request) {
             flexDirection: 'column',
             background: '#ffffff',
             padding: `${px(14)}px ${px(14)}px ${px(12)}px`,
-            fontFamily: 'Inter, system-ui, sans-serif',
+            fontFamily: 'system-ui, sans-serif',
             color: COLORS.text,
           }}
         >
@@ -308,7 +286,7 @@ export default async function handler(request) {
                   lineHeight: 1.05,
                 }}
               >
-                <div style={{ display: 'flex' }}>Member&apos;s</div>
+                <div style={{ display: 'flex' }}>{"Member's"}</div>
                 <div style={{ display: 'flex', color: COLORS.brandGreen }}>Portfolio</div>
               </div>
             </div>
@@ -421,22 +399,7 @@ export default async function handler(request) {
           </div>
         </div>
       ),
-      {
-        width: WIDTH,
-        height: HEIGHT,
-        ...(interData
-          ? {
-              fonts: [
-                {
-                  name: 'Inter',
-                  data: interData,
-                  style: 'normal',
-                  weight: 400,
-                },
-              ],
-            }
-          : {}),
-      }
+      { width: WIDTH, height: HEIGHT }
     );
   } catch (error) {
     console.error('OG portfolio image failed', error);
