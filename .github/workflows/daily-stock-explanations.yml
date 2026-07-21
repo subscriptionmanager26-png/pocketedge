@@ -15,7 +15,7 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    # At two seconds per Mistral request, a high-news day can exceed an hour.
+    # ~550 EQ tickers with recent news × 2s Mistral ≈ 20 min; headroom for retries.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4

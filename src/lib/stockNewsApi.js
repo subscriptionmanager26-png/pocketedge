@@ -93,7 +93,7 @@ export async function fetchStockExplanations(ticker, { limit = 90 } = {}) {
   if (!symbol || !stockNewsClient) return [];
 
   const { data, error } = await stockNewsClient
-    .from('mn_daily_stock_explanations_openai')
+    .from('mn_daily_stock_explanations')
     .select('as_of_date, status, explanation, confidence, generated_at')
     .eq('ticker', symbol)
     .order('as_of_date', { ascending: false })

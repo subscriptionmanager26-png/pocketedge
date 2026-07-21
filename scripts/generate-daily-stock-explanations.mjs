@@ -10,6 +10,7 @@ const PRICE_WINDOW_DAYS = 10;
 const MISTRAL_DELAY_MS = 2_000;
 const UPSERT_BATCH_SIZE = 500;
 const NEWS_PAGE_SIZE = 1000;
+const TICKER_PAGE_SIZE = 1000;
 
 const ANALYST_INSTRUCTIONS = `You are an experienced equity market journalist.
 
@@ -119,14 +120,50 @@ async function restJson(url, key, path, options = {}) {
 }
 
 async function fetchAllTickers(newsUrl, newsKey) {
-  const rows = await restJson(
-    newsUrl,
-    newsKey,
-    'mn_tickers?select=symbol,nse_symbol&order=symbol.asc&limit=5000'
-  );
-  return (rows ?? [])
-    .map((row) => ({ ticker: String(row.nse_symbol || row.symbol || '').trim().toUpperCase() }))
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const params = new URLSearchParams({
+      select: 'symbol,nse_symbol,series',
+      order: 'symbol.asc',
+      limit: String(TICKER_PAGE_SIZE),
+      offset: String(offset),
+    });
+    const batch = await restJson(newsUrl, newsKey, `mn_tickers?${params}`);
+    if (!batch?.length) break;
+    rows.push(...batch);
+    if (batch.length < TICKER_PAGE_SIZE) break;
+    offset += TICKER_PAGE_SIZE;
+  }
+  return rows
+    .map((row) => ({
+      ticker: String(row.nse_symbol || row.symbol || '').trim().toUpperCase(),
+      series: String(row.series ?? '').trim().toUpperCase(),
+    }))
     .filter((row) => row.ticker);
+}
+
+/** EQ stocks from mn_tickers — explanations target individual stocks, not indices/ETFs. */
+function isEquityTicker(row) {
+  return !row.series || row.series === 'EQ';
+}
+
+/**
+ * Tickers that should receive a Mistral/OpenAI call today:
+ * EQ symbols with at least one news item in the lookback window.
+ */
+function buildEligibleTickers(allTickers, newsByTicker, explicitTickers) {
+  if (explicitTickers.length) {
+    const known = new Set(allTickers.map((row) => row.ticker));
+    return explicitTickers.map((ticker) => ticker.toUpperCase()).filter((ticker) => known.has(ticker));
+  }
+
+  const eqTickers = new Set(
+    allTickers.filter(isEquityTicker).map((row) => row.ticker)
+  );
+  return [...newsByTicker.keys()]
+    .filter((ticker) => eqTickers.has(ticker))
+    .sort();
 }
 
 async function fetchRecentNewsFromSupabase(newsUrl, newsKey, fromDate) {
@@ -346,17 +383,28 @@ async function main() {
       ? 'mn_daily_stock_explanations_openai'
       : 'mn_daily_stock_explanations');
   const asOfDate = istDate();
-  const [tickers, newsByTicker] = await Promise.all([
+  const newsFrom = shiftDate(asOfDate, NEWS_WINDOW_DAYS);
+  const [allTickers, newsByTicker] = await Promise.all([
     fetchAllTickers(newsUrl, newsKey),
-    fetchRecentNewsFromSupabase(newsUrl, newsKey, shiftDate(asOfDate, NEWS_WINDOW_DAYS)),
+    fetchRecentNewsFromSupabase(newsUrl, newsKey, newsFrom),
   ]);
-  const selectedTickers = args.tickers.length
-    ? tickers.filter(({ ticker }) => args.tickers.includes(ticker))
-    : tickers;
+  console.log(
+    JSON.stringify({
+      mn_tickers_loaded: allTickers.length,
+      eq_tickers: allTickers.filter(isEquityTicker).length,
+      tickers_with_recent_news: newsByTicker.size,
+      news_window_from: newsFrom,
+    })
+  );
+
+  const selectedTickers = buildEligibleTickers(allTickers, newsByTicker, args.tickers).map(
+    (ticker) => ({ ticker })
+  );
   if (args.tickers.length && selectedTickers.length !== args.tickers.length) {
     const found = new Set(selectedTickers.map(({ ticker }) => ticker));
     console.warn(`Unknown test tickers: ${args.tickers.filter((ticker) => !found.has(ticker)).join(', ')}`);
   }
+  console.log(`Processing ${selectedTickers.length} eligible tickers (EQ + recent news)`);
   const priceByTicker = await fetchPriceHistory(
     marketUrl,
     marketKey,
@@ -369,6 +417,7 @@ async function main() {
   for (const { ticker } of selectedTickers) {
     const news = newsByTicker.get(ticker) ?? [];
     if (!news.length) {
+      // Should not happen for the default eligible set; kept for explicit --tickers runs.
       rows.push(noRecentNewsRow(ticker, asOfDate));
       continue;
     }
@@ -421,6 +470,7 @@ async function main() {
         model,
         table,
         tracked_stocks: selectedTickers.length,
+        eligible_with_news: selectedTickers.length,
         generated,
         no_recent_news: rows.length - generated - failed,
         failed,
