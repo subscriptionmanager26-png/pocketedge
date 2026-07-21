@@ -19,9 +19,10 @@ export default function PortfolioShareSheet({
   const [prepared, setPrepared] = useState(null);
   const [notice, setNotice] = useState('');
   const prepareToken = useRef(0);
+  const portfolioId = portfolio?.id ?? null;
 
   useEffect(() => {
-    if (!open || !portfolio) {
+    if (!open || !portfolioId) {
       setPrepared(null);
       setPreparing(false);
       return undefined;
@@ -58,7 +59,7 @@ export default function PortfolioShareSheet({
     return () => {
       prepareToken.current += 1;
     };
-  }, [open, portfolio, ownerHandle, sort]);
+  }, [open, portfolioId, ownerHandle, sort, portfolio]);
 
   if (!open || !portfolio) return null;
 
@@ -90,6 +91,36 @@ export default function PortfolioShareSheet({
     } finally {
       setSharing(false);
     }
+  };
+
+  const handleRetryPrepare = () => {
+    if (!portfolioId) return;
+    const token = ++prepareToken.current;
+    setPreparing(true);
+    setPrepared(null);
+    setNotice('');
+    preparePortfolioShare({ portfolio, ownerHandle, sort })
+      .then((result) => {
+        if (prepareToken.current !== token) return;
+        if (!result.ok) {
+          setNotice(
+            result.reason === 'empty_snapshot'
+              ? 'Add holdings before sharing this portfolio.'
+              : 'Could not prepare the share image. Try again.'
+          );
+          setPrepared(null);
+        } else {
+          setPrepared(result);
+        }
+        setPreparing(false);
+      })
+      .catch((error) => {
+        if (prepareToken.current !== token) return;
+        console.error('Prepare portfolio share failed', error);
+        setNotice('Could not prepare the share image. Try again.');
+        setPrepared(null);
+        setPreparing(false);
+      });
   };
 
   const shareDisabled = sharing || preparing || !prepared?.ok;
@@ -153,7 +184,20 @@ export default function PortfolioShareSheet({
           </label>
         </fieldset>
 
-        {notice ? <p className="mt-4 text-sm text-pe-text-secondary">{notice}</p> : null}
+        {notice ? (
+          <div className="mt-4 flex items-start justify-between gap-3">
+            <p className="text-sm text-pe-text-secondary">{notice}</p>
+            {!preparing && !prepared?.ok ? (
+              <button
+                type="button"
+                onClick={handleRetryPrepare}
+                className="shrink-0 text-sm font-semibold text-pe-accent hover:underline"
+              >
+                Retry
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-5 flex gap-2">
           <button

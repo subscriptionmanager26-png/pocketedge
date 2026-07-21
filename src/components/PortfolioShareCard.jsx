@@ -13,9 +13,8 @@ import {
 export const SHARE_CARD_WIDTH = 800;
 /** Natural content height at 800px width (template has no fixed height). Used for OG meta. */
 export const SHARE_CARD_HEIGHT = 1100;
-/** Retina capture — up to 3× for sharp shares on high-DPI phones. */
-export const SHARE_CARD_PIXEL_RATIO =
-  typeof window !== 'undefined' ? Math.min(3, Math.max(2, window.devicePixelRatio || 2)) : 3;
+/** Retina capture at 2× — 3× often OOMs on mobile for tall share cards. */
+export const SHARE_CARD_PIXEL_RATIO = 2;
 
 /** Hex only — html-to-image breaks on Tailwind/CSS variables. */
 const LOGO_BACKDROP = {

@@ -104,9 +104,9 @@ function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   const host = document.createElement('div');
   host.setAttribute('aria-hidden', 'true');
   host.style.position = 'fixed';
-  host.style.left = '0';
+  host.style.left = '-9999px';
   host.style.top = '0';
-  host.style.opacity = '0';
+  host.style.visibility = 'hidden';
   host.style.pointerEvents = 'none';
   host.style.zIndex = '-1';
   document.body.appendChild(host);
@@ -381,22 +381,32 @@ async function buildShareContext({ portfolio, ownerHandle, sort }) {
 export async function preparePortfolioShare({ portfolio, ownerHandle, sort = SHARE_SORT_ALLOCATION }) {
   if (!portfolio?.id) return { ok: false, reason: 'missing_portfolio' };
 
-  const context = await buildShareContext({ portfolio, ownerHandle, sort });
-  if (!context) return { ok: false, reason: 'empty_snapshot' };
+  try {
+    const context = await buildShareContext({ portfolio, ownerHandle, sort });
+    if (!context) return { ok: false, reason: 'empty_snapshot' };
 
-  const captured = await captureShareImage(
-    context.snapshot,
-    ownerHandle,
-    context.portfolioId,
-    sort
-  );
+    const captured = await captureShareImage(
+      context.snapshot,
+      ownerHandle,
+      context.portfolioId,
+      sort
+    );
 
-  return {
-    ok: true,
-    ...context,
-    blob: captured.blob,
-    captureMethod: captured.captureMethod,
-  };
+    return {
+      ok: true,
+      ...context,
+      blob: captured.blob,
+      captureMethod: captured.captureMethod,
+    };
+  } catch (error) {
+    console.error('preparePortfolioShare failed', error);
+    trackShareFailure('prepare_failed', error?.message);
+    return {
+      ok: false,
+      reason: 'capture_failed',
+      detail: error?.message ?? 'unknown',
+    };
+  }
 }
 
 /**

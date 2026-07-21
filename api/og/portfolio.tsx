@@ -19,7 +19,13 @@ export const config = {
 
 const S = SHARE_OG_SCALE;
 const WIDTH = SHARE_CARD_WIDTH * S;
-const HEIGHT = SHARE_CARD_HEIGHT * S;
+
+function ogHeight(allocationCount = 10) {
+  // Base layout + one row per holding in the vertical allocation list.
+  const base = 980;
+  const row = 56;
+  return Math.max(SHARE_CARD_HEIGHT, base + allocationCount * row) * S;
+}
 
 const BUBBLE_COLORS = ['#1e4635', '#499d6d', '#addba5', '#d6eed0', '#fae5d3'];
 const BUBBLE_TEXT = ['#ffffff', '#ffffff', '#1f2937', '#1f2937', '#1f2937'];
@@ -125,7 +131,7 @@ function TileLabel({ label }) {
     <div
       style={{
         display: 'flex',
-        flex: 1,
+        width: px(560),
         fontSize: px(12),
         fontWeight: 500,
         color: '#374151',
@@ -158,8 +164,10 @@ export default async function handler(request) {
   const performers = snapshot.topPerformers ?? [];
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 10);
   const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
+  const height = ogHeight(allocation.length);
 
-  return new ImageResponse(
+  try {
+    return new ImageResponse(
     (
       <div
         style={{
@@ -302,7 +310,7 @@ export default async function handler(request) {
                     marginBottom: px(8),
                   }}
                 >
-                  <LogoMark src={logoSrc} label={row.label} size={px(24)} light={light} />
+                  <LogoMark src={logoSrc} label={row.label} size={px(24)} light={index >= 2} />
                   <BubbleLabel label={row.label} bubbleSize={size} />
                 </div>
                 <div
@@ -404,7 +412,7 @@ export default async function handler(request) {
                     display: 'flex',
                     fontSize: px(14),
                     fontWeight: 700,
-                    flexShrink: 0,
+                    marginLeft: 'auto',
                   }}
                 >
                   {`${Number(row.weight).toFixed(1)}%`}
@@ -431,7 +439,11 @@ export default async function handler(request) {
     ),
     {
       width: WIDTH,
-      height: HEIGHT,
+      height,
     }
   );
+  } catch (error) {
+    console.error('OG portfolio image failed', error);
+    return new Response(`OG image failed: ${error?.message ?? 'unknown'}`, { status: 500 });
+  }
 }
