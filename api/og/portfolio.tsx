@@ -108,15 +108,13 @@ function ItemLogo({ src, label, size }) {
 
 function ListRow({ label, logoSrc, value, valueColor, isLast }) {
   const lines = wrapShareLabel(label, SHARE_NAME_CHARS_PER_LINE);
-  const nameMax =
-    SHARE_CARD_WIDTH - 16 - SHARE_COL_LOGO - SHARE_COL_VALUE - SHARE_COL_GAP * 2;
   const isSingleLine = lines.length <= 1;
 
   return (
     <div
       style={{
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'flex-start',
         padding: `${px(5)}px ${px(8)}px`,
         minHeight: px(isSingleLine ? SHARE_ROW_MIN_HEIGHT : SHARE_ROW_MIN_HEIGHT + 10),
@@ -129,8 +127,8 @@ function ListRow({ label, logoSrc, value, valueColor, isLast }) {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          /* Content-sized up to max — value packs right after name, no dead middle gap. */
-          maxWidth: px(nameMax),
+          flex: 1,
+          minWidth: 0,
           fontSize: px(SHARE_NAME_FONT_SIZE),
           fontWeight: 500,
           color: COLORS.text,

@@ -92,53 +92,40 @@ function PieIcon() {
   );
 }
 
-/**
- * Shared grid across rows: logo | name (max-content) | value | spacer.
- * Name column sizes to the widest label; % sits right after — no dead middle gap.
- */
+/** Fixed 3-column row: logo | name | returns — aligned across all rows. */
 function ShareListRow({ row, value, valueColor, isLast }) {
-  const cellBorder = isLast ? 'none' : `1px solid ${COLORS.rowBorder}`;
-
   return (
-    <>
-      <div
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `${SHARE_COL_LOGO}px minmax(0, 1fr) ${SHARE_COL_VALUE}px`,
+        columnGap: SHARE_COL_GAP,
+        alignItems: 'center',
+        padding: '5px 8px',
+        borderBottom: isLast ? 'none' : `1px solid ${COLORS.rowBorder}`,
+        boxSizing: 'border-box',
+      }}
+    >
+      <ItemLogo logoIconUrl={row.logoIconUrl} assetKey={row.ticker} name={row.label} />
+      <span
         style={{
-          padding: '5px 0 5px 8px',
-          borderBottom: cellBorder,
-          display: 'flex',
-          alignItems: 'flex-start',
-        }}
-      >
-        <ItemLogo logoIconUrl={row.logoIconUrl} assetKey={row.ticker} name={row.label} />
-      </div>
-      <div
-        style={{
-          padding: '5px 0',
-          borderBottom: cellBorder,
+          minWidth: 0,
           fontWeight: 500,
           fontSize: SHARE_NAME_FONT_SIZE,
           lineHeight: SHARE_NAME_LINE_HEIGHT,
           color: COLORS.text,
           textAlign: 'left',
           wordBreak: 'break-word',
-          maxWidth: 200,
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
         }}
       >
-        <span
-          style={{
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {row.label}
-        </span>
-      </div>
-      <div
+        {row.label}
+      </span>
+      <span
         style={{
-          padding: '5px 0',
-          borderBottom: cellBorder,
           width: SHARE_COL_VALUE,
           fontWeight: 700,
           fontSize: 12,
@@ -151,10 +138,8 @@ function ShareListRow({ row, value, valueColor, isLast }) {
         }}
       >
         {value}
-      </div>
-      {/* Absorbs leftover width on the right — keeps value packed after name */}
-      <div style={{ borderBottom: cellBorder, paddingRight: 8 }} />
-    </>
+      </span>
+    </div>
   );
 }
 
@@ -212,25 +197,15 @@ function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, 
           boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `${SHARE_COL_LOGO}px max-content ${SHARE_COL_VALUE}px 1fr`,
-            columnGap: SHARE_COL_GAP,
-            alignItems: 'start',
-            width: '100%',
-          }}
-        >
-          {rows.map((row, index) => (
-            <ShareListRow
-              key={row.ticker}
-              row={row}
-              value={renderValue(row)}
-              valueColor={getValueColor(row)}
-              isLast={index === rows.length - 1}
-            />
-          ))}
-        </div>
+        {rows.map((row, index) => (
+          <ShareListRow
+            key={row.ticker}
+            row={row}
+            value={renderValue(row)}
+            valueColor={getValueColor(row)}
+            isLast={index === rows.length - 1}
+          />
+        ))}
       </div>
     </section>
   );
