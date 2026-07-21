@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PocketEdge · Daily Brief Digest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:   #FF6719;
+      --ink:     #111111;
+      --red:     #E8332A;
+      --green:   #00C896;
+      --white:   #FFFFFF;
+      --paper:   #EEECEA;
+      --muted:   #6B7280;
+      --dim:     #9CA3AF;
+      --edge:    #E5E5E3;
+      --surface: #FAFAF8;
+      --a4-w:    794px;
+      --a4-h:    1123px;
+    }
+
+    html, body {
+      background: var(--paper);
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+      gap: 24px;
+    }
+
+    /* ── PAGE (A4) ─────────────────────────────────────── */
+    .page {
+      width: var(--a4-w);
+      min-height: var(--a4-h);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow:
+        0 40px 80px -20px rgba(0,0,0,0.18),
+        0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    .page-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rows-wrap {
+      flex: 1;
+    }
+
+    /* ── TOPBAR ─────────────────────────────────────────── */
+    .topbar {
+      padding: 18px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--edge);
+    }
+
+    .topbar.compact {
+      padding: 14px 40px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 33px;
+      height: 33px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .wordmark {
+      font-family: Inter, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+
+    .brief-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px 4px 8px;
+      border-radius: 100px;
+      border: 1.5px solid var(--brand);
+      background: var(--brand);
+    }
+
+    .brief-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--white);
+    }
+
+    .brief-label {
+      font-family: Inter, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .meta-date {
+      font-family: Inter, sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+    }
+
+    .page-num {
+      font-family: Inter, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── SUBBAR ─────────────────────────────────────────── */
+    .subbar {
+      padding: 7px 40px 7px 44px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--edge);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .sub-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: Inter, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .sdot { width: 7px; height: 7px; border-radius: 50%; }
+    .sdot.up { background: var(--green); }
+    .sdot.dn { background: var(--red); }
+    .ssep { width: 1px; height: 11px; background: var(--edge); }
+
+    /* ── COLUMN HEADERS & ROWS (stacked company + move) ─ */
+    .col-head,
+    .sr {
+      display: grid;
+      grid-template-columns: 318px 1fr;
+      align-items: start;
+    }
+
+    .col-head {
+      padding-left: 4px;
+      border-bottom: 2px solid var(--brand);
+    }
+
+    .ch {
+      padding: 8px 0;
+      font-family: Inter, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.17em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .ch-company { padding-left: 40px; }
+    .ch-why     { padding-left: 16px; }
+
+    .sr {
+      position: relative;
+      min-height: 90px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .s-meta {
+      padding: 13px 11px 13px 44px;
+      border-right: 1px solid var(--edge);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      align-self: start;
+      min-width: 0;
+    }
+
+    .s-id-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      min-width: 0;
+      padding-bottom: 16px;
+    }
+
+    .s-move {
+      padding-left: 48px;
+      padding-top: 4px;
+      margin-top: 2px;
+    }
+
+    .s-move .pfig {
+      justify-content: flex-start;
+    }
+
+    .s-move .parrow {
+      margin-top: 4px;
+    }
+
+    .s-move .ppct {
+      font-size: 32px;
+      letter-spacing: -1px;
+    }
+
+    .s-why {
+      padding: 13px 26px 13px 14px;
+      display: flex;
+      align-items: flex-start;
+      align-self: start;
+      min-width: 0;
+    }
+
+    .s-name {
+      line-height: 1.3;
+    }
+
+    .sr::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 14px;
+      bottom: 14px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .sr.dn::before { background: var(--red); }
+    .sr.up::before { background: var(--green); }
+
+    .rr {
+      height: 1px;
+      background: var(--edge);
+      margin: 0 40px 0 44px;
+    }
+
+    .slogo {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--edge);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .slogo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .slogo .fallback {
+      font-family: Inter, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--red);
+      letter-spacing: -0.04em;
+      text-align: center;
+      line-height: 1.05;
+      padding: 2px;
+    }
+
+    .s-id-text {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .s-ticker {
+      font-family: Inter, sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 3px;
+    }
+
+    .s-name {
+      font-family: Inter, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .parrow {
+      font-family: Inter, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 6px;
+      margin-right: 1px;
+    }
+
+    .ppct {
+      font-family: Inter, sans-serif;
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+
+    .pfig {
+      display: flex;
+      align-items: flex-start;
+      line-height: 1;
+    }
+
+    .cr { color: var(--red); }
+    .cg { color: var(--green); }
+
+    .why-txt {
+      font-family: Inter, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #2D3240;
+    }
+
+    .em {
+      font-family: Inter, sans-serif;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .footer {
+      border-top: none;
+      background: var(--brand);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .footer-cta {
+      font-family: Inter, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+
+    .footer-cta em {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    /* ── PRINT / PDF ────────────────────────────────────── */
+    @page { size: A4; margin: 0; }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+        display: block;
+        gap: 0;
+      }
+
+      .page {
+        border-radius: 0;
+        box-shadow: none;
+        page-break-after: always;
+        min-height: var(--a4-h);
+      }
+
+      .page:last-child { page-break-after: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div id="pages"></div>
+
+  <script id="brief-data" type="application/json">__BRIEF_DATA__</script>
+  <script>
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function highlightText(text, highlights) {
+      let out = escapeHtml(text);
+      (highlights || []).slice().sort((a,b) => b.length - a.length).forEach(term => {
+        const safe = escapeHtml(term);
+        if (!safe) return;
+        out = out.replace(
+          new RegExp(safe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+          m => `<span class="em">${m}</span>`
+        );
+      });
+      return out;
+    }
+
+    function formatPct(n) {
+      const v = Math.abs(Number(n) || 0);
+      return v.toFixed(2) + "%";
+    }
+
+    function logoHtml(stock) {
+      const text = escapeHtml(stock.logoText || stock.ticker);
+      const len = (stock.logoText || stock.ticker || "").length;
+      const size = len <= 3 ? 12 : len <= 5 ? 8 : 6;
+      if (stock.logoUrl) {
+        return `<img src="${escapeHtml(stock.logoUrl)}" alt="" />`;
+      }
+      return `<div class="fallback" style="font-size:${size}px">${text}</div>`;
+    }
+
+    function stockRowHtml(stock, isLast) {
+      const isUp = Number(stock.changePct) >= 0;
+      const cls = isUp ? "up" : "dn";
+      const colorCls = isUp ? "cg" : "cr";
+      const arrow = isUp ? "↑" : "↓";
+      const rule = isLast ? "" : `<div class="rr"></div>`;
+      return `
+        <div class="sr ${cls}">
+          <div class="s-meta">
+            <div class="s-id-row">
+              <div class="slogo">${logoHtml(stock)}</div>
+              <div class="s-id-text">
+                <div class="s-ticker">NSE:${escapeHtml(stock.ticker)}</div>
+                <div class="s-name">${escapeHtml(stock.name || stock.ticker)}</div>
+              </div>
+            </div>
+            <div class="s-move">
+              <div class="pfig">
+                <span class="parrow ${colorCls}">${arrow}</span>
+                <span class="ppct ${colorCls}">${formatPct(stock.changePct)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="s-why">
+            <div class="why-txt">${highlightText(stock.why || "", stock.highlights)}</div>
+          </div>
+        </div>
+        ${rule}`;
+    }
+
+    function colHeadHtml() {
+      return `
+        <div class="col-head">
+          <div class="ch ch-company">Company</div>
+          <div class="ch ch-why">Why it happened</div>
+        </div>`;
+    }
+
+    function footerHtml(data) {
+      const site = (data.cta && data.cta.site) || "www.pocketedge.in";
+      const line1 = (data.cta && data.cta.line1) || "Stay Updated On Your Portfolio with PocketEdge at";
+      return `
+        <div class="footer">
+          <p class="footer-cta">${escapeHtml(line1)} <em>${escapeHtml(site)}</em></p>
+        </div>`;
+    }
+
+    function topbarHtml(data, pageInfo, compact) {
+      const displayDate = escapeHtml(data.displayDate || data.asOfDate || "");
+      const pageLabel = pageInfo.pageCount > 1
+        ? `<span class="page-num">Page ${pageInfo.page} of ${pageInfo.pageCount}</span>`
+        : "";
+      if (compact) {
+        return `
+          <div class="topbar compact">
+            <div class="logo">
+              <img class="logo-mark" src="./assets/pe-logo.png" alt="PocketEdge" />
+              <span class="wordmark">PocketEdge</span>
+            </div>
+            <div class="topbar-right">
+              ${pageLabel}
+              <span class="meta-date">${displayDate}</span>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="topbar">
+          <div class="logo">
+            <img class="logo-mark" src="./assets/pe-logo.png" alt="PocketEdge" />
+            <span class="wordmark">PocketEdge</span>
+          </div>
+          <div class="topbar-right">
+            <div class="brief-pill">
+              <div class="brief-dot"></div>
+              <span class="brief-label">Daily Brief</span>
+            </div>
+            <span class="meta-date">${displayDate}</span>
+          </div>
+        </div>`;
+    }
+
+    function subbarHtml(summary) {
+      const s = summary || {};
+      const exchange = escapeHtml(s.exchange || "NSE");
+      return `
+        <div class="subbar">
+          <div class="sub-item"><span class="sdot up"></span>${Number(s.gaining || 0)} gaining</div>
+          <div class="ssep"></div>
+          <div class="sub-item"><span class="sdot dn"></span>${Number(s.falling || 0)} falling</div>
+          <div class="ssep"></div>
+          <div class="sub-item" style="color:var(--dim)">${Number(s.total || 0)} stocks tracked · ${exchange}</div>
+        </div>`;
+    }
+
+    function pageHtml(data, pageInfo) {
+      const isFirst = pageInfo.page === 1;
+      const stocks = pageInfo.stocks || [];
+      const rows = stocks.map((s, i) => stockRowHtml(s, i === stocks.length - 1)).join("");
+      return `
+        <div class="page">
+          ${topbarHtml(data, pageInfo, !isFirst)}
+          ${isFirst ? subbarHtml(data.summary) : ""}
+          <div class="page-body">
+            <div class="rows-wrap">
+              ${colHeadHtml()}
+              ${rows}
+            </div>
+            ${footerHtml(data)}
+          </div>
+        </div>`;
+    }
+
+    function render(data) {
+      const pages = data.pages || [];
+      const root = document.getElementById("pages");
+      root.innerHTML = pages.map(p => pageHtml(data, p)).join("");
+    }
+
+    render(JSON.parse(document.getElementById("brief-data").textContent));
+  </script>
+</body>
+</html>

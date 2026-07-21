@@ -70,8 +70,8 @@
     }
 
     .logo-mark {
-      width: 28px;
-      height: 28px;
+      width: 40px;
+      height: 40px;
       flex-shrink: 0;
       display: block;
       object-fit: contain;
@@ -79,7 +79,7 @@
 
     .wordmark {
       font-family: Inter, sans-serif;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--ink);
       letter-spacing: -0.02em;
@@ -150,7 +150,7 @@
     .stock-logo {
       width: 76px;
       height: 76px;
-      border-radius: 14px;
+      border-radius: 50%;
       border: 1.5px solid var(--edge);
       background: var(--white);
       display: flex;
@@ -159,13 +159,14 @@
       flex-shrink: 0;
       box-shadow: 0 2px 12px rgba(0,0,0,0.06);
       overflow: hidden;
-      padding: 10px;
+      padding: 0;
     }
 
     .stock-logo img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .stock-logo .fallback {
@@ -205,12 +206,7 @@
     }
 
     .price-block.is-up .price-arrow,
-    .price-block.is-up .price-pct,
-    .price-block.is-up .pc-val.today { color: var(--green); }
-    .price-block.is-up .price-compare {
-      background: var(--green-10);
-      border-color: rgba(0,200,150,0.18);
-    }
+    .price-block.is-up .price-pct { color: var(--green); }
 
     .price-label {
       font-family: Inter, sans-serif;
@@ -245,35 +241,6 @@
       color: var(--red);
       letter-spacing: -0.04em;
       line-height: 1;
-    }
-
-    .price-compare {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-      padding: 6px 12px;
-      border-radius: 8px;
-      background: var(--red-10);
-      border: 1px solid rgba(232,51,42,0.12);
-    }
-
-    .pc-val {
-      font-family: Inter, sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-    }
-
-    .pc-sep {
-      font-size: 13px;
-      color: var(--dim);
-      letter-spacing: 0;
-    }
-
-    .pc-val.today {
-      color: var(--red);
-      font-weight: 600;
     }
 
     /* ── BRAND RULE ──────────────────────────────────────── */
@@ -379,7 +346,8 @@
       padding: 22px 48px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      text-align: center;
     }
 
     .footer-cta {
@@ -390,26 +358,10 @@
       letter-spacing: -0.01em;
     }
 
-    .footer-cta em { font-style: normal; color: var(--white); }
-
-    .footer-brand {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .footer-brand .logo-mark {
-      width: 20px;
-      height: 20px;
-      filter: brightness(0) invert(1);
-    }
-
-    .footer-brand-text {
-      font-family: Inter, sans-serif;
-      font-size: 14px;
+    .footer-cta em {
+      font-style: normal;
       font-weight: 700;
       color: var(--white);
-      letter-spacing: -0.01em;
     }
   </style>
 </head>
@@ -419,7 +371,7 @@
 
     <div class="topbar">
       <div class="logo">
-        <img class="logo-mark" src="./assets/pe-logo-brand.png" alt="PocketEdge" />
+        <img class="logo-mark" src="./assets/pe-logo.png" alt="PocketEdge" />
         <span class="wordmark">PocketEdge</span>
       </div>
       <div class="topbar-right">
@@ -446,11 +398,6 @@
           <span class="price-arrow" id="price-arrow"></span>
           <span class="price-pct" id="price-pct"></span>
         </div>
-        <div class="price-compare" id="price-compare">
-          <span class="pc-val" id="price-prev"></span>
-          <span class="pc-sep">→</span>
-          <span class="pc-val today" id="price-today"></span>
-        </div>
       </div>
     </div>
 
@@ -476,12 +423,8 @@
 
     <div class="footer">
       <p class="footer-cta" id="footer-cta">
-        Stay ahead of your portfolio on <em>PocketEdge</em>
+        Stay Updated On Your Portfolio with PocketEdge at <em>www.pocketedge.in</em>
       </p>
-      <div class="footer-brand">
-        <img class="logo-mark" src="./assets/pe-logo.png" alt="" />
-        <span class="footer-brand-text">PocketEdge</span>
-      </div>
     </div>
 
   </div>
@@ -543,8 +486,6 @@
       const logoEl = document.getElementById("stock-logo");
       if (company.logoUrl) {
         logoEl.innerHTML = `<img src="${escapeHtml(company.logoUrl)}" alt="" />`;
-      } else if (ticker === "ABB") {
-        logoEl.innerHTML = `<img src="./assets/abb-logo.png" alt="ABB" />`;
       } else {
         const text = escapeHtml(company.logoText || ticker);
         const len = (company.logoText || ticker).length;
@@ -560,14 +501,6 @@
 
       const prev = prices.prev ?? prices.yesterday ?? perf.prevClose;
       const today = prices.today ?? prices.close ?? perf.close;
-      const compare = document.getElementById("price-compare");
-      if (prev != null && today != null && String(prev) !== "" && String(today) !== "") {
-        compare.style.display = "flex";
-        document.getElementById("price-prev").textContent = String(prev);
-        document.getElementById("price-today").textContent = String(today);
-      } else {
-        compare.style.display = "none";
-      }
 
       document.getElementById("why-label").textContent =
         analysis.sectionLabel || (isUp ? "Why it rose" : "Why it happened");
@@ -604,10 +537,9 @@
       }).join("");
 
       const cta = data.cta || {};
-      if (cta.line1 || cta.brand) {
-        document.getElementById("footer-cta").innerHTML =
-          `${escapeHtml(cta.line1 || "Stay ahead of your portfolio on")} <em>${escapeHtml(cta.brand || "PocketEdge")}</em>`;
-      }
+      const site = cta.site || "www.pocketedge.in";
+      document.getElementById("footer-cta").innerHTML =
+        `${escapeHtml(cta.line1 || "Stay Updated On Your Portfolio with PocketEdge at")} <em>${escapeHtml(site)}</em>`;
     }
 
     render(JSON.parse(document.getElementById("card-data").textContent));
