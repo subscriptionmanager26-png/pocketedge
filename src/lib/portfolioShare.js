@@ -142,13 +142,10 @@ export function absolutePortfolioShareUrl(portfolioId, { sort, origin } = {}) {
   return `${base}${portfolioSharePath(portfolioId, { sort })}`;
 }
 
-export function portfolioShareCaption(snapshot, url) {
-  if (!snapshot) return url ?? '';
-  const name = snapshot.name?.trim();
-  const intro = name
-    ? `Check out my portfolio "${name}" on PocketEdge`
-    : 'Check out my portfolio on PocketEdge';
-  return url ? `${intro}\n${url}` : intro;
+export function portfolioShareCaption(_snapshot, url) {
+  const link = String(url ?? '').trim();
+  if (!link) return 'Check out my portfolio on PocketEdge';
+  return `Check out my portfolio at ${link}`;
 }
 
 export function defaultPortfolioShareBody(share) {

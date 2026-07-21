@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { preparePortfolioShare, sharePreparedPortfolio } from '../lib/sharePortfolioImage';
-import {
-  SHARE_SORT_ALLOCATION,
-  SHARE_SORT_PERFORMANCE,
-} from '../lib/portfolioShare';
 
 export default function PortfolioShareSheet({
   open,
@@ -13,7 +9,6 @@ export default function PortfolioShareSheet({
   onClose,
   onSharesUpdated,
 }) {
-  const [sort, setSort] = useState(SHARE_SORT_ALLOCATION);
   const [sharing, setSharing] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [prepared, setPrepared] = useState(null);
@@ -33,7 +28,7 @@ export default function PortfolioShareSheet({
     setPrepared(null);
     setNotice('');
 
-    preparePortfolioShare({ portfolio, ownerHandle, sort })
+    preparePortfolioShare({ portfolio, ownerHandle })
       .then((result) => {
         if (prepareToken.current !== token) return;
         if (!result.ok) {
@@ -59,7 +54,7 @@ export default function PortfolioShareSheet({
     return () => {
       prepareToken.current += 1;
     };
-  }, [open, portfolioId, ownerHandle, sort, portfolio]);
+  }, [open, portfolioId, ownerHandle, portfolio]);
 
   if (!open || !portfolio) return null;
 
@@ -99,7 +94,7 @@ export default function PortfolioShareSheet({
     setPreparing(true);
     setPrepared(null);
     setNotice('');
-    preparePortfolioShare({ portfolio, ownerHandle, sort })
+    preparePortfolioShare({ portfolio, ownerHandle })
       .then((result) => {
         if (prepareToken.current !== token) return;
         if (!result.ok) {
@@ -140,7 +135,7 @@ export default function PortfolioShareSheet({
               Share portfolio
             </h2>
             <p className="mt-1 text-sm text-pe-text-secondary">
-              Creates an image with top holdings plus a link preview.
+              Share an image of your portfolio with a link.
             </p>
           </div>
           <button
@@ -154,38 +149,8 @@ export default function PortfolioShareSheet({
           </button>
         </div>
 
-        <fieldset className="space-y-2">
-          <legend className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-            Sort holdings by
-          </legend>
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-pe-border px-3 py-2.5">
-            <input
-              type="radio"
-              name="portfolio-share-sort"
-              value={SHARE_SORT_ALLOCATION}
-              checked={sort === SHARE_SORT_ALLOCATION}
-              onChange={() => setSort(SHARE_SORT_ALLOCATION)}
-              disabled={sharing}
-              className="accent-pe-accent"
-            />
-            <span className="text-sm font-medium text-pe-text">Allocation (largest weights)</span>
-          </label>
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-pe-border px-3 py-2.5">
-            <input
-              type="radio"
-              name="portfolio-share-sort"
-              value={SHARE_SORT_PERFORMANCE}
-              checked={sort === SHARE_SORT_PERFORMANCE}
-              onChange={() => setSort(SHARE_SORT_PERFORMANCE)}
-              disabled={sharing}
-              className="accent-pe-accent"
-            />
-            <span className="text-sm font-medium text-pe-text">Performance (best returns)</span>
-          </label>
-        </fieldset>
-
         {notice ? (
-          <div className="mt-4 flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <p className="text-sm text-pe-text-secondary">{notice}</p>
             {!preparing && !prepared?.ok ? (
               <button

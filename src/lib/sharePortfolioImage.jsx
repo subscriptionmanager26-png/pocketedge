@@ -7,7 +7,7 @@ import PortfolioShareCard, {
   SHARE_CARD_WIDTH,
 } from '../components/PortfolioShareCard';
 import {
-  LOGO_VARIANT_DETAIL,
+  LOGO_VARIANT_LIST,
   toCachedAssetLogoPath,
   withLogoVariant,
 } from './assetLogo';
@@ -17,7 +17,11 @@ import {
   portfolioShareCaption,
   SHARE_SORT_ALLOCATION,
 } from './portfolioShare';
-import { assetsFromHoldings, resolvePortfolioAssets } from './portfolioAssetUniverse';
+import {
+  assetsFromHoldings,
+  holdingsNeedLogoResolve,
+  resolvePortfolioAssets,
+} from './portfolioAssetUniverse';
 import { recordPortfolioShare } from './portfolioEngagementApi';
 import { posthog, isPostHogEnabled } from './posthog';
 
@@ -52,33 +56,50 @@ async function prefetchLogoDataUrl(url) {
 async function enrichSnapshotLogos(snapshot) {
   if (!snapshot) return snapshot;
 
-  const enrichList = async (rows = []) =>
-    Promise.all(
-      rows.map(async (row) => {
-        if (!row?.logoIconUrl) return row;
-        // Prefetch sharper 256px icons (list URLs are often icon-128).
-        const hiRes = withLogoVariant(row.logoIconUrl, LOGO_VARIANT_DETAIL) || row.logoIconUrl;
-        const dataUrl = await prefetchLogoDataUrl(hiRes);
-        return dataUrl ? { ...row, logoIconUrl: dataUrl } : { ...row, logoIconUrl: null };
-      })
-    );
+  const allRows = [
+    ...(snapshot.topHoldings ?? []),
+    ...(snapshot.topByAllocation ?? []),
+    ...(snapshot.topPerformers ?? []),
+  ];
 
-  const [topHoldings, topByAllocation, topPerformers] = await Promise.all([
-    enrichList(snapshot.topHoldings),
-    enrichList(snapshot.topByAllocation),
-    enrichList(snapshot.topPerformers),
-  ]);
+  const uniqueUrls = new Map();
+  for (const row of allRows) {
+    if (!row?.logoIconUrl) continue;
+    const fetchUrl = withLogoVariant(row.logoIconUrl, LOGO_VARIANT_LIST) || row.logoIconUrl;
+    if (!uniqueUrls.has(fetchUrl)) {
+      uniqueUrls.set(fetchUrl, prefetchLogoDataUrl(fetchUrl));
+    }
+  }
+
+  const dataUrlByUrl = new Map();
+  await Promise.all(
+    [...uniqueUrls.entries()].map(async ([url, promise]) => {
+      dataUrlByUrl.set(url, await promise);
+    })
+  );
+
+  const apply = (rows = []) =>
+    rows.map((row) => {
+      if (!row?.logoIconUrl) return row;
+      const fetchUrl = withLogoVariant(row.logoIconUrl, LOGO_VARIANT_LIST) || row.logoIconUrl;
+      const dataUrl = dataUrlByUrl.get(fetchUrl);
+      return dataUrl ? { ...row, logoIconUrl: dataUrl } : { ...row, logoIconUrl: null };
+    });
 
   return {
     ...snapshot,
-    topHoldings,
-    topByAllocation,
-    topPerformers,
+    topHoldings: apply(snapshot.topHoldings),
+    topByAllocation: apply(snapshot.topByAllocation),
+    topPerformers: apply(snapshot.topPerformers),
   };
 }
 
 async function resolveAssetsForPortfolio(portfolio) {
   const seeded = assetsFromHoldings(portfolio.holdings);
+  if (!holdingsNeedLogoResolve(portfolio.holdings)) {
+    return seeded;
+  }
+
   const tickers = [
     ...(portfolio.holdings ?? []).map((h) => h?.ticker).filter(Boolean),
     ...(portfolio.tickers ?? []),
@@ -178,7 +199,7 @@ async function toPngWithRatio(element, width, height, pixelRatio) {
     width,
     height,
     pixelRatio,
-    cacheBust: true,
+    cacheBust: false,
     skipFonts: true,
     backgroundColor: '#ffffff',
     filter: (node) => {
@@ -261,12 +282,7 @@ async function captureOgShareImage(portfolioId, sort) {
   return blob;
 }
 
-async function captureClientShareImage(snapshot, ownerHandle) {
-  const brandLogoUrl =
-    (await prefetchLogoDataUrl(`${window.location.origin}/Pocketedge_logo.png`)) ||
-    (await prefetchLogoDataUrl(`${window.location.origin}/logo.png`)) ||
-    `${window.location.origin}/Pocketedge_logo.png`;
-
+async function captureClientShareImage(snapshot, ownerHandle, brandLogoUrl) {
   const mounted = mountShareCard(snapshot, ownerHandle, brandLogoUrl);
   try {
     const element = mounted.getElement() ?? (await waitForShareCard(mounted.host));
@@ -276,9 +292,9 @@ async function captureClientShareImage(snapshot, ownerHandle) {
   }
 }
 
-async function captureShareImage(snapshot, ownerHandle, portfolioId, sort) {
+async function captureShareImage(snapshot, ownerHandle, portfolioId, sort, brandLogoUrl) {
   try {
-    const blob = await captureClientShareImage(snapshot, ownerHandle);
+    const blob = await captureClientShareImage(snapshot, ownerHandle, brandLogoUrl);
     return { blob, captureMethod: 'client' };
   } catch (clientError) {
     console.warn('Client share capture failed, trying OG image', clientError);
@@ -314,7 +330,7 @@ async function trySharePayloads(payloads) {
   return false;
 }
 
-async function fallbackShare(blob, url, caption) {
+async function fallbackShare(blob, caption) {
   const fileName = 'pocketedge-portfolio.png';
   const objectUrl = URL.createObjectURL(blob);
   try {
@@ -329,7 +345,7 @@ async function fallbackShare(blob, url, caption) {
   }
 
   try {
-    await navigator.clipboard.writeText(`${caption}\n${url}`);
+    await navigator.clipboard.writeText(caption);
   } catch {
     /* clipboard may be blocked */
   }
@@ -345,18 +361,17 @@ async function invokeNativeShare({ title, caption, shareUrl, blob }) {
   if (blob) {
     const file = new File([blob], 'pocketedge-portfolio.png', { type: 'image/png' });
     const shared = await trySharePayloads([
-      { files: [file] },
-      { files: [file], title },
       { files: [file], text: caption },
       { files: [file], title, text: caption },
       { files: [file], title, text: caption, url: shareUrl },
+      { files: [file] },
     ]);
     if (shared) return 'native';
   }
 
   const shared = await trySharePayloads([
     { title, text: caption, url: shareUrl },
-    { text: `${caption}\n${shareUrl}`, url: shareUrl },
+    { text: caption, url: shareUrl },
     { title, url: shareUrl },
     { url: shareUrl },
   ]);
@@ -385,7 +400,15 @@ function trackShareFailure(reason, detail) {
 
 async function buildShareContext({ portfolio, ownerHandle, sort }) {
   const shareUrl = absolutePortfolioShareUrl(portfolio.id, { sort });
-  const assetsByKey = await resolveAssetsForPortfolio(portfolio);
+  const origin = window.location.origin;
+
+  const [assetsByKey, brandLogoUrl] = await Promise.all([
+    resolveAssetsForPortfolio(portfolio),
+    prefetchLogoDataUrl(`${origin}/Pocketedge_logo.png`)
+      .then((url) => url || prefetchLogoDataUrl(`${origin}/logo.png`))
+      .catch(() => null),
+  ]);
+
   let snapshot = buildPortfolioShareSnapshot(portfolio, { sort, assetsByKey });
   if (!snapshot) return null;
 
@@ -393,7 +416,15 @@ async function buildShareContext({ portfolio, ownerHandle, sort }) {
   const caption = portfolioShareCaption(snapshot, shareUrl);
   const title = snapshot.name || 'Portfolio on PocketEdge';
 
-  return { snapshot, caption, shareUrl, title, portfolioId: portfolio.id, sort };
+  return {
+    snapshot,
+    caption,
+    shareUrl,
+    title,
+    portfolioId: portfolio.id,
+    sort,
+    brandLogoUrl: brandLogoUrl || `${origin}/Pocketedge_logo.png`,
+  };
 }
 
 /**
@@ -411,7 +442,8 @@ export async function preparePortfolioShare({ portfolio, ownerHandle, sort = SHA
       context.snapshot,
       ownerHandle,
       context.portfolioId,
-      sort
+      sort,
+      context.brandLogoUrl
     );
 
     return {
@@ -460,7 +492,7 @@ export async function sharePreparedPortfolio({ prepared, onSharesUpdated }) {
       }
 
       if (blob) {
-        method = await fallbackShare(blob, shareUrl, caption);
+        method = await fallbackShare(blob, caption);
       } else {
         trackShareFailure('share_failed', textError?.message);
         throw textError;
