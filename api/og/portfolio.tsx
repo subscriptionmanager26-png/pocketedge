@@ -98,57 +98,41 @@ function LogoMark({ src, label, size, light = false }) {
 
 function BubbleLabel({ label, bubbleSize }) {
   const large = bubbleSize >= px(130);
-  const fontSize = large ? px(14) : px(11);
   const maxChars = large ? SHARE_LABEL_BUBBLE_LG : SHARE_LABEL_BUBBLE_SM;
   const text = shortShareLabel(label, maxChars);
-  const lineHeight = px(14);
+  const maxWidth = large ? px(150) : px(110);
 
   return (
     <div
       style={{
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        maxWidth: bubbleSize * 0.9,
-        textAlign: 'center',
-        lineHeight: `${lineHeight}px`,
-        fontSize,
+        fontSize: large ? px(12) : px(10),
         fontWeight: 600,
+        color: '#374151',
+        maxWidth,
+        lineHeight: `${px(14)}px`,
       }}
     >
-      {text.split(' ').length > 1 && text.length > 12 ? (
-        <>
-          <div style={{ display: 'flex' }}>{text.split(' ').slice(0, 2).join(' ')}</div>
-          <div style={{ display: 'flex' }}>{text.split(' ').slice(2).join(' ') || ''}</div>
-        </>
-      ) : (
-        <div style={{ display: 'flex' }}>{text}</div>
-      )}
+      {text}
     </div>
   );
 }
 
 function TileLabel({ label }) {
   const text = shortShareLabel(label, SHARE_LABEL_TILE);
-  const parts = text.split(' ');
-  const line1 = parts.slice(0, 2).join(' ');
-  const line2 = parts.slice(2).join(' ');
 
   return (
     <div
       style={{
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        fontSize: px(11),
-        color: '#4b5563',
-        textAlign: 'center',
-        maxWidth: px(120),
-        lineHeight: `${px(13)}px`,
+        flex: 1,
+        fontSize: px(12),
+        fontWeight: 500,
+        color: '#374151',
+        lineHeight: `${px(15)}px`,
       }}
     >
-      <div style={{ display: 'flex' }}>{line1}</div>
-      {line2 ? <div style={{ display: 'flex' }}>{line2}</div> : null}
+      {text}
     </div>
   );
 }
@@ -174,7 +158,6 @@ export default async function handler(request) {
   const performers = snapshot.topPerformers ?? [];
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 10);
   const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
-  const tileWidth = px(138);
 
   return new ImageResponse(
     (
@@ -298,8 +281,6 @@ export default async function handler(request) {
           {performers.map((row, index) => {
             const size = BUBBLE_SIZES[index] ?? px(84);
             const pos = BUBBLE_POS[index] ?? BUBBLE_POS[4];
-            const logoSize = Math.round(size * 0.28);
-            const light = index >= 2;
             const logoSrc = absoluteLogoUrl(row.logoIconUrl, origin);
             return (
               <div
@@ -308,32 +289,43 @@ export default async function handler(request) {
                   position: 'absolute',
                   top: pos.top,
                   left: pos.left,
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2,
-                  background: BUBBLE_COLORS[index] ?? '#fae5d3',
-                  color: BUBBLE_TEXT[index] ?? '#1f2937',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  padding: px(8),
                 }}
               >
-                <div style={{ display: 'flex', marginBottom: px(6) }}>
-                  <LogoMark src={logoSrc} label={row.label} size={logoSize} light={light} />
-                </div>
-                <BubbleLabel label={row.label} bubbleSize={size} />
                 <div
                   style={{
                     display: 'flex',
-                    fontWeight: 700,
-                    fontSize: size >= px(130) ? px(16) : px(12),
-                    marginTop: px(2),
+                    alignItems: 'flex-start',
+                    gap: px(6),
+                    marginBottom: px(8),
                   }}
                 >
-                  {formatPct(row.totalReturnPct)}
+                  <LogoMark src={logoSrc} label={row.label} size={px(24)} light={light} />
+                  <BubbleLabel label={row.label} bubbleSize={size} />
+                </div>
+                <div
+                  style={{
+                    width: size,
+                    height: size,
+                    borderRadius: size / 2,
+                    background: BUBBLE_COLORS[index] ?? '#fae5d3',
+                    color: BUBBLE_TEXT[index] ?? '#1f2937',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      fontWeight: 700,
+                      fontSize: size >= px(130) ? px(20) : px(14),
+                    }}
+                  >
+                    {formatPct(row.totalReturnPct)}
+                  </div>
                 </div>
               </div>
             );
@@ -385,7 +377,7 @@ export default async function handler(request) {
         <div
           style={{
             display: 'flex',
-            flexWrap: 'wrap',
+            flexDirection: 'column',
             gap: px(8),
             marginBottom: px(14),
           }}
@@ -396,25 +388,23 @@ export default async function handler(request) {
               <div
                 key={row.ticker}
                 style={{
-                  width: tileWidth,
+                  width: '100%',
                   border: '1px solid #f3f4f6',
                   borderRadius: px(12),
-                  padding: px(10),
+                  padding: `${px(10)}px ${px(12)}px`,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
+                  gap: px(10),
                 }}
               >
-                <div style={{ display: 'flex', marginBottom: px(6) }}>
-                  <LogoMark src={logoSrc} label={row.label} size={px(28)} light />
-                </div>
+                <LogoMark src={logoSrc} label={row.label} size={px(28)} light />
                 <TileLabel label={row.label} />
                 <div
                   style={{
                     display: 'flex',
                     fontSize: px(14),
                     fontWeight: 700,
-                    marginTop: px(4),
+                    flexShrink: 0,
                   }}
                 >
                   {`${Number(row.weight).toFixed(1)}%`}

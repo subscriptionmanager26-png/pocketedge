@@ -12,7 +12,7 @@ import {
 /** Matches Gemini share template width (CSS px). */
 export const SHARE_CARD_WIDTH = 800;
 /** Natural content height at 800px width (template has no fixed height). Used for OG meta. */
-export const SHARE_CARD_HEIGHT = 920;
+export const SHARE_CARD_HEIGHT = 1100;
 /** Retina capture — up to 3× for sharp shares on high-DPI phones. */
 export const SHARE_CARD_PIXEL_RATIO =
   typeof window !== 'undefined' ? Math.min(3, Math.max(2, window.devicePixelRatio || 2)) : 3;
@@ -78,53 +78,6 @@ function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb
         initial
       )}
     </span>
-  );
-}
-
-function BubbleLogo({ logoIconUrl, assetKey, name, size, light }) {
-  const initial = assetLogoInitial(assetKey || name);
-  const [failed, setFailed] = useState(false);
-
-  if (!logoIconUrl || failed) {
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: size,
-          height: size,
-          marginBottom: 6,
-          borderRadius: '50%',
-          background: light ? 'rgba(30,70,53,0.12)' : 'rgba(255,255,255,0.2)',
-          color: light ? '#1e4635' : '#fff',
-          fontSize: Math.round(size * 0.4),
-          fontWeight: 700,
-        }}
-      >
-        {initial}
-      </span>
-    );
-  }
-
-  return (
-    <img
-      src={logoIconUrl}
-      alt=""
-      width={size}
-      height={size}
-      loading="eager"
-      decoding="sync"
-      onError={() => setFailed(true)}
-      style={{
-        width: size,
-        height: size,
-        marginBottom: 6,
-        borderRadius: '50%',
-        objectFit: 'cover',
-        background: light ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.15)',
-      }}
-    />
   );
 }
 
@@ -371,10 +324,8 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
           const size = BUBBLE_SIZES[index] ?? 88;
           const pos = BUBBLE_POSITIONS[index] ?? BUBBLE_POSITIONS[4];
           const tone = BUBBLE_COLORS[index] ?? BUBBLE_COLORS[4];
-          const light = index >= 2;
-          const logoSize = Math.round(size * 0.22);
-          const nameSize = size >= 148 ? 14 : size >= 120 ? 12 : 10;
-          const pctSize = size >= 148 ? 18 : size >= 120 ? 15 : 13;
+          const pctSize = size >= 148 ? 20 : size >= 120 ? 17 : 14;
+          const labelMaxWidth = size >= 148 ? 150 : size >= 120 ? 130 : 110;
 
           return (
             <div
@@ -383,59 +334,73 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
                 position: 'absolute',
                 top: pos.top,
                 left: pos.left,
-                width: size,
-                height: size,
-                marginTop: -size / 2,
-                marginLeft: -size / 2,
-                borderRadius: '50%',
-                background: tone.bg,
-                color: tone.fg,
+                transform: 'translate(-50%, -50%)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
                 zIndex: 10,
-                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                padding: 8,
-                boxSizing: 'border-box',
+                maxWidth: labelMaxWidth + 40,
               }}
             >
-              <BubbleLogo
-                logoIconUrl={row.logoIconUrl}
-                assetKey={row.ticker}
-                name={row.label}
-                size={logoSize}
-                light={light}
-              />
-              <span
+              <div
                 style={{
-                  fontWeight: size >= 148 ? 600 : 500,
-                  fontSize: nameSize,
-                  lineHeight: 1.2,
-                  maxWidth: '92%',
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                  textAlign: 'center',
-                  overflow: 'hidden',
-                  maxHeight: nameSize * 2.5,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 6,
+                  marginBottom: 8,
+                  maxWidth: labelMaxWidth + 28,
                 }}
               >
-                {shortShareLabel(
-                  row.label,
-                  size >= 148 ? SHARE_LABEL_BUBBLE_LG : SHARE_LABEL_BUBBLE_SM
-                )}
-              </span>
-              <span
+                <ShareMarkLogo
+                  logoIconUrl={row.logoIconUrl}
+                  assetKey={row.ticker}
+                  name={row.label}
+                  size={24}
+                />
+                <span
+                  style={{
+                    fontWeight: 600,
+                    fontSize: size >= 148 ? 12 : 10,
+                    lineHeight: 1.3,
+                    color: '#374151',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    textAlign: 'left',
+                    maxWidth: labelMaxWidth,
+                    overflow: 'hidden',
+                    maxHeight: size >= 148 ? 48 : 36,
+                  }}
+                >
+                  {shortShareLabel(
+                    row.label,
+                    size >= 148 ? SHARE_LABEL_BUBBLE_LG : SHARE_LABEL_BUBBLE_SM
+                  )}
+                </span>
+              </div>
+              <div
                 style={{
-                  fontWeight: 700,
-                  fontSize: pctSize,
-                  marginTop: 2,
-                  fontVariantNumeric: 'tabular-nums',
+                  width: size,
+                  height: size,
+                  borderRadius: '50%',
+                  background: tone.bg,
+                  color: tone.fg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                  flexShrink: 0,
                 }}
               >
-                {formatPct(row.totalReturnPct)}
-              </span>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: pctSize,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {formatPct(row.totalReturnPct)}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -530,9 +495,9 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
 
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-            gap: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
           }}
         >
           {allocationRows.slice(0, 10).map((row) => (
@@ -541,14 +506,11 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
               style={{
                 border: '1px solid #f3f4f6',
                 borderRadius: 12,
-                padding: 12,
+                padding: '10px 12px',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
+                gap: 10,
                 boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                minHeight: 96,
               }}
             >
               <ShareMarkLogo
@@ -559,23 +521,23 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
               />
               <span
                 style={{
-                  marginTop: 6,
-                  fontSize: 11,
-                  color: '#4b5563',
-                  lineHeight: 1.25,
-                  maxWidth: '100%',
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: '#374151',
+                  lineHeight: 1.3,
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
-                  textAlign: 'center',
                   overflow: 'hidden',
-                  maxHeight: 28,
+                  maxHeight: 34,
                 }}
               >
                 {shortShareLabel(row.label, SHARE_LABEL_TILE)}
               </span>
               <span
                 style={{
-                  marginTop: 2,
+                  flexShrink: 0,
                   fontSize: 14,
                   fontWeight: 700,
                   color: '#111827',

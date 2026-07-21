@@ -254,7 +254,6 @@ async function captureClientShareImage(snapshot, ownerHandle) {
   }
 }
 
-/** Prefer rich client PNG; OG PNG is last-resort for image generation. */
 async function captureShareImage(snapshot, ownerHandle, portfolioId, sort) {
   try {
     const blob = await captureClientShareImage(snapshot, ownerHandle);
@@ -271,34 +270,26 @@ async function captureShareImage(snapshot, ownerHandle, portfolioId, sort) {
   }
 }
 
-function canSharePayload(data) {
-  if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) return false;
+function payloadShareable(payload) {
+  if (typeof navigator === 'undefined' || !navigator.canShare) return true;
   try {
-    return navigator.canShare(data);
+    return navigator.canShare(payload);
   } catch {
     return false;
   }
 }
 
-function detectShareMode(title, caption, shareUrl) {
-  const hasNativeShare =
-    typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-
-  if (!hasNativeShare) {
-    return { needsImage: true, preferFileShare: false, canTextShare: false };
+async function trySharePayloads(payloads) {
+  for (const payload of payloads) {
+    if (!payloadShareable(payload)) continue;
+    try {
+      await navigator.share(payload);
+      return true;
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error;
+    }
   }
-
-  const textPayload = { title, text: caption, url: shareUrl };
-  const canTextShare = !navigator.canShare || canSharePayload(textPayload);
-
-  const probeFile = new File([''], 'probe.png', { type: 'image/png' });
-  const preferFileShare = canSharePayload({ title, text: caption, files: [probeFile] });
-
-  return {
-    needsImage: preferFileShare || !canTextShare,
-    preferFileShare,
-    canTextShare,
-  };
+  return false;
 }
 
 async function fallbackShare(blob, url, caption) {
@@ -325,26 +316,29 @@ async function fallbackShare(blob, url, caption) {
 }
 
 async function invokeNativeShare({ title, caption, shareUrl, blob }) {
-  const textPayload = { title, text: caption, url: shareUrl };
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    throw new Error('Native share unavailable');
+  }
 
   if (blob) {
     const file = new File([blob], 'pocketedge-portfolio.png', { type: 'image/png' });
-    const filePayload = { title, text: caption, files: [file] };
-    if (canSharePayload(filePayload)) {
-      await navigator.share(filePayload);
-      return 'native';
-    }
+    const shared = await trySharePayloads([
+      { files: [file] },
+      { files: [file], title },
+      { files: [file], text: caption },
+      { files: [file], title, text: caption },
+      { files: [file], title, text: caption, url: shareUrl },
+    ]);
+    if (shared) return 'native';
   }
 
-  if (canSharePayload(textPayload)) {
-    await navigator.share(textPayload);
-    return 'native_text_only';
-  }
-
-  if (typeof navigator.share === 'function') {
-    await navigator.share(textPayload);
-    return 'native_text_only';
-  }
+  const shared = await trySharePayloads([
+    { title, text: caption, url: shareUrl },
+    { text: `${caption}\n${shareUrl}`, url: shareUrl },
+    { title, url: shareUrl },
+    { url: shareUrl },
+  ]);
+  if (shared) return 'native_text_only';
 
   throw new Error('Native share unavailable');
 }
@@ -367,92 +361,83 @@ function trackShareFailure(reason, detail) {
   });
 }
 
-/**
- * Generate PNG when needed, then invoke native share or download fallback.
- * Client PNG first when file share is supported; text-only share skips image generation.
- */
-export async function sharePortfolio({
-  portfolio,
-  ownerHandle,
-  sort = SHARE_SORT_ALLOCATION,
-  onSharesUpdated,
-}) {
-  if (!portfolio?.id) return { ok: false, reason: 'missing_portfolio' };
-
+async function buildShareContext({ portfolio, ownerHandle, sort }) {
   const shareUrl = absolutePortfolioShareUrl(portfolio.id, { sort });
   const assetsByKey = await resolveAssetsForPortfolio(portfolio);
   let snapshot = buildPortfolioShareSnapshot(portfolio, { sort, assetsByKey });
-  if (!snapshot) return { ok: false, reason: 'empty_snapshot' };
+  if (!snapshot) return null;
 
   snapshot = await enrichSnapshotLogos(snapshot);
   const caption = portfolioShareCaption(snapshot, shareUrl);
   const title = snapshot.name || 'Portfolio on PocketEdge';
 
-  const { needsImage, preferFileShare, canTextShare } = detectShareMode(title, caption, shareUrl);
+  return { snapshot, caption, shareUrl, title, portfolioId: portfolio.id, sort };
+}
 
-  let blob = null;
-  let captureMethod = null;
+/**
+ * Pre-generate the share image while the sheet is open so navigator.share
+ * runs inside the user's tap gesture (async capture breaks user activation).
+ */
+export async function preparePortfolioShare({ portfolio, ownerHandle, sort = SHARE_SORT_ALLOCATION }) {
+  if (!portfolio?.id) return { ok: false, reason: 'missing_portfolio' };
 
-  if (needsImage) {
-    try {
-      const captured = await captureShareImage(snapshot, ownerHandle, portfolio.id, sort);
-      blob = captured.blob;
-      captureMethod = captured.captureMethod;
-    } catch (captureError) {
-      trackShareFailure('capture_failed', captureError?.message);
-      if (canTextShare) {
-        /* fall through to text-only share below */
-      } else {
-        return { ok: false, reason: 'capture_failed' };
-      }
-    }
+  const context = await buildShareContext({ portfolio, ownerHandle, sort });
+  if (!context) return { ok: false, reason: 'empty_snapshot' };
+
+  const captured = await captureShareImage(
+    context.snapshot,
+    ownerHandle,
+    context.portfolioId,
+    sort
+  );
+
+  return {
+    ok: true,
+    ...context,
+    blob: captured.blob,
+    captureMethod: captured.captureMethod,
+  };
+}
+
+/**
+ * Share a pre-generated image/link immediately (call from button click handler).
+ */
+export async function sharePreparedPortfolio({ prepared, onSharesUpdated }) {
+  if (!prepared?.ok) {
+    return { ok: false, reason: prepared?.reason ?? 'not_prepared' };
   }
 
+  const { blob, captureMethod, caption, shareUrl, title, portfolioId, sort } = prepared;
   let method = 'fallback';
 
   try {
-    if (preferFileShare && blob) {
-      method = await invokeNativeShare({ title, caption, shareUrl, blob });
-    } else if (canTextShare) {
-      method = await invokeNativeShare({ title, caption, shareUrl, blob: null });
-    } else if (blob) {
-      method = await fallbackShare(blob, shareUrl, caption);
-    } else {
-      trackShareFailure('no_share_path', 'no_native_and_no_image');
-      return { ok: false, reason: 'share_unavailable' };
-    }
+    const shared = await invokeNativeShare({ title, caption, shareUrl, blob });
+    method = shared;
   } catch (shareError) {
     if (shareError?.name === 'AbortError') {
       return { ok: false, reason: 'cancelled' };
     }
 
-    console.warn('Primary share path failed', shareError);
+    console.warn('Native share failed, trying text-only then download', shareError);
 
-    if (preferFileShare && canTextShare) {
-      try {
-        method = await invokeNativeShare({ title, caption, shareUrl, blob: null });
-      } catch (textError) {
-        if (textError?.name === 'AbortError') {
-          return { ok: false, reason: 'cancelled' };
-        }
-        console.warn('Text share fallback failed', textError);
-        if (blob) {
-          method = await fallbackShare(blob, shareUrl, caption);
-        } else {
-          trackShareFailure('share_failed', textError?.message);
-          throw textError;
-        }
+    try {
+      method = await invokeNativeShare({ title, caption, shareUrl, blob: null });
+    } catch (textError) {
+      if (textError?.name === 'AbortError') {
+        return { ok: false, reason: 'cancelled' };
       }
-    } else if (blob) {
-      method = await fallbackShare(blob, shareUrl, caption);
-    } else {
-      trackShareFailure('share_failed', shareError?.message);
-      throw shareError;
+
+      if (blob) {
+        method = await fallbackShare(blob, shareUrl, caption);
+      } else {
+        trackShareFailure('share_failed', textError?.message);
+        throw textError;
+      }
     }
   }
 
   try {
-    const next = await recordPortfolioShare(portfolio.id);
+    const next = await recordPortfolioShare(portfolioId);
     onSharesUpdated?.(next.shares);
   } catch (recordError) {
     console.warn('recordPortfolioShare failed after share', recordError);
@@ -460,4 +445,16 @@ export async function sharePortfolio({
 
   trackShare(method, sort, captureMethod);
   return { ok: true, method, shareUrl, captureMethod };
+}
+
+/** One-shot share (prepare + share). Prefer prepare + sharePrepared in the UI. */
+export async function sharePortfolio({
+  portfolio,
+  ownerHandle,
+  sort = SHARE_SORT_ALLOCATION,
+  onSharesUpdated,
+}) {
+  const prepared = await preparePortfolioShare({ portfolio, ownerHandle, sort });
+  if (!prepared.ok) return prepared;
+  return sharePreparedPortfolio({ prepared, onSharesUpdated });
 }

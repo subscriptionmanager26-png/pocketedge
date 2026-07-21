@@ -173,9 +173,9 @@ export function ownerPossessiveLabel(handle) {
 }
 
 /** Max chars before ellipsis — bubbles (large / small) and allocation tiles. */
-export const SHARE_LABEL_BUBBLE_LG = 22;
-export const SHARE_LABEL_BUBBLE_SM = 18;
-export const SHARE_LABEL_TILE = 20;
+export const SHARE_LABEL_BUBBLE_LG = 28;
+export const SHARE_LABEL_BUBBLE_SM = 24;
+export const SHARE_LABEL_TILE = 48;
 
 export function shortShareLabel(label, max = 16) {
   const text = String(label ?? '').trim();

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
-import { sharePortfolio } from '../lib/sharePortfolioImage';
+import { preparePortfolioShare, sharePreparedPortfolio } from '../lib/sharePortfolioImage';
 import {
   SHARE_SORT_ALLOCATION,
   SHARE_SORT_PERFORMANCE,
@@ -15,36 +15,68 @@ export default function PortfolioShareSheet({
 }) {
   const [sort, setSort] = useState(SHARE_SORT_ALLOCATION);
   const [sharing, setSharing] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [prepared, setPrepared] = useState(null);
   const [notice, setNotice] = useState('');
+  const prepareToken = useRef(0);
+
+  useEffect(() => {
+    if (!open || !portfolio) {
+      setPrepared(null);
+      setPreparing(false);
+      return undefined;
+    }
+
+    const token = ++prepareToken.current;
+    setPreparing(true);
+    setPrepared(null);
+    setNotice('');
+
+    preparePortfolioShare({ portfolio, ownerHandle, sort })
+      .then((result) => {
+        if (prepareToken.current !== token) return;
+        if (!result.ok) {
+          setNotice(
+            result.reason === 'empty_snapshot'
+              ? 'Add holdings before sharing this portfolio.'
+              : 'Could not prepare the share image. Try again.'
+          );
+          setPrepared(null);
+        } else {
+          setPrepared(result);
+        }
+        setPreparing(false);
+      })
+      .catch((error) => {
+        if (prepareToken.current !== token) return;
+        console.error('Prepare portfolio share failed', error);
+        setNotice('Could not prepare the share image. Try again.');
+        setPrepared(null);
+        setPreparing(false);
+      });
+
+    return () => {
+      prepareToken.current += 1;
+    };
+  }, [open, portfolio, ownerHandle, sort]);
 
   if (!open || !portfolio) return null;
 
   const handleShare = async () => {
+    if (!prepared?.ok) return;
+
     setSharing(true);
     setNotice('');
     try {
-      const result = await sharePortfolio({
-        portfolio,
-        ownerHandle,
-        sort,
-        onSharesUpdated,
-      });
+      const result = await sharePreparedPortfolio({ prepared, onSharesUpdated });
       if (result.ok) {
         if (result.method === 'fallback') {
           setNotice('Image downloaded. Caption copied — paste it with the image.');
-        } else if (result.method === 'native_text_only') {
-          onClose?.();
         } else {
           onClose?.();
         }
       } else if (result.reason === 'cancelled') {
         onClose?.();
-      } else if (result.reason === 'empty_snapshot') {
-        setNotice('Add holdings before sharing this portfolio.');
-      } else if (result.reason === 'capture_failed') {
-        setNotice('Could not create the share image. Check your connection and try again.');
-      } else if (result.reason === 'share_unavailable') {
-        setNotice('Sharing is not supported in this browser. Try copying the link from your profile.');
       } else {
         setNotice('Could not share this portfolio. Try again.');
       }
@@ -60,6 +92,9 @@ export default function PortfolioShareSheet({
     }
   };
 
+  const shareDisabled = sharing || preparing || !prepared?.ok;
+  const shareLabel = sharing ? 'Sharing…' : preparing ? 'Preparing…' : 'Share';
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
       <div
@@ -74,7 +109,7 @@ export default function PortfolioShareSheet({
               Share portfolio
             </h2>
             <p className="mt-1 text-sm text-pe-text-secondary">
-              Creates an image with top 10 holdings plus a link preview.
+              Creates an image with top holdings plus a link preview.
             </p>
           </div>
           <button
@@ -132,11 +167,11 @@ export default function PortfolioShareSheet({
           <button
             type="button"
             onClick={handleShare}
-            disabled={sharing}
+            disabled={shareDisabled}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-pe-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
           >
-            {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {sharing ? 'Preparing…' : 'Share'}
+            {sharing || preparing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {shareLabel}
           </button>
         </div>
       </div>
