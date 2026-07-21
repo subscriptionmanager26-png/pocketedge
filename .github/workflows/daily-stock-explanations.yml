@@ -15,7 +15,7 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    # ~550 EQ tickers with recent news × 2s Mistral ≈ 20 min; headroom for retries.
+    # ~550 EQ tickers / 4 Mistral keys × ~6s each ≈ 15 min; headroom for retries.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +30,10 @@ jobs:
           # Stock-news database
           STOCK_NEWS_SUPABASE_URL: ${{ secrets.STOCK_NEWS_SUPABASE_URL }}
           STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY }}
-          # Mistral
+          # Mistral — one worker per key; add MISTRAL_API_KEY_2..4 in repo secrets
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          MISTRAL_API_KEY_2: ${{ secrets.MISTRAL_API_KEY_2 }}
+          MISTRAL_API_KEY_3: ${{ secrets.MISTRAL_API_KEY_3 }}
+          MISTRAL_API_KEY_4: ${{ secrets.MISTRAL_API_KEY_4 }}
           MISTRAL_MODEL: mistral-small-latest
         run: node scripts/generate-daily-stock-explanations.mjs

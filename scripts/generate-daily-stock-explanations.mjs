@@ -7,10 +7,42 @@
 
 const NEWS_WINDOW_DAYS = 7;
 const PRICE_WINDOW_DAYS = 10;
-const MISTRAL_DELAY_MS = 2_000;
+const MISTRAL_DELAY_MS = Number(process.env.MISTRAL_DELAY_MS || 2_000);
 const UPSERT_BATCH_SIZE = 500;
 const NEWS_PAGE_SIZE = 1000;
 const TICKER_PAGE_SIZE = 1000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Collect distinct Mistral keys from MISTRAL_API_KEY, MISTRAL_API_KEY_2..N, or MISTRAL_API_KEYS. */
+function loadMistralApiKeys() {
+  const keys = [];
+  if (process.env.MISTRAL_API_KEYS) {
+    keys.push(
+      ...process.env.MISTRAL_API_KEYS.split(',')
+        .map((key) => key.trim())
+        .filter(Boolean)
+    );
+  }
+  if (process.env.MISTRAL_API_KEY) keys.push(process.env.MISTRAL_API_KEY.trim());
+  for (let index = 2; index <= 10; index += 1) {
+    const key = process.env[`MISTRAL_API_KEY_${index}`];
+    if (key?.trim()) keys.push(key.trim());
+  }
+  const unique = [...new Set(keys.filter(Boolean))];
+  if (!unique.length) throw new Error('Missing MISTRAL_API_KEY');
+  return unique;
+}
+
+function chunkRoundRobin(items, chunkCount) {
+  const chunks = Array.from({ length: chunkCount }, () => []);
+  for (let index = 0; index < items.length; index += 1) {
+    chunks[index % chunkCount].push(items[index]);
+  }
+  return chunks;
+}
 
 const ANALYST_INSTRUCTIONS = `You are an experienced equity market journalist.
 
@@ -364,13 +396,104 @@ async function upsertRows(newsUrl, newsKey, table, rows) {
   }
 }
 
+function buildExplanationRow({
+  ticker,
+  asOfDate,
+  status,
+  explanation,
+  confidence,
+  prices,
+  news,
+  input,
+  model,
+}) {
+  return {
+    ticker,
+    as_of_date: asOfDate,
+    status,
+    explanation,
+    confidence,
+    price_context: prices,
+    news_context: news,
+    input_context: input ?? {},
+    model,
+    generated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function processMistralBatch({
+  workerId,
+  apiKey,
+  model,
+  tickers,
+  asOfDate,
+  newsByTicker,
+  priceByTicker,
+}) {
+  const rows = [];
+  let generated = 0;
+  let failed = 0;
+
+  for (const ticker of tickers) {
+    const news = newsByTicker.get(ticker) ?? [];
+    const prices = priceByTicker.get(ticker) ?? [];
+    const input = buildInputContext(ticker, prices, news);
+    try {
+      const result = await explainWithMistral(apiKey, model, input);
+      rows.push(
+        buildExplanationRow({
+          ticker,
+          asOfDate,
+          status: 'generated',
+          explanation: result.explanation,
+          confidence: result.confidence,
+          prices,
+          news,
+          input,
+          model: `mistral:${model}`,
+        })
+      );
+      generated += 1;
+    } catch (error) {
+      rows.push(
+        buildExplanationRow({
+          ticker,
+          asOfDate,
+          status: 'failed',
+          explanation: 'The daily market explanation could not be generated. Please check back later.',
+          confidence: null,
+          prices,
+          news,
+          input,
+          model: `mistral:${model}`,
+        })
+      );
+      failed += 1;
+      console.error(`[worker ${workerId}] ${ticker}: ${error.message}`);
+    }
+    await sleep(MISTRAL_DELAY_MS);
+  }
+
+  console.log(
+    JSON.stringify({
+      worker: workerId,
+      tickers: tickers.length,
+      generated,
+      failed,
+    })
+  );
+  return { rows, generated, failed };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const newsUrl = requireEnv('STOCK_NEWS_SUPABASE_URL');
   const newsKey = requireEnv('STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY');
   const marketUrl = requireEnv('SUPABASE_URL');
   const marketKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
-  const apiKey = requireEnv(args.provider === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY');
+  const mistralApiKeys = args.provider === 'mistral' ? loadMistralApiKeys() : [];
+  const openAiApiKey = args.provider === 'openai' ? requireEnv('OPENAI_API_KEY') : null;
   const model =
     args.provider === 'openai'
       ? process.env.OPENAI_MODEL || 'gpt-5-nano'
@@ -411,56 +534,87 @@ async function main() {
     selectedTickers,
     shiftDate(asOfDate, PRICE_WINDOW_DAYS)
   );
+
+  const tickersWithNews = [];
   const rows = [];
-  let generated = 0;
-  let failed = 0;
   for (const { ticker } of selectedTickers) {
     const news = newsByTicker.get(ticker) ?? [];
     if (!news.length) {
-      // Should not happen for the default eligible set; kept for explicit --tickers runs.
       rows.push(noRecentNewsRow(ticker, asOfDate));
       continue;
     }
-    try {
+    tickersWithNews.push(ticker);
+  }
+
+  let generated = 0;
+  let failed = 0;
+
+  if (args.provider === 'mistral' && tickersWithNews.length) {
+    const workerCount = mistralApiKeys.length;
+    const chunks = chunkRoundRobin(tickersWithNews, workerCount);
+    console.log(
+      `Mistral parallel workers: ${workerCount} (~${Math.ceil(tickersWithNews.length / workerCount)} tickers each)`
+    );
+    const batchResults = await Promise.all(
+      chunks.map((chunk, index) =>
+        processMistralBatch({
+          workerId: index + 1,
+          apiKey: mistralApiKeys[index],
+          model,
+          tickers: chunk,
+          asOfDate,
+          newsByTicker,
+          priceByTicker,
+        })
+      )
+    );
+    for (const result of batchResults) {
+      rows.push(...result.rows);
+      generated += result.generated;
+      failed += result.failed;
+    }
+  } else if (args.provider === 'openai') {
+    for (const ticker of tickersWithNews) {
+      const news = newsByTicker.get(ticker) ?? [];
       const prices = priceByTicker.get(ticker) ?? [];
       const input = buildInputContext(ticker, prices, news);
-      const result =
-        args.provider === 'openai'
-          ? await explainWithOpenAi(apiKey, model, input)
-          : await explainWithMistral(apiKey, model, input);
-      rows.push({
-        ticker,
-        as_of_date: asOfDate,
-        status: 'generated',
-        explanation: result.explanation,
-        confidence: result.confidence,
-        price_context: prices,
-        news_context: news,
-        input_context: input,
-        model: `${args.provider}:${model}`,
-        generated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      generated += 1;
-    } catch (error) {
-      rows.push({
-        ticker,
-        as_of_date: asOfDate,
-        status: 'failed',
-        explanation: 'The daily market explanation could not be generated. Please check back later.',
-        confidence: null,
-        price_context: priceByTicker.get(ticker) ?? [],
-        news_context: news,
-        input_context: buildInputContext(ticker, priceByTicker.get(ticker) ?? [], news),
-        model: `${args.provider}:${model}`,
-        generated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      failed += 1;
-      console.error(`${ticker}: ${error.message}`);
+      try {
+        const result = await explainWithOpenAi(openAiApiKey, model, input);
+        rows.push(
+          buildExplanationRow({
+            ticker,
+            asOfDate,
+            status: 'generated',
+            explanation: result.explanation,
+            confidence: result.confidence,
+            prices,
+            news,
+            input,
+            model: `openai:${model}`,
+          })
+        );
+        generated += 1;
+      } catch (error) {
+        rows.push(
+          buildExplanationRow({
+            ticker,
+            asOfDate,
+            status: 'failed',
+            explanation: 'The daily market explanation could not be generated. Please check back later.',
+            confidence: null,
+            prices,
+            news,
+            input,
+            model: `openai:${model}`,
+          })
+        );
+        failed += 1;
+        console.error(`${ticker}: ${error.message}`);
+      }
+      await sleep(MISTRAL_DELAY_MS);
     }
-    await new Promise((resolve) => setTimeout(resolve, MISTRAL_DELAY_MS));
   }
+
   await upsertRows(newsUrl, newsKey, table, rows);
   console.log(
     JSON.stringify(
@@ -470,7 +624,8 @@ async function main() {
         model,
         table,
         tracked_stocks: selectedTickers.length,
-        eligible_with_news: selectedTickers.length,
+        eligible_with_news: tickersWithNews.length,
+        mistral_workers: args.provider === 'mistral' ? mistralApiKeys.length : 1,
         generated,
         no_recent_news: rows.length - generated - failed,
         failed,
