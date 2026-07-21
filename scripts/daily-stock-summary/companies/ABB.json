@@ -6,7 +6,7 @@
     "name": "ABB India Ltd.",
     "ticker": "ABB",
     "logoText": "ABB",
-    "logoUrl": "https://zweqxjeuwwfrlpbuuayg.supabase.co/storage/v1/object/public/asset-logos/stock/ABB/icon-256.png",
+    "logoUrl": "./assets/abb-logo.png",
     "sector": "Industrial Automation",
     "exchange": "NSE",
     "country": "INDIA"
@@ -87,8 +87,8 @@
     }
   ],
   "cta": {
-    "line1": "Stay Updated On Your Portfolio with PocketEdge at",
-    "site": "www.pocketedge.in"
+    "line1": "Stay ahead of your portfolio on",
+    "brand": "PocketEdge"
   },
   "prices": {
     "prev": "₹4,322",
