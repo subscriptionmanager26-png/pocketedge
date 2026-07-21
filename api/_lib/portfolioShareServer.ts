@@ -167,8 +167,65 @@ export const SHARE_LABEL_BUBBLE_LG = 28;
 export const SHARE_LABEL_BUBBLE_SM = 24;
 export const SHARE_LABEL_TILE = 48;
 
+/** Invisible share-row columns (logo | name | value). */
+export const SHARE_COL_LOGO = 28;
+export const SHARE_COL_VALUE = 58;
+export const SHARE_COL_GAP = 8;
+export const SHARE_ROW_MIN_HEIGHT = 48;
+export const SHARE_NAME_FONT_SIZE = 10;
+export const SHARE_NAME_LINE_HEIGHT = 1.3;
+export const SHARE_NAME_CHARS_PER_LINE = 28;
+
+export const SHARE_COLOR_TEXT = '#111827';
+export const SHARE_COLOR_GREEN = '#16a34a';
+export const SHARE_COLOR_RED = '#dc2626';
+export const SHARE_COLOR_BRAND_GREEN = '#0e753f';
+
 export function shortShareLabel(label, max = 16) {
   const text = String(label ?? '').trim();
   if (text.length <= max) return text;
   return `${text.slice(0, max - 1)}…`;
+}
+
+export function shareReturnColor(pct) {
+  const n = Number(pct);
+  if (!Number.isFinite(n) || n === 0) return SHARE_COLOR_TEXT;
+  if (n > 0) return SHARE_COLOR_GREEN;
+  return SHARE_COLOR_RED;
+}
+
+/**
+ * Split a security name into up to 2 lines for OG/Satori (no CSS line-clamp).
+ * Truncates the second line with an ellipsis when needed.
+ */
+export function wrapShareLabel(label, maxCharsPerLine = SHARE_NAME_CHARS_PER_LINE) {
+  const text = String(label ?? '').trim();
+  if (!text) return [''];
+  if (text.length <= maxCharsPerLine) return [text];
+
+  const words = text.split(/\s+/);
+  let line1 = '';
+  let line2 = '';
+
+  for (const word of words) {
+    const next = line1 ? `${line1} ${word}` : word;
+    if (!line2 && next.length <= maxCharsPerLine) {
+      line1 = next;
+      continue;
+    }
+    const next2 = line2 ? `${line2} ${word}` : word;
+    if (next2.length <= maxCharsPerLine) {
+      line2 = next2;
+      continue;
+    }
+    if (!line2) {
+      line2 = shortShareLabel(word, maxCharsPerLine);
+      break;
+    }
+    line2 = shortShareLabel(next2, maxCharsPerLine);
+    break;
+  }
+
+  if (!line1) return [shortShareLabel(text, maxCharsPerLine)];
+  return line2 ? [line1, line2] : [line1];
 }

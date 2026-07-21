@@ -100,7 +100,22 @@ async function waitForShareCard(host, timeoutMs = 3000) {
   throw new Error('Share card element missing');
 }
 
+const INTER_FONT_HREF =
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+
+function ensureInterFontLink() {
+  if (typeof document === 'undefined') return;
+  const existing = document.querySelector(`link[href="${INTER_FONT_HREF}"]`);
+  if (existing) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = INTER_FONT_HREF;
+  document.head.appendChild(link);
+}
+
 function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
+  ensureInterFontLink();
+
   const host = document.createElement('div');
   host.setAttribute('aria-hidden', 'true');
   host.style.position = 'fixed';
@@ -109,6 +124,7 @@ function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   host.style.visibility = 'hidden';
   host.style.pointerEvents = 'none';
   host.style.zIndex = '-1';
+  host.style.fontFamily = 'Inter, sans-serif';
   document.body.appendChild(host);
 
   const root = createRoot(host);

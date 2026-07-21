@@ -3,10 +3,19 @@ import {
   buildSnapshotFromPortfolio,
   fetchPublicPortfolioShareData,
   formatPct,
-  ownerPossessiveLabel,
   SHARE_CARD_HEIGHT,
   SHARE_CARD_WIDTH,
+  SHARE_COL_GAP,
+  SHARE_COL_LOGO,
+  SHARE_COL_VALUE,
+  SHARE_COLOR_BRAND_GREEN,
+  SHARE_COLOR_TEXT,
+  SHARE_NAME_CHARS_PER_LINE,
+  SHARE_NAME_FONT_SIZE,
   SHARE_OG_SCALE,
+  SHARE_ROW_MIN_HEIGHT,
+  shareReturnColor,
+  wrapShareLabel,
 } from '../_lib/portfolioShareServer.js';
 
 export const config = {
@@ -18,11 +27,9 @@ const WIDTH = SHARE_CARD_WIDTH * S;
 const HEIGHT = SHARE_CARD_HEIGHT * S;
 
 const COLORS = {
-  textMain: '#111827',
-  textMuted: '#6b7280',
-  textLight: '#9ca3af',
+  text: SHARE_COLOR_TEXT,
   border: '#f3f4f6',
-  brandGreen: '#0e753f',
+  brandGreen: SHARE_COLOR_BRAND_GREEN,
   bgGreenLight: '#ecfdf3',
   brandOrange: '#e55405',
   bgOrangeLight: '#fff6f0',
@@ -30,16 +37,16 @@ const COLORS = {
   footerDivider: '#fed7aa',
 };
 
-function px(n: number) {
+function px(n) {
   return n * S;
 }
 
-function initialFor(label: string) {
+function initialFor(label) {
   const text = String(label ?? '').trim();
   return (text[0] || '?').toUpperCase();
 }
 
-function absoluteLogoUrl(url: string | null | undefined, origin: string) {
+function absoluteLogoUrl(url, origin) {
   const raw = typeof url === 'string' ? url.trim() : '';
   if (!raw) return null;
   if (raw.startsWith('data:') || raw.startsWith('http://') || raw.startsWith('https://')) {
@@ -55,7 +62,28 @@ function absoluteLogoUrl(url: string | null | undefined, origin: string) {
   return null;
 }
 
-function ItemLogo({ src, label, size }: { src: string | null; label: string; size: number }) {
+async function loadInterFont() {
+  try {
+    const cssUrl =
+      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+    const css = await fetch(cssUrl, {
+      headers: {
+        // Request a single woff2 URL Satori can load.
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    }).then((r) => r.text());
+    const match = css.match(/src: url\(([^)]+)\) format\('woff2'\)/);
+    if (!match?.[1]) return null;
+    const fontRes = await fetch(match[1]);
+    if (!fontRes.ok) return null;
+    return await fontRes.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+function ItemLogo({ src, label, size }) {
   if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -85,7 +113,7 @@ function ItemLogo({ src, label, size }: { src: string | null; label: string; siz
         border: `1px solid ${COLORS.border}`,
         fontSize: px(11),
         fontWeight: 600,
-        color: COLORS.textMuted,
+        color: COLORS.text,
       }}
     >
       {initialFor(label)}
@@ -93,50 +121,48 @@ function ItemLogo({ src, label, size }: { src: string | null; label: string; siz
   );
 }
 
-function ListRow({
-  label,
-  logoSrc,
-  value,
-  valueColor,
-  isLast,
-}: {
-  label: string;
-  logoSrc: string | null;
-  value: string;
-  valueColor: string;
-  isLast: boolean;
-}) {
+function ListRow({ label, logoSrc, value, valueColor, isLast }) {
+  const lines = wrapShareLabel(label, SHARE_NAME_CHARS_PER_LINE);
+  const nameWidth =
+    SHARE_CARD_WIDTH - 20 - SHARE_COL_LOGO - SHARE_COL_VALUE - SHARE_COL_GAP * 2;
+
   return (
     <div
       style={{
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: `0 ${px(10)}px`,
-        height: px(38),
+        alignItems: 'flex-start',
+        padding: `${px(6)}px ${px(10)}px`,
+        minHeight: px(SHARE_ROW_MIN_HEIGHT),
         borderBottom: isLast ? 'none' : `1px solid ${COLORS.rowBorder}`,
+        gap: px(SHARE_COL_GAP),
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: px(8) }}>
-        <ItemLogo src={logoSrc} label={label} size={px(26)} />
-        <div
-          style={{
-            display: 'flex',
-            fontSize: px(12),
-            fontWeight: 500,
-            color: COLORS.textMain,
-            maxWidth: px(180),
-          }}
-        >
-          {String(label).slice(0, 32)}
-        </div>
+      <ItemLogo src={logoSrc} label={label} size={px(SHARE_COL_LOGO)} />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: px(nameWidth),
+          fontSize: px(SHARE_NAME_FONT_SIZE),
+          fontWeight: 500,
+          color: COLORS.text,
+          lineHeight: 1.3,
+        }}
+      >
+        {lines.map((line, i) => (
+          <div key={i} style={{ display: 'flex' }}>
+            {line}
+          </div>
+        ))}
       </div>
       <div
         style={{
           display: 'flex',
+          width: px(SHARE_COL_VALUE),
           fontSize: px(12),
           fontWeight: 700,
           color: valueColor,
+          textAlign: 'left',
         }}
       >
         {value}
@@ -153,18 +179,8 @@ function ListSection({
   iconChar,
   rows,
   renderValue,
-  valueColor,
+  getValueColor,
   origin,
-}: {
-  title: string;
-  subtitle: string;
-  iconBg: string;
-  iconColor: string;
-  iconChar: string;
-  rows: Array<{ ticker: string; label: string; logoIconUrl?: string | null; totalReturnPct?: number; weight?: number }>;
-  renderValue: (row: (typeof rows)[0]) => string;
-  valueColor: string;
-  origin: string;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: px(10) }}>
@@ -193,9 +209,11 @@ function ListSection({
           >
             {iconChar}
           </div>
-          <div style={{ display: 'flex', fontSize: px(13), fontWeight: 600 }}>{title}</div>
+          <div style={{ display: 'flex', fontSize: px(13), fontWeight: 600, color: COLORS.text }}>
+            {title}
+          </div>
         </div>
-        <div style={{ display: 'flex', fontSize: px(9), fontWeight: 500, color: COLORS.textLight }}>
+        <div style={{ display: 'flex', fontSize: px(9), fontWeight: 500, color: COLORS.text }}>
           {subtitle}
         </div>
       </div>
@@ -214,7 +232,7 @@ function ListSection({
             label={row.label}
             logoSrc={absoluteLogoUrl(row.logoIconUrl, origin)}
             value={renderValue(row)}
-            valueColor={valueColor}
+            valueColor={getValueColor(row)}
             isLast={index === rows.length - 1}
           />
         ))}
@@ -223,7 +241,7 @@ function ListSection({
   );
 }
 
-export default async function handler(request: Request) {
+export default async function handler(request) {
   const { searchParams, origin } = new URL(request.url);
   const portfolioId = searchParams.get('id');
   const sort = searchParams.get('sort') === 'performance' ? 'performance' : 'allocation';
@@ -238,13 +256,12 @@ export default async function handler(request: Request) {
   }
 
   const snapshot = buildSnapshotFromPortfolio(payload.portfolio, { sort });
-  const ownerLine = ownerPossessiveLabel(payload.ownerHandle);
   const returnPct = Number(snapshot.returnPct) || 0;
-  const returnColor =
-    returnPct > 0 ? COLORS.brandGreen : returnPct < 0 ? '#dc2626' : COLORS.textMuted;
+  const returnColor = shareReturnColor(returnPct);
   const performers = (snapshot.topPerformers ?? snapshot.topHoldings ?? []).slice(0, 5);
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 5);
   const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
+  const interData = await loadInterFont();
 
   try {
     return new ImageResponse(
@@ -257,8 +274,8 @@ export default async function handler(request: Request) {
             flexDirection: 'column',
             background: '#ffffff',
             padding: `${px(14)}px ${px(14)}px ${px(12)}px`,
-            fontFamily: 'system-ui, sans-serif',
-            color: COLORS.textMain,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            color: COLORS.text,
           }}
         >
           <div
@@ -273,12 +290,25 @@ export default async function handler(request: Request) {
               <div style={{ display: 'flex', alignItems: 'center', gap: px(6), marginBottom: px(6) }}>
                 {brandLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={brandLogoUrl} width={px(18)} height={px(18)} style={{ width: px(18), height: px(18) }} />
+                  <img
+                    src={brandLogoUrl}
+                    width={px(18)}
+                    height={px(18)}
+                    style={{ width: px(18), height: px(18) }}
+                  />
                 ) : null}
                 <div style={{ display: 'flex', fontSize: px(13), fontWeight: 700 }}>PocketEdge</div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', fontSize: px(26), fontWeight: 800, lineHeight: 1.05 }}>
-                <div style={{ display: 'flex' }}>{ownerLine}</div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  fontSize: px(26),
+                  fontWeight: 800,
+                  lineHeight: 1.05,
+                }}
+              >
+                <div style={{ display: 'flex' }}>Member&apos;s</div>
                 <div style={{ display: 'flex', color: COLORS.brandGreen }}>Portfolio</div>
               </div>
             </div>
@@ -292,13 +322,36 @@ export default async function handler(request: Request) {
                 minWidth: px(100),
               }}
             >
-              <div style={{ display: 'flex', fontSize: px(8), fontWeight: 600, color: COLORS.textMuted, letterSpacing: 1 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: px(8),
+                  fontWeight: 600,
+                  color: COLORS.text,
+                  letterSpacing: 1,
+                }}
+              >
                 TOTAL RETURN
               </div>
-              <div style={{ display: 'flex', fontSize: px(20), fontWeight: 700, color: returnColor, marginTop: px(2) }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: px(20),
+                  fontWeight: 700,
+                  color: returnColor,
+                  marginTop: px(2),
+                }}
+              >
                 {formatPct(returnPct)}
               </div>
-              <div style={{ display: 'flex', fontSize: px(10), color: COLORS.textMuted, marginTop: px(2) }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: px(10),
+                  color: COLORS.text,
+                  marginTop: px(2),
+                }}
+              >
                 All time
               </div>
             </div>
@@ -314,7 +367,7 @@ export default async function handler(request: Request) {
             iconChar="↗"
             rows={performers}
             renderValue={(row) => formatPct(row.totalReturnPct ?? 0)}
-            valueColor={COLORS.brandGreen}
+            getValueColor={(row) => shareReturnColor(row.totalReturnPct)}
             origin={origin}
           />
 
@@ -326,7 +379,7 @@ export default async function handler(request: Request) {
             iconChar="◔"
             rows={allocation}
             renderValue={(row) => `${Number(row.weight ?? 0).toFixed(1)}%`}
-            valueColor={COLORS.brandOrange}
+            getValueColor={() => COLORS.text}
             origin={origin}
           />
 
@@ -344,22 +397,49 @@ export default async function handler(request: Request) {
             <div style={{ display: 'flex', alignItems: 'center', gap: px(6) }}>
               {brandLogoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={brandLogoUrl} width={px(16)} height={px(16)} style={{ width: px(16), height: px(16) }} />
+                <img
+                  src={brandLogoUrl}
+                  width={px(16)}
+                  height={px(16)}
+                  style={{ width: px(16), height: px(16) }}
+                />
               ) : null}
-              <div style={{ display: 'flex', fontSize: px(11), fontWeight: 500 }}>
+              <div style={{ display: 'flex', fontSize: px(11), fontWeight: 500, color: COLORS.text }}>
                 Stay Updated with PocketEdge
               </div>
             </div>
-            <div style={{ display: 'flex', fontSize: px(11), fontWeight: 700, color: COLORS.brandOrange }}>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: px(11),
+                fontWeight: 700,
+                color: COLORS.brandOrange,
+              }}
+            >
               pocketedge.in
             </div>
           </div>
         </div>
       ),
-      { width: WIDTH, height: HEIGHT }
+      {
+        width: WIDTH,
+        height: HEIGHT,
+        ...(interData
+          ? {
+              fonts: [
+                {
+                  name: 'Inter',
+                  data: interData,
+                  style: 'normal',
+                  weight: 400,
+                },
+              ],
+            }
+          : {}),
+      }
     );
   } catch (error) {
     console.error('OG portfolio image failed', error);
-    return new Response(`OG image failed: ${(error as Error)?.message ?? 'unknown'}`, { status: 500 });
+    return new Response(`OG image failed: ${error?.message ?? 'unknown'}`, { status: 500 });
   }
 }

@@ -1,7 +1,17 @@
 import { useState } from 'react';
 import { formatPct } from '../lib/format';
 import { assetLogoInitial, detectLogoBackdropTone } from '../lib/assetLogo';
-import { ownerPossessiveLabel } from '../lib/portfolioShare';
+import {
+  SHARE_COL_GAP,
+  SHARE_COL_LOGO,
+  SHARE_COL_VALUE,
+  SHARE_COLOR_BRAND_GREEN,
+  SHARE_COLOR_TEXT,
+  SHARE_NAME_FONT_SIZE,
+  SHARE_NAME_LINE_HEIGHT,
+  SHARE_ROW_MIN_HEIGHT,
+  shareReturnColor,
+} from '../lib/portfolioShare';
 
 /** Gemini share canvas — 375×667 at 1×, captured at 2× for share PNGs. */
 export const SHARE_CARD_WIDTH = 375;
@@ -9,11 +19,9 @@ export const SHARE_CARD_HEIGHT = 667;
 export const SHARE_CARD_PIXEL_RATIO = 2;
 
 const COLORS = {
-  textMain: '#111827',
-  textMuted: '#6b7280',
-  textLight: '#9ca3af',
+  text: SHARE_COLOR_TEXT,
   border: '#f3f4f6',
-  brandGreen: '#0e753f',
+  brandGreen: SHARE_COLOR_BRAND_GREEN,
   bgGreenLight: '#ecfdf3',
   brandOrange: '#e55405',
   bgOrangeLight: '#fff6f0',
@@ -21,7 +29,7 @@ const COLORS = {
   footerDivider: '#fed7aa',
 };
 
-function ItemLogo({ logoIconUrl, assetKey, name, size = 26 }) {
+function ItemLogo({ logoIconUrl, assetKey, name, size = SHARE_COL_LOGO }) {
   const initial = assetLogoInitial(assetKey || name);
   const [backdrop, setBackdrop] = useState('light');
 
@@ -37,10 +45,9 @@ function ItemLogo({ logoIconUrl, assetKey, name, size = 26 }) {
         borderRadius: 7,
         overflow: 'hidden',
         backgroundColor: backdrop === 'dark' ? '#27272a' : '#ffffff',
-        color: '#6b7280',
+        color: COLORS.text,
         fontSize: 11,
         fontWeight: 600,
-        flexShrink: 0,
       }}
     >
       {logoIconUrl ? (
@@ -83,37 +90,42 @@ function ShareListRow({ row, value, valueColor }) {
   return (
     <div
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 10px',
-        height: 38,
+        display: 'grid',
+        gridTemplateColumns: `${SHARE_COL_LOGO}px 1fr ${SHARE_COL_VALUE}px`,
+        columnGap: SHARE_COL_GAP,
+        alignItems: 'start',
+        textAlign: 'left',
+        padding: '6px 10px',
+        minHeight: SHARE_ROW_MIN_HEIGHT,
+        boxSizing: 'border-box',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-        <ItemLogo logoIconUrl={row.logoIconUrl} assetKey={row.ticker} name={row.label} />
-        <span
-          style={{
-            fontWeight: 500,
-            fontSize: 12,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            color: COLORS.textMain,
-          }}
-        >
-          {row.label}
-        </span>
-      </div>
+      <ItemLogo logoIconUrl={row.logoIconUrl} assetKey={row.ticker} name={row.label} />
+      <span
+        style={{
+          fontWeight: 500,
+          fontSize: SHARE_NAME_FONT_SIZE,
+          lineHeight: SHARE_NAME_LINE_HEIGHT,
+          color: COLORS.text,
+          textAlign: 'left',
+          wordBreak: 'break-word',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}
+      >
+        {row.label}
+      </span>
       <span
         style={{
           fontWeight: 700,
           fontSize: 12,
           letterSpacing: '-0.025em',
           color: valueColor,
-          flexShrink: 0,
-          marginLeft: 8,
+          textAlign: 'left',
           fontVariantNumeric: 'tabular-nums',
+          lineHeight: SHARE_NAME_LINE_HEIGHT,
         }}
       >
         {value}
@@ -122,7 +134,7 @@ function ShareListRow({ row, value, valueColor }) {
   );
 }
 
-function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, valueColor }) {
+function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, getValueColor }) {
   const iconBg = iconTone === 'green' ? COLORS.bgGreenLight : '#fff4ed';
   const iconFg = iconTone === 'green' ? COLORS.brandGreen : COLORS.brandOrange;
 
@@ -147,14 +159,13 @@ function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, 
               justifyContent: 'center',
               backgroundColor: iconBg,
               color: iconFg,
-              flexShrink: 0,
             }}
           >
             {icon}
           </div>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: COLORS.textMain }}>{title}</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0 }}>{title}</h2>
         </div>
-        <span style={{ fontSize: 9, fontWeight: 500, color: COLORS.textLight }}>{subtitle}</span>
+        <span style={{ fontSize: 9, fontWeight: 500, color: COLORS.text }}>{subtitle}</span>
       </header>
       <div
         style={{
@@ -171,7 +182,11 @@ function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, 
               borderBottom: index < rows.length - 1 ? `1px solid ${COLORS.rowBorder}` : 'none',
             }}
           >
-            <ShareListRow row={row} value={renderValue(row)} valueColor={valueColor} />
+            <ShareListRow
+              row={row}
+              value={renderValue(row)}
+              valueColor={getValueColor(row)}
+            />
           </div>
         ))}
       </div>
@@ -181,7 +196,7 @@ function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, 
 
 export default function PortfolioShareCard({
   snapshot,
-  ownerHandle,
+  ownerHandle: _ownerHandle,
   brandLogoUrl = '/Pocketedge_logo.png',
 }) {
   if (!snapshot) return null;
@@ -196,10 +211,8 @@ export default function PortfolioShareCard({
     : snapshot.topHoldings ?? []
   ).slice(0, 5);
 
-  const ownerLine = ownerPossessiveLabel(ownerHandle);
   const returnPct = Number(snapshot.returnPct) || 0;
-  const returnColor =
-    returnPct > 0 ? COLORS.brandGreen : returnPct < 0 ? '#dc2626' : COLORS.textMuted;
+  const returnColor = shareReturnColor(returnPct);
 
   return (
     <div
@@ -210,9 +223,8 @@ export default function PortfolioShareCard({
         height: SHARE_CARD_HEIGHT,
         padding: '14px 14px 12px',
         backgroundColor: '#ffffff',
-        color: COLORS.textMain,
-        fontFamily:
-          'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        color: COLORS.text,
+        fontFamily: 'Inter, sans-serif',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -251,7 +263,7 @@ export default function PortfolioShareCard({
               letterSpacing: '-0.03em',
             }}
           >
-            {ownerLine}
+            Member&apos;s
             <br />
             <span style={{ color: COLORS.brandGreen }}>Portfolio</span>
           </h1>
@@ -271,7 +283,7 @@ export default function PortfolioShareCard({
               margin: '0 0 2px',
               fontSize: 8,
               fontWeight: 600,
-              color: COLORS.textMuted,
+              color: COLORS.text,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
             }}
@@ -291,7 +303,7 @@ export default function PortfolioShareCard({
           >
             {formatPct(returnPct)}
           </p>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 500, color: COLORS.textMuted }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 500, color: COLORS.text }}>
             All time
           </p>
         </div>
@@ -314,7 +326,7 @@ export default function PortfolioShareCard({
         icon={<TrendIcon />}
         rows={performers}
         renderValue={(row) => formatPct(row.totalReturnPct)}
-        valueColor={COLORS.brandGreen}
+        getValueColor={(row) => shareReturnColor(row.totalReturnPct)}
       />
 
       <ShareListSection
@@ -324,7 +336,7 @@ export default function PortfolioShareCard({
         icon={<PieIcon />}
         rows={allocationRows}
         renderValue={(row) => `${Number(row.weight).toFixed(1)}%`}
-        valueColor={COLORS.brandOrange}
+        getValueColor={() => COLORS.text}
       />
 
       <footer
@@ -346,13 +358,13 @@ export default function PortfolioShareCard({
             alt=""
             width={16}
             height={16}
-            style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }}
+            style={{ width: 16, height: 16, objectFit: 'contain' }}
           />
-          <span style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.25 }}>
+          <span style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.25, color: COLORS.text }}>
             Stay Updated with PocketEdge
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 1, height: 12, backgroundColor: COLORS.footerDivider }} />
           <span
             style={{

@@ -207,12 +207,14 @@
         }
 
         .list-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
+            display: grid;
+            grid-template-columns: 28px 1fr 58px;
+            column-gap: 8px;
+            align-items: start;
+            text-align: left;
+            padding: 6px 10px;
             border-bottom: 1px solid #f8fafc;
-            height: 38px;
+            min-height: 48px;
         }
 
         .list-item:last-child {
@@ -255,22 +257,48 @@
 
         .item-name {
             font-weight: 500;
-            font-size: 12px;
-            white-space: nowrap;
+            font-size: 10px;
+            line-height: 1.3;
+            color: #111827;
+            word-break: break-word;
             overflow: hidden;
-            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
         .item-value {
             font-weight: 700;
             letter-spacing: -0.025em;
             font-size: 12px;
-            flex-shrink: 0;
-            margin-left: 8px;
+            text-align: left;
+            color: #111827;
         }
 
-        .item-value.green { color: var(--brand-green); }
-        .item-value.orange { color: var(--brand-orange); }
+        .item-value.green { color: #16a34a; }
+        .item-value.orange { color: #111827; }
+        .item-value.red { color: #dc2626; }
+
+        .section-subtitle {
+            font-size: 9px;
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .return-widget-title {
+            font-size: 8px;
+            font-weight: 600;
+            color: #111827;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 2px;
+        }
+
+        .return-widget-subtitle {
+            font-size: 10px;
+            font-weight: 500;
+            color: #111827;
+        }
 
         .footer-banner {
             background-color: var(--bg-orange-light);
@@ -365,7 +393,7 @@
                     <span>PocketEdge</span>
                 </div>
                 <h1 class="main-title">
-                    Kushagra's<br>
+                    Member's<br>
                     <span class="highlight">Portfolio</span>
                 </h1>
             </div>
