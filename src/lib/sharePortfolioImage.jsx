@@ -41,7 +41,8 @@ async function enrichSnapshotLogos(snapshot) {
       rows.map(async (row) => {
         if (!row?.logoIconUrl) return row;
         const dataUrl = await prefetchLogoDataUrl(row.logoIconUrl);
-        return dataUrl ? { ...row, logoIconUrl: dataUrl } : row;
+        // Drop cross-origin URLs that failed — they taint the canvas and break capture.
+        return dataUrl ? { ...row, logoIconUrl: dataUrl } : { ...row, logoIconUrl: null };
       })
     );
 
@@ -91,14 +92,12 @@ async function waitForShareCard(host, timeoutMs = 3000) {
 function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   const host = document.createElement('div');
   host.setAttribute('aria-hidden', 'true');
-  // Keep in-viewport (opacity 0) so layout/fonts measure correctly on mobile Safari.
   host.style.position = 'fixed';
   host.style.left = '0';
   host.style.top = '0';
   host.style.opacity = '0';
   host.style.pointerEvents = 'none';
   host.style.zIndex = '-1';
-  host.style.overflow = 'hidden';
   document.body.appendChild(host);
 
   const root = createRoot(host);
@@ -125,6 +124,23 @@ function mountShareCard(snapshot, ownerHandle, brandLogoUrl) {
   };
 }
 
+/** Remove any image that can taint the canvas (non-data, non-same-origin). */
+function sanitizeShareCardImages(element) {
+  const origin = window.location.origin;
+  element.querySelectorAll('img').forEach((img) => {
+    const src = img.currentSrc || img.getAttribute('src') || '';
+    const safe =
+      src.startsWith('data:') ||
+      src.startsWith('blob:') ||
+      src.startsWith('/') ||
+      src.startsWith(origin);
+    if (!safe) {
+      img.removeAttribute('src');
+      img.src = '';
+    }
+  });
+}
+
 async function toPngWithRatio(element, width, height, pixelRatio) {
   return toPng(element, {
     width,
@@ -132,6 +148,7 @@ async function toPngWithRatio(element, width, height, pixelRatio) {
     pixelRatio,
     cacheBust: true,
     skipFonts: true,
+    backgroundColor: '#ffffff',
     filter: (node) => {
       if (node.tagName === 'LINK' && node.rel === 'stylesheet') {
         const href = node.getAttribute('href') || '';
@@ -144,15 +161,17 @@ async function toPngWithRatio(element, width, height, pixelRatio) {
   });
 }
 
-export async function captureShareCard(element) {
+async function captureClientShareCard(element) {
   if (!element) throw new Error('Share card element missing');
+
+  sanitizeShareCardImages(element);
 
   const images = element.querySelectorAll('img');
   await Promise.all(
     [...images].map(
       (img) =>
         new Promise((resolve) => {
-          if (img.complete) {
+          if (!img.getAttribute('src') || img.complete) {
             resolve();
             return;
           }
@@ -190,6 +209,24 @@ export async function captureShareCard(element) {
   return blob;
 }
 
+/**
+ * Server-rendered OG PNG — reliable on every browser (no html-to-image).
+ */
+async function captureOgShareImage(portfolioId, sort) {
+  const params = new URLSearchParams({ id: portfolioId, v: String(Date.now()) });
+  if (sort && sort !== SHARE_SORT_ALLOCATION) params.set('sort', sort);
+  const url = `${window.location.origin}/api/og/portfolio?${params.toString()}`;
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`OG image request failed (${response.status})`);
+  }
+  const blob = await response.blob();
+  if (!blob || blob.size < 1000) {
+    throw new Error('OG image was empty');
+  }
+  return blob;
+}
+
 function canSharePayload(data) {
   if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) return false;
   try {
@@ -206,7 +243,9 @@ async function fallbackShare(blob, url, caption) {
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
     anchor.download = fileName;
+    document.body.appendChild(anchor);
     anchor.click();
+    anchor.remove();
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -229,8 +268,17 @@ function trackShare(method, sort) {
   });
 }
 
+function trackShareFailure(reason, detail) {
+  if (!isPostHogEnabled) return;
+  posthog.capture('portfolio_share_failed', {
+    reason: String(reason ?? 'unknown'),
+    detail: String(detail ?? '').slice(0, 240),
+  });
+}
+
 /**
  * Generate PNG + invoke native share (or download/copy fallback).
+ * Prefers the server OG image; falls back to client html-to-image capture.
  */
 export async function sharePortfolio({
   portfolio,
@@ -247,60 +295,82 @@ export async function sharePortfolio({
 
   snapshot = await enrichSnapshotLogos(snapshot);
   const caption = portfolioShareCaption(snapshot, shareUrl);
-  const brandLogoUrl =
-    (await prefetchLogoDataUrl(`${window.location.origin}/Pocketedge_logo.png`)) ||
-    (await prefetchLogoDataUrl(`${window.location.origin}/logo.png`)) ||
-    '/Pocketedge_logo.png';
 
-  const mounted = mountShareCard(snapshot, ownerHandle, brandLogoUrl);
+  let blob = null;
+  let captureMethod = 'og';
+  let lastCaptureError = null;
+
+  try {
+    blob = await captureOgShareImage(portfolio.id, sort);
+  } catch (ogError) {
+    lastCaptureError = ogError;
+    console.warn('OG share image failed, trying client capture', ogError);
+    captureMethod = 'client';
+
+    const brandLogoUrl =
+      (await prefetchLogoDataUrl(`${window.location.origin}/Pocketedge_logo.png`)) ||
+      (await prefetchLogoDataUrl(`${window.location.origin}/logo.png`)) ||
+      null;
+
+    const mounted = mountShareCard(snapshot, ownerHandle, brandLogoUrl);
+    try {
+      const element = mounted.getElement() ?? (await waitForShareCard(mounted.host));
+      blob = await captureClientShareCard(element);
+      lastCaptureError = null;
+    } catch (clientError) {
+      lastCaptureError = clientError;
+      console.error('Client share capture failed', clientError);
+      trackShareFailure('capture_failed', `${ogError?.message}|${clientError?.message}`);
+      return { ok: false, reason: 'capture_failed' };
+    } finally {
+      await mounted.unmount();
+    }
+  }
+
+  if (!blob) {
+    trackShareFailure('no_blob', lastCaptureError?.message || captureMethod);
+    return { ok: false, reason: 'capture_failed' };
+  }
+
+  const file = new File([blob], 'pocketedge-portfolio.png', { type: 'image/png' });
+  const title = snapshot.name || 'Portfolio on PocketEdge';
+  const fileSharePayload = { title, text: caption, files: [file] };
+  const textSharePayload = { title, text: caption, url: shareUrl };
   let method = 'fallback';
 
   try {
-    const element = mounted.getElement() ?? (await waitForShareCard(mounted.host));
-    const blob = await captureShareCard(element);
-    const file = new File([blob], 'pocketedge-portfolio.png', { type: 'image/png' });
-    const title = snapshot.name || 'Portfolio on PocketEdge';
-    const fileSharePayload = { title, text: caption, files: [file] };
-    const textSharePayload = { title, text: caption, url: shareUrl };
-
-    try {
-      if (canSharePayload(fileSharePayload)) {
-        await navigator.share(fileSharePayload);
-        method = 'native';
-      } else if (canSharePayload(textSharePayload)) {
-        await navigator.share(textSharePayload);
-        method = 'native_text_only';
-      } else if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-        await navigator.share(textSharePayload);
-        method = 'native_text_only';
-      } else {
-        method = await fallbackShare(blob, shareUrl, caption);
-      }
-    } catch (shareError) {
-      if (shareError?.name === 'AbortError') {
-        return { ok: false, reason: 'cancelled' };
-      }
-      // Native share can reject for payload/size reasons — still deliver the image.
-      console.warn('Native share failed, using download fallback', shareError);
+    if (canSharePayload(fileSharePayload)) {
+      await navigator.share(fileSharePayload);
+      method = 'native';
+    } else if (canSharePayload(textSharePayload)) {
+      await navigator.share(textSharePayload);
+      method = 'native_text_only';
+    } else if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      await navigator.share(textSharePayload);
+      method = 'native_text_only';
+    } else {
       method = await fallbackShare(blob, shareUrl, caption);
     }
-
-    try {
-      const next = await recordPortfolioShare(portfolio.id);
-      onSharesUpdated?.(next.shares);
-    } catch (recordError) {
-      console.warn('recordPortfolioShare failed after share', recordError);
-    }
-    trackShare(method, sort);
-
-    return { ok: true, method, shareUrl };
-  } catch (error) {
-    if (error?.name === 'AbortError') {
+  } catch (shareError) {
+    if (shareError?.name === 'AbortError') {
       return { ok: false, reason: 'cancelled' };
     }
-    console.error('sharePortfolio failed', error);
-    throw error;
-  } finally {
-    await mounted.unmount();
+    console.warn('Native share failed, using download fallback', shareError);
+    try {
+      method = await fallbackShare(blob, shareUrl, caption);
+    } catch (fallbackError) {
+      trackShareFailure('share_and_fallback', fallbackError?.message);
+      throw fallbackError;
+    }
   }
+
+  try {
+    const next = await recordPortfolioShare(portfolio.id);
+    onSharesUpdated?.(next.shares);
+  } catch (recordError) {
+    console.warn('recordPortfolioShare failed after share', recordError);
+  }
+
+  trackShare(`${method}:${captureMethod}`, sort);
+  return { ok: true, method, shareUrl, captureMethod };
 }

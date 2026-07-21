@@ -31,18 +31,26 @@ export default function PortfolioShareSheet({
       });
       if (result.ok) {
         if (result.method === 'fallback') {
-          setNotice('Image downloaded and link copied to clipboard.');
+          setNotice('Image downloaded. Share caption copied — paste it with the image.');
         } else {
           onClose?.();
         }
-      } else if (result.reason !== 'cancelled') {
-        setNotice('Could not share this portfolio. Try again.');
-      } else {
+      } else if (result.reason === 'cancelled') {
         onClose?.();
+      } else if (result.reason === 'empty_snapshot') {
+        setNotice('Add holdings before sharing this portfolio.');
+      } else if (result.reason === 'capture_failed') {
+        setNotice('Could not create the share image. Check your connection and try again.');
+      } else {
+        setNotice('Could not share this portfolio. Try again.');
       }
     } catch (error) {
       console.error('Portfolio share failed', error);
-      setNotice('Could not share this portfolio. Try again.');
+      setNotice(
+        error?.message
+          ? `Share failed: ${String(error.message).slice(0, 120)}`
+          : 'Could not share this portfolio. Try again.'
+      );
     } finally {
       setSharing(false);
     }
