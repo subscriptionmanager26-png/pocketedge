@@ -89,8 +89,18 @@ export default async function handler(request) {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.1 }}>{ownerLine}</div>
-            <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: '#1e4635' }}>
+            <div style={{ display: 'flex', fontSize: 40, fontWeight: 700, lineHeight: 1.1 }}>
+              {ownerLine}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 40,
+                fontWeight: 700,
+                lineHeight: 1.1,
+                color: '#1e4635',
+              }}
+            >
               Portfolio
             </div>
           </div>
@@ -106,6 +116,7 @@ export default async function handler(request) {
           >
             <div
               style={{
+                display: 'flex',
                 fontSize: 11,
                 fontWeight: 600,
                 color: '#9ca3af',
@@ -115,10 +126,20 @@ export default async function handler(request) {
             >
               Total Return
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: returnColor, marginTop: 4 }}>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 28,
+                fontWeight: 700,
+                color: returnColor,
+                marginTop: 4,
+              }}
+            >
               {formatPct(snapshot.returnPct)}
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>All time</div>
+            <div style={{ display: 'flex', fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+              All time
+            </div>
           </div>
         </div>
 
@@ -175,12 +196,16 @@ export default async function handler(request) {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{snapshot.holdingsCount}</div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>Holdings</div>
+            <div style={{ display: 'flex', fontSize: 18, fontWeight: 700 }}>
+              {String(snapshot.holdingsCount)}
+            </div>
+            <div style={{ display: 'flex', fontSize: 13, color: '#6b7280' }}>Holdings</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{snapshot.sectorsCount ?? 1}</div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>Sectors</div>
+            <div style={{ display: 'flex', fontSize: 18, fontWeight: 700 }}>
+              {String(snapshot.sectorsCount ?? 1)}
+            </div>
+            <div style={{ display: 'flex', fontSize: 13, color: '#6b7280' }}>Sectors</div>
           </div>
         </div>
 
@@ -197,7 +222,7 @@ export default async function handler(request) {
         >
           <div style={{ display: 'flex' }}>TOP HOLDINGS (BY ALLOCATION)</div>
           <div style={{ display: 'flex' }}>
-            Showing {allocation.length} of {snapshot.holdingsCount}
+            {`Showing ${allocation.length} of ${snapshot.holdingsCount}`}
           </div>
         </div>
 
@@ -222,8 +247,12 @@ export default async function handler(request) {
                 alignItems: 'center',
               }}
             >
-              <div style={{ fontSize: 11, color: '#4b5563' }}>{String(row.label).slice(0, 12)}</div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>{Number(row.weight).toFixed(1)}%</div>
+              <div style={{ display: 'flex', fontSize: 11, color: '#4b5563' }}>
+                {String(row.label).slice(0, 12)}
+              </div>
+              <div style={{ display: 'flex', fontSize: 14, fontWeight: 700 }}>
+                {`${Number(row.weight).toFixed(1)}%`}
+              </div>
             </div>
           ))}
         </div>
