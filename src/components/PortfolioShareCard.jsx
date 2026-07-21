@@ -1,44 +1,27 @@
 import { useState } from 'react';
 import { formatPct } from '../lib/format';
 import { assetLogoInitial, detectLogoBackdropTone } from '../lib/assetLogo';
-import {
-  ownerPossessiveLabel,
-  shortShareLabel,
-  SHARE_LABEL_BUBBLE_LG,
-  SHARE_LABEL_BUBBLE_SM,
-  SHARE_LABEL_TILE,
-} from '../lib/portfolioShare';
+import { ownerPossessiveLabel } from '../lib/portfolioShare';
 
-/** Matches Gemini share template width (CSS px). */
-export const SHARE_CARD_WIDTH = 800;
-/** Natural content height at 800px width (template has no fixed height). Used for OG meta. */
-export const SHARE_CARD_HEIGHT = 1100;
-/** Retina capture at 2× — 3× often OOMs on mobile for tall share cards. */
+/** Gemini share canvas — 375×667 at 1×, captured at 2× for share PNGs. */
+export const SHARE_CARD_WIDTH = 375;
+export const SHARE_CARD_HEIGHT = 667;
 export const SHARE_CARD_PIXEL_RATIO = 2;
 
-/** Hex only — html-to-image breaks on Tailwind/CSS variables. */
-const LOGO_BACKDROP = {
-  light: '#f7f6f4',
-  dark: '#27272a',
+const COLORS = {
+  textMain: '#111827',
+  textMuted: '#6b7280',
+  textLight: '#9ca3af',
+  border: '#f3f4f6',
+  brandGreen: '#0e753f',
+  bgGreenLight: '#ecfdf3',
+  brandOrange: '#e55405',
+  bgOrangeLight: '#fff6f0',
+  rowBorder: '#f8fafc',
+  footerDivider: '#fed7aa',
 };
 
-const BUBBLE_SIZES = [170, 148, 132, 120, 88];
-const BUBBLE_POSITIONS = [
-  { top: '45%', left: '48%' },
-  { top: '24%', left: '75%' },
-  { top: '30%', left: '22%' },
-  { top: '70%', left: '30%' },
-  { top: '72%', left: '62%' },
-];
-const BUBBLE_COLORS = [
-  { bg: '#1e4635', fg: '#ffffff' },
-  { bg: '#499d6d', fg: '#ffffff' },
-  { bg: '#addba5', fg: '#1f2937' },
-  { bg: '#d6eed0', fg: '#1f2937' },
-  { bg: '#fae5d3', fg: '#1f2937' },
-];
-
-function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb' }) {
+function ItemLogo({ logoIconUrl, assetKey, name, size = 26 }) {
   const initial = assetLogoInitial(assetKey || name);
   const [backdrop, setBackdrop] = useState('light');
 
@@ -46,18 +29,18 @@ function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb
     <span
       style={{
         display: 'inline-flex',
-        flexShrink: 0,
         alignItems: 'center',
         justifyContent: 'center',
         width: size,
         height: size,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: 7,
         overflow: 'hidden',
-        borderRadius: '50%',
-        border: `1px solid ${ring}`,
-        backgroundColor: LOGO_BACKDROP[backdrop] ?? LOGO_BACKDROP.light,
-        color: backdrop === 'dark' ? '#e5e7eb' : '#6b7280',
-        fontSize: Math.max(10, Math.round(size * 0.38)),
+        backgroundColor: backdrop === 'dark' ? '#27272a' : '#ffffff',
+        color: '#6b7280',
+        fontSize: 11,
         fontWeight: 600,
+        flexShrink: 0,
       }}
     >
       {logoIconUrl ? (
@@ -69,9 +52,7 @@ function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb
           loading="eager"
           decoding="sync"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onLoad={(event) => {
-            setBackdrop(detectLogoBackdropTone(event.currentTarget));
-          }}
+          onLoad={(event) => setBackdrop(detectLogoBackdropTone(event.currentTarget))}
         />
       ) : (
         initial
@@ -80,25 +61,145 @@ function ShareMarkLogo({ logoIconUrl, assetKey, name, size = 28, ring = '#e5e7eb
   );
 }
 
-/**
- * Fixed-size card rendered offscreen and captured as a PNG for native share.
- * Layout follows the Gemini PocketEdge portfolio snapshot template.
- */
-export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl = '/Pocketedge_logo.png' }) {
+function TrendIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>
+  );
+}
+
+function PieIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+      <path d="M22 12A10 10 0 0 0 12 2v10z" />
+    </svg>
+  );
+}
+
+function ShareListRow({ row, value, valueColor }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 10px',
+        height: 38,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+        <ItemLogo logoIconUrl={row.logoIconUrl} assetKey={row.ticker} name={row.label} />
+        <span
+          style={{
+            fontWeight: 500,
+            fontSize: 12,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            color: COLORS.textMain,
+          }}
+        >
+          {row.label}
+        </span>
+      </div>
+      <span
+        style={{
+          fontWeight: 700,
+          fontSize: 12,
+          letterSpacing: '-0.025em',
+          color: valueColor,
+          flexShrink: 0,
+          marginLeft: 8,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, valueColor }) {
+  const iconBg = iconTone === 'green' ? COLORS.bgGreenLight : '#fff4ed';
+  const iconFg = iconTone === 'green' ? COLORS.brandGreen : COLORS.brandOrange;
+
+  return (
+    <section style={{ marginBottom: 10, flexShrink: 1, minHeight: 0 }}>
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: iconBg,
+              color: iconFg,
+              flexShrink: 0,
+            }}
+          >
+            {icon}
+          </div>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: COLORS.textMain }}>{title}</h2>
+        </div>
+        <span style={{ fontSize: 9, fontWeight: 500, color: COLORS.textLight }}>{subtitle}</span>
+      </header>
+      <div
+        style={{
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: 12,
+          overflow: 'hidden',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        }}
+      >
+        {rows.map((row, index) => (
+          <div
+            key={row.ticker}
+            style={{
+              borderBottom: index < rows.length - 1 ? `1px solid ${COLORS.rowBorder}` : 'none',
+            }}
+          >
+            <ShareListRow row={row} value={renderValue(row)} valueColor={valueColor} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default function PortfolioShareCard({
+  snapshot,
+  ownerHandle,
+  brandLogoUrl = '/Pocketedge_logo.png',
+}) {
   if (!snapshot) return null;
 
-  const performers = snapshot.topPerformers?.length
+  const performers = (snapshot.topPerformers?.length
     ? snapshot.topPerformers
-    : (snapshot.topHoldings ?? []).slice(0, 5);
-  const allocationRows = snapshot.topByAllocation?.length
+    : snapshot.topHoldings ?? []
+  ).slice(0, 5);
+
+  const allocationRows = (snapshot.topByAllocation?.length
     ? snapshot.topByAllocation
-    : snapshot.topHoldings ?? [];
-  const holdingsCount = snapshot.holdingsCount ?? allocationRows.length;
-  const sectorsCount = snapshot.sectorsCount ?? 1;
+    : snapshot.topHoldings ?? []
+  ).slice(0, 5);
+
   const ownerLine = ownerPossessiveLabel(ownerHandle);
+  const returnPct = Number(snapshot.returnPct) || 0;
   const returnColor =
-    snapshot.returnPct > 0 ? '#10b981' : snapshot.returnPct < 0 ? '#dc2626' : '#6b7280';
-  const showing = Math.min(allocationRows.length, 10);
+    returnPct > 0 ? COLORS.brandGreen : returnPct < 0 ? '#dc2626' : COLORS.textMuted;
 
   return (
     <div
@@ -106,465 +207,165 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
       style={{
         boxSizing: 'border-box',
         width: SHARE_CARD_WIDTH,
-        padding: '28px 32px 24px',
+        height: SHARE_CARD_HEIGHT,
+        padding: '14px 14px 12px',
         backgroundColor: '#ffffff',
-        borderRadius: 24,
-        color: '#111827',
+        color: COLORS.textMain,
         fontFamily:
           'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        WebkitFontSmoothing: 'antialiased',
       }}
     >
-      {/* Header */}
       <header
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img
-            src={brandLogoUrl}
-            alt=""
-            width={32}
-            height={32}
-            style={{ width: 32, height: 32, objectFit: 'contain' }}
-          />
-          <span style={{ fontWeight: 700, fontSize: 20, color: '#111827', letterSpacing: '-0.02em' }}>
-            PocketEdge
-          </span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#6b7280',
-            letterSpacing: '0.08em',
-          }}
-        >
-          PORTFOLIO SNAPSHOT
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"
-              fill="#10b981"
-            />
-          </svg>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: 16,
-          gap: 16,
+          gap: 10,
+          marginBottom: 10,
+          flexShrink: 0,
         }}
       >
-        <div style={{ minWidth: 0 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <img
+              src={brandLogoUrl}
+              alt=""
+              width={18}
+              height={18}
+              style={{ width: 18, height: 18, objectFit: 'contain' }}
+            />
+            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: '-0.025em' }}>
+              PocketEdge
+            </span>
+          </div>
           <h1
             style={{
               margin: 0,
-              fontSize: 42,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              color: '#111827',
+              fontSize: 26,
+              fontWeight: 800,
+              lineHeight: 1.05,
               letterSpacing: '-0.03em',
             }}
           >
             {ownerLine}
-          </h1>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 42,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              color: '#1e4635',
-              letterSpacing: '-0.03em',
-            }}
-          >
-            Portfolio
+            <br />
+            <span style={{ color: COLORS.brandGreen }}>Portfolio</span>
           </h1>
         </div>
-
         <div
           style={{
-            border: '1px solid #f3f4f6',
-            borderRadius: 16,
-            padding: 20,
-            minWidth: 180,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 12,
+            padding: '8px 10px',
+            minWidth: 100,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             flexShrink: 0,
           }}
         >
           <p
             style={{
-              margin: '0 0 4px',
-              fontSize: 12,
+              margin: '0 0 2px',
+              fontSize: 8,
               fontWeight: 600,
-              color: '#9ca3af',
-              letterSpacing: '0.12em',
+              color: COLORS.textMuted,
               textTransform: 'uppercase',
+              letterSpacing: '0.08em',
             }}
           >
             Total Return
           </p>
           <p
             style={{
-              margin: '0 0 4px',
-              fontSize: 30,
+              margin: '0 0 2px',
+              fontSize: 20,
               fontWeight: 700,
               color: returnColor,
+              lineHeight: 1,
+              letterSpacing: '-0.03em',
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {formatPct(snapshot.returnPct)}
+            {formatPct(returnPct)}
           </p>
-          <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>All time</p>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 500, color: COLORS.textMuted }}>
+            All time
+          </p>
         </div>
-      </div>
+      </header>
 
-      {/* Bubble viz — top performers by return */}
-      <div
+      <hr
         style={{
-          position: 'relative',
-          width: '100%',
-          height: 360,
-          marginBottom: 16,
+          border: 0,
+          height: 1,
+          backgroundColor: COLORS.border,
+          margin: '0 0 10px',
           flexShrink: 0,
         }}
-      >
-        {[200, 300, 400].map((size) => (
-          <div
-            key={size}
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              width: size,
-              height: size,
-              marginTop: -size / 2,
-              marginLeft: -size / 2,
-              borderRadius: '50%',
-              border: '1px dashed #e2e8f0',
-              zIndex: 0,
-            }}
-          />
-        ))}
+      />
 
-        <div
-          style={{
-            position: 'absolute',
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#10b981',
-            opacity: 0.3,
-            top: '20%',
-            left: '30%',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: '#d1d5db',
-            top: '45%',
-            left: '10%',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#fca5a5',
-            top: '35%',
-            right: '15%',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: '#d1d5db',
-            bottom: '20%',
-            right: '25%',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#10b981',
-            opacity: 0.3,
-            top: '5%',
-            right: '40%',
-          }}
-        />
+      <ShareListSection
+        title="Top 5 Performing Stocks"
+        subtitle="By returns"
+        iconTone="green"
+        icon={<TrendIcon />}
+        rows={performers}
+        renderValue={(row) => formatPct(row.totalReturnPct)}
+        valueColor={COLORS.brandGreen}
+      />
 
-        {performers.slice(0, 5).map((row, index) => {
-          const size = BUBBLE_SIZES[index] ?? 88;
-          const pos = BUBBLE_POSITIONS[index] ?? BUBBLE_POSITIONS[4];
-          const tone = BUBBLE_COLORS[index] ?? BUBBLE_COLORS[4];
-          const pctSize = size >= 148 ? 20 : size >= 120 ? 17 : 14;
-          const labelMaxWidth = size >= 148 ? 150 : size >= 120 ? 130 : 110;
+      <ShareListSection
+        title="Top 5 Stocks by Weight"
+        subtitle="By allocation"
+        iconTone="orange"
+        icon={<PieIcon />}
+        rows={allocationRows}
+        renderValue={(row) => `${Number(row.weight).toFixed(1)}%`}
+        valueColor={COLORS.brandOrange}
+      />
 
-          return (
-            <div
-              key={row.ticker}
-              style={{
-                position: 'absolute',
-                top: pos.top,
-                left: pos.left,
-                transform: 'translate(-50%, -50%)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                zIndex: 10,
-                maxWidth: labelMaxWidth + 40,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 6,
-                  marginBottom: 8,
-                  maxWidth: labelMaxWidth + 28,
-                }}
-              >
-                <ShareMarkLogo
-                  logoIconUrl={row.logoIconUrl}
-                  assetKey={row.ticker}
-                  name={row.label}
-                  size={24}
-                />
-                <span
-                  style={{
-                    fontWeight: 600,
-                    fontSize: size >= 148 ? 12 : 10,
-                    lineHeight: 1.3,
-                    color: '#374151',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                    textAlign: 'left',
-                    maxWidth: labelMaxWidth,
-                    overflow: 'hidden',
-                    maxHeight: size >= 148 ? 48 : 36,
-                  }}
-                >
-                  {shortShareLabel(
-                    row.label,
-                    size >= 148 ? SHARE_LABEL_BUBBLE_LG : SHARE_LABEL_BUBBLE_SM
-                  )}
-                </span>
-              </div>
-              <div
-                style={{
-                  width: size,
-                  height: size,
-                  borderRadius: '50%',
-                  background: tone.bg,
-                  color: tone.fg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                  flexShrink: 0,
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 700,
-                    fontSize: pctSize,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {formatPct(row.totalReturnPct)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Stats bar */}
-      <div
+      <footer
         style={{
+          backgroundColor: COLORS.bgOrangeLight,
+          borderRadius: 10,
+          padding: '9px 11px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          border: '1px solid #f3f4f6',
-          borderRadius: 16,
-          padding: 12,
-          marginBottom: 16,
-          background: '#ffffff',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+          justifyContent: 'space-between',
+          marginTop: 'auto',
+          flexShrink: 0,
+          gap: 8,
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            width: '50%',
-            justifyContent: 'center',
-            padding: '0 24px',
-          }}
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1f2937" strokeWidth="1.5">
-            <path d="M21 16V8C21 6.89543 20.1046 6 19 6H5C3.89543 6 3 6.89543 3 8V16C3 17.1046 3.89543 18 5 18H19C20.1046 18 21 17.1046 21 16Z" />
-            <path d="M3 10H21" />
-            <path d="M7 6V18" />
-          </svg>
-          <div>
-            <p style={{ margin: 0, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
-              {holdingsCount}
-            </p>
-            <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.2 }}>Holdings</p>
-          </div>
-        </div>
-        <div style={{ width: 1, height: 36, background: '#f1f5f9' }} />
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            width: '50%',
-            justifyContent: 'center',
-            padding: '0 24px',
-          }}
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1f2937" strokeWidth="1.5">
-            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
-            <path d="M12 2V12L18.5 18.5" />
-            <path d="M2.5 10H12" />
-          </svg>
-          <div>
-            <p style={{ margin: 0, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
-              {sectorsCount}
-            </p>
-            <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.2 }}>Sectors</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Top holdings by allocation */}
-      <div style={{ marginBottom: 16 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-        >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#9ca3af',
-              letterSpacing: '0.08em',
-            }}
-          >
-            TOP HOLDINGS (BY ALLOCATION)
-          </h3>
-          <span style={{ fontSize: 12, color: '#9ca3af' }}>
-            Showing {showing} of {holdingsCount}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <img
+            src={brandLogoUrl}
+            alt=""
+            width={16}
+            height={16}
+            style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }}
+          />
+          <span style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.25 }}>
+            Stay Updated with PocketEdge
           </span>
         </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          {allocationRows.slice(0, 10).map((row) => (
-            <div
-              key={`alloc-${row.ticker}`}
-              style={{
-                border: '1px solid #f3f4f6',
-                borderRadius: 12,
-                padding: '10px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              }}
-            >
-              <ShareMarkLogo
-                logoIconUrl={row.logoIconUrl}
-                assetKey={row.ticker}
-                name={row.label}
-                size={28}
-              />
-              <span
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: '#374151',
-                  lineHeight: 1.3,
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                  overflow: 'hidden',
-                  maxHeight: 34,
-                }}
-              >
-                {shortShareLabel(row.label, SHARE_LABEL_TILE)}
-              </span>
-              <span
-                style={{
-                  flexShrink: 0,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: '#111827',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {Number(row.weight).toFixed(1)}%
-              </span>
-            </div>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ width: 1, height: 12, backgroundColor: COLORS.footerDivider }} />
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: COLORS.brandOrange,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            pocketedge.in
+          </span>
         </div>
-      </div>
-
-      {/* Footer — brand only; portfolio URL stays in share caption */}
-      <div
-        style={{
-          background: '#f6f9f7',
-          borderRadius: 16,
-          padding: 16,
-          textAlign: 'center',
-        }}
-      >
-        <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.5 }}>
-          Stay Updated On Your Portfolio with{' '}
-          <span style={{ fontWeight: 700, color: '#1e4635' }}>PocketEdge</span> at{' '}
-          <span style={{ fontWeight: 600, color: '#10b981' }}>www.pocketedge.in</span>
-        </p>
-      </div>
+      </footer>
     </div>
   );
 }

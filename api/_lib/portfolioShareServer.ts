@@ -158,8 +158,8 @@ export function ownerPossessiveLabel(handle) {
   return /s$/i.test(label) ? `${label}'` : `${label}'s`;
 }
 
-export const SHARE_CARD_WIDTH = 800;
-export const SHARE_CARD_HEIGHT = 1100;
+export const SHARE_CARD_WIDTH = 375;
+export const SHARE_CARD_HEIGHT = 667;
 /** 2× OG output for sharper link previews and download fallback. */
 export const SHARE_OG_SCALE = 2;
 
