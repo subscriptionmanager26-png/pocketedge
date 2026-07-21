@@ -187,8 +187,30 @@ export const SHARE_ROW_MIN_HEIGHT = 34;
 export const SHARE_NAME_FONT_SIZE = 10;
 export const SHARE_NAME_LINE_HEIGHT = 1.3;
 export const SHARE_NAME_MAX_LINES = 2;
-/** Approx chars per line for OG/Satori 2-line wrap (tighter name column). */
-export const SHARE_NAME_CHARS_PER_LINE = 32;
+
+/** Share canvas width — keep in sync with PortfolioShareCard. */
+export const SHARE_CARD_WIDTH = 375;
+const SHARE_CARD_H_PAD = 12;
+const SHARE_ROW_H_PAD = 8;
+
+/** Pixel width of the name column at 1× (for OG wrap heuristics). */
+export function shareNameColumnWidthPx(
+  cardWidth = SHARE_CARD_WIDTH,
+  cardHPad = SHARE_CARD_H_PAD,
+  rowHPad = SHARE_ROW_H_PAD
+) {
+  return (
+    cardWidth -
+    cardHPad * 2 -
+    rowHPad * 2 -
+    SHARE_COL_LOGO -
+    SHARE_COL_VALUE -
+    SHARE_COL_GAP * 2
+  );
+}
+
+/** ~5.3px avg glyph at 10px Inter — OG/Satori has no CSS line-clamp. */
+export const SHARE_NAME_CHARS_PER_LINE = Math.floor(shareNameColumnWidthPx() / 5.3);
 
 export const SHARE_COLOR_TEXT = '#111827';
 export const SHARE_COLOR_GREEN = '#16a34a';

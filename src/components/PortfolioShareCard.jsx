@@ -109,13 +109,16 @@ function ShareListRow({ row, value, valueColor, isLast }) {
       <ItemLogo logoIconUrl={row.logoIconUrl} assetKey={row.ticker} name={row.label} />
       <span
         style={{
+          /* Must fill the 1fr grid cell — -webkit-box shrink-wraps without width:100% */
+          width: '100%',
           minWidth: 0,
+          maxWidth: '100%',
           fontWeight: 500,
           fontSize: SHARE_NAME_FONT_SIZE,
           lineHeight: SHARE_NAME_LINE_HEIGHT,
           color: COLORS.text,
           textAlign: 'left',
-          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitLineClamp: 2,
