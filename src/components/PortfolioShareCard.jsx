@@ -5,8 +5,8 @@ import { ownerPossessiveLabel } from '../lib/portfolioShare';
 
 /** Matches Gemini share template width. */
 export const SHARE_CARD_WIDTH = 800;
-/** Fixed capture height for the bubble + holdings layout. */
-export const SHARE_CARD_HEIGHT = 1120;
+/** Natural content height at 800px width (template has no fixed height). Used for OG meta. */
+export const SHARE_CARD_HEIGHT = 920;
 
 const BUBBLE_SIZES = [170, 148, 132, 120, 88];
 const BUBBLE_POSITIONS = [
@@ -145,7 +145,6 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
       style={{
         boxSizing: 'border-box',
         width: SHARE_CARD_WIDTH,
-        height: SHARE_CARD_HEIGHT,
         padding: '28px 32px 24px',
         backgroundColor: '#ffffff',
         borderRadius: 24,
@@ -278,7 +277,7 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
         style={{
           position: 'relative',
           width: '100%',
-          height: 320,
+          height: 360,
           marginBottom: 16,
           flexShrink: 0,
         }}
@@ -490,7 +489,7 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
       </div>
 
       {/* Top holdings by allocation */}
-      <div style={{ marginBottom: 16, flex: 1, minHeight: 0 }}>
+      <div style={{ marginBottom: 16 }}>
         <div
           style={{
             display: 'flex',
@@ -581,7 +580,6 @@ export default function PortfolioShareCard({ snapshot, ownerHandle, brandLogoUrl
           borderRadius: 16,
           padding: 16,
           textAlign: 'center',
-          marginTop: 'auto',
         }}
       >
         <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.5 }}>

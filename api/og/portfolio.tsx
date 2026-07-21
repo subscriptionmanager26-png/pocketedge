@@ -127,8 +127,8 @@ export default async function handler(request) {
             display: 'flex',
             position: 'relative',
             width: '100%',
-            height: 300,
-            marginBottom: 12,
+            height: 360,
+            marginBottom: 16,
           }}
         >
           {performers.map((row, index) => {
@@ -231,7 +231,6 @@ export default async function handler(request) {
         <div
           style={{
             display: 'flex',
-            marginTop: 'auto',
             background: '#f6f9f7',
             borderRadius: 16,
             padding: 14,
@@ -246,7 +245,7 @@ export default async function handler(request) {
     ),
     {
       width: 800,
-      height: 1120,
+      height: 920,
     }
   );
 }

@@ -142,9 +142,10 @@ export async function captureShareCard(element) {
 
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
+  const height = Math.ceil(element.getBoundingClientRect().height);
   const dataUrl = await toPng(element, {
     width: SHARE_CARD_WIDTH,
-    height: SHARE_CARD_HEIGHT,
+    height: height || SHARE_CARD_HEIGHT,
     pixelRatio: 1,
     cacheBust: true,
     skipFonts: true,
