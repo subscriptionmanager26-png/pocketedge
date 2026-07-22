@@ -32,4 +32,4 @@ jobs:
           # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-5-nano
-        run: node scripts/generate-daily-stock-explanations.mjs --provider=openai
+        run: node scripts/generate-daily-stock-explanations.mjs --provider=openai --asset-types=stock

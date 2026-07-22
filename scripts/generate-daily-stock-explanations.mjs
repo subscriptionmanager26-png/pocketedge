@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 /**
- * Produces one evidence-bound market explainer per stock after the NSE close.
+ * Produces evidence-bound market explainers.
+ *
+ * Modes:
+ *   price-move (default) — post-close stock explainers (7-day news, ≤3 bullets)
+ *   macro — morning index / commodity / economics digests (36h news, ≤4 bullets)
+ *
  * News is read from the stock-news Supabase project (`mn_news_items`). Price
- * history lives in the PocketEdge market-data project.
+ * history (price-move mode) lives in the PocketEdge market-data project.
  */
 
-const NEWS_WINDOW_DAYS = 7;
+const NEWS_WINDOW_DAYS_DEFAULT = 7;
 const PRICE_WINDOW_DAYS = 10;
 const MISTRAL_DELAY_MS = Number(process.env.MISTRAL_DELAY_MS || 2_000);
 const UPSERT_BATCH_SIZE = 500;
 const NEWS_PAGE_SIZE = 1000;
 const TICKER_PAGE_SIZE = 1000;
+const VALID_ASSET_TYPES = new Set(['stock', 'index', 'commodity', 'economics']);
+const MAX_BULLETS_DEFAULT = 3;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,7 +51,8 @@ function chunkRoundRobin(items, chunkCount) {
   return chunks;
 }
 
-const ANALYST_INSTRUCTIONS = `# Market Move Explanation Prompt
+function buildPriceMoveInstructions(maxBullets) {
+  return `# Market Move Explanation Prompt
 
 You are a market journalist. Explain today's move using ONLY the news provided — no outside knowledge.
 
@@ -58,13 +66,34 @@ The authoritative move is the net daily figure given under "Price move to explai
 
 ## Output Format
 
-Respond in a maximum of 3 short bullet points:
+Respond in a maximum of ${maxBullets} short bullet points:
 
 - **If news explains it:** strongest reason first, framed as news → investor interpretation → price move. Add a counterpoint bullet only if significant.
 - **If news doesn't explain it:** one bullet stating that no news convincingly explains the move; watch for further announcements.
 - **If news contradicts it:** one bullet noting the news points the opposite way; market may be pricing in non-public information/expectations.
 
 Dont use filler words in bullet point . Come directly to the point.`;
+}
+
+/** Morning digest for indices / commodities / economics — what happened, not price attribution. */
+function buildMacroDigestInstructions(maxBullets) {
+  return `# Macro / Market News Digest Prompt
+
+You are a market journalist. Summarise what happened using ONLY the news provided — no outside knowledge.
+
+## Steps
+
+1. Rank items by market importance (policy, rates, inflation, geopolitics, supply shocks, demand shifts, major data releases, large price-driving events).
+2. Merge overlapping stories into a single bullet; drop routine or duplicate coverage.
+3. Prefer concrete facts (who/what/when and market implication) over vague commentary.
+
+## Output Format
+
+- Respond with bullet points only (use "- " prefix).
+- Maximum ${maxBullets} bullets. Prefer fewer if the news does not support more.
+- Each bullet: one precise development and why it matters. No filler, no preamble, no closing summary.
+- If nothing material happened, output a single bullet stating that.`;
+}
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -73,7 +102,15 @@ function requireEnv(name) {
 }
 
 function parseArgs(argv) {
-  const args = { provider: 'mistral', tickers: [] };
+  const args = {
+    provider: 'mistral',
+    tickers: [],
+    assetTypes: null,
+    newsWindowHours: null,
+    newsWindowDays: NEWS_WINDOW_DAYS_DEFAULT,
+    maxBullets: MAX_BULLETS_DEFAULT,
+    mode: 'price-move',
+  };
   for (const arg of argv) {
     if (arg.startsWith('--provider=')) args.provider = arg.slice('--provider='.length);
     if (arg.startsWith('--tickers=')) {
@@ -83,11 +120,68 @@ function parseArgs(argv) {
         .map((ticker) => ticker.trim().toUpperCase())
         .filter(Boolean);
     }
+    if (arg.startsWith('--asset-types=')) {
+      args.assetTypes = [
+        ...new Set(
+          arg
+            .slice('--asset-types='.length)
+            .split(',')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        ),
+      ];
+    }
+    if (arg.startsWith('--news-window-hours=')) {
+      args.newsWindowHours = Number(arg.slice('--news-window-hours='.length));
+    }
+    if (arg.startsWith('--news-window-days=')) {
+      args.newsWindowDays = Number(arg.slice('--news-window-days='.length));
+    }
+    if (arg.startsWith('--max-bullets=')) {
+      args.maxBullets = Number(arg.slice('--max-bullets='.length));
+    }
+    if (arg.startsWith('--mode=')) {
+      args.mode = arg.slice('--mode='.length).trim().toLowerCase();
+    }
   }
   if (!['mistral', 'openai'].includes(args.provider)) {
     throw new Error('--provider must be mistral or openai.');
   }
+  if (!['price-move', 'macro'].includes(args.mode)) {
+    throw new Error('--mode must be price-move or macro.');
+  }
+  if (args.assetTypes) {
+    for (const type of args.assetTypes) {
+      if (!VALID_ASSET_TYPES.has(type)) {
+        throw new Error(`Invalid asset type "${type}". Use: ${[...VALID_ASSET_TYPES].join(', ')}`);
+      }
+    }
+    if (!args.assetTypes.length) throw new Error('--asset-types cannot be empty.');
+  }
+  if (args.newsWindowHours != null && (!Number.isFinite(args.newsWindowHours) || args.newsWindowHours <= 0)) {
+    throw new Error('--news-window-hours must be a positive number.');
+  }
+  if (!Number.isFinite(args.newsWindowDays) || args.newsWindowDays <= 0) {
+    throw new Error('--news-window-days must be a positive number.');
+  }
+  if (!Number.isFinite(args.maxBullets) || args.maxBullets < 1 || args.maxBullets > 8) {
+    throw new Error('--max-bullets must be an integer from 1 to 8.');
+  }
+  args.maxBullets = Math.floor(args.maxBullets);
   return args;
+}
+
+function buildSystemInstructions(mode, maxBullets) {
+  return mode === 'macro'
+    ? buildMacroDigestInstructions(maxBullets)
+    : buildPriceMoveInstructions(maxBullets);
+}
+
+function newsWindowLabel(args) {
+  if (args.newsWindowHours != null) {
+    return `the past ${args.newsWindowHours} hours`;
+  }
+  return `the past ${args.newsWindowDays} days`;
 }
 
 function istDate(value = new Date()) {
@@ -165,44 +259,53 @@ function seriesToAssetType(series, ticker) {
 
 const EXCLUDED_SUMMARY_TICKERS = new Set(['OTHERS', 'OTHER']);
 
-function isSummarizableTicker(row) {
+function isSummarizableTicker(row, allowedAssetTypes = null) {
   if (!row?.ticker) return false;
   if (EXCLUDED_SUMMARY_TICKERS.has(row.tickerKey)) return false;
-  return row.assetType === 'stock'
+  const ok =
+    row.assetType === 'stock'
     || row.assetType === 'index'
     || row.assetType === 'commodity'
     || row.assetType === 'economics';
+  if (!ok) return false;
+  if (allowedAssetTypes?.length && !allowedAssetTypes.includes(row.assetType)) return false;
+  return true;
 }
 
 /**
  * Tickers that should receive a Mistral/OpenAI call today:
  * stock / index / commodity / economics with ≥1 news item in the lookback window.
- * Country-feed "Others" bucket is excluded.
+ * Country-feed "Others" bucket is excluded. Optional --asset-types narrows the set.
  */
-function buildEligibleTickers(allTickers, newsByTicker, explicitTickers) {
+function buildEligibleTickers(allTickers, newsByTicker, explicitTickers, allowedAssetTypes = null) {
   const byKey = new Map(allTickers.map((row) => [row.tickerKey, row]));
 
   if (explicitTickers.length) {
     return explicitTickers
       .map((ticker) => byKey.get(ticker.toUpperCase()))
-      .filter((row) => row && isSummarizableTicker(row));
+      .filter((row) => row && isSummarizableTicker(row, allowedAssetTypes));
   }
 
   const eligible = [];
   for (const key of newsByTicker.keys()) {
     const row = byKey.get(key);
-    if (row && isSummarizableTicker(row)) eligible.push(row);
+    if (row && isSummarizableTicker(row, allowedAssetTypes)) eligible.push(row);
   }
   return eligible.sort((a, b) => a.ticker.localeCompare(b.ticker));
 }
 
-async function fetchRecentNewsFromSupabase(newsUrl, newsKey, fromDate) {
+/** @param {string} publishedAtGte ISO timestamp or YYYY-MM-DD (date → midnight UTC) */
+async function fetchRecentNewsFromSupabase(newsUrl, newsKey, publishedAtGte) {
+  const gte =
+    publishedAtGte.includes('T')
+      ? publishedAtGte
+      : `${publishedAtGte}T00:00:00Z`;
   const byTicker = new Map();
   let offset = 0;
   while (true) {
     const params = new URLSearchParams({
       select: 'id,ticker,title,summary,published_at,source',
-      published_at: `gte.${fromDate}T00:00:00Z`,
+      published_at: `gte.${gte}`,
       order: 'published_at.desc',
       limit: String(NEWS_PAGE_SIZE),
       offset: String(offset),
@@ -279,14 +382,14 @@ async function fetchPriceHistory(marketUrl, marketKey, tickerRows, fromDate) {
   return prices;
 }
 
-function noRecentNewsRow(ticker, asOfDate, assetType) {
+function noRecentNewsRow(ticker, asOfDate, assetType, windowLabel) {
   return {
     ticker,
     as_of_date: asOfDate,
     asset_type: assetType,
     status: 'no_recent_news',
     explanation:
-      'No material news updates were identified for this instrument in the past seven days, so there is no evidence-based market explanation to provide today.',
+      `No material news updates were identified for this instrument in ${windowLabel}, so there is no evidence-based market explanation to provide today.`,
     confidence: null,
     price_context: [],
     news_context: [],
@@ -299,7 +402,7 @@ function noRecentNewsRow(ticker, asOfDate, assetType) {
   };
 }
 
-function buildUserMessage(ticker, prices, news, assetType = 'stock') {
+function buildUserMessage(ticker, prices, news, assetType = 'stock', { mode = 'price-move', windowLabel = 'the past seven days' } = {}) {
   // Compact markdown: each price block is "change" + "date"; each news block is
   // the full article followed by its date. Keeps the input token-lean.
   const fmtPct = (pct) => (pct == null ? null : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`);
@@ -315,7 +418,7 @@ function buildUserMessage(ticker, prices, news, assetType = 'stock') {
     ? news
         .map((row) => `${[row.title, row.article].filter(Boolean).join('\n')}\n${row.date}`)
         .join('\n\n')
-    : 'No news in the last seven days.';
+    : `No news in ${windowLabel}.`;
   const label =
     assetType === 'index'
       ? 'Index'
@@ -324,6 +427,23 @@ function buildUserMessage(ticker, prices, news, assetType = 'stock') {
         : assetType === 'economics'
           ? 'Topic'
           : 'Stock';
+
+  if (mode === 'macro') {
+    const contextHint =
+      assetType === 'economics'
+        ? 'Summarise the overall economy / macro picture from the news below.'
+        : assetType === 'index'
+          ? 'Summarise what happened for this index from the news below.'
+          : 'Summarise what happened for this commodity from the news below.';
+    return `${label}: ${ticker}
+
+## Task
+${contextHint}
+
+## News (${windowLabel}, most recent first)
+${newsText}`;
+  }
+
   return `${label}: ${ticker}
 
 ## Price move to explain
@@ -336,10 +456,11 @@ ${priceText}
 ${newsText}`;
 }
 
-function buildInputContext(ticker, prices, news, assetType = 'stock') {
+function buildInputContext(ticker, prices, news, assetType = 'stock', options = {}) {
+  const systemPrompt = options.systemPrompt || buildSystemInstructions(options.mode || 'price-move', options.maxBullets || MAX_BULLETS_DEFAULT);
   return {
-    system_prompt: ANALYST_INSTRUCTIONS,
-    user_prompt: buildUserMessage(ticker, prices, news, assetType),
+    system_prompt: systemPrompt,
+    user_prompt: buildUserMessage(ticker, prices, news, assetType, options),
   };
 }
 
@@ -352,7 +473,7 @@ async function explainWithMistral(apiKey, model, input) {
       temperature: 0.2,
       max_tokens: 550,
       messages: [
-        { role: 'system', content: ANALYST_INSTRUCTIONS },
+        { role: 'system', content: input.system_prompt },
         { role: 'user', content: input.user_prompt },
       ],
     }),
@@ -452,6 +573,7 @@ async function processMistralBatch({
   asOfDate,
   newsByTicker,
   priceByTicker,
+  promptOptions,
 }) {
   const rows = [];
   let generated = 0;
@@ -461,7 +583,7 @@ async function processMistralBatch({
     const news = newsByTicker.get(ticker) ?? [];
     const prices = priceByTicker.get(ticker) ?? [];
     const assetType = assetTypeByTicker.get(ticker) || 'stock';
-    const input = buildInputContext(ticker, prices, news, assetType);
+    const input = buildInputContext(ticker, prices, news, assetType, promptOptions);
     try {
       const result = await explainWithMistral(apiKey, model, input);
       rows.push(
@@ -515,8 +637,12 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const newsUrl = requireEnv('STOCK_NEWS_SUPABASE_URL');
   const newsKey = requireEnv('STOCK_NEWS_SUPABASE_SERVICE_ROLE_KEY');
-  const marketUrl = requireEnv('SUPABASE_URL');
-  const marketKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  // Price history is only used for stock price-move explainers.
+  const marketUrl = args.mode === 'macro' ? process.env.SUPABASE_URL : requireEnv('SUPABASE_URL');
+  const marketKey =
+    args.mode === 'macro'
+      ? process.env.SUPABASE_SERVICE_ROLE_KEY
+      : requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const mistralApiKeys = args.provider === 'mistral' ? loadMistralApiKeys() : [];
   const openAiApiKey = args.provider === 'openai' ? requireEnv('OPENAI_API_KEY') : null;
   const model =
@@ -531,15 +657,31 @@ async function main() {
       ? 'mn_daily_stock_explanations_openai'
       : 'mn_daily_stock_explanations');
   const asOfDate = istDate();
-  const newsFrom = shiftDate(asOfDate, NEWS_WINDOW_DAYS);
+  const windowLabel = newsWindowLabel(args);
+  const newsFromIso =
+    args.newsWindowHours != null
+      ? new Date(Date.now() - args.newsWindowHours * 60 * 60 * 1000).toISOString()
+      : shiftDate(asOfDate, args.newsWindowDays);
+  const systemPrompt = buildSystemInstructions(args.mode, args.maxBullets);
+  const promptOptions = {
+    mode: args.mode,
+    maxBullets: args.maxBullets,
+    windowLabel,
+    systemPrompt,
+  };
   const [allTickers, newsByTicker] = await Promise.all([
     fetchAllTickers(newsUrl, newsKey),
-    fetchRecentNewsFromSupabase(newsUrl, newsKey, newsFrom),
+    fetchRecentNewsFromSupabase(newsUrl, newsKey, newsFromIso),
   ]);
   console.log(
     JSON.stringify({
+      mode: args.mode,
+      max_bullets: args.maxBullets,
+      asset_types: args.assetTypes,
+      news_window: windowLabel,
+      news_from: newsFromIso,
       mn_tickers_loaded: allTickers.length,
-      summarizable_tickers: allTickers.filter(isSummarizableTicker).length,
+      summarizable_tickers: allTickers.filter((row) => isSummarizableTicker(row, args.assetTypes)).length,
       by_asset_type: {
         stock: allTickers.filter((r) => r.assetType === 'stock').length,
         index: allTickers.filter((r) => r.assetType === 'index').length,
@@ -547,11 +689,10 @@ async function main() {
         economics: allTickers.filter((r) => r.assetType === 'economics').length,
       },
       tickers_with_recent_news: newsByTicker.size,
-      news_window_from: newsFrom,
     })
   );
 
-  const selectedRows = buildEligibleTickers(allTickers, newsByTicker, args.tickers);
+  const selectedRows = buildEligibleTickers(allTickers, newsByTicker, args.tickers, args.assetTypes);
   if (args.tickers.length && selectedRows.length !== args.tickers.length) {
     const found = new Set(selectedRows.map((row) => row.tickerKey));
     console.warn(
@@ -562,21 +703,24 @@ async function main() {
     selectedRows.map((row) => [row.tickerKey, row.assetType])
   );
   console.log(
-    `Processing ${selectedRows.length} eligible tickers (stock/index/commodity/economics + recent news)`
+    `Processing ${selectedRows.length} eligible tickers (${(args.assetTypes || [...VALID_ASSET_TYPES]).join('/')})`
   );
-  const priceByTicker = await fetchPriceHistory(
-    marketUrl,
-    marketKey,
-    selectedRows,
-    shiftDate(asOfDate, PRICE_WINDOW_DAYS)
-  );
+  const priceByTicker =
+    args.mode === 'macro'
+      ? new Map()
+      : await fetchPriceHistory(
+          marketUrl,
+          marketKey,
+          selectedRows,
+          shiftDate(asOfDate, PRICE_WINDOW_DAYS)
+        );
 
   const tickersWithNews = [];
   const rows = [];
   for (const row of selectedRows) {
     const news = newsByTicker.get(row.tickerKey) ?? [];
     if (!news.length) {
-      rows.push(noRecentNewsRow(row.ticker, asOfDate, row.assetType));
+      rows.push(noRecentNewsRow(row.ticker, asOfDate, row.assetType, windowLabel));
       continue;
     }
     tickersWithNews.push(row.tickerKey);
@@ -602,6 +746,7 @@ async function main() {
           asOfDate,
           newsByTicker,
           priceByTicker,
+          promptOptions,
         })
       )
     );
@@ -615,7 +760,7 @@ async function main() {
       const news = newsByTicker.get(ticker) ?? [];
       const prices = priceByTicker.get(ticker) ?? [];
       const assetType = assetTypeByTicker.get(ticker) || 'stock';
-      const input = buildInputContext(ticker, prices, news, assetType);
+      const input = buildInputContext(ticker, prices, news, assetType, promptOptions);
       try {
         const result = await explainWithOpenAi(openAiApiKey, model, input);
         rows.push(
@@ -661,6 +806,7 @@ async function main() {
       {
         as_of_date: asOfDate,
         provider: args.provider,
+        mode: args.mode,
         model,
         table,
         tracked: selectedRows.length,

@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/dispatch-github/stock-explanations-openai",
       "schedule": "30 10 * * 1-5"
+    },
+    {
+      "path": "/api/cron/dispatch-github/macro-explanations",
+      "schedule": "30 2 * * *"
     }
   ],
   "headers": [
