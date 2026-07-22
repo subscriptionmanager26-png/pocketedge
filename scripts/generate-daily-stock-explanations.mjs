@@ -44,15 +44,15 @@ function chunkRoundRobin(items, chunkCount) {
   return chunks;
 }
 
-const ANALYST_INSTRUCTIONS = `# Stock Price Move Explanation Prompt
+const ANALYST_INSTRUCTIONS = `# Market Move Explanation Prompt
 
-You are an equity market journalist. Explain today's stock move using ONLY the news provided — no outside knowledge.
+You are a market journalist. Explain today's move using ONLY the news provided — no outside knowledge.
 
 The authoritative move is the net daily figure given under "Price move to explain." Use this figure alone for direction and size. Ignore all price levels/percentages/directional language inside the news itself (e.g. "fell in early trade," "hit a 52-week high") — these may reflect intraday swings or unrelated context and must never override the authoritative figure.
 
 ## Steps
 
-1. Rank news by relevance — prioritize recent, market-moving items (earnings, guidance, large investor activity, regulatory action, major contracts, management changes) over routine updates.
+1. Rank news by relevance — prioritize recent, market-moving items (earnings, guidance, large investor activity, regulatory action, major contracts, management changes, macro releases) over routine updates.
 2. Pick ONE primary explanation. Mention a second item only if it materially changes the interpretation.
 3. Judge whether the news explains, doesn't explain, or contradicts the move.
 
@@ -136,34 +136,64 @@ async function fetchAllTickers(newsUrl, newsKey) {
     offset += TICKER_PAGE_SIZE;
   }
   return rows
-    .map((row) => ({
-      ticker: String(row.nse_symbol || row.symbol || '').trim().toUpperCase(),
-      series: String(row.series ?? '').trim().toUpperCase(),
-    }))
+    .map((row) => {
+      // Prefer `symbol` — news ingest keys rows by mn_tickers.symbol
+      // (indices/commodities diverge from nse_symbol).
+      const ticker = String(row.symbol || row.nse_symbol || '').trim();
+      const series = String(row.series ?? '').trim().toUpperCase();
+      return {
+        ticker,
+        tickerKey: ticker.toUpperCase(),
+        series,
+        assetType: seriesToAssetType(series, ticker),
+      };
+    })
     .filter((row) => row.ticker);
 }
 
-/** EQ stocks from mn_tickers — explanations target individual stocks, not indices/ETFs. */
-function isEquityTicker(row) {
-  return !row.series || row.series === 'EQ';
+/** Map mn_tickers.series → explanation asset_type. */
+function seriesToAssetType(series, ticker) {
+  const s = String(series || '').toUpperCase();
+  const t = String(ticker || '').toUpperCase();
+  if (t === 'ECONOMICS' || (s === 'TOPIC' && t === 'ECONOMICS')) return 'economics';
+  if (s === 'INDEX') return 'index';
+  if (s === 'COMMODITY') return 'commodity';
+  if (s === 'TOPIC') return null; // Others / unknown topics — not summarized
+  if (!s || s === 'EQ') return 'stock';
+  return null;
+}
+
+const EXCLUDED_SUMMARY_TICKERS = new Set(['OTHERS', 'OTHER']);
+
+function isSummarizableTicker(row) {
+  if (!row?.ticker) return false;
+  if (EXCLUDED_SUMMARY_TICKERS.has(row.tickerKey)) return false;
+  return row.assetType === 'stock'
+    || row.assetType === 'index'
+    || row.assetType === 'commodity'
+    || row.assetType === 'economics';
 }
 
 /**
  * Tickers that should receive a Mistral/OpenAI call today:
- * EQ symbols with at least one news item in the lookback window.
+ * stock / index / commodity / economics with ≥1 news item in the lookback window.
+ * Country-feed "Others" bucket is excluded.
  */
 function buildEligibleTickers(allTickers, newsByTicker, explicitTickers) {
+  const byKey = new Map(allTickers.map((row) => [row.tickerKey, row]));
+
   if (explicitTickers.length) {
-    const known = new Set(allTickers.map((row) => row.ticker));
-    return explicitTickers.map((ticker) => ticker.toUpperCase()).filter((ticker) => known.has(ticker));
+    return explicitTickers
+      .map((ticker) => byKey.get(ticker.toUpperCase()))
+      .filter((row) => row && isSummarizableTicker(row));
   }
 
-  const eqTickers = new Set(
-    allTickers.filter(isEquityTicker).map((row) => row.ticker)
-  );
-  return [...newsByTicker.keys()]
-    .filter((ticker) => eqTickers.has(ticker))
-    .sort();
+  const eligible = [];
+  for (const key of newsByTicker.keys()) {
+    const row = byKey.get(key);
+    if (row && isSummarizableTicker(row)) eligible.push(row);
+  }
+  return eligible.sort((a, b) => a.ticker.localeCompare(b.ticker));
 }
 
 async function fetchRecentNewsFromSupabase(newsUrl, newsKey, fromDate) {
@@ -206,44 +236,57 @@ async function fetchRecentNewsFromSupabase(newsUrl, newsKey, fromDate) {
   return byTicker;
 }
 
-async function fetchPriceHistory(marketUrl, marketKey, tickers, fromDate) {
+async function fetchPriceHistory(marketUrl, marketKey, tickerRows, fromDate) {
   const prices = new Map();
-  const unique = [...new Set(tickers.map(({ ticker }) => ticker))];
-  for (let offset = 0; offset < unique.length; offset += 100) {
-    const batch = unique.slice(offset, offset + 100);
-    const encoded = batch.map((ticker) => `"${ticker.replaceAll('"', '')}"`).join(',');
-    const params = new URLSearchParams({
-      select: 'asset_key,as_of_date,close_price,previous_close,change_pct',
-      asset_type: 'eq.stock',
-      asset_key: `in.(${encoded})`,
-      as_of_date: `gte.${fromDate}`,
-      order: 'as_of_date.desc',
-    });
-    const rows = await restJson(marketUrl, marketKey, `social_market_price_history?${params}`);
-    for (const row of rows ?? []) {
-      const key = String(row.asset_key ?? '').trim().toUpperCase();
-      const history = prices.get(key) ?? [];
-      if (history.length < 3) {
-        history.push({
-          date: row.as_of_date,
-          close: Number(row.close_price),
-          previousClose: row.previous_close == null ? null : Number(row.previous_close),
-          changePct: row.change_pct == null ? null : Number(row.change_pct),
-        });
+  const byType = new Map();
+  for (const row of tickerRows) {
+    const assetType = row.assetType === 'economics' ? null : row.assetType;
+    if (!assetType) continue; // economics has no price series
+    const marketType = assetType === 'stock' ? 'stock' : assetType;
+    const list = byType.get(marketType) ?? [];
+    list.push(row.ticker);
+    byType.set(marketType, list);
+  }
+
+  for (const [assetType, tickers] of byType) {
+    const unique = [...new Set(tickers)];
+    for (let offset = 0; offset < unique.length; offset += 100) {
+      const batch = unique.slice(offset, offset + 100);
+      const encoded = batch.map((ticker) => `"${ticker.replaceAll('"', '')}"`).join(',');
+      const params = new URLSearchParams({
+        select: 'asset_key,as_of_date,close_price,previous_close,change_pct',
+        asset_type: `eq.${assetType}`,
+        asset_key: `in.(${encoded})`,
+        as_of_date: `gte.${fromDate}`,
+        order: 'as_of_date.desc',
+      });
+      const rows = await restJson(marketUrl, marketKey, `social_market_price_history?${params}`);
+      for (const row of rows ?? []) {
+        const key = String(row.asset_key ?? '').trim().toUpperCase();
+        const history = prices.get(key) ?? [];
+        if (history.length < 3) {
+          history.push({
+            date: row.as_of_date,
+            close: Number(row.close_price),
+            previousClose: row.previous_close == null ? null : Number(row.previous_close),
+            changePct: row.change_pct == null ? null : Number(row.change_pct),
+          });
+        }
+        prices.set(key, history);
       }
-      prices.set(key, history);
     }
   }
   return prices;
 }
 
-function noRecentNewsRow(ticker, asOfDate) {
+function noRecentNewsRow(ticker, asOfDate, assetType) {
   return {
     ticker,
     as_of_date: asOfDate,
+    asset_type: assetType,
     status: 'no_recent_news',
     explanation:
-      'No material news updates were identified for this stock in the past seven days, so there is no evidence-based market explanation to provide today.',
+      'No material news updates were identified for this instrument in the past seven days, so there is no evidence-based market explanation to provide today.',
     confidence: null,
     price_context: [],
     news_context: [],
@@ -256,7 +299,7 @@ function noRecentNewsRow(ticker, asOfDate) {
   };
 }
 
-function buildUserMessage(ticker, prices, news) {
+function buildUserMessage(ticker, prices, news, assetType = 'stock') {
   // Compact markdown: each price block is "change" + "date"; each news block is
   // the full article followed by its date. Keeps the input token-lean.
   const fmtPct = (pct) => (pct == null ? null : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`);
@@ -273,7 +316,15 @@ function buildUserMessage(ticker, prices, news) {
         .map((row) => `${[row.title, row.article].filter(Boolean).join('\n')}\n${row.date}`)
         .join('\n\n')
     : 'No news in the last seven days.';
-  return `Stock: ${ticker}
+  const label =
+    assetType === 'index'
+      ? 'Index'
+      : assetType === 'commodity'
+        ? 'Commodity'
+        : assetType === 'economics'
+          ? 'Topic'
+          : 'Stock';
+  return `${label}: ${ticker}
 
 ## Price move to explain
 ${moveLine}
@@ -285,10 +336,10 @@ ${priceText}
 ${newsText}`;
 }
 
-function buildInputContext(ticker, prices, news) {
+function buildInputContext(ticker, prices, news, assetType = 'stock') {
   return {
     system_prompt: ANALYST_INSTRUCTIONS,
-    user_prompt: buildUserMessage(ticker, prices, news),
+    user_prompt: buildUserMessage(ticker, prices, news, assetType),
   };
 }
 
@@ -367,6 +418,7 @@ async function upsertRows(newsUrl, newsKey, table, rows) {
 function buildExplanationRow({
   ticker,
   asOfDate,
+  assetType,
   status,
   explanation,
   confidence,
@@ -378,6 +430,7 @@ function buildExplanationRow({
   return {
     ticker,
     as_of_date: asOfDate,
+    asset_type: assetType,
     status,
     explanation,
     confidence,
@@ -395,6 +448,7 @@ async function processMistralBatch({
   apiKey,
   model,
   tickers,
+  assetTypeByTicker,
   asOfDate,
   newsByTicker,
   priceByTicker,
@@ -406,13 +460,15 @@ async function processMistralBatch({
   for (const ticker of tickers) {
     const news = newsByTicker.get(ticker) ?? [];
     const prices = priceByTicker.get(ticker) ?? [];
-    const input = buildInputContext(ticker, prices, news);
+    const assetType = assetTypeByTicker.get(ticker) || 'stock';
+    const input = buildInputContext(ticker, prices, news, assetType);
     try {
       const result = await explainWithMistral(apiKey, model, input);
       rows.push(
         buildExplanationRow({
           ticker,
           asOfDate,
+          assetType,
           status: 'generated',
           explanation: result.explanation,
           confidence: result.confidence,
@@ -428,6 +484,7 @@ async function processMistralBatch({
         buildExplanationRow({
           ticker,
           asOfDate,
+          assetType,
           status: 'failed',
           explanation: 'The daily market explanation could not be generated. Please check back later.',
           confidence: null,
@@ -482,36 +539,47 @@ async function main() {
   console.log(
     JSON.stringify({
       mn_tickers_loaded: allTickers.length,
-      eq_tickers: allTickers.filter(isEquityTicker).length,
+      summarizable_tickers: allTickers.filter(isSummarizableTicker).length,
+      by_asset_type: {
+        stock: allTickers.filter((r) => r.assetType === 'stock').length,
+        index: allTickers.filter((r) => r.assetType === 'index').length,
+        commodity: allTickers.filter((r) => r.assetType === 'commodity').length,
+        economics: allTickers.filter((r) => r.assetType === 'economics').length,
+      },
       tickers_with_recent_news: newsByTicker.size,
       news_window_from: newsFrom,
     })
   );
 
-  const selectedTickers = buildEligibleTickers(allTickers, newsByTicker, args.tickers).map(
-    (ticker) => ({ ticker })
-  );
-  if (args.tickers.length && selectedTickers.length !== args.tickers.length) {
-    const found = new Set(selectedTickers.map(({ ticker }) => ticker));
-    console.warn(`Unknown test tickers: ${args.tickers.filter((ticker) => !found.has(ticker)).join(', ')}`);
+  const selectedRows = buildEligibleTickers(allTickers, newsByTicker, args.tickers);
+  if (args.tickers.length && selectedRows.length !== args.tickers.length) {
+    const found = new Set(selectedRows.map((row) => row.tickerKey));
+    console.warn(
+      `Unknown/excluded test tickers: ${args.tickers.filter((ticker) => !found.has(ticker.toUpperCase())).join(', ')}`
+    );
   }
-  console.log(`Processing ${selectedTickers.length} eligible tickers (EQ + recent news)`);
+  const assetTypeByTicker = new Map(
+    selectedRows.map((row) => [row.tickerKey, row.assetType])
+  );
+  console.log(
+    `Processing ${selectedRows.length} eligible tickers (stock/index/commodity/economics + recent news)`
+  );
   const priceByTicker = await fetchPriceHistory(
     marketUrl,
     marketKey,
-    selectedTickers,
+    selectedRows,
     shiftDate(asOfDate, PRICE_WINDOW_DAYS)
   );
 
   const tickersWithNews = [];
   const rows = [];
-  for (const { ticker } of selectedTickers) {
-    const news = newsByTicker.get(ticker) ?? [];
+  for (const row of selectedRows) {
+    const news = newsByTicker.get(row.tickerKey) ?? [];
     if (!news.length) {
-      rows.push(noRecentNewsRow(ticker, asOfDate));
+      rows.push(noRecentNewsRow(row.ticker, asOfDate, row.assetType));
       continue;
     }
-    tickersWithNews.push(ticker);
+    tickersWithNews.push(row.tickerKey);
   }
 
   let generated = 0;
@@ -530,6 +598,7 @@ async function main() {
           apiKey: mistralApiKeys[index],
           model,
           tickers: chunk,
+          assetTypeByTicker,
           asOfDate,
           newsByTicker,
           priceByTicker,
@@ -545,13 +614,15 @@ async function main() {
     for (const ticker of tickersWithNews) {
       const news = newsByTicker.get(ticker) ?? [];
       const prices = priceByTicker.get(ticker) ?? [];
-      const input = buildInputContext(ticker, prices, news);
+      const assetType = assetTypeByTicker.get(ticker) || 'stock';
+      const input = buildInputContext(ticker, prices, news, assetType);
       try {
         const result = await explainWithOpenAi(openAiApiKey, model, input);
         rows.push(
           buildExplanationRow({
             ticker,
             asOfDate,
+            assetType,
             status: 'generated',
             explanation: result.explanation,
             confidence: result.confidence,
@@ -567,6 +638,7 @@ async function main() {
           buildExplanationRow({
             ticker,
             asOfDate,
+            assetType,
             status: 'failed',
             explanation: 'The daily market explanation could not be generated. Please check back later.',
             confidence: null,
@@ -591,7 +663,7 @@ async function main() {
         provider: args.provider,
         model,
         table,
-        tracked_stocks: selectedTickers.length,
+        tracked: selectedRows.length,
         eligible_with_news: tickersWithNews.length,
         mistral_workers: args.provider === 'mistral' ? mistralApiKeys.length : 1,
         generated,
