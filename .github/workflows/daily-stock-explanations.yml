@@ -4,6 +4,11 @@ on:
   # Scheduled via Vercel Cron → /api/cron/dispatch-github/stock-explanations
   # (GHA native schedule is unreliable; do not re-add schedule: here)
   workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Optional comma-separated tickers for a test run (empty = all eligible)"
+        required: false
+        default: ""
 
 concurrency:
   group: daily-stock-explanations
@@ -36,4 +41,10 @@ jobs:
           MISTRAL_API_KEY_3: ${{ secrets.MISTRAL_API_KEY_3 }}
           MISTRAL_API_KEY_4: ${{ secrets.MISTRAL_API_KEY_4 }}
           MISTRAL_MODEL: mistral-small-latest
-        run: node scripts/generate-daily-stock-explanations.mjs
+          TICKERS: ${{ github.event.inputs.tickers }}
+        run: |
+          ARGS=()
+          if [ -n "$TICKERS" ]; then
+            ARGS+=(--tickers="$TICKERS")
+          fi
+          node scripts/generate-daily-stock-explanations.mjs "${ARGS[@]}"
