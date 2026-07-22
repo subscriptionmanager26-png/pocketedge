@@ -44,59 +44,27 @@ function chunkRoundRobin(items, chunkCount) {
   return chunks;
 }
 
-const ANALYST_INSTRUCTIONS = `You are an experienced equity market journalist.
+const ANALYST_INSTRUCTIONS = `# Stock Price Move Explanation Prompt
 
-Explain today's stock price movement using ONLY the news provided.
-Do not use outside knowledge or invent explanations.
+You are an equity market journalist. Explain today's stock move using ONLY the news provided — no outside knowledge.
 
-The move you must explain is the net daily figure given under "Price move to explain (authoritative)". This is the single source of truth for both the size and the direction of the move.
+The authoritative move is the net daily figure given under "Price move to explain." Use this figure alone for direction and size. Ignore all price levels/percentages/directional language inside the news itself (e.g. "fell in early trade," "hit a 52-week high") — these may reflect intraday swings or unrelated context and must never override the authoritative figure.
 
-Ignore ALL price levels, percentages, and directional language written inside the news itself (e.g. "fell in early trade", "down 2% intraday", "opened lower", "hit a 52-week high"). Those may describe intraday swings, a different session, or unrelated context — they are NOT the move you are explaining, and must never override or contradict the authoritative figure.
+## Steps
 
-Do not explain intraday volatility. Explain only the net daily move, and make sure the direction of your explanation (up vs down) matches the sign of the authoritative figure.
+1. Rank news by relevance — prioritize recent, market-moving items (earnings, guidance, large investor activity, regulatory action, major contracts, management changes) over routine updates.
+2. Pick ONE primary explanation. Mention a second item only if it materially changes the interpretation.
+3. Judge whether the news explains, doesn't explain, or contradicts the move.
 
-Before writing:
+## Output Format
 
-1. Rank the news by relevance.
-   - Prefer the most recent, market-moving news.
-   - Give higher weight to earnings, guidance, large investor buying/selling, regulatory actions, major contracts, or management changes.
-   - Ignore routine or stale updates unless they are the best explanation.
+Respond in a maximum of 3 short bullet points:
 
-2. Select ONE primary explanation.
-   Do not summarize every news item. Mention another news item only if it materially changes the interpretation.
+- **If news explains it:** strongest reason first, framed as news → investor interpretation → price move. Add a counterpoint bullet only if significant.
+- **If news doesn't explain it:** one bullet stating that no news convincingly explains the move; watch for further announcements.
+- **If news contradicts it:** one bullet noting the news points the opposite way; market may be pricing in non-public information/expectations.
 
-3. Decide whether the news:
-   - reasonably explains the move,
-   - does not explain the move, or
-   - contradicts the move.
-
-Respond in exactly this format:
-
-## What happened?
-
-State only today's net price movement, using the authoritative figure — never a number quoted in the news.
-
----
-
-## Why did it happen?
-
-If the news explains the move:
-- Lead with the strongest explanation.
-- Explain why investors would react (news → investor interpretation → price move).
-- End with "**However, ...**" only if there is an important counterpoint.
-
-If the news does not explain the move:
-- Say that none of the available news convincingly explains today's move and that investors should watch for further announcements.
-
-If the news contradicts the move:
-- Explain that the available news points in the opposite direction and that the market may be reacting to information or expectations not yet public.
-
-Style:
-- Write like Reuters or Bloomberg.
-- Be concise (under 120 words).
-- Avoid vague phrases like "could be seen as" or "likely contributed."
-- Prefer phrases like "The strongest explanation appears to be..." or "Investors seem to be reacting to..."
-- Never provide investment advice.`;
+Dont use filler words in bullet point . Come directly to the point.`;
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -307,7 +275,7 @@ function buildUserMessage(ticker, prices, news) {
     : 'No news in the last seven days.';
   return `Stock: ${ticker}
 
-## Price move to explain (authoritative)
+## Price move to explain
 ${moveLine}
 
 ## Recent daily price changes (most recent first)

@@ -53,9 +53,8 @@ export async function fetchStockNews(ticker, { limit = 20 } = {}) {
 }
 
 /**
- * Explanations are markdown with "## What happened?" and "## Why did it happen?"
- * sections. Pull the body text under a given heading (until the next heading,
- * a horizontal rule, or the end).
+ * Legacy explanations used "## What happened?" / "## Why did it happen?".
+ * New prompt outputs short bullet points only — use the full body as summary.
  */
 function sectionBody(text, label) {
   const re = new RegExp(
@@ -67,21 +66,25 @@ function sectionBody(text, label) {
 }
 
 /**
- * Map a daily explanation row into an accordion item:
- * title = "What happened?" text, body = "Why did it happen?" text, plus the date.
+ * Map a daily explanation row into an accordion item.
+ * Legacy: title = "What happened?", summary = "Why did it happen?".
+ * New bullet format: title = date, summary = full explanation.
  */
 function mapExplanationRow(row) {
   const asOfDate = row.as_of_date;
   const raw = String(row.explanation ?? '').replace(/\r\n/g, '\n').trim();
   const what = sectionBody(raw, 'What happened');
   const why = sectionBody(raw, 'Why did it happen');
+  const isLegacy = Boolean(what || why);
 
   return {
     id: asOfDate,
     asOfDate,
     publishedAt: asOfDate,
-    title: what || formatNewsDate(asOfDate) || asOfDate,
-    summary: why || raw,
+    title: isLegacy
+      ? what || formatNewsDate(asOfDate) || asOfDate
+      : formatNewsDate(asOfDate) || asOfDate,
+    summary: isLegacy ? why || raw : raw,
     confidence: row.confidence ?? null,
     status: row.status,
   };
