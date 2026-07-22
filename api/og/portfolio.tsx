@@ -243,8 +243,6 @@ export default async function handler(request) {
   }
 
   const snapshot = buildSnapshotFromPortfolio(payload.portfolio, { sort });
-  const returnPct = Number(snapshot.returnPct) || 0;
-  const returnColor = shareReturnColor(returnPct);
   const performers = (snapshot.topPerformers ?? snapshot.topHoldings ?? []).slice(0, 5);
   const allocation = (snapshot.topByAllocation ?? snapshot.topHoldings ?? []).slice(0, 5);
   const brandLogoUrl = absoluteLogoUrl('/Pocketedge_logo.png', origin);
@@ -267,71 +265,35 @@ export default async function handler(request) {
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              flexDirection: 'column',
               marginBottom: px(8),
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: px(6), marginBottom: px(4) }}>
-                {brandLogoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={brandLogoUrl}
-                    width={px(18)}
-                    height={px(18)}
-                    style={{ width: px(18), height: px(18) }}
-                  />
-                ) : null}
-                <div style={{ display: 'flex', fontSize: px(13), fontWeight: 700 }}>PocketEdge</div>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'baseline',
-                  fontSize: px(24),
-                  fontWeight: 800,
-                  lineHeight: 1.1,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <div style={{ display: 'flex' }}>My&nbsp;</div>
-                <div style={{ display: 'flex', color: COLORS.brandGreen }}>Portfolio</div>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: px(6), marginBottom: px(4) }}>
+              {brandLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={brandLogoUrl}
+                  width={px(18)}
+                  height={px(18)}
+                  style={{ width: px(18), height: px(18) }}
+                />
+              ) : null}
+              <div style={{ display: 'flex', fontSize: px(13), fontWeight: 700 }}>PocketEdge</div>
             </div>
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: px(12),
-                padding: `${px(8)}px ${px(10)}px`,
-                minWidth: px(96),
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                fontSize: px(24),
+                fontWeight: 800,
+                lineHeight: 1.1,
+                whiteSpace: 'nowrap',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: px(8),
-                  fontWeight: 600,
-                  color: COLORS.text,
-                  letterSpacing: 1,
-                }}
-              >
-                TOTAL RETURN
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: px(20),
-                  fontWeight: 700,
-                  color: returnColor,
-                  marginTop: px(2),
-                }}
-              >
-                {formatPct(returnPct)}
-              </div>
+              <div style={{ display: 'flex' }}>My&nbsp;</div>
+              <div style={{ display: 'flex', color: COLORS.brandGreen }}>Portfolio</div>
             </div>
           </div>
 

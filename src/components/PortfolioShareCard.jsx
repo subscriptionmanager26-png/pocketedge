@@ -231,9 +231,6 @@ export default function PortfolioShareCard({
     : snapshot.topHoldings ?? []
   ).slice(0, 5);
 
-  const returnPct = Number(snapshot.returnPct) || 0;
-  const returnColor = shareReturnColor(returnPct);
-
   return (
     <div
       data-share-card
@@ -253,76 +250,34 @@ export default function PortfolioShareCard({
     >
       <header
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 10,
           marginBottom: 8,
           flexShrink: 0,
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <img
-              src={brandLogoUrl}
-              alt=""
-              width={18}
-              height={18}
-              style={{ width: 18, height: 18, objectFit: 'contain' }}
-            />
-            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: '-0.025em' }}>
-              PocketEdge
-            </span>
-          </div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 24,
-              fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: '-0.03em',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            My <span style={{ color: COLORS.brandGreen }}>Portfolio</span>
-          </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <img
+            src={brandLogoUrl}
+            alt=""
+            width={18}
+            height={18}
+            style={{ width: 18, height: 18, objectFit: 'contain' }}
+          />
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: '-0.025em' }}>
+            PocketEdge
+          </span>
         </div>
-        <div
+        <h1
           style={{
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 12,
-            padding: '8px 10px',
-            minWidth: 96,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-            flexShrink: 0,
+            margin: 0,
+            fontSize: 24,
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: '-0.03em',
+            whiteSpace: 'nowrap',
           }}
         >
-          <p
-            style={{
-              margin: '0 0 2px',
-              fontSize: 8,
-              fontWeight: 600,
-              color: COLORS.text,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-            }}
-          >
-            Total Return
-          </p>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              color: returnColor,
-              lineHeight: 1,
-              letterSpacing: '-0.03em',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {formatPct(returnPct)}
-          </p>
-        </div>
+          My <span style={{ color: COLORS.brandGreen }}>Portfolio</span>
+        </h1>
       </header>
 
       <hr
