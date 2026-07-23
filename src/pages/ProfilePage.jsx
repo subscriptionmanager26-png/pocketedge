@@ -1204,7 +1204,7 @@ function PortfolioDetailView({
             </div>
             <div className="shrink-0 text-right">
               <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Total return
+                Unrealised gains
               </p>
               <p
                 className={`mt-0.5 text-lg font-bold tabular-nums ${pnlClass(portfolioTotalReturn)}`}
