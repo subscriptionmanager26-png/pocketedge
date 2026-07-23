@@ -13,11 +13,13 @@ import { normalizeNewsSummaryMarkdown } from '../../lib/normalizeNewsSummaryMark
 import { stockPath } from '../../lib/routes';
 import {
   fetchExplanationFeed,
+  fetchIndustryExplanationFeed,
   isStockNewsConfigured,
 } from '../../lib/stockNewsApi';
 
 const SCOPE_TABS = [
   { id: 'stock', label: 'Stocks' },
+  { id: 'industry', label: 'Industry' },
   { id: 'index', label: 'Indices' },
   { id: 'commodity', label: 'Commodities' },
   { id: 'economics', label: 'Country' },
@@ -46,6 +48,10 @@ const SCOPE_COPY = {
   stock: {
     title: 'Stock-wise insights',
     body: 'Daily explanation summaries for equities — search a ticker or browse by move, industry, and date.',
+  },
+  industry: {
+    title: 'Industry-wise insights',
+    body: 'Daily digests across industries — what moved the sector and why.',
   },
   index: {
     title: 'Index-wise insights',
@@ -447,6 +453,11 @@ function InsightCard({ row, scope }) {
   const bullets = extractInsightBullets(row.summary, 3);
   if (!bullets.length) return null;
 
+  const subtitle =
+    scope === 'industry'
+      ? ''
+      : [row.name, row.industry].filter(Boolean).join(' · ');
+
   return (
     <article className="border-b border-pe-border px-4 py-4 last:border-b-0">
       <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2">
@@ -461,10 +472,7 @@ function InsightCard({ row, scope }) {
           ) : (
             <p className="text-[15px] font-bold text-pe-text">{row.ticker}</p>
           )}
-          <p className="truncate text-xs text-pe-text-muted">
-            {row.name}
-            {row.industry ? ` · ${row.industry}` : ''}
-          </p>
+          {subtitle ? <p className="truncate text-xs text-pe-text-muted">{subtitle}</p> : null}
         </div>
         {scope === 'stock' && Number.isFinite(row.changePct) ? (
           <span className={`shrink-0 text-sm font-semibold tabular-nums ${pnlClass(row.changePct)}`}>
@@ -561,11 +569,14 @@ export default function InsightsPage() {
 
     (async () => {
       try {
-        const rows = await fetchExplanationFeed({
-          assetType: scope,
-          asOfDate,
-          limit: 300,
-        });
+        const rows =
+          scope === 'industry'
+            ? await fetchIndustryExplanationFeed({ asOfDate, limit: 300 })
+            : await fetchExplanationFeed({
+                assetType: scope,
+                asOfDate,
+                limit: 300,
+              });
         if (cancelled) return;
 
         const withText = rows.filter((row) => extractInsightBullets(row.summary, 1).length > 0);
@@ -595,6 +606,14 @@ export default function InsightsPage() {
   const enrichedFeed = useMemo(() => {
     return feed
       .map((row) => {
+        if (scope === 'industry') {
+          return {
+            ...row,
+            name: '',
+            changePct: null,
+            industry: '',
+          };
+        }
         const name =
           nameBySymbol.get(row.ticker) ||
           nameBySymbol.get(String(row.ticker).toUpperCase()) ||
@@ -602,7 +621,7 @@ export default function InsightsPage() {
         return {
           ...row,
           name,
-          // Move % only applies to equities; indices/commodities/economy never show it.
+          // Move % only applies to equities; indices/commodities/economy/industry never show it.
           changePct: scope === 'stock' ? parseFiniteNumber(row.changePct) : null,
           industry: industryBySymbol.get(row.ticker) || '',
         };
@@ -621,7 +640,7 @@ export default function InsightsPage() {
         }
         if (!q) return true;
         return (
-          row.ticker.includes(q) ||
+          row.ticker.toUpperCase().includes(q) ||
           String(row.name).toUpperCase().includes(q) ||
           String(row.industry).toUpperCase().includes(q)
         );
@@ -708,7 +727,13 @@ export default function InsightsPage() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search tickers…"
+                placeholder={
+                  scope === 'stock'
+                    ? 'Search tickers…'
+                    : scope === 'industry'
+                      ? 'Search industries…'
+                      : 'Filter by name…'
+                }
                 className="h-9 w-full rounded-lg border border-pe-border bg-pe-canvas py-0 pl-8 pr-2.5 text-sm outline-none ring-pe-accent focus:ring-2"
               />
             </label>
@@ -734,7 +759,13 @@ export default function InsightsPage() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={scope === 'stock' ? 'Search tickers…' : 'Filter by name'}
+                placeholder={
+                  scope === 'stock'
+                    ? 'Search tickers…'
+                    : scope === 'industry'
+                      ? 'Search industries…'
+                      : 'Filter by name'
+                }
                 className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-10 pr-3 text-[15px] text-pe-text outline-none ring-pe-accent focus:ring-2"
               />
             </label>

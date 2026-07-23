@@ -228,6 +228,58 @@ export async function fetchExplanationFeed({
   return (data ?? []).map(mapExplanationFeedRow).filter(keepExplanationItem);
 }
 
+function mapIndustryExplanationFeedRow(row) {
+  const industry = String(row.industry ?? '').trim();
+  const slug = String(row.industry_slug ?? '').trim();
+  const asOfDate = row.as_of_date;
+  const raw = String(row.explanation ?? '').replace(/\r\n/g, '\n').trim();
+
+  return {
+    id: `${slug || industry}-${asOfDate}`,
+    // Reuse Insights card fields: non-stock scopes render `ticker` as the title.
+    ticker: industry,
+    name: '',
+    industry: '',
+    industrySlug: slug || null,
+    asOfDate,
+    publishedAt: asOfDate,
+    title: formatNewsDate(asOfDate) || asOfDate,
+    summary: raw,
+    confidence: row.confidence ?? null,
+    status: row.status,
+    assetType: 'industry',
+    changePct: null,
+    price: null,
+  };
+}
+
+/**
+ * Browse daily industry explainers from mn_daily_industry_explanations.
+ * No price_context / move % — same UX as indices / commodities / economy.
+ */
+export async function fetchIndustryExplanationFeed({ asOfDate = null, limit = 200 } = {}) {
+  if (!stockNewsClient) return [];
+
+  let query = stockNewsClient
+    .from('mn_daily_industry_explanations')
+    .select('industry, industry_slug, as_of_date, status, explanation, confidence, generated_at')
+    .neq('status', 'failed')
+    .order('industry', { ascending: true })
+    .limit(limit);
+
+  if (asOfDate) query = query.eq('as_of_date', asOfDate);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('fetchIndustryExplanationFeed failed', error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map(mapIndustryExplanationFeedRow)
+    .filter((item) => item.status !== 'failed' && item.summary.trim() && item.ticker);
+}
+
 export async function fetchStockNewsForTickers(tickers, { limit = 50 } = {}) {
   const symbols = [...new Set(tickers.map(normalizeTicker).filter(Boolean))];
   if (!symbols.length || !stockNewsClient) return [];
