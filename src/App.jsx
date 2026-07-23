@@ -979,6 +979,7 @@ export default function App() {
                 fundId={selectedFundId}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
+                onOpenPortfolio={openProfilePortfolio}
               />
             </RouteSuspense>
           ) : selectedTicker ? (
@@ -987,6 +988,7 @@ export default function App() {
                 ticker={selectedTicker}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
+                onOpenPortfolio={openProfilePortfolio}
               />
             </RouteSuspense>
           ) : (

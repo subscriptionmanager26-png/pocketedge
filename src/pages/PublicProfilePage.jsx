@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
+import Avatar from '../components/Avatar';
 import { ensureSupabase, signInWithGoogle } from '../lib/supabase';
 import { fetchPublicProfile } from '../lib/socialProfileApi';
-
-function avatarInitial(name, username) {
-  const source = name || username || '?';
-  return source.charAt(0).toUpperCase();
-}
 
 export default function PublicProfilePage({ username }) {
   const [profile, setProfile] = useState(null);
@@ -67,7 +63,6 @@ export default function PublicProfilePage({ username }) {
   }
 
   const displayName = profile.display_name || profile.username;
-  const initial = avatarInitial(displayName, profile.username);
 
   return (
     <div className="min-h-dvh bg-pe-canvas">
@@ -77,17 +72,14 @@ export default function PublicProfilePage({ username }) {
 
       <main className="mx-auto max-w-lg px-4 py-10">
         <div className="flex flex-col items-center text-center">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt=""
-              className="h-20 w-20 rounded-full object-cover ring-2 ring-pe-border"
-            />
-          ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-pe-accent-wash text-2xl font-bold text-pe-accent">
-              {initial}
-            </div>
-          )}
+          <Avatar
+            person={{
+              name: displayName,
+              avatar: (displayName || '?').charAt(0).toUpperCase(),
+              avatarUrl: profile.avatar_url ?? null,
+            }}
+            size="xl"
+          />
           <h1 className="mt-4 text-2xl font-bold text-pe-text">{displayName}</h1>
           <p className="mt-1 text-[15px] text-pe-text-muted">@{profile.username}</p>
         </div>

@@ -40,6 +40,7 @@ export default function StockInvestmentPage({
   ticker,
   onBack,
   onOpenProfile,
+  onOpenPortfolio,
 }) {
   const seedStock = getStock(ticker);
   const [marketStock, setMarketStock] = useState(() => peekCachedStockDetail(ticker));
@@ -306,6 +307,7 @@ export default function StockInvestmentPage({
           holders={holders}
           loading={holdersLoading}
           onOpenProfile={onOpenProfile}
+          onOpenPortfolio={onOpenPortfolio}
           emptyMessage="No disclosed holders yet."
         />
       )}

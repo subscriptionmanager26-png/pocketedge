@@ -83,7 +83,7 @@ export function DiscussionsList({ posts, onOpenProfile, emptyMessage }) {
 }
 
 /** Holders tab — list of users who disclose owning this asset. */
-export function HoldersList({ holders, loading, onOpenProfile, emptyMessage }) {
+export function HoldersList({ holders, loading, onOpenProfile, onOpenPortfolio, emptyMessage }) {
   if (loading) {
     return (
       <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading holders…</p>
@@ -104,21 +104,39 @@ export function HoldersList({ holders, loading, onOpenProfile, emptyMessage }) {
         const userId = holder.userId ?? holder;
         const person = getPersonSync(userId) ?? {
           id: userId,
-          name: 'Member',
+          name: holder.displayName || holder.firstName || 'Member',
           handle: 'member',
-          avatar: 'M',
+          avatarUrl: holder.avatarUrl ?? null,
+          avatar: (holder.firstName || holder.displayName || 'M').charAt(0).toUpperCase(),
         };
+        const firstName =
+          holder.firstName ||
+          String(person.name || 'Member')
+            .trim()
+            .split(/\s+/)[0] ||
+          'Member';
+        const portfolioName = holder.portfolioName?.trim() || 'Portfolio';
+        const extra = Number(holder.extraPortfolios) || 0;
+        const subtitle = extra > 0 ? `${portfolioName} +${extra}` : portfolioName;
+        const avatarUrl = holder.avatarUrl ?? person.avatarUrl ?? null;
+
         return (
           <button
-            key={userId}
+            key={`${userId}:${holder.portfolioId ?? 'none'}`}
             type="button"
-            onClick={() => onOpenProfile?.(userId)}
+            onClick={() => {
+              if (holder.portfolioId && onOpenPortfolio) {
+                onOpenPortfolio(userId, holder.portfolioId);
+                return;
+              }
+              onOpenProfile?.(userId);
+            }}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-pe-surface/50"
           >
-            <Avatar person={person} />
-            <div>
-              <p className="text-[15px] font-semibold text-pe-text">{person.name}</p>
-              <p className="text-sm text-pe-text-muted">@{person.handle} · holds in portfolio</p>
+            <Avatar person={{ ...person, name: firstName, avatarUrl }} />
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold text-pe-text">{firstName}</p>
+              <p className="truncate text-sm text-pe-text-muted">{subtitle}</p>
             </div>
           </button>
         );

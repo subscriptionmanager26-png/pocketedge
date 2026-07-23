@@ -9,11 +9,26 @@ function useBackend() {
   return isSupabaseConfigured() && !skipAuthForDev();
 }
 
+/** First token of display name (e.g. "HDFC Mutual Fund" → "HDFC"). */
+export function holderFirstName(displayName, fallback = 'Member') {
+  const raw = String(displayName ?? '').trim();
+  if (!raw) return fallback;
+  return raw.split(/\s+/)[0] || fallback;
+}
+
 /**
- * Users who disclose a holding of `assetKey` in a published live portfolio.
- * Falls back to demo seeds in mock mode.
+ * Users who disclose a holding of `assetKey` in a published portfolio/watchlist.
+ * Each row points at the portfolio where the asset has the highest weight.
  *
- * @returns {Promise<Array<{ userId: string }>>}
+ * @returns {Promise<Array<{
+ *   userId: string,
+ *   displayName: string|null,
+ *   firstName: string,
+ *   portfolioId: string|null,
+ *   portfolioName: string|null,
+ *   extraPortfolios: number,
+ *   weightPct: number|null,
+ * }>>}
  */
 export async function fetchAssetHolders(assetKey, { kind = 'stock' } = {}) {
   const key = String(assetKey ?? '').trim();
@@ -22,7 +37,15 @@ export async function fetchAssetHolders(assetKey, { kind = 'stock' } = {}) {
   if (!useBackend()) {
     if (isDevMockMode()) {
       const ids = kind === 'fund' ? getFundHolders(key) : getStockHolders(key);
-      return (ids ?? []).map((userId) => ({ userId: String(userId) }));
+      return (ids ?? []).map((userId) => ({
+        userId: String(userId),
+        displayName: null,
+        firstName: 'Member',
+        portfolioId: null,
+        portfolioName: null,
+        extraPortfolios: 0,
+        weightPct: null,
+      }));
     }
     return [];
   }
@@ -44,16 +67,29 @@ export async function fetchAssetHolders(assetKey, { kind = 'stock' } = {}) {
     const userId = row?.user_id ? String(row.user_id) : null;
     if (!userId) continue;
 
+    const displayName = row.display_name || row.username || null;
     if (row.username) {
       rememberPerson({
         id: userId,
         handle: row.username,
-        name: row.display_name || row.username,
+        name: displayName || row.username,
         avatarUrl: row.avatar_url ?? null,
       });
     }
 
-    holders.push({ userId });
+    const extra = Number(row.extra_portfolios);
+    const weight = row.weight_pct == null ? null : Number(row.weight_pct);
+
+    holders.push({
+      userId,
+      displayName,
+      firstName: holderFirstName(displayName),
+      avatarUrl: row.avatar_url ? String(row.avatar_url) : null,
+      portfolioId: row.portfolio_id ? String(row.portfolio_id) : null,
+      portfolioName: row.portfolio_name ? String(row.portfolio_name) : null,
+      extraPortfolios: Number.isFinite(extra) && extra > 0 ? Math.floor(extra) : 0,
+      weightPct: Number.isFinite(weight) ? weight : null,
+    });
   }
 
   await resolvePeople(holders.map((h) => h.userId)).catch(() => {});

@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import AssetLogo from './AssetLogo';
 import { detectLogoBackdropTone, logoBackdropClass } from '../lib/assetLogo';
 
 const PALETTE = [
@@ -8,6 +9,13 @@ const PALETTE = [
   'bg-[#ecfdf3] text-[#15803d]',
   'bg-[#fef3c7] text-[#b45309]',
 ];
+
+const AVATAR_TO_ASSET_LOGO_SIZE = {
+  sm: 'xs',
+  md: 'sm',
+  lg: 'sm',
+  xl: 'md',
+};
 
 function isAssetLogoUrl(url) {
   const raw = typeof url === 'string' ? url : '';
@@ -32,19 +40,34 @@ export default function Avatar({ person, size = 'md', onClick, className = '' })
   const [backdrop, setBackdrop] = useState('light');
   const [failed, setFailed] = useState(false);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setBackdrop('light');
     setFailed(false);
-    const img = imgRef.current;
-    if (!avatarUrl || !img?.complete || !img.naturalWidth) return;
-    setBackdrop(detectLogoBackdropTone(img));
   }, [avatarUrl]);
 
   const sharedClass = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${sizes[size]} ${onClick ? 'cursor-pointer transition hover:opacity-90' : ''} ${className}`;
 
-  // Keep the original avatar URL for display. For AMC asset-logo avatars, set
-  // crossOrigin so canvas backdrop sampling can detect white-on-transparent marks
-  // (Supabase Storage sends Access-Control-Allow-Origin: *).
+  // AMC profiles store market logos as avatar_url. Reuse AssetLogo so they get the
+  // same same-origin path + dark-backdrop handling as Markets search (no crossOrigin
+  // on a display <img>, which can blank cached logos).
+  if (avatarUrl && isAssetLogoUrl(avatarUrl)) {
+    const logo = (
+      <AssetLogo
+        logoIconUrl={avatarUrl}
+        assetKey={person?.handle || person?.name}
+        name={person?.name}
+        size={AVATAR_TO_ASSET_LOGO_SIZE[size] ?? 'sm'}
+        className={onClick || className ? '' : className}
+      />
+    );
+    if (!onClick) return logo;
+    return (
+      <Tag type="button" onClick={onClick} className={`inline-flex ${className}`} aria-label={person?.name}>
+        {logo}
+      </Tag>
+    );
+  }
+
   if (avatarUrl && !failed) {
     return (
       <Tag
@@ -57,7 +80,6 @@ export default function Avatar({ person, size = 'md', onClick, className = '' })
           ref={imgRef}
           src={avatarUrl}
           alt=""
-          crossOrigin={isAssetLogoUrl(avatarUrl) ? 'anonymous' : undefined}
           className="h-full w-full object-cover"
           onLoad={(event) => {
             setFailed(false);

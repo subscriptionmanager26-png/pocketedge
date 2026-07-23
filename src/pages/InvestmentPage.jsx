@@ -28,6 +28,7 @@ export default function InvestmentPage({
   fundId,
   onBack,
   onOpenProfile,
+  onOpenPortfolio,
 }) {
   const seedFund = getFund(fundId);
   const [marketFund, setMarketFund] = useState(() => {
@@ -187,6 +188,7 @@ export default function InvestmentPage({
           holders={holders}
           loading={holdersLoading}
           onOpenProfile={onOpenProfile}
+          onOpenPortfolio={onOpenPortfolio}
           emptyMessage="No disclosed holders yet."
         />
       )}
