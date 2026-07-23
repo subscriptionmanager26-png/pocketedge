@@ -38,6 +38,19 @@ const DIRECTION_OPTIONS = [
   { id: 'down', label: 'Down' },
 ];
 
+const SORT_OPTIONS = [
+  { id: 'magnitude', label: 'Biggest move' },
+  { id: 'desc', label: 'Highest %' },
+  { id: 'asc', label: 'Lowest %' },
+];
+
+/** Number(null) === 0 — never coerce missing quotes into a real 0% move. */
+function parseFiniteNumber(value) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 const SCOPE_COPY = {
   stock: {
     title: 'Stock-wise insights',
@@ -301,6 +314,8 @@ function StockFilterFields({
   setDirection,
   threshold,
   setThreshold,
+  sortBy,
+  setSortBy,
   selectedIndustries,
   setSelectedIndustries,
   industries,
@@ -350,6 +365,18 @@ function StockFilterFields({
             %
           </span>
         </div>
+        <select
+          value={sortBy}
+          onChange={(event) => setSortBy(event.target.value)}
+          className={`${fieldClass} w-[118px]`}
+          aria-label="Sort by change"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
         <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
       </>
     );
@@ -400,6 +427,19 @@ function StockFilterFields({
             %
           </span>
         </div>
+      </label>
+
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
+          Sort
+        </span>
+        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className={fieldClass}>
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="block">
@@ -459,6 +499,7 @@ export default function InsightsPage() {
   const [asOfDate, setAsOfDate] = useState(dateOptions[0].id);
   const [direction, setDirection] = useState('any');
   const [threshold, setThreshold] = useState('0');
+  const [sortBy, setSortBy] = useState('magnitude');
   const [selectedIndustries, setSelectedIndustries] = useState([]);
   const [industries, setIndustries] = useState([]);
   const [industryBySymbol, setIndustryBySymbol] = useState(() => new Map());
@@ -471,7 +512,7 @@ export default function InsightsPage() {
 
   const copy = SCOPE_COPY[scope] ?? SCOPE_COPY.stock;
 
-  // Static JSON is name-only fallback — never use its changePct (stale snapshot).
+  // Soft name + changePct from static search file; live quotes overwrite changePct.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -487,8 +528,8 @@ export default function InsightsPage() {
           if (!symbol) continue;
           map.set(symbol, {
             name: item.name ?? symbol,
-            changePct: null,
-            price: Number(item.price),
+            changePct: parseFiniteNumber(item.changePct),
+            price: parseFiniteNumber(item.price),
           });
         }
         if (!cancelled) {
@@ -497,12 +538,12 @@ export default function InsightsPage() {
             const next = new Map(map);
             for (const [symbol, meta] of prev) {
               const soft = next.get(symbol);
+              const livePct = parseFiniteNumber(meta.changePct);
               next.set(symbol, {
                 name: meta.name || soft?.name || symbol,
-                changePct: Number.isFinite(Number(meta.changePct))
-                  ? Number(meta.changePct)
-                  : soft?.changePct ?? null,
-                price: Number.isFinite(Number(meta.price)) ? Number(meta.price) : soft?.price,
+                // Prefer already-loaded live quotes over the static snapshot.
+                changePct: livePct ?? soft?.changePct ?? null,
+                price: parseFiniteNumber(meta.price) ?? soft?.price ?? null,
               });
             }
             return next;
@@ -534,18 +575,28 @@ export default function InsightsPage() {
     const tickers = [...new Set(feed.map((row) => row.ticker).filter(Boolean))];
     if (!tickers.length) return;
 
-    const batch = await lookupMarketAssetsBatch(tickers);
+    // Chunk to keep RPC payloads bounded when the feed is large.
+    const batch = new Map();
+    const chunkSize = 100;
+    for (let i = 0; i < tickers.length; i += chunkSize) {
+      const part = await lookupMarketAssetsBatch(tickers.slice(i, i + chunkSize));
+      for (const [key, item] of part) batch.set(key, item);
+    }
+
     setMarketBySymbol((prev) => {
       const next = new Map(prev);
       for (const ticker of tickers) {
-        const item = batch.get(ticker);
+        const item =
+          batch.get(ticker) ||
+          batch.get(String(ticker).toUpperCase()) ||
+          batch.get(String(ticker).toLowerCase());
         if (!item) continue;
-        const changePct = Number(item.changePct);
+        const changePct = parseFiniteNumber(item.changePct);
         const prevMeta = next.get(ticker);
         next.set(ticker, {
           name: item.name || prevMeta?.name || ticker,
-          changePct: Number.isFinite(changePct) ? changePct : prevMeta?.changePct ?? null,
-          price: Number.isFinite(Number(item.price)) ? Number(item.price) : prevMeta?.price,
+          changePct: changePct ?? prevMeta?.changePct ?? null,
+          price: parseFiniteNumber(item.price) ?? prevMeta?.price ?? null,
         });
       }
       return next;
@@ -556,11 +607,11 @@ export default function InsightsPage() {
     let cancelled = false;
     (async () => {
       try {
-        if (cancelled) return;
         await refreshLiveQuotes();
       } catch {
         /* keep last known quotes */
       }
+      if (cancelled) return;
     })();
     return () => {
       cancelled = true;
@@ -579,6 +630,7 @@ export default function InsightsPage() {
     setSelectedIndustries([]);
     setDirection('any');
     setThreshold('0');
+    setSortBy('magnitude');
   }, [scope]);
 
   useEffect(() => {
@@ -628,12 +680,11 @@ export default function InsightsPage() {
   const enrichedFeed = useMemo(() => {
     return feed
       .map((row) => {
-        const meta = marketBySymbol.get(row.ticker);
-        const changePct = Number(meta?.changePct);
+        const meta = marketBySymbol.get(row.ticker) || marketBySymbol.get(String(row.ticker).toUpperCase());
         return {
           ...row,
           name: meta?.name || row.ticker,
-          changePct: Number.isFinite(changePct) ? changePct : null,
+          changePct: parseFiniteNumber(meta?.changePct),
           industry: industryBySymbol.get(row.ticker) || '',
         };
       })
@@ -656,12 +707,23 @@ export default function InsightsPage() {
         );
       })
       .sort((a, b) => {
-        if (scope === 'stock' && (direction !== 'any' || Number(threshold) > 0)) {
-          return Math.abs(b.changePct ?? 0) - Math.abs(a.changePct ?? 0);
-        }
+        if (scope !== 'stock') return String(a.ticker).localeCompare(String(b.ticker));
+        const aPct = parseFiniteNumber(a.changePct);
+        const bPct = parseFiniteNumber(b.changePct);
+        const aMissing = aPct == null;
+        const bMissing = bPct == null;
+        if (aMissing && bMissing) return String(a.ticker).localeCompare(String(b.ticker));
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+
+        if (sortBy === 'desc') return bPct - aPct;
+        if (sortBy === 'asc') return aPct - bPct;
+        // Default / "no choice": descending magnitude of change
+        const mag = Math.abs(bPct) - Math.abs(aPct);
+        if (mag !== 0) return mag;
         return String(a.ticker).localeCompare(String(b.ticker));
       });
-  }, [enrichedFeed, query, scope, direction, threshold, selectedIndustries]);
+  }, [enrichedFeed, query, scope, direction, threshold, selectedIndustries, sortBy]);
 
   const searchHits = useMemo(() => {
     const q = query.trim().toUpperCase();
@@ -681,16 +743,19 @@ export default function InsightsPage() {
       if (direction !== 'any') count += 1;
       if (Number(threshold) > 0) count += 1;
       if (selectedIndustries.length) count += 1;
+      if (sortBy !== 'magnitude') count += 1;
     }
     if (asOfDate !== dateOptions[0]?.id) count += 1;
     return count;
-  }, [scope, direction, threshold, selectedIndustries, asOfDate, dateOptions]);
+  }, [scope, direction, threshold, selectedIndustries, sortBy, asOfDate, dateOptions]);
 
   const stockFilterProps = {
     direction,
     setDirection,
     threshold,
     setThreshold,
+    sortBy,
+    setSortBy,
     selectedIndustries,
     setSelectedIndustries,
     industries,
