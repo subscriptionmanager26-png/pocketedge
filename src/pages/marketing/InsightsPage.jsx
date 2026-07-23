@@ -155,29 +155,24 @@ function FilterSheet({ open, onClose, children }) {
   );
 }
 
-function DateChips({ options, value, onChange, compact = false }) {
+function DateSelect({ options, value, onChange, compact = false }) {
+  const fieldClass = compact
+    ? 'h-9 w-[110px] rounded-lg border border-pe-border bg-pe-canvas px-2.5 text-xs outline-none ring-pe-accent focus:ring-2'
+    : 'w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-[15px] outline-none ring-pe-accent focus:ring-2';
+
   return (
-    <div className={`flex flex-wrap ${compact ? 'gap-1.5' : 'gap-2'}`}>
-      {options.map((opt) => {
-        const active = value === opt.id;
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className={`rounded-full font-semibold transition ${
-              compact ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'
-            } ${
-              active
-                ? 'bg-pe-accent text-white'
-                : 'border border-pe-border bg-pe-canvas text-pe-text-secondary hover:border-pe-border-strong hover:text-pe-text'
-            }`}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label="Date"
+      className={fieldClass}
+    >
+      {options.map((opt) => (
+        <option key={opt.id} value={opt.id}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -301,6 +296,9 @@ function StockFilterFields({
   selectedIndustries,
   setSelectedIndustries,
   industries,
+  dateOptions,
+  asOfDate,
+  setAsOfDate,
   compact = false,
 }) {
   const fieldClass = compact
@@ -310,6 +308,12 @@ function StockFilterFields({
   if (compact) {
     return (
       <>
+        <IndustryMultiSelect
+          options={industries}
+          selected={selectedIndustries}
+          onChange={setSelectedIndustries}
+          compact
+        />
         <select
           value={direction}
           onChange={(event) => setDirection(event.target.value)}
@@ -338,18 +342,24 @@ function StockFilterFields({
             %
           </span>
         </div>
-        <IndustryMultiSelect
-          options={industries}
-          selected={selectedIndustries}
-          onChange={setSelectedIndustries}
-          compact
-        />
+        <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
       </>
     );
   }
 
   return (
     <>
+      <div className="block">
+        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
+          Industry
+        </span>
+        <IndustryMultiSelect
+          options={industries}
+          selected={selectedIndustries}
+          onChange={setSelectedIndustries}
+        />
+      </div>
+
       <label className="block">
         <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
           Direction
@@ -384,16 +394,12 @@ function StockFilterFields({
         </div>
       </label>
 
-      <div className="block">
+      <label className="block">
         <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-          Industry
+          Date
         </span>
-        <IndustryMultiSelect
-          options={industries}
-          selected={selectedIndustries}
-          onChange={setSelectedIndustries}
-        />
-      </div>
+        <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
+      </label>
     </>
   );
 }
@@ -610,17 +616,18 @@ export default function InsightsPage() {
     return count;
   }, [scope, direction, threshold, selectedIndustries, asOfDate, dateOptions]);
 
-  const stockFiltersMobile = (
-    <StockFilterFields
-      direction={direction}
-      setDirection={setDirection}
-      threshold={threshold}
-      setThreshold={setThreshold}
-      selectedIndustries={selectedIndustries}
-      setSelectedIndustries={setSelectedIndustries}
-      industries={industries}
-    />
-  );
+  const stockFilterProps = {
+    direction,
+    setDirection,
+    threshold,
+    setThreshold,
+    selectedIndustries,
+    setSelectedIndustries,
+    industries,
+    dateOptions,
+    asOfDate,
+    setAsOfDate,
+  };
 
   return (
     <MarketingShell wide>
@@ -638,7 +645,7 @@ export default function InsightsPage() {
         </div>
       ) : (
         <>
-          {/* Desktop: compact single toolbar */}
+          {/* Desktop: compact single toolbar — Industry → Direction → Date */}
           <div className="mb-4 hidden flex-wrap items-center gap-2 rounded-xl border border-pe-border bg-pe-surface/60 px-3 py-2 md:flex">
             <label className="relative min-w-[200px] flex-1">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-pe-text-muted" />
@@ -651,28 +658,20 @@ export default function InsightsPage() {
               />
             </label>
 
-            <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
-
-            <DateChips options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
-
             {scope === 'stock' ? (
               <>
                 <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
-                <StockFilterFields
-                  direction={direction}
-                  setDirection={setDirection}
-                  threshold={threshold}
-                  setThreshold={setThreshold}
-                  selectedIndustries={selectedIndustries}
-                  setSelectedIndustries={setSelectedIndustries}
-                  industries={industries}
-                  compact
-                />
+                <StockFilterFields {...stockFilterProps} compact />
               </>
-            ) : null}
+            ) : (
+              <>
+                <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
+                <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
+              </>
+            )}
           </div>
 
-          {/* Mobile: search + filters button (date lives only inside sheet) */}
+          {/* Mobile: search + filters button */}
           <div className="mb-3 flex items-center gap-2 md:hidden">
             <label className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted" />
@@ -724,11 +723,16 @@ export default function InsightsPage() {
           ) : null}
 
           <FilterSheet open={!isDesktop && filtersOpen} onClose={() => setFiltersOpen(false)}>
-            <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-pe-text-muted">Date</p>
-              <DateChips options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
-            </div>
-            {scope === 'stock' ? stockFiltersMobile : null}
+            {scope === 'stock' ? (
+              <StockFilterFields {...stockFilterProps} />
+            ) : (
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
+                  Date
+                </span>
+                <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
+              </label>
+            )}
           </FilterSheet>
 
           {error ? <p className="mb-4 text-sm text-pe-negative">{error}</p> : null}
