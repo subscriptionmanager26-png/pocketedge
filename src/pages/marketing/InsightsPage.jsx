@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ChevronDown, Filter, Loader2, Search, X } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
 import UnderlineTabs from '../../components/UnderlineTabs';
+import { useMarketQuotePolling } from '../../hooks/useMarketQuoteRefresh';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { formatPct } from '../../lib/format';
 import {
   fetchDistinctStockIndustries,
+  lookupMarketAssetsBatch,
   lookupStockIndustries,
 } from '../../lib/marketDataApi';
 import { normalizeNewsSummaryMarkdown } from '../../lib/normalizeNewsSummaryMarkdown';
@@ -16,6 +18,12 @@ import {
   isStockNewsConfigured,
 } from '../../lib/stockNewsApi';
 import { ensureSupabase, isSupabaseConfigured } from '../../lib/supabase';
+
+const SCOPE_TO_ASSET_TYPE = {
+  stock: 'stock',
+  index: 'index',
+  commodity: 'commodity',
+};
 
 const SCOPE_TABS = [
   { id: 'stock', label: 'Stocks' },
@@ -463,11 +471,11 @@ export default function InsightsPage() {
 
   const copy = SCOPE_COPY[scope] ?? SCOPE_COPY.stock;
 
+  // Static JSON is name-only fallback — never use its changePct (stale snapshot).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        if (isSupabaseConfigured()) await ensureSupabase();
         const res = await fetch('/data/markets/stocks-search.json');
         if (!res.ok) return;
         const payload = await res.json();
@@ -479,11 +487,27 @@ export default function InsightsPage() {
           if (!symbol) continue;
           map.set(symbol, {
             name: item.name ?? symbol,
-            changePct: Number(item.changePct),
+            changePct: null,
             price: Number(item.price),
           });
         }
-        if (!cancelled) setMarketBySymbol(map);
+        if (!cancelled) {
+          setMarketBySymbol((prev) => {
+            if (!prev.size) return map;
+            const next = new Map(map);
+            for (const [symbol, meta] of prev) {
+              const soft = next.get(symbol);
+              next.set(symbol, {
+                name: meta.name || soft?.name || symbol,
+                changePct: Number.isFinite(Number(meta.changePct))
+                  ? Number(meta.changePct)
+                  : soft?.changePct ?? null,
+                price: Number.isFinite(Number(meta.price)) ? Number(meta.price) : soft?.price,
+              });
+            }
+            return next;
+          });
+        }
       } catch {
         /* ignore */
       }
@@ -503,6 +527,52 @@ export default function InsightsPage() {
       cancelled = true;
     };
   }, []);
+
+  const refreshLiveQuotes = useCallback(async () => {
+    if (scope === 'economics' || !feed.length) return;
+    if (isSupabaseConfigured()) await ensureSupabase();
+    const tickers = [...new Set(feed.map((row) => row.ticker).filter(Boolean))];
+    if (!tickers.length) return;
+
+    const batch = await lookupMarketAssetsBatch(tickers);
+    setMarketBySymbol((prev) => {
+      const next = new Map(prev);
+      for (const ticker of tickers) {
+        const item = batch.get(ticker);
+        if (!item) continue;
+        const changePct = Number(item.changePct);
+        const prevMeta = next.get(ticker);
+        next.set(ticker, {
+          name: item.name || prevMeta?.name || ticker,
+          changePct: Number.isFinite(changePct) ? changePct : prevMeta?.changePct ?? null,
+          price: Number.isFinite(Number(item.price)) ? Number(item.price) : prevMeta?.price,
+        });
+      }
+      return next;
+    });
+  }, [feed, scope]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (cancelled) return;
+        await refreshLiveQuotes();
+      } catch {
+        /* keep last known quotes */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshLiveQuotes]);
+
+  useMarketQuotePolling({
+    assetType: SCOPE_TO_ASSET_TYPE[scope] ?? null,
+    enabled: configured && scope !== 'economics' && feed.length > 0,
+    onRefresh: refreshLiveQuotes,
+    deps: [feed, scope],
+  });
 
   useEffect(() => {
     setQuery('');
