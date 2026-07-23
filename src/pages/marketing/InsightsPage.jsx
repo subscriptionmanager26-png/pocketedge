@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Filter, Loader2, Search, X } from 'lucide-react';
+import { Check, ChevronDown, Filter, Loader2, Search, X } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
 import UnderlineTabs from '../../components/UnderlineTabs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -25,9 +25,9 @@ const SCOPE_TABS = [
 ];
 
 const DIRECTION_OPTIONS = [
-  { id: 'any', label: 'Any direction' },
-  { id: 'up', label: 'Up only' },
-  { id: 'down', label: 'Down only' },
+  { id: 'any', label: 'Any' },
+  { id: 'up', label: 'Up' },
+  { id: 'down', label: 'Down' },
 ];
 
 const SCOPE_COPY = {
@@ -140,7 +140,7 @@ function FilterSheet({ open, onClose, children }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="space-y-5 px-4 py-4">{children}</div>
+        <div className="space-y-4 px-4 py-4">{children}</div>
         <div className="sticky bottom-0 border-t border-pe-border bg-pe-canvas px-4 py-3">
           <button
             type="button"
@@ -155,9 +155,9 @@ function FilterSheet({ open, onClose, children }) {
   );
 }
 
-function DateChips({ options, value, onChange }) {
+function DateChips({ options, value, onChange, compact = false }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={`flex flex-wrap ${compact ? 'gap-1.5' : 'gap-2'}`}>
       {options.map((opt) => {
         const active = value === opt.id;
         return (
@@ -165,7 +165,9 @@ function DateChips({ options, value, onChange }) {
             key={opt.id}
             type="button"
             onClick={() => onChange(opt.id)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+            className={`rounded-full font-semibold transition ${
+              compact ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'
+            } ${
               active
                 ? 'bg-pe-accent text-white'
                 : 'border border-pe-border bg-pe-canvas text-pe-text-secondary hover:border-pe-border-strong hover:text-pe-text'
@@ -179,29 +181,183 @@ function DateChips({ options, value, onChange }) {
   );
 }
 
+function IndustryMultiSelect({ options, selected, onChange, compact = false }) {
+  const rootRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((name) => name.toLowerCase().includes(q));
+  }, [options, query]);
+
+  const label =
+    selected.length === 0
+      ? 'Industry'
+      : selected.length === 1
+        ? selected[0]
+        : `${selected.length} industries`;
+
+  const toggle = (name) => {
+    onChange(
+      selected.includes(name)
+        ? selected.filter((item) => item !== name)
+        : [...selected, name]
+    );
+  };
+
+  return (
+    <div ref={rootRef} className={`relative ${compact ? 'min-w-[140px]' : 'w-full'}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`flex w-full items-center justify-between gap-2 rounded-lg border border-pe-border bg-pe-canvas text-left outline-none ring-pe-accent hover:border-pe-border-strong focus:ring-2 ${
+          compact ? 'h-9 px-2.5 text-xs' : 'px-3 py-2.5 text-[15px]'
+        } ${selected.length ? 'border-pe-accent/40 text-pe-text' : 'text-pe-text-secondary'}`}
+      >
+        <span className="truncate font-medium">{label}</span>
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open ? (
+        <div className="absolute left-0 z-20 mt-1 w-[min(100vw-2rem,320px)] overflow-hidden rounded-lg border border-pe-border bg-pe-canvas shadow-lg">
+          <div className="border-b border-pe-border p-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search industries…"
+              autoFocus
+              className="w-full rounded-md border border-pe-border bg-pe-surface px-2.5 py-1.5 text-sm outline-none ring-pe-accent focus:ring-2"
+            />
+          </div>
+          <div className="flex items-center justify-between border-b border-pe-border px-3 py-2">
+            <span className="text-xs text-pe-text-muted">
+              {selected.length ? `${selected.length} selected` : 'Select one or more'}
+            </span>
+            {selected.length ? (
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="text-xs font-semibold text-pe-accent hover:underline"
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+          <ul className="max-h-56 overflow-y-auto py-1">
+            {filtered.length ? (
+              filtered.map((name) => {
+                const checked = selected.includes(name);
+                return (
+                  <li key={name}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(name)}
+                      className="flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-pe-surface"
+                    >
+                      <span
+                        className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border ${
+                          checked
+                            ? 'border-pe-accent bg-pe-accent text-white'
+                            : 'border-pe-border-strong bg-pe-canvas'
+                        }`}
+                      >
+                        {checked ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                      </span>
+                      <span className="text-sm leading-snug text-pe-text">{name}</span>
+                    </button>
+                  </li>
+                );
+              })
+            ) : (
+              <li className="px-3 py-3 text-sm text-pe-text-muted">No matching industries</li>
+            )}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StockFilterFields({
   direction,
   setDirection,
   threshold,
   setThreshold,
-  industry,
-  setIndustry,
+  selectedIndustries,
+  setSelectedIndustries,
   industries,
+  compact = false,
 }) {
+  const fieldClass = compact
+    ? 'h-9 rounded-lg border border-pe-border bg-pe-canvas px-2.5 text-xs outline-none ring-pe-accent focus:ring-2'
+    : 'w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-[15px] outline-none ring-pe-accent focus:ring-2';
+
+  if (compact) {
+    return (
+      <>
+        <select
+          value={direction}
+          onChange={(event) => setDirection(event.target.value)}
+          className={`${fieldClass} w-[72px]`}
+          aria-label="Direction"
+        >
+          {DIRECTION_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <div className="relative w-[72px]">
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            inputMode="decimal"
+            value={threshold}
+            onChange={(event) => setThreshold(event.target.value)}
+            placeholder="0"
+            aria-label="Minimum move percent"
+            className={`${fieldClass} w-full pr-6`}
+          />
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-pe-text-muted">
+            %
+          </span>
+        </div>
+        <IndustryMultiSelect
+          options={industries}
+          selected={selectedIndustries}
+          onChange={setSelectedIndustries}
+          compact
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <label className="block">
         <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
           Direction
         </span>
-        <select
-          value={direction}
-          onChange={(event) => setDirection(event.target.value)}
-          className="w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-[15px] outline-none ring-pe-accent focus:ring-2"
-        >
+        <select value={direction} onChange={(event) => setDirection(event.target.value)} className={fieldClass}>
           {DIRECTION_OPTIONS.map((opt) => (
             <option key={opt.id} value={opt.id}>
-              {opt.label}
+              {opt.id === 'any' ? 'Any direction' : opt.id === 'up' ? 'Up only' : 'Down only'}
             </option>
           ))}
         </select>
@@ -220,38 +376,24 @@ function StockFilterFields({
             value={threshold}
             onChange={(event) => setThreshold(event.target.value)}
             placeholder="0"
-            className="w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 pr-10 text-[15px] outline-none ring-pe-accent focus:ring-2"
+            className={`${fieldClass} pr-10`}
           />
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">
             %
           </span>
         </div>
-        <p className="mt-1 text-xs text-pe-text-muted">
-          {direction === 'up'
-            ? `Show stocks up at least this much`
-            : direction === 'down'
-              ? `Show stocks down at least this much`
-              : `Show stocks with |move| at least this much`}
-        </p>
       </label>
 
-      <label className="block">
+      <div className="block">
         <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
           Industry
         </span>
-        <select
-          value={industry}
-          onChange={(event) => setIndustry(event.target.value)}
-          className="w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-[15px] outline-none ring-pe-accent focus:ring-2"
-        >
-          <option value="">All industries</option>
-          {industries.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </label>
+        <IndustryMultiSelect
+          options={industries}
+          selected={selectedIndustries}
+          onChange={setSelectedIndustries}
+        />
+      </div>
     </>
   );
 }
@@ -303,7 +445,7 @@ export default function InsightsPage() {
   const [asOfDate, setAsOfDate] = useState(dateOptions[0].id);
   const [direction, setDirection] = useState('any');
   const [threshold, setThreshold] = useState('0');
-  const [industry, setIndustry] = useState('');
+  const [selectedIndustries, setSelectedIndustries] = useState([]);
   const [industries, setIndustries] = useState([]);
   const [industryBySymbol, setIndustryBySymbol] = useState(() => new Map());
   const [query, setQuery] = useState('');
@@ -358,7 +500,7 @@ export default function InsightsPage() {
 
   useEffect(() => {
     setQuery('');
-    setIndustry('');
+    setSelectedIndustries([]);
     setDirection('any');
     setThreshold('0');
   }, [scope]);
@@ -383,7 +525,6 @@ export default function InsightsPage() {
         });
         if (cancelled) return;
 
-        // Only rows with real summary text (no empty insights).
         const withText = rows.filter((row) => extractInsightBullets(row.summary, 1).length > 0);
         setFeed(withText);
 
@@ -429,7 +570,7 @@ export default function InsightsPage() {
       .filter((row) => {
         if (scope === 'stock') {
           if (!matchesMovement(row.changePct, direction, threshold)) return false;
-          if (industry && row.industry !== industry) return false;
+          if (selectedIndustries.length && !selectedIndustries.includes(row.industry)) return false;
         }
         if (!q) return true;
         return (
@@ -444,9 +585,8 @@ export default function InsightsPage() {
         }
         return String(a.ticker).localeCompare(String(b.ticker));
       });
-  }, [enrichedFeed, query, scope, direction, threshold, industry]);
+  }, [enrichedFeed, query, scope, direction, threshold, selectedIndustries]);
 
-  // Search suggestions only among tickers that have an insight for the selected date.
   const searchHits = useMemo(() => {
     const q = query.trim().toUpperCase();
     if (q.length < 1 || scope !== 'stock') return [];
@@ -464,33 +604,33 @@ export default function InsightsPage() {
     if (scope === 'stock') {
       if (direction !== 'any') count += 1;
       if (Number(threshold) > 0) count += 1;
-      if (industry) count += 1;
+      if (selectedIndustries.length) count += 1;
     }
     if (asOfDate !== dateOptions[0]?.id) count += 1;
     return count;
-  }, [scope, direction, threshold, industry, asOfDate, dateOptions]);
+  }, [scope, direction, threshold, selectedIndustries, asOfDate, dateOptions]);
 
-  const stockFilters = (
+  const stockFiltersMobile = (
     <StockFilterFields
       direction={direction}
       setDirection={setDirection}
       threshold={threshold}
       setThreshold={setThreshold}
-      industry={industry}
-      setIndustry={setIndustry}
+      selectedIndustries={selectedIndustries}
+      setSelectedIndustries={setSelectedIndustries}
       industries={industries}
     />
   );
 
   return (
     <MarketingShell wide>
-      <div className="mb-6">
+      <div className="mb-5">
         <p className="text-sm font-semibold uppercase tracking-wide text-pe-accent">Daily market insights</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">{copy.title}</h1>
         <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">{copy.body}</p>
       </div>
 
-      <UnderlineTabs tabs={SCOPE_TABS} active={scope} onChange={setScope} className="mb-5 px-0" />
+      <UnderlineTabs tabs={SCOPE_TABS} active={scope} onChange={setScope} className="mb-4 px-0" />
 
       {!configured ? (
         <div className="rounded-xl border border-pe-border bg-pe-surface px-4 py-6 text-sm text-pe-text-secondary">
@@ -498,22 +638,56 @@ export default function InsightsPage() {
         </div>
       ) : (
         <>
-          <div className="mb-4 flex items-start gap-2">
+          {/* Desktop: compact single toolbar */}
+          <div className="mb-4 hidden flex-wrap items-center gap-2 rounded-xl border border-pe-border bg-pe-surface/60 px-3 py-2 md:flex">
+            <label className="relative min-w-[200px] flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-pe-text-muted" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search tickers…"
+                className="h-9 w-full rounded-lg border border-pe-border bg-pe-canvas py-0 pl-8 pr-2.5 text-sm outline-none ring-pe-accent focus:ring-2"
+              />
+            </label>
+
+            <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
+
+            <DateChips options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
+
+            {scope === 'stock' ? (
+              <>
+                <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
+                <StockFilterFields
+                  direction={direction}
+                  setDirection={setDirection}
+                  threshold={threshold}
+                  setThreshold={setThreshold}
+                  selectedIndustries={selectedIndustries}
+                  setSelectedIndustries={setSelectedIndustries}
+                  industries={industries}
+                  compact
+                />
+              </>
+            ) : null}
+          </div>
+
+          {/* Mobile: search + filters button (date lives only inside sheet) */}
+          <div className="mb-3 flex items-center gap-2 md:hidden">
             <label className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted" />
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={scope === 'stock' ? 'Search tickers with insights…' : 'Filter by name'}
+                placeholder={scope === 'stock' ? 'Search tickers…' : 'Filter by name'}
                 className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-10 pr-3 text-[15px] text-pe-text outline-none ring-pe-accent focus:ring-2"
               />
             </label>
-
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="relative flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-pe-border bg-pe-canvas px-3 text-sm font-semibold text-pe-text md:hidden"
+              className="relative flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-pe-border bg-pe-canvas px-3 text-sm font-semibold text-pe-text"
             >
               <Filter className="h-4 w-4" />
               Filters
@@ -526,7 +700,7 @@ export default function InsightsPage() {
           </div>
 
           {searchHits.length && query.trim() ? (
-            <ul className="mb-4 overflow-hidden rounded-lg border border-pe-border bg-pe-canvas shadow-sm md:max-w-xl">
+            <ul className="mb-4 overflow-hidden rounded-lg border border-pe-border bg-pe-canvas shadow-sm md:max-w-md">
               {searchHits.map((hit) => (
                 <li key={hit.ticker}>
                   <button
@@ -549,29 +723,12 @@ export default function InsightsPage() {
             </ul>
           ) : null}
 
-          {/* Desktop filters */}
-          <div className="mb-5 hidden space-y-4 md:block">
-            <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-pe-text-muted">Date</p>
-              <DateChips options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
-            </div>
-            {scope === 'stock' ? (
-              <div className="grid grid-cols-3 gap-3">{stockFilters}</div>
-            ) : null}
-          </div>
-
-          {/* Mobile: date chips stay visible (easy), other filters in sheet */}
-          <div className="mb-4 md:hidden">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-pe-text-muted">Date</p>
-            <DateChips options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
-          </div>
-
           <FilterSheet open={!isDesktop && filtersOpen} onClose={() => setFiltersOpen(false)}>
             <div>
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-pe-text-muted">Date</p>
               <DateChips options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
             </div>
-            {scope === 'stock' ? <div className="space-y-4">{stockFilters}</div> : null}
+            {scope === 'stock' ? stockFiltersMobile : null}
           </FilterSheet>
 
           {error ? <p className="mb-4 text-sm text-pe-negative">{error}</p> : null}
