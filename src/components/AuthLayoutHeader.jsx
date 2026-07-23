@@ -18,6 +18,7 @@ export const MARKETING_NAV_ITEMS = [
 
 function navItemActive(pathname, href) {
   if (href === '/disclosures') return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
+  if (href === '/resources') return pathname === '/resources' || pathname.startsWith('/resources/');
   return pathname === href;
 }
 

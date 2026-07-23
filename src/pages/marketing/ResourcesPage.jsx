@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { BarChart3, Coins, LineChart } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
+import { resourcesPath } from '../../lib/routes';
 
 const TOOLS = [
   {
@@ -17,9 +18,10 @@ const TOOLS = [
   },
   {
     title: 'MF screener',
-    body: 'Screen mutual funds by category, returns, and risk — without the noise.',
+    body: 'Screen equity Direct Growth funds by category, returns, risk, and fundamentals.',
     icon: BarChart3,
-    status: 'Coming soon',
+    href: resourcesPath('mf-screener'),
+    status: 'Open',
   },
 ];
 
@@ -32,19 +34,15 @@ export default function ResourcesPage() {
           Market tools
         </h1>
         <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">
-          Lightweight utilities for everyday investing research. These trackers and screeners are on the
-          roadmap and will land here.
+          Lightweight utilities for everyday investing research. More trackers are on the roadmap.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {TOOLS.map((tool) => {
           const Icon = tool.icon;
-          return (
-            <article
-              key={tool.title}
-              className="flex flex-col rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm"
-            >
+          const body = (
+            <>
               <span className="grid h-10 w-10 place-items-center rounded-full bg-pe-accent-wash text-pe-accent">
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
@@ -53,6 +51,27 @@ export default function ResourcesPage() {
               <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
                 {tool.status}
               </p>
+            </>
+          );
+
+          if (tool.href) {
+            return (
+              <Link
+                key={tool.title}
+                to={tool.href}
+                className="flex flex-col rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm transition hover:border-pe-accent/40 hover:shadow-md"
+              >
+                {body}
+              </Link>
+            );
+          }
+
+          return (
+            <article
+              key={tool.title}
+              className="flex flex-col rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm"
+            >
+              {body}
             </article>
           );
         })}

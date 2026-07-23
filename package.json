@@ -12,7 +12,8 @@
     "auth:push": "bash scripts/push-auth-config.sh",
     "sync:indian-markets": "node scripts/sync-indian-markets.mjs",
     "sync:social-market-assets": "node --env-file=.env scripts/sync-social-market-assets.mjs",
-    "refresh:social-market-prices": "node --env-file=.env scripts/refresh-social-market-prices.mjs"
+    "refresh:social-market-prices": "node --env-file=.env scripts/refresh-social-market-prices.mjs",
+    "fetch:mf-screener-snapshot": "node scripts/fetch-mf-screener-snapshot.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.10.1",

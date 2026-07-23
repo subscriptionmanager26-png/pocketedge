@@ -73,7 +73,11 @@ export function learningPath() {
   return '/learning';
 }
 
-export function resourcesPath() {
+export function resourcesPath(tool) {
+  const key = String(tool ?? '')
+    .trim()
+    .toLowerCase();
+  if (key === 'mf-screener' || key === 'screener') return '/resources/mf-screener';
   return '/resources';
 }
 
@@ -108,6 +112,15 @@ export function parseAppPath(pathname) {
       kind: 'marketing',
       page: 'disclosures',
       section: section && DISCLOSURE_SECTIONS.has(section) ? section : null,
+    };
+  }
+
+  const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener)\/?$/);
+  if (resourcesToolMatch) {
+    return {
+      kind: 'marketing',
+      page: 'resources',
+      section: resourcesToolMatch[1],
     };
   }
 
