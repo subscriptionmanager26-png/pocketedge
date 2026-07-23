@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import AuthLayoutHeader from './AuthLayoutHeader';
+import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
 import { signInWithGoogle } from '../lib/supabase';
 
 /**
  * Shared chrome for public marketing pages (Insights, Learning, Disclosures, Resources).
  */
 export default function MarketingShell({ children, wide = false }) {
+  const isAuthenticated = useIsAuthenticated();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,6 +47,7 @@ export default function MarketingShell({ children, wide = false }) {
     >
       <AuthLayoutHeader
         showMarketingNav
+        isAuthenticated={isAuthenticated}
         drawerOpen={drawerOpen}
         onToggleDrawer={() => setDrawerOpen((open) => !open)}
         onCloseDrawer={closeDrawer}

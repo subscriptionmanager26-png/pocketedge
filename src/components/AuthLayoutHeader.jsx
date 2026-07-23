@@ -6,6 +6,7 @@ import {
   insightsPath,
   learningPath,
   resourcesPath,
+  tabPath,
 } from '../lib/routes';
 
 export const MARKETING_NAV_ITEMS = [
@@ -20,6 +21,27 @@ function navItemActive(pathname, href) {
   return pathname === href;
 }
 
+function PrimaryCta({ isAuthenticated, loading, onGetStarted, onCloseDrawer, className }) {
+  if (isAuthenticated) {
+    return (
+      <Link to={tabPath('feed')} onClick={onCloseDrawer} className={className}>
+        Go to Home
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onGetStarted}
+      disabled={loading}
+      className={`${className} disabled:opacity-60`}
+    >
+      {loading ? 'Redirecting…' : 'Get Started'}
+    </button>
+  );
+}
+
 export default function AuthLayoutHeader({
   badge,
   drawerOpen,
@@ -28,8 +50,13 @@ export default function AuthLayoutHeader({
   onGetStarted,
   loading = false,
   showMarketingNav = false,
+  isAuthenticated = false,
 }) {
   const location = useLocation();
+  const ctaClass =
+    'rounded-md bg-pe-accent px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
+  const drawerCtaClass =
+    'mt-2 rounded-md bg-pe-accent px-3 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
 
   return (
     <>
@@ -56,14 +83,13 @@ export default function AuthLayoutHeader({
                     </Link>
                   );
                 })}
-                <button
-                  type="button"
-                  onClick={onGetStarted}
-                  disabled={loading}
-                  className="rounded-md bg-pe-accent px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-60"
-                >
-                  {loading ? 'Redirecting…' : 'Get Started'}
-                </button>
+                <PrimaryCta
+                  isAuthenticated={isAuthenticated}
+                  loading={loading}
+                  onGetStarted={onGetStarted}
+                  onCloseDrawer={onCloseDrawer}
+                  className={ctaClass}
+                />
               </nav>
 
               <button
@@ -129,14 +155,13 @@ export default function AuthLayoutHeader({
                   </Link>
                 );
               })}
-              <button
-                type="button"
-                onClick={onGetStarted}
-                disabled={loading}
-                className="mt-2 rounded-md bg-pe-accent px-3 py-3.5 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-60"
-              >
-                {loading ? 'Redirecting…' : 'Get Started'}
-              </button>
+              <PrimaryCta
+                isAuthenticated={isAuthenticated}
+                loading={loading}
+                onGetStarted={onGetStarted}
+                onCloseDrawer={onCloseDrawer}
+                className={drawerCtaClass}
+              />
             </nav>
           </aside>
         </>

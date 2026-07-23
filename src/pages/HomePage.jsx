@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import AuthLayoutHeader from '../components/AuthLayoutHeader';
+import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
+import { tabPath } from '../lib/routes';
 import { signInWithGoogle } from '../lib/supabase';
 import { useLandingViewport } from './useLandingViewport';
 
@@ -152,22 +155,24 @@ function MobileVisuals() {
   );
 }
 
-function CtaBlock({ compact = false, loading, error, onGetStarted }) {
+function CtaBlock({ compact = false, loading, error, onGetStarted, isAuthenticated }) {
+  const className = `inline-flex items-center justify-center gap-2 rounded-md bg-pe-accent font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-60 ${
+    compact ? 'w-full py-3 text-[15px]' : 'w-full py-3 text-[15px] lg:w-auto lg:px-8'
+  }`;
+
   return (
     <div className={compact ? '' : 'text-center lg:text-left'}>
-      <button
-        type="button"
-        onClick={onGetStarted}
-        disabled={loading}
-        className={`inline-flex items-center justify-center gap-2 rounded-md bg-pe-accent font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-60 ${
-          compact
-            ? 'w-full py-3 text-[15px]'
-            : 'w-full py-3 text-[15px] lg:w-auto lg:px-8'
-        }`}
-      >
-        <span>{loading ? 'Redirecting to Google…' : 'Get Started'}</span>
-        {!loading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
-      </button>
+      {isAuthenticated ? (
+        <Link to={tabPath('feed')} className={className}>
+          <span>Go to Home</span>
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      ) : (
+        <button type="button" onClick={onGetStarted} disabled={loading} className={className}>
+          <span>{loading ? 'Redirecting to Google…' : 'Get Started'}</span>
+          {!loading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+        </button>
+      )}
       {error ? <p className="mt-2 text-sm text-pe-negative">{error}</p> : null}
     </div>
   );
@@ -175,6 +180,7 @@ function CtaBlock({ compact = false, loading, error, onGetStarted }) {
 
 export default function HomePage() {
   const landingRef = useRef(null);
+  const isAuthenticated = useIsAuthenticated();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -217,6 +223,7 @@ export default function HomePage() {
     >
       <AuthLayoutHeader
         showMarketingNav
+        isAuthenticated={isAuthenticated}
         drawerOpen={drawerOpen}
         onToggleDrawer={() => setDrawerOpen((open) => !open)}
         onCloseDrawer={closeDrawer}
@@ -238,7 +245,13 @@ export default function HomePage() {
 
         <footer className="pe-landing-cta-dock shrink-0 border-t border-pe-border bg-pe-canvas px-4 pt-3">
           <div className="mx-auto max-w-feed">
-            <CtaBlock compact loading={loading} error={error} onGetStarted={handleGetStarted} />
+            <CtaBlock
+              compact
+              loading={loading}
+              error={error}
+              onGetStarted={handleGetStarted}
+              isAuthenticated={isAuthenticated}
+            />
           </div>
         </footer>
       </div>
@@ -250,7 +263,12 @@ export default function HomePage() {
             <Headline />
             <FeatureList row />
             <div className="mt-10">
-              <CtaBlock loading={loading} error={error} onGetStarted={handleGetStarted} />
+              <CtaBlock
+                loading={loading}
+                error={error}
+                onGetStarted={handleGetStarted}
+                isAuthenticated={isAuthenticated}
+              />
             </div>
           </div>
 
