@@ -1,7 +1,24 @@
 import { Menu, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import LogoMark from './LogoMark';
+import {
+  disclosuresPath,
+  insightsPath,
+  learningPath,
+  resourcesPath,
+} from '../lib/routes';
 
-const NAV_ITEMS = ['Portfolios', 'Community', 'About'];
+export const MARKETING_NAV_ITEMS = [
+  { label: 'Insights', href: insightsPath() },
+  { label: 'Learning', href: learningPath() },
+  { label: 'Disclosures', href: disclosuresPath() },
+  { label: 'Resources', href: resourcesPath() },
+];
+
+function navItemActive(pathname, href) {
+  if (href === '/disclosures') return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
+  return pathname === href;
+}
 
 export default function AuthLayoutHeader({
   badge,
@@ -12,24 +29,33 @@ export default function AuthLayoutHeader({
   loading = false,
   showMarketingNav = false,
 }) {
+  const location = useLocation();
+
   return (
     <>
       <header className="pe-landing-nav sticky top-0 z-40 shrink-0 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-feed items-center justify-between gap-3 px-4 md:h-[72px] lg:max-w-6xl lg:px-8">
-          <LogoMark size="sm" showWordmark className="min-w-0 shrink-0" />
+          <Link to="/" className="min-w-0 shrink-0" onClick={onCloseDrawer} aria-label="PocketEdge home">
+            <LogoMark size="sm" showWordmark />
+          </Link>
 
           {showMarketingNav ? (
             <>
               <nav className="hidden items-center gap-8 lg:flex" aria-label="Main navigation">
-                {NAV_ITEMS.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className="text-[15px] font-medium text-pe-text-secondary transition hover:text-pe-accent"
-                  >
-                    {item}
-                  </button>
-                ))}
+                {MARKETING_NAV_ITEMS.map((item) => {
+                  const active = navItemActive(location.pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={`text-[15px] font-medium transition hover:text-pe-accent ${
+                        active ? 'text-pe-accent' : 'text-pe-text-secondary'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
                 <button
                   type="button"
                   onClick={onGetStarted}
@@ -88,16 +114,21 @@ export default function AuthLayoutHeader({
               </button>
             </div>
             <nav className="flex flex-col gap-1 p-3">
-              {NAV_ITEMS.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={onCloseDrawer}
-                  className="rounded-lg px-3 py-3.5 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface"
-                >
-                  {item}
-                </button>
-              ))}
+              {MARKETING_NAV_ITEMS.map((item) => {
+                const active = navItemActive(location.pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={onCloseDrawer}
+                    className={`rounded-lg px-3 py-3.5 text-left text-[15px] font-medium transition hover:bg-pe-surface ${
+                      active ? 'bg-pe-surface text-pe-accent' : 'text-pe-text'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
               <button
                 type="button"
                 onClick={onGetStarted}

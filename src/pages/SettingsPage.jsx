@@ -1,10 +1,20 @@
 import { ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { disclosuresPath } from '../lib/routes';
 
 const ROWS = [
   { id: 'notifications', label: 'Notifications' },
   { id: 'accounts', label: 'Connected accounts' },
-  { id: 'disclosure', label: 'Disclosure policy' },
-  { id: 'legal', label: 'Terms & privacy' },
+  {
+    id: 'disclosure',
+    label: 'Disclosure policy',
+    href: disclosuresPath(),
+  },
+  {
+    id: 'legal',
+    label: 'Terms & privacy',
+    href: disclosuresPath('privacy'),
+  },
 ];
 
 export default function SettingsPage({ onLogout }) {
@@ -15,16 +25,27 @@ export default function SettingsPage({ onLogout }) {
       </div>
 
       <div className="divide-y divide-pe-border">
-        {ROWS.map((row) => (
-          <button
-            key={row.id}
-            type="button"
-            className="flex w-full items-center justify-between px-4 py-4 text-left text-[15px] text-pe-text hover:bg-pe-surface/80"
-          >
-            {row.label}
-            <ChevronRight className="h-4 w-4 text-pe-text-muted" />
-          </button>
-        ))}
+        {ROWS.map((row) =>
+          row.href ? (
+            <Link
+              key={row.id}
+              to={row.href}
+              className="flex w-full items-center justify-between px-4 py-4 text-left text-[15px] text-pe-text hover:bg-pe-surface/80"
+            >
+              {row.label}
+              <ChevronRight className="h-4 w-4 text-pe-text-muted" />
+            </Link>
+          ) : (
+            <button
+              key={row.id}
+              type="button"
+              className="flex w-full items-center justify-between px-4 py-4 text-left text-[15px] text-pe-text hover:bg-pe-surface/80"
+            >
+              {row.label}
+              <ChevronRight className="h-4 w-4 text-pe-text-muted" />
+            </button>
+          )
+        )}
       </div>
 
       <div className="border-t border-pe-border px-4 py-8">

@@ -65,7 +65,31 @@ export function tabPath(tab) {
   return `/${tab}`;
 }
 
+export function insightsPath() {
+  return '/insights';
+}
+
+export function learningPath() {
+  return '/learning';
+}
+
+export function resourcesPath() {
+  return '/resources';
+}
+
+export function disclosuresPath(section) {
+  const key = String(section ?? '')
+    .trim()
+    .toLowerCase();
+  if (key === 'privacy') return '/disclosures/privacy';
+  if (key === 'terms' || key === 'terms-and-conditions') return '/disclosures/terms';
+  if (key === 'terms-of-service' || key === 'tos') return '/disclosures/terms-of-service';
+  return '/disclosures';
+}
+
 const KNOWN_TABS = new Set(['feed', 'search', 'activity', 'portfolio', 'markets', 'settings']);
+const MARKETING_PAGES = new Set(['insights', 'learning', 'resources', 'disclosures']);
+const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
 export function parseAppPath(pathname) {
   const profileMatch = pathname.match(/^\/@([^/]+)(?:\/portfolio\/([^/]+))?\/?$/);
@@ -75,6 +99,21 @@ export function parseAppPath(pathname) {
       username: normalizeUsername(profileMatch[1]),
       portfolioId: profileMatch[2] ? decodeSegment(profileMatch[2]) : null,
     };
+  }
+
+  const disclosuresMatch = pathname.match(/^\/disclosures(?:\/([^/]+))?\/?$/);
+  if (disclosuresMatch) {
+    const section = disclosuresMatch[1] ? decodeSegment(disclosuresMatch[1]).toLowerCase() : null;
+    return {
+      kind: 'marketing',
+      page: 'disclosures',
+      section: section && DISCLOSURE_SECTIONS.has(section) ? section : null,
+    };
+  }
+
+  const marketingMatch = pathname.match(/^\/(insights|learning|resources)\/?$/);
+  if (marketingMatch && MARKETING_PAGES.has(marketingMatch[1])) {
+    return { kind: 'marketing', page: marketingMatch[1], section: null };
   }
 
   const stockMatch = pathname.match(/^\/stock\/([^/]+)\/?$/);

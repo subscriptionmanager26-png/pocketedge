@@ -97,7 +97,7 @@ export async function fetchStockExplanations(ticker, { limit = 90 } = {}) {
 
   const { data, error } = await stockNewsClient
     .from('mn_daily_stock_explanations')
-    .select('as_of_date, status, explanation, confidence, generated_at')
+    .select('as_of_date, status, explanation, confidence, generated_at, asset_type')
     .eq('ticker', symbol)
     .order('as_of_date', { ascending: false })
     .limit(limit);
@@ -110,6 +110,79 @@ export async function fetchStockExplanations(ticker, { limit = 90 } = {}) {
   return (data ?? [])
     .map(mapExplanationRow)
     .filter((item) => item.status !== 'failed' && item.summary.trim());
+}
+
+function mapExplanationFeedRow(row) {
+  const mapped = mapExplanationRow(row);
+  return {
+    ...mapped,
+    id: `${row.ticker}-${row.as_of_date}`,
+    ticker: normalizeTicker(row.ticker),
+    assetType: row.asset_type || 'stock',
+  };
+}
+
+/** Newest as_of_date available for an asset class (stock / index / commodity / economics). */
+export async function fetchLatestExplanationDate(assetType = 'stock') {
+  if (!stockNewsClient) return null;
+
+  let query = stockNewsClient
+    .from('mn_daily_stock_explanations')
+    .select('as_of_date')
+    .neq('status', 'failed')
+    .order('as_of_date', { ascending: false })
+    .limit(1);
+
+  if (assetType) {
+    query = query.eq('asset_type', assetType);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('fetchLatestExplanationDate failed', error);
+    return null;
+  }
+
+  return data?.[0]?.as_of_date ?? null;
+}
+
+/**
+ * Browse daily explanation summaries across tickers.
+ * assetType: stock | index | commodity | economics
+ */
+export async function fetchExplanationFeed({
+  assetType = 'stock',
+  asOfDate = null,
+  tickers = null,
+  limit = 80,
+} = {}) {
+  if (!stockNewsClient) return [];
+
+  let query = stockNewsClient
+    .from('mn_daily_stock_explanations')
+    .select('ticker, as_of_date, status, explanation, confidence, generated_at, asset_type')
+    .neq('status', 'failed')
+    .order('as_of_date', { ascending: false })
+    .limit(limit);
+
+  if (assetType) query = query.eq('asset_type', assetType);
+  if (asOfDate) query = query.eq('as_of_date', asOfDate);
+
+  const symbols = Array.isArray(tickers)
+    ? [...new Set(tickers.map(normalizeTicker).filter(Boolean))]
+    : [];
+  if (symbols.length === 1) query = query.eq('ticker', symbols[0]);
+  else if (symbols.length > 1) query = query.in('ticker', symbols);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('fetchExplanationFeed failed', error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map(mapExplanationFeedRow)
+    .filter((item) => item.summary.trim());
 }
 
 export async function fetchStockNewsForTickers(tickers, { limit = 50 } = {}) {

@@ -70,9 +70,21 @@ const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
+const LearningPage = lazy(() => import('./pages/marketing/LearningPage'));
+const ResourcesPage = lazy(() => import('./pages/marketing/ResourcesPage'));
+const DisclosuresPage = lazy(() => import('./pages/marketing/DisclosuresPage'));
 
 function RouteSuspense({ children }) {
   return <Suspense fallback={<RouteFallbackSkeleton />}>{children}</Suspense>;
+}
+
+function MarketingRoute({ page, section }) {
+  if (page === 'insights') return <InsightsPage />;
+  if (page === 'learning') return <LearningPage />;
+  if (page === 'resources') return <ResourcesPage />;
+  if (page === 'disclosures') return <DisclosuresPage section={section} />;
+  return <HomePage />;
 }
 
 function initialAuthState() {
@@ -819,12 +831,20 @@ export default function App() {
     );
   }
 
+  const parsedPath = parseAppPath(location.pathname);
+  if (parsedPath.kind === 'marketing') {
+    return (
+      <RouteSuspense>
+        <MarketingRoute page={parsedPath.page} section={parsedPath.section} />
+      </RouteSuspense>
+    );
+  }
+
   if (authView === 'landing') {
-    const parsed = parseAppPath(location.pathname);
-    if (parsed.kind === 'profile' && parsed.username) {
+    if (parsedPath.kind === 'profile' && parsedPath.username) {
       return (
         <RouteSuspense>
-          <PublicProfilePage username={parsed.username} />
+          <PublicProfilePage username={parsedPath.username} />
         </RouteSuspense>
       );
     }
