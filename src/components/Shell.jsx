@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Bell,
@@ -6,13 +7,16 @@ import {
   ChevronDown,
   Home,
   LineChart,
+  Menu,
   Pencil,
   Search,
   Settings,
   User,
   Wallet,
+  X,
 } from 'lucide-react';
 import Avatar from './Avatar';
+import { MARKETING_NAV_ITEMS } from './AuthLayoutHeader';
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
 import { getAppCurrentUser } from '../lib/socialIdentity';
@@ -32,12 +36,13 @@ const DESKTOP_TABS = [
   { id: 'activity', label: 'Activity', icon: Bell },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
   { id: 'markets', label: 'Markets', icon: LineChart },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'menu', label: 'Menu', icon: Menu },
 ];
 
-/** Activity is top-right on mobile — not in the bottom nav. */
-const MOBILE_TABS = DESKTOP_TABS.filter((t) => t.id !== 'settings' && t.id !== 'activity')
-  .concat([{ id: 'profile', label: 'Profile', icon: User }]);
+/** Activity + Menu live in the top header on mobile — not in the bottom nav. */
+const MOBILE_TABS = DESKTOP_TABS.filter((t) => t.id !== 'menu' && t.id !== 'activity').concat([
+  { id: 'profile', label: 'Profile', icon: User },
+]);
 
 const FEED_OPTIONS = [
   { id: 'forYou', label: 'For You' },
@@ -78,8 +83,10 @@ export default function Shell({
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
+  const [appMenuOpen, setAppMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
   const desktopMenuRef = useRef(null);
+  const desktopAppMenuRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
   const routeKeyRef = useRef(routeKey);
@@ -116,7 +123,7 @@ export default function Shell({
   }, []);
 
   useEffect(() => {
-    if (!mobileMenuOpen && !desktopMenuOpen) return undefined;
+    if (!mobileMenuOpen && !desktopMenuOpen && !appMenuOpen) return undefined;
 
     const onPointerDown = (event) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
@@ -125,12 +132,22 @@ export default function Shell({
       if (desktopMenuRef.current && !desktopMenuRef.current.contains(event.target)) {
         setDesktopMenuOpen(false);
       }
+      // Desktop Menu popover only — mobile drawer uses its own overlay.
+      if (
+        appMenuOpen &&
+        desktopAppMenuRef.current &&
+        !desktopAppMenuRef.current.contains(event.target) &&
+        window.matchMedia('(min-width: 768px)').matches
+      ) {
+        setAppMenuOpen(false);
+      }
     };
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
         setMobileMenuOpen(false);
         setDesktopMenuOpen(false);
+        setAppMenuOpen(false);
       }
     };
 
@@ -140,11 +157,22 @@ export default function Shell({
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [mobileMenuOpen, desktopMenuOpen]);
+  }, [mobileMenuOpen, desktopMenuOpen, appMenuOpen]);
+
+  useEffect(() => {
+    if (!appMenuOpen) return undefined;
+    if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [appMenuOpen]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
     setDesktopMenuOpen(false);
+    setAppMenuOpen(false);
   }, [tab]);
 
   useLayoutEffect(() => {
@@ -204,11 +232,18 @@ export default function Shell({
   const goTab = (id) => {
     prefetchTab(id);
     if (id === 'profile') onProfile?.();
+    else if (id === 'menu') setAppMenuOpen((open) => !open);
     else if (id === 'settings') onSettings?.();
     else onTabChange(id);
   };
 
+  const openSettingsFromMenu = () => {
+    setAppMenuOpen(false);
+    onSettings?.();
+  };
+
   const currentUser = getAppCurrentUser();
+  const menuActive = appMenuOpen || tab === 'settings';
 
   return (
     <div className="min-h-dvh bg-pe-canvas text-pe-text md:flex md:h-dvh md:overflow-hidden">
@@ -226,7 +261,43 @@ export default function Shell({
 
         <nav className="flex flex-1 flex-col gap-2 p-2">
           {DESKTOP_TABS.map(({ id, label, icon: Icon }) => {
-            const active = tab === id;
+            const active = id === 'menu' ? menuActive : tab === id;
+            if (id === 'menu') {
+              return (
+                <div key={id} className="flex flex-col gap-1" ref={desktopAppMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => goTab(id)}
+                    className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
+                      active
+                        ? 'font-semibold text-pe-accent'
+                        : 'font-medium text-pe-text-secondary'
+                    }`}
+                    aria-haspopup="menu"
+                    aria-expanded={appMenuOpen}
+                    aria-controls="shell-desktop-app-menu"
+                  >
+                    <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
+                      <Icon className="h-6 w-6" strokeWidth={2} />
+                    </span>
+                    <span className="flex-1 pr-2">{label}</span>
+                  </button>
+                  {appMenuOpen ? (
+                    <div
+                      id="shell-desktop-app-menu"
+                      role="menu"
+                      className="mb-1 ml-3 flex flex-col gap-0.5 border-l border-pe-border pl-2"
+                    >
+                      <AppMenuLinks
+                        compact
+                        onNavigate={() => setAppMenuOpen(false)}
+                        onSettings={openSettingsFromMenu}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            }
             return (
               <button
                 key={id}
@@ -242,10 +313,7 @@ export default function Shell({
               >
                 <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
                   <span className="relative">
-                    <Icon
-                      className="h-6 w-6"
-                      strokeWidth={2}
-                    />
+                    <Icon className="h-6 w-6" strokeWidth={2} />
                     {id === 'activity' && activityUnread > 0 && (
                       <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
                         {activityUnread > 9 ? '9+' : activityUnread}
@@ -355,38 +423,38 @@ export default function Shell({
 
                   <div className="flex items-center gap-2">
                     {mobileActions ?? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => goTab('activity')}
-                          className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
-                          aria-label={
-                            activityUnread > 0
-                              ? `${activityUnread} unread activity items`
-                              : 'Activity'
-                          }
-                        >
-                          <Bell className="h-5 w-5" />
-                          {activityUnread > 0 && (
-                            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
-                              {activityUnread > 9 ? '9+' : activityUnread}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={onSettings}
-                          className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-pe-surface ${
-                            tab === 'settings'
-                              ? 'text-pe-accent'
-                              : 'text-pe-text-secondary hover:text-pe-text'
-                          }`}
-                          aria-label="Settings"
-                        >
-                          <Settings className="h-5 w-5" />
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={() => goTab('activity')}
+                        className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
+                        aria-label={
+                          activityUnread > 0
+                            ? `${activityUnread} unread activity items`
+                            : 'Activity'
+                        }
+                      >
+                        <Bell className="h-5 w-5" />
+                        {activityUnread > 0 && (
+                          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
+                            {activityUnread > 9 ? '9+' : activityUnread}
+                          </span>
+                        )}
+                      </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setAppMenuOpen((open) => !open)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-pe-surface ${
+                        menuActive
+                          ? 'text-pe-accent'
+                          : 'text-pe-text-secondary hover:text-pe-text'
+                      }`}
+                      aria-label={appMenuOpen ? 'Close menu' : 'Open menu'}
+                      aria-expanded={appMenuOpen}
+                      aria-controls="shell-app-menu-drawer"
+                    >
+                      {appMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
               </header>
@@ -465,7 +533,74 @@ export default function Shell({
           })}
         </div>
       </nav>
+
+      {/* Mobile app menu drawer — marketing pages + Settings */}
+      <button
+        type="button"
+        className={`fixed inset-0 z-50 bg-black/40 transition md:hidden ${
+          appMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
+        }`}
+        aria-hidden={!appMenuOpen}
+        aria-label="Close menu"
+        onClick={() => setAppMenuOpen(false)}
+      />
+      <aside
+        id="shell-app-menu-drawer"
+        className={`fixed right-0 top-0 z-[60] flex h-full w-[min(300px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 md:hidden ${
+          appMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!appMenuOpen}
+      >
+        <div className="flex items-center justify-between border-b border-pe-border px-4 py-4">
+          <span className="text-[15px] font-semibold text-pe-text">Menu</span>
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-pe-surface"
+            aria-label="Close menu"
+            onClick={() => setAppMenuOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <nav className="flex flex-col gap-1 p-3" aria-label="App menu">
+          <AppMenuLinks
+            onNavigate={() => setAppMenuOpen(false)}
+            onSettings={openSettingsFromMenu}
+          />
+        </nav>
+      </aside>
     </div>
+  );
+}
+
+function AppMenuLinks({ onNavigate, onSettings, compact = false }) {
+  const itemClass = compact
+    ? 'flex w-full items-center rounded-md px-2.5 py-2 text-left text-[14px] font-medium text-pe-text transition hover:bg-pe-surface'
+    : 'flex w-full items-center rounded-lg px-3 py-3.5 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface';
+
+  return (
+    <>
+      {MARKETING_NAV_ITEMS.map((item) => (
+        <Link
+          key={item.href}
+          to={item.href}
+          role="menuitem"
+          onClick={onNavigate}
+          className={itemClass}
+        >
+          {item.label}
+        </Link>
+      ))}
+      <button
+        type="button"
+        role="menuitem"
+        onClick={onSettings}
+        className={`${itemClass} gap-2`}
+      >
+        <Settings className="h-4 w-4 shrink-0 text-pe-text-muted" />
+        Settings
+      </button>
+    </>
   );
 }
 
