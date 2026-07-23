@@ -1,11 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  LOGO_VARIANT_LIST,
-  detectLogoBackdropTone,
-  logoBackdropClass,
-  toCachedAssetLogoPath,
-  withLogoVariant,
-} from '../lib/assetLogo';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { detectLogoBackdropTone, logoBackdropClass } from '../lib/assetLogo';
 
 const PALETTE = [
   'bg-[#fff0e8] text-[#c2410c]',
@@ -15,18 +9,11 @@ const PALETTE = [
   'bg-[#fef3c7] text-[#b45309]',
 ];
 
-/** AMC profiles store asset logos as avatar_url — rewrite to same-origin for backdrop sampling. */
-function resolveAvatarSrc(url) {
-  const raw = typeof url === 'string' ? url.trim() : '';
-  if (!raw) return null;
-  const isAssetLogo =
-    raw.includes('/asset-logos/') ||
-    raw.includes('/storage/v1/object/public/asset-logos/');
-  if (!isAssetLogo) return raw;
+function isAssetLogoUrl(url) {
+  const raw = typeof url === 'string' ? url : '';
   return (
-    toCachedAssetLogoPath(withLogoVariant(raw, LOGO_VARIANT_LIST)) ||
-    toCachedAssetLogoPath(raw) ||
-    raw
+    raw.includes('/asset-logos/') ||
+    raw.includes('/storage/v1/object/public/asset-logos/')
   );
 }
 
@@ -40,21 +27,25 @@ export default function Avatar({ person, size = 'md', onClick, className = '' })
   };
   const idx = (person?.name?.charCodeAt(0) ?? 0) % PALETTE.length;
   const Tag = onClick ? 'button' : 'div';
-  const avatarUrl = person?.avatarUrl ?? person?.avatar_url ?? null;
-  const src = useMemo(() => resolveAvatarSrc(avatarUrl), [avatarUrl]);
+  const avatarUrl = String(person?.avatarUrl ?? person?.avatar_url ?? '').trim() || null;
   const imgRef = useRef(null);
   const [backdrop, setBackdrop] = useState('light');
+  const [failed, setFailed] = useState(false);
 
   useLayoutEffect(() => {
     setBackdrop('light');
+    setFailed(false);
     const img = imgRef.current;
-    if (!src || !img?.complete || !img.naturalWidth) return;
+    if (!avatarUrl || !img?.complete || !img.naturalWidth) return;
     setBackdrop(detectLogoBackdropTone(img));
-  }, [src]);
+  }, [avatarUrl]);
 
   const sharedClass = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${sizes[size]} ${onClick ? 'cursor-pointer transition hover:opacity-90' : ''} ${className}`;
 
-  if (src) {
+  // Keep the original avatar URL for display. For AMC asset-logo avatars, set
+  // crossOrigin so canvas backdrop sampling can detect white-on-transparent marks
+  // (Supabase Storage sends Access-Control-Allow-Origin: *).
+  if (avatarUrl && !failed) {
     return (
       <Tag
         type={onClick ? 'button' : undefined}
@@ -64,11 +55,17 @@ export default function Avatar({ person, size = 'md', onClick, className = '' })
       >
         <img
           ref={imgRef}
-          src={src}
+          src={avatarUrl}
           alt=""
+          crossOrigin={isAssetLogoUrl(avatarUrl) ? 'anonymous' : undefined}
           className="h-full w-full object-cover"
           onLoad={(event) => {
+            setFailed(false);
             setBackdrop(detectLogoBackdropTone(event.currentTarget));
+          }}
+          onError={() => {
+            setFailed(true);
+            setBackdrop('light');
           }}
         />
       </Tag>
