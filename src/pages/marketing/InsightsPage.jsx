@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ChevronDown, Filter, Loader2, Search, X } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
 import UnderlineTabs from '../../components/UnderlineTabs';
-import { useMarketQuotePolling } from '../../hooks/useMarketQuoteRefresh';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { formatPct } from '../../lib/format';
 import {
   fetchDistinctStockIndustries,
-  lookupMarketAssetsBatch,
   lookupStockIndustries,
 } from '../../lib/marketDataApi';
 import { normalizeNewsSummaryMarkdown } from '../../lib/normalizeNewsSummaryMarkdown';
@@ -17,13 +15,6 @@ import {
   fetchExplanationFeed,
   isStockNewsConfigured,
 } from '../../lib/stockNewsApi';
-import { ensureSupabase, isSupabaseConfigured } from '../../lib/supabase';
-
-const SCOPE_TO_ASSET_TYPE = {
-  stock: 'stock',
-  index: 'index',
-  commodity: 'commodity',
-};
 
 const SCOPE_TABS = [
   { id: 'stock', label: 'Stocks' },
@@ -504,7 +495,7 @@ export default function InsightsPage() {
   const [industries, setIndustries] = useState([]);
   const [industryBySymbol, setIndustryBySymbol] = useState(() => new Map());
   const [query, setQuery] = useState('');
-  const [marketBySymbol, setMarketBySymbol] = useState(() => new Map());
+  const [nameBySymbol, setNameBySymbol] = useState(() => new Map());
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -512,7 +503,7 @@ export default function InsightsPage() {
 
   const copy = SCOPE_COPY[scope] ?? SCOPE_COPY.stock;
 
-  // Soft name + changePct from static search file; live quotes overwrite changePct.
+  // Names only — move % comes from explanation price_context with the feed.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -526,29 +517,9 @@ export default function InsightsPage() {
             .trim()
             .toUpperCase();
           if (!symbol) continue;
-          map.set(symbol, {
-            name: item.name ?? symbol,
-            changePct: parseFiniteNumber(item.changePct),
-            price: parseFiniteNumber(item.price),
-          });
+          map.set(symbol, item.name ?? symbol);
         }
-        if (!cancelled) {
-          setMarketBySymbol((prev) => {
-            if (!prev.size) return map;
-            const next = new Map(map);
-            for (const [symbol, meta] of prev) {
-              const soft = next.get(symbol);
-              const livePct = parseFiniteNumber(meta.changePct);
-              next.set(symbol, {
-                name: meta.name || soft?.name || symbol,
-                // Prefer already-loaded live quotes over the static snapshot.
-                changePct: livePct ?? soft?.changePct ?? null,
-                price: parseFiniteNumber(meta.price) ?? soft?.price ?? null,
-              });
-            }
-            return next;
-          });
-        }
+        if (!cancelled) setNameBySymbol(map);
       } catch {
         /* ignore */
       }
@@ -568,62 +539,6 @@ export default function InsightsPage() {
       cancelled = true;
     };
   }, []);
-
-  const refreshLiveQuotes = useCallback(async () => {
-    if (scope === 'economics' || !feed.length) return;
-    if (isSupabaseConfigured()) await ensureSupabase();
-    const tickers = [...new Set(feed.map((row) => row.ticker).filter(Boolean))];
-    if (!tickers.length) return;
-
-    // Chunk to keep RPC payloads bounded when the feed is large.
-    const batch = new Map();
-    const chunkSize = 100;
-    for (let i = 0; i < tickers.length; i += chunkSize) {
-      const part = await lookupMarketAssetsBatch(tickers.slice(i, i + chunkSize));
-      for (const [key, item] of part) batch.set(key, item);
-    }
-
-    setMarketBySymbol((prev) => {
-      const next = new Map(prev);
-      for (const ticker of tickers) {
-        const item =
-          batch.get(ticker) ||
-          batch.get(String(ticker).toUpperCase()) ||
-          batch.get(String(ticker).toLowerCase());
-        if (!item) continue;
-        const changePct = parseFiniteNumber(item.changePct);
-        const prevMeta = next.get(ticker);
-        next.set(ticker, {
-          name: item.name || prevMeta?.name || ticker,
-          changePct: changePct ?? prevMeta?.changePct ?? null,
-          price: parseFiniteNumber(item.price) ?? prevMeta?.price ?? null,
-        });
-      }
-      return next;
-    });
-  }, [feed, scope]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        await refreshLiveQuotes();
-      } catch {
-        /* keep last known quotes */
-      }
-      if (cancelled) return;
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshLiveQuotes]);
-
-  useMarketQuotePolling({
-    assetType: SCOPE_TO_ASSET_TYPE[scope] ?? null,
-    enabled: configured && scope !== 'economics' && feed.length > 0,
-    onRefresh: refreshLiveQuotes,
-    deps: [feed, scope],
-  });
 
   useEffect(() => {
     setQuery('');
@@ -680,16 +595,19 @@ export default function InsightsPage() {
   const enrichedFeed = useMemo(() => {
     return feed
       .map((row) => {
-        const meta = marketBySymbol.get(row.ticker) || marketBySymbol.get(String(row.ticker).toUpperCase());
+        const name =
+          nameBySymbol.get(row.ticker) ||
+          nameBySymbol.get(String(row.ticker).toUpperCase()) ||
+          row.ticker;
         return {
           ...row,
-          name: meta?.name || row.ticker,
-          changePct: parseFiniteNumber(meta?.changePct),
+          name,
+          changePct: parseFiniteNumber(row.changePct),
           industry: industryBySymbol.get(row.ticker) || '',
         };
       })
       .filter((row) => extractInsightBullets(row.summary, 1).length > 0);
-  }, [feed, marketBySymbol, industryBySymbol]);
+  }, [feed, nameBySymbol, industryBySymbol]);
 
   const filteredFeed = useMemo(() => {
     const q = query.trim().toUpperCase();
