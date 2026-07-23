@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ClipboardCheck, Copy, Heart, Share2 } from 'lucide-react';
 import { CURRENT_USER, copyPortfolioForUser, getHandleForUserId } from '../data/mockData';
-import { formatCount, formatPct, pnlClass } from '../lib/format';
+import { formatCount, formatPct } from '../lib/format';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import AssetLogo from './AssetLogo';
 import CommentEngagementButton from './CommentEngagementButton';
@@ -57,7 +57,6 @@ function getTopHoldings(portfolio) {
 
 export default function PortfolioCard({
   portfolio,
-  returnPct = 0,
   social,
   canCopy = false,
   showUnreadComments = false,
@@ -124,21 +123,9 @@ export default function PortfolioCard({
   return (
     <article className="border-b border-pe-border px-4 py-5 transition hover:bg-pe-surface/40 md:py-6">
       <button type="button" onClick={() => onOpen?.(portfolio.id)} className="w-full text-left">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-xl font-bold text-pe-text">{portfolio.name}</h3>
-              <PortfolioKindMetaTags portfolio={portfolio} />
-            </div>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-              Unrealised gains
-            </p>
-            <p className={`mt-0.5 text-lg font-bold tabular-nums ${pnlClass(returnPct)}`}>
-              {formatPct(returnPct)}
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-xl font-bold text-pe-text">{portfolio.name}</h3>
+          <PortfolioKindMetaTags portfolio={portfolio} />
         </div>
       </button>
 

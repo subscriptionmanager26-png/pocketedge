@@ -567,7 +567,6 @@ function PortfoliosListPanel({
             <PortfolioCard
               key={portfolio.id}
               portfolio={portfolio}
-              returnPct={getPortfolioTotalReturnPct(portfolio)}
               social={getPortfolioEngagementSync(portfolio.id)}
               canCopy={!canEdit}
               showUnreadComments={canEdit}
