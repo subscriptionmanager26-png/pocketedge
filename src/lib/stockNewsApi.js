@@ -74,18 +74,17 @@ function parseFiniteNumber(value) {
 /**
  * Explanation rows store recent closes in price_context:
  * [{ date, close, changePct, previousClose }, ...]
- * Prefer the point matching as_of_date; otherwise the newest entry.
+ * Only the point matching as_of_date is used — never fall back to another day.
  */
 export function quoteFromPriceContext(priceContext, asOfDate = null) {
-  if (!Array.isArray(priceContext) || !priceContext.length) {
+  if (!Array.isArray(priceContext) || !priceContext.length || asOfDate == null) {
     return { changePct: null, price: null, previousClose: null };
   }
 
-  const match =
-    asOfDate != null
-      ? priceContext.find((point) => String(point?.date ?? '') === String(asOfDate))
-      : null;
-  const point = match || priceContext[0];
+  const point = priceContext.find((row) => String(row?.date ?? '') === String(asOfDate));
+  if (!point) {
+    return { changePct: null, price: null, previousClose: null };
+  }
 
   return {
     changePct: parseFiniteNumber(point?.changePct ?? point?.change_pct),
@@ -98,14 +97,17 @@ export function quoteFromPriceContext(priceContext, asOfDate = null) {
  * Map a daily explanation row into an accordion item.
  * Legacy: title = "What happened?", summary = "Why did it happen?".
  * New bullet format: title = date, summary = full explanation.
+ * Move % is only derived for stocks from price_context.
  */
 function mapExplanationRow(row) {
   const asOfDate = row.as_of_date;
+  const assetType = row.asset_type || 'stock';
   const raw = String(row.explanation ?? '').replace(/\r\n/g, '\n').trim();
   const what = sectionBody(raw, 'What happened');
   const why = sectionBody(raw, 'Why did it happen');
   const isLegacy = Boolean(what || why);
-  const { changePct, price } = quoteFromPriceContext(row.price_context, asOfDate);
+  const quote =
+    assetType === 'stock' ? quoteFromPriceContext(row.price_context, asOfDate) : null;
 
   return {
     id: asOfDate,
@@ -117,9 +119,17 @@ function mapExplanationRow(row) {
     summary: isLegacy ? why || raw : raw,
     confidence: row.confidence ?? null,
     status: row.status,
-    changePct,
-    price,
+    assetType,
+    changePct: quote?.changePct ?? null,
+    price: quote?.price ?? null,
   };
+}
+
+function keepExplanationItem(item) {
+  if (item.status === 'failed' || !item.summary.trim()) return false;
+  // Stock insights without an as-of price are stale / incomplete — never surface them.
+  if (item.assetType === 'stock' && !Number.isFinite(item.changePct)) return false;
+  return true;
 }
 
 /** Daily AI insights for a ticker, newest first, for the Insights tab. */
@@ -139,9 +149,7 @@ export async function fetchStockExplanations(ticker, { limit = 90 } = {}) {
     return [];
   }
 
-  return (data ?? [])
-    .map(mapExplanationRow)
-    .filter((item) => item.status !== 'failed' && item.summary.trim());
+  return (data ?? []).map(mapExplanationRow).filter(keepExplanationItem);
 }
 
 function mapExplanationFeedRow(row) {
@@ -150,7 +158,6 @@ function mapExplanationFeedRow(row) {
     ...mapped,
     id: `${row.ticker}-${row.as_of_date}`,
     ticker: normalizeTicker(row.ticker),
-    assetType: row.asset_type || 'stock',
   };
 }
 
@@ -181,6 +188,7 @@ export async function fetchLatestExplanationDate(assetType = 'stock') {
 /**
  * Browse daily explanation summaries across tickers.
  * assetType: stock | index | commodity | economics
+ * Price context is only selected for stocks — indices/commodities/economics have no move %.
  */
 export async function fetchExplanationFeed({
   assetType = 'stock',
@@ -190,11 +198,14 @@ export async function fetchExplanationFeed({
 } = {}) {
   if (!stockNewsClient) return [];
 
+  const wantsPrices = assetType === 'stock';
+  const columns = wantsPrices
+    ? 'ticker, as_of_date, status, explanation, confidence, generated_at, asset_type, price_context'
+    : 'ticker, as_of_date, status, explanation, confidence, generated_at, asset_type';
+
   let query = stockNewsClient
     .from('mn_daily_stock_explanations')
-    .select(
-      'ticker, as_of_date, status, explanation, confidence, generated_at, asset_type, price_context'
-    )
+    .select(columns)
     .neq('status', 'failed')
     .order('as_of_date', { ascending: false })
     .limit(limit);
@@ -214,9 +225,7 @@ export async function fetchExplanationFeed({
     return [];
   }
 
-  return (data ?? [])
-    .map(mapExplanationFeedRow)
-    .filter((item) => item.summary.trim());
+  return (data ?? []).map(mapExplanationFeedRow).filter(keepExplanationItem);
 }
 
 export async function fetchStockNewsForTickers(tickers, { limit = 50 } = {}) {

@@ -466,7 +466,7 @@ function InsightCard({ row, scope }) {
             {row.industry ? ` · ${row.industry}` : ''}
           </p>
         </div>
-        {Number.isFinite(row.changePct) ? (
+        {scope === 'stock' && Number.isFinite(row.changePct) ? (
           <span className={`shrink-0 text-sm font-semibold tabular-nums ${pnlClass(row.changePct)}`}>
             {formatPct(row.changePct)}
           </span>
@@ -602,12 +602,14 @@ export default function InsightsPage() {
         return {
           ...row,
           name,
-          changePct: parseFiniteNumber(row.changePct),
+          // Move % only applies to equities; indices/commodities/economy never show it.
+          changePct: scope === 'stock' ? parseFiniteNumber(row.changePct) : null,
           industry: industryBySymbol.get(row.ticker) || '',
         };
       })
-      .filter((row) => extractInsightBullets(row.summary, 1).length > 0);
-  }, [feed, nameBySymbol, industryBySymbol]);
+      .filter((row) => extractInsightBullets(row.summary, 1).length > 0)
+      .filter((row) => (scope === 'stock' ? Number.isFinite(row.changePct) : true));
+  }, [feed, nameBySymbol, industryBySymbol, scope]);
 
   const filteredFeed = useMemo(() => {
     const q = query.trim().toUpperCase();
@@ -764,7 +766,7 @@ export default function InsightsPage() {
                       <span className="block text-sm font-semibold text-pe-text">{hit.ticker}</span>
                       <span className="block truncate text-xs text-pe-text-muted">{hit.name}</span>
                     </span>
-                    {Number.isFinite(hit.changePct) ? (
+                    {scope === 'stock' && Number.isFinite(hit.changePct) ? (
                       <span className={`shrink-0 text-sm font-semibold tabular-nums ${pnlClass(hit.changePct)}`}>
                         {formatPct(hit.changePct)}
                       </span>
