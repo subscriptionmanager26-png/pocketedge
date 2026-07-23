@@ -905,3 +905,48 @@ export async function withDerivedDayChange(item, assetType = 'fund') {
 export async function fetchMarketTab(tab) {
   return fetchMarketPreview(tab);
 }
+
+/** Distinct Screener industries for stock filters (public RPC; works logged-out). */
+export async function fetchDistinctStockIndustries() {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const client = await ensureSupabase();
+    if (!client) return [];
+    const { data, error } = await client.rpc('list_distinct_stock_industries');
+    if (error) {
+      console.warn('list_distinct_stock_industries failed', error);
+      return [];
+    }
+    return (data ?? [])
+      .map((row) => String(row.industry ?? '').trim())
+      .filter(Boolean);
+  } catch (err) {
+    console.warn('fetchDistinctStockIndustries failed', err);
+    return [];
+  }
+}
+
+/** Map ticker → Screener industry for the given symbols. */
+export async function lookupStockIndustries(tickers) {
+  const keys = [...new Set((tickers ?? []).map((t) => String(t ?? '').trim().toUpperCase()).filter(Boolean))];
+  if (!keys.length || !isSupabaseConfigured()) return new Map();
+  try {
+    const client = await ensureSupabase();
+    if (!client) return new Map();
+    const { data, error } = await client.rpc('lookup_stock_industries', { p_keys: keys });
+    if (error) {
+      console.warn('lookup_stock_industries failed', error);
+      return new Map();
+    }
+    const map = new Map();
+    for (const row of data ?? []) {
+      const key = String(row.asset_key ?? '').trim().toUpperCase();
+      const industry = String(row.industry ?? '').trim();
+      if (key && industry) map.set(key, industry);
+    }
+    return map;
+  } catch (err) {
+    console.warn('lookupStockIndustries failed', err);
+    return new Map();
+  }
+}
