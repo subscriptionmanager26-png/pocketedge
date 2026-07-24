@@ -73,6 +73,14 @@ export function learningPath() {
   return '/learning';
 }
 
+/** Company Brief under Learning → Resources, e.g. /learning/TIPSFILMS */
+export function learningBriefPath(symbol) {
+  const ticker = String(symbol ?? '')
+    .trim()
+    .toUpperCase();
+  return ticker ? `/learning/${encodeSegment(ticker)}` : learningPath();
+}
+
 export function resourcesPath(tool) {
   const key = String(tool ?? '')
     .trim()
@@ -127,6 +135,16 @@ export function parseAppPath(pathname) {
       kind: 'marketing',
       page: 'resources',
       section: resourcesToolMatch[1],
+    };
+  }
+
+  const learningBriefMatch = pathname.match(/^\/learning\/([^/]+)\/?$/);
+  if (learningBriefMatch) {
+    return {
+      kind: 'marketing',
+      page: 'learning',
+      section: 'brief',
+      symbol: decodeSegment(learningBriefMatch[1]).toUpperCase(),
     };
   }
 

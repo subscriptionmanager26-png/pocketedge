@@ -19,6 +19,7 @@ export const MARKETING_NAV_ITEMS = [
 function navItemActive(pathname, href) {
   if (href === '/disclosures') return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
   if (href === '/resources') return pathname === '/resources' || pathname.startsWith('/resources/');
+  if (href === '/learning') return pathname === '/learning' || pathname.startsWith('/learning/');
   return pathname === href;
 }
 
@@ -61,7 +62,7 @@ export default function AuthLayoutHeader({
 
   return (
     <>
-      <header className="pe-landing-nav sticky top-0 z-40 shrink-0 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md">
+      <header className="pe-landing-nav sticky top-0 z-40 shrink-0 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 max-w-feed items-center justify-between gap-3 px-4 md:h-[72px] lg:max-w-6xl lg:px-8">
           <Link to="/" className="min-w-0 shrink-0" onClick={onCloseDrawer} aria-label="PocketEdge home">
             <LogoMark size="sm" showWordmark />
@@ -114,7 +115,7 @@ export default function AuthLayoutHeader({
         <>
           <button
             type="button"
-            className={`fixed inset-0 z-50 bg-black/40 transition lg:hidden ${
+            className={`fixed inset-0 z-50 bg-black/40 transition lg:hidden print:hidden ${
               drawerOpen ? 'visible opacity-100' : 'invisible opacity-0'
             }`}
             aria-hidden={!drawerOpen}
@@ -124,7 +125,7 @@ export default function AuthLayoutHeader({
 
           <aside
             id="auth-layout-drawer"
-            className={`fixed right-0 top-0 z-[60] flex h-full w-[min(300px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 lg:hidden ${
+            className={`fixed right-0 top-0 z-[60] flex h-full w-[min(300px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 lg:hidden print:hidden ${
               drawerOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
             aria-hidden={!drawerOpen}

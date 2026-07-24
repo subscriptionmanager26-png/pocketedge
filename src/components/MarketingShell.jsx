@@ -56,7 +56,7 @@ export default function MarketingShell({ children, wide = false }) {
       />
 
       <main
-        className={`mx-auto w-full flex-1 px-4 py-8 md:px-8 md:py-10 ${
+        className={`mx-auto w-full flex-1 px-4 py-8 md:px-8 md:py-10 print:max-w-none print:px-0 print:py-0 ${
           wide ? 'max-w-6xl' : 'max-w-3xl'
         }`}
       >

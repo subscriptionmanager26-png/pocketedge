@@ -80,9 +80,14 @@ export default function ResourcesPage() {
       </div>
 
       <p className="mt-8 text-sm text-pe-text-muted">
-        Looking for daily explainers instead?{' '}
+        Looking for company explainers?{' '}
+        <Link to="/learning" className="font-semibold text-pe-accent hover:underline">
+          Open Learning
+        </Link>
+        {' · '}
+        daily move digests on{' '}
         <Link to="/insights" className="font-semibold text-pe-accent hover:underline">
-          Open Insights
+          Insights
         </Link>
         .
       </p>

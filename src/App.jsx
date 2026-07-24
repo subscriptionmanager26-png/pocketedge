@@ -72,6 +72,7 @@ const SearchPage = lazy(() => import('./pages/SearchPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
 const LearningPage = lazy(() => import('./pages/marketing/LearningPage'));
+const CompanyBriefPage = lazy(() => import('./pages/marketing/CompanyBriefPage'));
 const ResourcesPage = lazy(() => import('./pages/marketing/ResourcesPage'));
 const MfScreenerPage = lazy(() => import('./pages/marketing/MfScreenerPage'));
 const EtfInavPage = lazy(() => import('./pages/marketing/EtfInavPage'));
@@ -82,8 +83,9 @@ function RouteSuspense({ children }) {
   return <Suspense fallback={<RouteFallbackSkeleton />}>{children}</Suspense>;
 }
 
-function MarketingRoute({ page, section }) {
+function MarketingRoute({ page, section, symbol }) {
   if (page === 'insights') return <InsightsPage />;
+  if (page === 'learning' && section === 'brief') return <CompanyBriefPage symbol={symbol} />;
   if (page === 'learning') return <LearningPage />;
   if (page === 'resources' && section === 'mf-screener') return <MfScreenerPage />;
   if (page === 'resources' && section === 'etf-inav') return <EtfInavPage />;
@@ -841,7 +843,11 @@ export default function App() {
   if (parsedPath.kind === 'marketing') {
     return (
       <RouteSuspense>
-        <MarketingRoute page={parsedPath.page} section={parsedPath.section} />
+        <MarketingRoute
+          page={parsedPath.page}
+          section={parsedPath.section}
+          symbol={parsedPath.symbol}
+        />
       </RouteSuspense>
     );
   }
