@@ -81,6 +81,9 @@ export function resourcesPath(tool) {
   if (key === 'etf-inav' || key === 'etf-inav-tracker' || key === 'inav') {
     return '/resources/etf-inav';
   }
+  if (key === 'sgb' || key === 'sgb-tracker' || key === 'gold-sgb') {
+    return '/resources/sgb';
+  }
   return '/resources';
 }
 
@@ -118,7 +121,7 @@ export function parseAppPath(pathname) {
     };
   }
 
-  const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener|etf-inav)\/?$/);
+  const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener|etf-inav|sgb)\/?$/);
   if (resourcesToolMatch) {
     return {
       kind: 'marketing',

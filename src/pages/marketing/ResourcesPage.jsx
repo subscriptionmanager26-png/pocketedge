@@ -13,9 +13,10 @@ const TOOLS = [
   },
   {
     title: 'SGB tracker',
-    body: 'Follow Sovereign Gold Bond series prices, coupons, and maturity windows.',
+    body: 'Live Sovereign Gold Bond series prices, coupons, and maturity years.',
     icon: Coins,
-    status: 'Coming soon',
+    href: resourcesPath('sgb'),
+    status: 'Open',
   },
   {
     title: 'MF screener',

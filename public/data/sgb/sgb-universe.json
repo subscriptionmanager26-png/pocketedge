@@ -1,0 +1,189 @@
+{
+  "generatedAt": "2026-07-24T06:26:16.735Z",
+  "source": "data/sgb-isin-mapping.csv",
+  "counts": {
+    "items": 45
+  },
+  "items": [
+    {
+      "symbol": "SGBDE31III",
+      "isin": "IN0020230168"
+    },
+    {
+      "symbol": "SGBFEB32IV",
+      "isin": "IN0020230184"
+    },
+    {
+      "symbol": "SGBSEP31II",
+      "isin": "IN0020230093"
+    },
+    {
+      "symbol": "SGBAUG28V",
+      "isin": "IN0020200161"
+    },
+    {
+      "symbol": "SGBJUN31I",
+      "isin": "IN0020230069"
+    },
+    {
+      "symbol": "SGBJAN29IX",
+      "isin": "IN0020200377"
+    },
+    {
+      "symbol": "SGBJUL27",
+      "isin": "IN0020190081"
+    },
+    {
+      "symbol": "SGBJUL28IV",
+      "isin": "IN0020200146"
+    },
+    {
+      "symbol": "SGBSEP28VI",
+      "isin": "IN0020200195"
+    },
+    {
+      "symbol": "SGBMR29XII",
+      "isin": "IN0020200427"
+    },
+    {
+      "symbol": "SGBDE30III",
+      "isin": "IN0020220110"
+    },
+    {
+      "symbol": "SGBN28VIII",
+      "isin": "IN0020200286"
+    },
+    {
+      "symbol": "SGBAUG30",
+      "isin": "IN0020220078"
+    },
+    {
+      "symbol": "SGBMAR31IV",
+      "isin": "IN0020220169"
+    },
+    {
+      "symbol": "SGBAPR28I",
+      "isin": "IN0020200062"
+    },
+    {
+      "symbol": "SGBNV29VII",
+      "isin": "IN0020210178"
+    },
+    {
+      "symbol": "SGBMAR28X",
+      "isin": "IN0020190552"
+    },
+    {
+      "symbol": "SGBSEP29VI",
+      "isin": "IN0020210145"
+    },
+    {
+      "symbol": "SGBMAY29I",
+      "isin": "IN0020210053"
+    },
+    {
+      "symbol": "SGBJUN29II",
+      "isin": "IN0020210061"
+    },
+    {
+      "symbol": "SGBAUG29V",
+      "isin": "IN0020210129"
+    },
+    {
+      "symbol": "SGBFEB29XI",
+      "isin": "IN0020200393"
+    },
+    {
+      "symbol": "SGBJU29III",
+      "isin": "IN0020210087"
+    },
+    {
+      "symbol": "SGBMAR30X",
+      "isin": "IN0020210319"
+    },
+    {
+      "symbol": "SGBD29VIII",
+      "isin": "IN0020210228"
+    },
+    {
+      "symbol": "SGBJAN27",
+      "isin": "IN0020180462"
+    },
+    {
+      "symbol": "SGBJAN29X",
+      "isin": "IN0020200385"
+    },
+    {
+      "symbol": "SGBJAN30IX",
+      "isin": "IN0020210236"
+    },
+    {
+      "symbol": "SGBDC27VII",
+      "isin": "IN0020190461"
+    },
+    {
+      "symbol": "SGBAUG27",
+      "isin": "IN0020190107"
+    },
+    {
+      "symbol": "SGBJUN30",
+      "isin": "IN0020220045"
+    },
+    {
+      "symbol": "SGBOC28VII",
+      "isin": "IN0020200203"
+    },
+    {
+      "symbol": "SGBSEP27",
+      "isin": "IN0020190115"
+    },
+    {
+      "symbol": "SGBJUL29IV",
+      "isin": "IN0020210111"
+    },
+    {
+      "symbol": "SGBJUN28",
+      "isin": "IN0020200104"
+    },
+    {
+      "symbol": "SGBDEC26",
+      "isin": "IN0020180389"
+    },
+    {
+      "symbol": "SGBOCT27VI",
+      "isin": "IN0020190388"
+    },
+    {
+      "symbol": "SGBOCT27",
+      "isin": "IN0020190370"
+    },
+    {
+      "symbol": "SGBMAY28",
+      "isin": "IN0020200088"
+    },
+    {
+      "symbol": "SGBFEB28IX",
+      "isin": "IN0020190545"
+    },
+    {
+      "symbol": "SGBNOV26",
+      "isin": "IN0020180314"
+    },
+    {
+      "symbol": "SGBFEB27",
+      "isin": "IN0020180561"
+    },
+    {
+      "symbol": "SGBOCT26",
+      "isin": "IN0020180249"
+    },
+    {
+      "symbol": "SGBJ28VIII",
+      "isin": "IN0020190537"
+    },
+    {
+      "symbol": "SGBJUN27",
+      "isin": "IN0020190073"
+    }
+  ]
+}
