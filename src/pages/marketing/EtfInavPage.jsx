@@ -400,7 +400,17 @@ export default function EtfInavPage() {
                         </span>
                       </td>
                       <td className="text-right tabular-nums">{formatPrice(row.ltp)}</td>
-                      <td className="text-right tabular-nums">{formatPrice(row.inav)}</td>
+                      <td className="text-right tabular-nums">
+                        {formatPrice(row.inav)}
+                        {row.usedNseFallback ? (
+                          <span
+                            className="mt-0.5 block text-[10px] font-medium text-pe-text-muted"
+                            title="AMC iNAV premium/discount exceeded 30%; using NSE iNAV"
+                          >
+                            NSE iNAV
+                          </span>
+                        ) : null}
+                      </td>
                     </tr>
                   );
                 })}
@@ -416,8 +426,9 @@ export default function EtfInavPage() {
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-pe-text-muted">
-            iNAV is AMC indicative NAV from our scrapes. LTP is live NSE. Premium = LTP ÷ AMC iNAV.
-            This is not investment advice.
+            iNAV prefers AMC indicative NAV scrapes (refreshed ~every minute). LTP is live NSE. If
+            |premium vs AMC| exceeds 30%, that row uses NSE iNAV instead. Both AMC and NSE iNAV are
+            stored for analysis. Premium = LTP ÷ displayed iNAV. This is not investment advice.
             {snapshot?.counts?.items != null ? ` ${snapshot.counts.items} ETFs tracked.` : null}
           </p>
         </>

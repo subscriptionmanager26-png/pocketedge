@@ -3,6 +3,8 @@ import { isInNseSession } from '../marketRefreshPolicy';
 
 const LIVE_URL = '/api/etf-live';
 export const ETF_INAV_POLL_MS = 60_000;
+/** If |LTP/AMC iNAV - 1| exceeds this, use NSE iNAV for display/premium. */
+export const AMC_PREMIUM_FALLBACK_PCT = 30;
 
 async function fetchNseLtpOnly() {
   const res = await fetch(LIVE_URL, { cache: 'no-store' });
@@ -15,6 +17,7 @@ async function fetchNseLtpOnly() {
     items: (payload.items || []).map((row) => ({
       symbol: String(row.symbol).toUpperCase(),
       ltp: row.ltp ?? null,
+      nseNav: row.nav != null && Number(row.nav) > 0 ? Number(row.nav) : null,
       changePct: row.changePct ?? null,
       syncedAt: payload.syncedAt || null,
       source: 'nse-ltp',
@@ -22,8 +25,14 @@ async function fetchNseLtpOnly() {
   };
 }
 
+function positiveNum(value) {
+  if (value == null) return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 /**
- * Live LTP only (DB / NSE). AMC iNAV never comes from here — that stays on the snapshot scrape.
+ * Live quotes: LTP + NSE nav + AMC iNAV from DB (snapshot fills AMC gaps).
  */
 export async function fetchMergedLiveQuotes() {
   try {
@@ -31,11 +40,15 @@ export async function fetchMergedLiveQuotes() {
     if (db.items?.length) {
       return {
         syncedAt: db.syncedAt,
+        amcSyncedAt: db.amcSyncedAt,
         items: db.items.map((row) => ({
           symbol: row.symbol,
           ltp: row.ltp ?? row.price ?? null,
+          nseNav: positiveNum(row.nav ?? row.nseNav),
+          amcInav: positiveNum(row.amcInav),
           changePct: row.changePct ?? null,
           syncedAt: row.syncedAt || db.syncedAt,
+          amcInavSyncedAt: row.amcInavSyncedAt || null,
           source: 'db',
         })),
         source: 'db',
@@ -47,9 +60,9 @@ export async function fetchMergedLiveQuotes() {
 
   try {
     const nse = await fetchNseLtpOnly();
-    return { ...nse, source: 'nse-ltp' };
+    return { ...nse, amcSyncedAt: null, source: 'nse-ltp' };
   } catch {
-    return { syncedAt: null, items: [], source: 'none' };
+    return { syncedAt: null, amcSyncedAt: null, items: [], source: 'none' };
   }
 }
 
@@ -58,17 +71,42 @@ export function shouldPollEtfInav({ date = new Date(), visible = true } = {}) {
   return isInNseSession(date);
 }
 
-function amcInavFromRow(row) {
-  const raw = row?.amcInav ?? row?.inav ?? null;
-  if (raw == null) return null;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
+/**
+ * Prefer AMC iNAV; if |premium vs AMC| > 30% and NSE iNAV exists, use NSE.
+ * Always keep both amcInav and nseNav on the row for analysis.
+ */
+export function resolveDisplayInav({ ltp, amcInav, nseNav }) {
+  const amc = positiveNum(amcInav);
+  const nse = positiveNum(nseNav);
+  const ltpN = ltp == null ? null : Number(ltp);
+
+  if (amc != null && ltpN != null && Number.isFinite(ltpN)) {
+    const amcPremiumPct = (ltpN / amc - 1) * 100;
+    if (Math.abs(amcPremiumPct) > AMC_PREMIUM_FALLBACK_PCT && nse != null) {
+      return {
+        inav: nse,
+        inavSource: 'nse',
+        amcPremiumPct,
+        usedNseFallback: true,
+      };
+    }
+    return {
+      inav: amc,
+      inavSource: 'amc',
+      amcPremiumPct,
+      usedNseFallback: false,
+    };
+  }
+
+  if (amc != null) {
+    return { inav: amc, inavSource: 'amc', amcPremiumPct: null, usedNseFallback: false };
+  }
+  if (nse != null) {
+    return { inav: nse, inavSource: 'nse', amcPremiumPct: null, usedNseFallback: false };
+  }
+  return { inav: null, inavSource: null, amcPremiumPct: null, usedNseFallback: false };
 }
 
-/**
- * Premium = live LTP ÷ AMC iNAV scrape.
- * Never use NSE NAV for the iNAV column.
- */
 export function mergeLiveIntoSnapshotItems(snapshotItems, liveItems) {
   const liveBySymbol = new Map(
     (liveItems || []).map((row) => [String(row.symbol).toUpperCase(), row]),
@@ -77,37 +115,50 @@ export function mergeLiveIntoSnapshotItems(snapshotItems, liveItems) {
   return (snapshotItems || []).map((row) => {
     const live = liveBySymbol.get(String(row.symbol).toUpperCase());
     const ltp = live?.ltp ?? null;
-    const amcInav = amcInavFromRow(row);
+    const amcInav =
+      positiveNum(live?.amcInav) ?? positiveNum(row.amcInav) ?? positiveNum(row.inav);
+    const nseNav =
+      positiveNum(live?.nseNav) ?? positiveNum(live?.nav) ?? positiveNum(row.nseNav);
+    const resolved = resolveDisplayInav({ ltp, amcInav, nseNav });
     const premium =
-      ltp != null && amcInav != null ? Number(ltp) / Number(amcInav) : null;
+      ltp != null && resolved.inav != null
+        ? Number(ltp) / Number(resolved.inav)
+        : null;
 
     return {
       ...row,
       ltp,
       amcInav,
-      inav: amcInav,
-      // Keep NSE nav off the displayed NAV field.
-      nav: null,
-      nseNav: row.nseNav ?? null,
+      nseNav,
+      nav: nseNav,
+      inav: resolved.inav,
+      inavSource: resolved.inavSource,
+      usedNseFallback: resolved.usedNseFallback,
+      amcPremiumPct: resolved.amcPremiumPct,
       changePct: live?.changePct ?? null,
       premium,
       premiumPct: premium == null ? null : (premium - 1) * 100,
       quoteSyncedAt: live?.syncedAt || null,
+      amcInavSyncedAt: live?.amcInavSyncedAt || null,
       quoteSource: live?.source || null,
     };
   });
 }
 
-/** First paint: show AMC iNAV immediately; LTP fills in after DB quotes. */
+/** First paint from snapshot AMC iNAV; LTP/NSE fill after live quotes. */
 export function catalogItemsWithoutQuotes(snapshotItems) {
   return (snapshotItems || []).map((row) => {
-    const amcInav = amcInavFromRow(row);
+    const amcInav = positiveNum(row.amcInav) ?? positiveNum(row.inav);
+    const nseNav = positiveNum(row.nseNav);
     return {
       ...row,
       ltp: null,
-      nav: null,
       amcInav,
+      nseNav,
+      nav: nseNav,
       inav: amcInav,
+      inavSource: amcInav != null ? 'amc' : nseNav != null ? 'nse' : null,
+      usedNseFallback: false,
       changePct: null,
       premium: null,
       premiumPct: null,

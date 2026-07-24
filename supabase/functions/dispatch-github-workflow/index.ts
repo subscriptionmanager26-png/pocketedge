@@ -13,6 +13,7 @@ const JOB_TO_WORKFLOW: Record<string, string> = {
   funds: 'social-market-price-funds.yml',
   commodities: 'social-market-price-commodities.yml',
   'asset-sync': 'social-market-asset-sync.yml',
+  'amc-inav': 'refresh-amc-etf-inav.yml',
 };
 
 const LOCK_NAME = 'dispatch-github-workflow';
