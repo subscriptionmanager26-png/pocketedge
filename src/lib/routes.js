@@ -69,16 +69,26 @@ export function insightsPath() {
   return '/insights';
 }
 
-export function learningPath() {
-  return '/learning';
+export function businessModelPath() {
+  return '/business-model';
 }
 
-/** Company Brief under Learning → Resources, e.g. /learning/TIPSFILMS */
-export function learningBriefPath(symbol) {
+/** @deprecated use businessModelPath */
+export function learningPath() {
+  return businessModelPath();
+}
+
+/** Company Brief under Business Model, e.g. /business-model/TIPSFILMS */
+export function businessModelBriefPath(symbol) {
   const ticker = String(symbol ?? '')
     .trim()
     .toUpperCase();
-  return ticker ? `/learning/${encodeSegment(ticker)}` : learningPath();
+  return ticker ? `/business-model/${encodeSegment(ticker)}` : businessModelPath();
+}
+
+/** @deprecated use businessModelBriefPath */
+export function learningBriefPath(symbol) {
+  return businessModelBriefPath(symbol);
 }
 
 export function resourcesPath(tool) {
@@ -106,7 +116,7 @@ export function disclosuresPath(section) {
 }
 
 const KNOWN_TABS = new Set(['feed', 'search', 'activity', 'portfolio', 'markets', 'settings']);
-const MARKETING_PAGES = new Set(['insights', 'learning', 'resources', 'disclosures']);
+const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures']);
 const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
 export function parseAppPath(pathname) {
@@ -138,19 +148,25 @@ export function parseAppPath(pathname) {
     };
   }
 
-  const learningBriefMatch = pathname.match(/^\/learning\/([^/]+)\/?$/);
-  if (learningBriefMatch) {
+  const businessModelBriefMatch = pathname.match(
+    /^\/(?:business-model|learning)\/([^/]+)\/?$/
+  );
+  if (businessModelBriefMatch) {
     return {
       kind: 'marketing',
-      page: 'learning',
+      page: 'business-model',
       section: 'brief',
-      symbol: decodeSegment(learningBriefMatch[1]).toUpperCase(),
+      symbol: decodeSegment(businessModelBriefMatch[1]).toUpperCase(),
     };
   }
 
-  const marketingMatch = pathname.match(/^\/(insights|learning|resources)\/?$/);
+  const marketingMatch = pathname.match(
+    /^\/(insights|learning|business-model|resources)\/?$/
+  );
   if (marketingMatch && MARKETING_PAGES.has(marketingMatch[1])) {
-    return { kind: 'marketing', page: marketingMatch[1], section: null };
+    const page =
+      marketingMatch[1] === 'learning' ? 'business-model' : marketingMatch[1];
+    return { kind: 'marketing', page, section: null };
   }
 
   const stockMatch = pathname.match(/^\/stock\/([^/]+)\/?$/);

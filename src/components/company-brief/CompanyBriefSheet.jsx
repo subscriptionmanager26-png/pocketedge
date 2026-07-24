@@ -63,18 +63,57 @@ function Note({ text, bold }) {
   );
 }
 
+function Block({ num, title, wide, children }) {
+  if (!children) return null;
+  return (
+    <section className={`cb-block${wide ? ' wide' : ''}`}>
+      <div className="cb-block-head">
+        <span className="cb-block-num">{num}</span>
+        <span className="cb-block-title">{title}</span>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function hasRows(section) {
+  if (!section) return false;
+  if (Array.isArray(section)) return section.length > 0;
+  if (Array.isArray(section.rows)) return section.rows.length > 0;
+  return false;
+}
+
 /**
- * Reusable Company Brief sheet — matches the A4 print template,
- * with a real single-column layout on mobile (no transform scale).
+ * Reusable Company Brief sheet — A4 print template with stacked mobile layout.
+ * Empty sections are omitted so Screener-sourced briefs stay compact.
  */
 export default function CompanyBriefSheet({ brief, printReady = false }) {
   const [logoHidden, setLogoHidden] = useState(false);
   if (!brief) return null;
 
-  const { sections } = brief;
+  const sections = brief.sections ?? {};
   const nameParts = String(brief.legalName || brief.name).split(/\s+/);
   const last = nameParts.pop();
   const first = nameParts.join(' ');
+
+  const products = sections.products;
+  const productRows = Array.isArray(products) ? products : products?.rows;
+  const productTitle = Array.isArray(products)
+    ? 'Products / Services'
+    : products?.title || 'Products / Services';
+
+  const customers = sections.customers;
+  const customerRows = customers?.rows;
+  const businessModel = sections.businessModel;
+  const modelRows = businessModel?.rows;
+  const modelSteps = businessModel?.steps ?? [];
+  const modelTitle = businessModel?.title || 'Business Model';
+  const moats = sections.moats;
+  const growth = sections.growth;
+  const risks = sections.risks;
+
+  let nextNum = 1;
+  const num = () => String(nextNum++).padStart(2, '0');
 
   return (
     <div className="cb-root">
@@ -102,7 +141,7 @@ export default function CompanyBriefSheet({ brief, printReady = false }) {
                 />
               ) : null}
               <div className="cb-hero-copy">
-                <div className="cb-hero-kicker">{brief.kicker}</div>
+                {brief.kicker ? <div className="cb-hero-kicker">{brief.kicker}</div> : null}
                 <h1>
                   {first ? (
                     <>
@@ -112,125 +151,119 @@ export default function CompanyBriefSheet({ brief, printReady = false }) {
                     last
                   )}
                 </h1>
-                <p className="cb-hero-sub">{brief.tagline}</p>
+                {brief.tagline ? <p className="cb-hero-sub">{brief.tagline}</p> : null}
               </div>
             </div>
-            <div className="cb-facts">
-              {(brief.facts ?? []).map((fact) => (
-                <span key={fact.label} className="cb-fact">
-                  <b>{fact.label}</b> {fact.value}
-                </span>
-              ))}
-            </div>
-          </header>
-
-          <div className="cb-grid">
-            <section className="cb-block wide">
-              <div className="cb-block-head">
-                <span className="cb-block-num">01</span>
-                <span className="cb-block-title">Executive Summary</span>
-              </div>
-              <p className="cb-prose">
-                {emphasize(sections.executiveSummary.prose, {
-                  strongPhrases: sections.executiveSummary.strongPhrases,
-                })}
-              </p>
-              <div className="cb-tags">
-                {(sections.executiveSummary.tags ?? []).map((tag) => (
-                  <span key={tag} className="cb-tag">
-                    {tag}
+            {(brief.facts ?? []).length ? (
+              <div className="cb-facts">
+                {brief.facts.map((fact) => (
+                  <span key={fact.label} className="cb-fact">
+                    <b>{fact.label}</b> {fact.value}
                   </span>
                 ))}
               </div>
-            </section>
+            ) : null}
+          </header>
 
-            <section className="cb-block">
-              <div className="cb-block-head">
-                <span className="cb-block-num">02</span>
-                <span className="cb-block-title">Products / Services</span>
-              </div>
-              <div className="cb-rows">
-                {sections.products.map((row) => (
-                  <BriefRow key={row.title} {...row} />
-                ))}
-              </div>
-            </section>
+          <div className="cb-grid">
+            {sections.executiveSummary?.prose ? (
+              <Block num={num()} title="Executive Summary" wide>
+                <p className="cb-prose">
+                  {emphasize(sections.executiveSummary.prose, {
+                    strongPhrases: sections.executiveSummary.strongPhrases,
+                  })}
+                </p>
+                {(sections.executiveSummary.tags ?? []).length ? (
+                  <div className="cb-tags">
+                    {sections.executiveSummary.tags.map((tag) => (
+                      <span key={tag} className="cb-tag">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </Block>
+            ) : null}
 
-            <section className="cb-block">
-              <div className="cb-block-head">
-                <span className="cb-block-num">03</span>
-                <span className="cb-block-title">Key Customers</span>
-              </div>
-              <div className="cb-rows">
-                {sections.customers.rows.map((row) => (
-                  <BriefRow key={row.title} {...row} />
-                ))}
-              </div>
-              <Note {...sections.customers.note} />
-            </section>
+            {hasRows(productRows) ? (
+              <Block num={num()} title={productTitle} wide={!hasRows(customerRows) && !hasRows(modelRows)}>
+                <div className="cb-rows">
+                  {productRows.map((row, i) => (
+                    <BriefRow key={row.title || i} {...row} />
+                  ))}
+                </div>
+              </Block>
+            ) : null}
 
-            <section className="cb-block">
-              <div className="cb-block-head">
-                <span className="cb-block-num">04</span>
-                <span className="cb-block-title">Business Model</span>
-              </div>
-              <div className="cb-flow">
-                {sections.businessModel.steps.map((label, i) => (
-                  <Fragment key={label}>
-                    {i > 0 ? (
-                      <div className="cb-step-arrow" aria-hidden>
-                        →
-                      </div>
-                    ) : null}
-                    <div className="cb-step">
-                      <div className="n">{i + 1}</div>
-                      <div className="t">{label}</div>
-                    </div>
-                  </Fragment>
-                ))}
-              </div>
-              <div className="cb-rows">
-                {sections.businessModel.rows.map((row, i) => (
-                  <BriefRow key={i} {...row} />
-                ))}
-              </div>
-            </section>
+            {hasRows(customerRows) ? (
+              <Block num={num()} title="Key Customers">
+                <div className="cb-rows">
+                  {customerRows.map((row) => (
+                    <BriefRow key={row.title} {...row} />
+                  ))}
+                </div>
+                <Note {...customers.note} />
+              </Block>
+            ) : null}
 
-            <section className="cb-block">
-              <div className="cb-block-head">
-                <span className="cb-block-num">05</span>
-                <span className="cb-block-title">Moats &amp; Advantages</span>
-              </div>
-              <div className="cb-rows">
-                {sections.moats.map((row, i) => (
-                  <BriefRow key={i} {...row} />
-                ))}
-              </div>
-            </section>
+            {hasRows(modelRows) || modelSteps.length ? (
+              <Block num={num()} title={modelTitle}>
+                {modelSteps.length ? (
+                  <div className="cb-flow">
+                    {modelSteps.map((label, i) => (
+                      <Fragment key={label}>
+                        {i > 0 ? (
+                          <div className="cb-step-arrow" aria-hidden>
+                            →
+                          </div>
+                        ) : null}
+                        <div className="cb-step">
+                          <div className="n">{i + 1}</div>
+                          <div className="t">{label}</div>
+                        </div>
+                      </Fragment>
+                    ))}
+                  </div>
+                ) : null}
+                {hasRows(modelRows) ? (
+                  <div className="cb-rows">
+                    {modelRows.map((row, i) => (
+                      <BriefRow key={i} {...row} />
+                    ))}
+                  </div>
+                ) : null}
+              </Block>
+            ) : null}
 
-            <section className="cb-block">
-              <div className="cb-block-head">
-                <span className="cb-block-num">06</span>
-                <span className="cb-block-title">Growth Drivers</span>
-              </div>
-              <div className="cb-rows">
-                {sections.growth.map((row, i) => (
-                  <BriefRow key={i} {...row} />
-                ))}
-              </div>
-            </section>
+            {hasRows(moats) ? (
+              <Block num={num()} title="Moats & Advantages">
+                <div className="cb-rows">
+                  {moats.map((row, i) => (
+                    <BriefRow key={i} {...row} />
+                  ))}
+                </div>
+              </Block>
+            ) : null}
 
-            <section className="cb-block">
-              <div className="cb-block-head">
-                <span className="cb-block-num">07</span>
-                <span className="cb-block-title">Key Risks</span>
-              </div>
-              <div className="cb-rows">
-                {sections.risks.map((row, i) => (
-                  <BriefRow key={i} {...row} />
-                ))}
-              </div>
-            </section>
+            {hasRows(growth) ? (
+              <Block num={num()} title="Growth Drivers">
+                <div className="cb-rows">
+                  {growth.map((row, i) => (
+                    <BriefRow key={i} {...row} />
+                  ))}
+                </div>
+              </Block>
+            ) : null}
+
+            {hasRows(risks) ? (
+              <Block num={num()} title="Key Risks">
+                <div className="cb-rows">
+                  {risks.map((row, i) => (
+                    <BriefRow key={i} {...row} />
+                  ))}
+                </div>
+              </Block>
+            ) : null}
           </div>
 
           <footer className="cb-footer">
@@ -246,7 +279,7 @@ export default function CompanyBriefSheet({ brief, printReady = false }) {
       </div>
 
       <div className="cb-meta-bar">
-        <span>A4 portrait · one page · Print → PDF (margins: none)</span>
+        <span>Company brief · Print → PDF (margins: none)</span>
         <span className="pe">pocketedge.in</span>
       </div>
     </div>

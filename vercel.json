@@ -158,6 +158,16 @@
   ],
   "redirects": [
     {
+      "source": "/learning",
+      "destination": "/business-model",
+      "permanent": true
+    },
+    {
+      "source": "/learning/:symbol",
+      "destination": "/business-model/:symbol",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "social.pocketedge.in" }],
       "destination": "https://www.pocketedge.in/:path*",

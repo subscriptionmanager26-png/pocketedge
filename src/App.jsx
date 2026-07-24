@@ -71,7 +71,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
-const LearningPage = lazy(() => import('./pages/marketing/LearningPage'));
+const BusinessModelPage = lazy(() => import('./pages/marketing/BusinessModelPage'));
 const CompanyBriefPage = lazy(() => import('./pages/marketing/CompanyBriefPage'));
 const ResourcesPage = lazy(() => import('./pages/marketing/ResourcesPage'));
 const MfScreenerPage = lazy(() => import('./pages/marketing/MfScreenerPage'));
@@ -85,8 +85,8 @@ function RouteSuspense({ children }) {
 
 function MarketingRoute({ page, section, symbol }) {
   if (page === 'insights') return <InsightsPage />;
-  if (page === 'learning' && section === 'brief') return <CompanyBriefPage symbol={symbol} />;
-  if (page === 'learning') return <LearningPage />;
+  if (page === 'business-model' && section === 'brief') return <CompanyBriefPage symbol={symbol} />;
+  if (page === 'business-model' || page === 'learning') return <BusinessModelPage />;
   if (page === 'resources' && section === 'mf-screener') return <MfScreenerPage />;
   if (page === 'resources' && section === 'etf-inav') return <EtfInavPage />;
   if (page === 'resources' && section === 'sgb') return <SgbTrackerPage />;

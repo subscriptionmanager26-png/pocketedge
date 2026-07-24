@@ -4,14 +4,14 @@ import LogoMark from './LogoMark';
 import {
   disclosuresPath,
   insightsPath,
-  learningPath,
+  businessModelPath,
   resourcesPath,
   tabPath,
 } from '../lib/routes';
 
 export const MARKETING_NAV_ITEMS = [
   { label: 'Insights', href: insightsPath() },
-  { label: 'Learning', href: learningPath() },
+  { label: 'Business Model', href: businessModelPath() },
   { label: 'Disclosures', href: disclosuresPath() },
   { label: 'Resources', href: resourcesPath() },
 ];
@@ -19,7 +19,14 @@ export const MARKETING_NAV_ITEMS = [
 function navItemActive(pathname, href) {
   if (href === '/disclosures') return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
   if (href === '/resources') return pathname === '/resources' || pathname.startsWith('/resources/');
-  if (href === '/learning') return pathname === '/learning' || pathname.startsWith('/learning/');
+  if (href === '/business-model') {
+    return (
+      pathname === '/business-model' ||
+      pathname.startsWith('/business-model/') ||
+      pathname === '/learning' ||
+      pathname.startsWith('/learning/')
+    );
+  }
   return pathname === href;
 }
 

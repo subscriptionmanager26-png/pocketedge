@@ -81,8 +81,8 @@ export default function ResourcesPage() {
 
       <p className="mt-8 text-sm text-pe-text-muted">
         Looking for company explainers?{' '}
-        <Link to="/learning" className="font-semibold text-pe-accent hover:underline">
-          Open Learning
+        <Link to="/business-model" className="font-semibold text-pe-accent hover:underline">
+          Open Business Model
         </Link>
         {' · '}
         daily move digests on{' '}

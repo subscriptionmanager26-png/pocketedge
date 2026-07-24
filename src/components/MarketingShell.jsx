@@ -4,7 +4,7 @@ import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
 import { signInWithGoogle } from '../lib/supabase';
 
 /**
- * Shared chrome for public marketing pages (Insights, Learning, Disclosures, Resources).
+ * Shared chrome for public marketing pages (Insights, Business Model, Disclosures, Resources).
  */
 export default function MarketingShell({ children, wide = false }) {
   const isAuthenticated = useIsAuthenticated();
