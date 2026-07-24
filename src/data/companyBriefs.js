@@ -4,6 +4,7 @@
  */
 
 import { resolveAssetLogoUrl, LOGO_VARIANT_DETAIL } from '../lib/assetLogo';
+import { FULL_CURATED_BRIEFS } from './curatedFullBriefs';
 
 const INDEX_URL = '/data/company-briefs/index.json';
 const shardUrl = (symbol) => {
@@ -17,6 +18,7 @@ const shardCache = new Map();
 
 /** Hand-authored briefs that replace generated sections (still no market-cap / FY revenue facts). */
 export const CURATED_BRIEFS = {
+  ...FULL_CURATED_BRIEFS,
   TIPSFILMS: {
     symbol: 'TIPSFILMS',
     name: 'Tips Films',
@@ -159,11 +161,11 @@ export const CURATED_BRIEFS = {
           body: 'Vulnerabilities to cast availability, theatrical release clashes, and digital piracy.',
           tone: 'risk',
         },
-          {
-            title: null,
-            body: 'Currently loss-making with micro-cap equity liquidity constraints.',
-            tone: 'risk',
-          },
+        {
+          title: null,
+          body: 'Currently loss-making with micro-cap equity liquidity constraints.',
+          tone: 'risk',
+        },
       ],
     },
     footer: {
