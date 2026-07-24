@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
-import { ScreenerCategoryTabs } from '../../components/mfScreener/ScreenerCategoryTabs';
+import { ScreenerFilters } from '../../components/mfScreener/ScreenerFilters';
 import { loadAmfiEquityDirectGrowth, uniqueSorted } from '../../lib/mfScreener/amfiSchemes';
 import { standardizeAmcName } from '../../lib/mfScreener/amcNames';
 import {
@@ -18,6 +18,11 @@ import {
 } from '../../lib/mfScreener/format';
 import { getFundReturn, listFundReturns, parseUpvalyMetric } from '../../lib/mfScreener/metrics';
 import { simplifySchemeName } from '../../lib/mfScreener/schemeNames';
+import {
+  isSectoralSubCategory,
+  resolveSectorTheme,
+  sortSectorThemes,
+} from '../../lib/mfScreener/sectors';
 import { buildMetricsIndex, formatSnapshotDate, loadScreenerSnapshot } from '../../lib/mfScreener/snapshot';
 import {
   ALL_SCREENER_COLUMNS,
@@ -27,6 +32,8 @@ import {
 } from '../../lib/mfScreener/types';
 import { fundPath, resourcesPath } from '../../lib/routes';
 import '../../components/mfScreener/mfScreener.css';
+
+const ALL_ID = 'all';
 
 function FundDetail({ row, scheme, snapshotLoading, onBack }) {
   const returnRows = scheme ? listFundReturns(scheme) : [];
@@ -46,9 +53,15 @@ function FundDetail({ row, scheme, snapshotLoading, onBack }) {
 
       <article className="rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm">
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
-            {shortCategoryLabel(row.subCategory)}
-          </span>
+          {row.sectorTheme ? (
+            <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
+              {row.sectorTheme}
+            </span>
+          ) : (
+            <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
+              {shortCategoryLabel(row.subCategory)}
+            </span>
+          )}
           <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
             Direct · Growth
           </span>
@@ -182,7 +195,9 @@ export default function MfScreenerPage() {
   const [metrics, setMetrics] = useState({});
   const [snapshotLoading, setSnapshotLoading] = useState(true);
   const [snapshotDate, setSnapshotDate] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('');
+  const [activeCategory, setActiveCategory] = useState(ALL_ID);
+  const [activeSector, setActiveSector] = useState(ALL_ID);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +209,10 @@ export default function MfScreenerPage() {
             ...r,
             amcLabel: standardizeAmcName(r.amc),
             amcSortKey: standardizeAmcName(r.amc).toLowerCase(),
+            sectorTheme: resolveSectorTheme({
+              name: r.name,
+              subCategory: r.subCategory,
+            }),
           })),
         );
       })
@@ -213,8 +232,24 @@ export default function MfScreenerPage() {
     void loadScreenerSnapshot()
       .then((snapshot) => {
         if (cancelled) return;
-        setMetrics(buildMetricsIndex(snapshot));
+        const index = buildMetricsIndex(snapshot);
+        setMetrics(index);
         setSnapshotDate(snapshot.generatedAt);
+        // Re-tag sectoral funds with Upvaly schemeCategory when snapshot arrives.
+        setAllRows((prev) =>
+          prev.map((r) => {
+            if (!isSectoralSubCategory(r.subCategory)) return r;
+            const scheme = index[r.amfiCode];
+            return {
+              ...r,
+              sectorTheme: resolveSectorTheme({
+                name: scheme?.schemeName || r.name,
+                schemeCategory: scheme?.schemeCategory,
+                subCategory: r.subCategory,
+              }),
+            };
+          }),
+        );
       })
       .catch((err) => {
         if (!cancelled) {
@@ -229,30 +264,70 @@ export default function MfScreenerPage() {
     };
   }, []);
 
-  const subCategoryOptions = useMemo(() => {
+  const categoryOptions = useMemo(() => {
+    const marketCapRows = allRows.filter((r) => !isSectoralSubCategory(r.subCategory));
     const counts = new Map();
-    for (const r of allRows) {
+    for (const r of marketCapRows) {
       counts.set(r.subCategory, (counts.get(r.subCategory) ?? 0) + 1);
     }
-    return uniqueSorted(allRows.map((r) => r.subCategory)).map((id) => ({
+    const cats = uniqueSorted(marketCapRows.map((r) => r.subCategory)).map((id) => ({
       id,
       label: shortCategoryLabel(id),
       count: counts.get(id) ?? 0,
     }));
+    return [{ id: ALL_ID, label: 'All', count: marketCapRows.length }, ...cats];
+  }, [allRows]);
+
+  const sectorOptions = useMemo(() => {
+    const sectoral = allRows.filter((r) => r.sectorTheme);
+    const counts = new Map();
+    for (const r of sectoral) {
+      counts.set(r.sectorTheme, (counts.get(r.sectorTheme) ?? 0) + 1);
+    }
+    const themes = sortSectorThemes([...counts.keys()]).map((id) => ({
+      id,
+      label: id,
+      count: counts.get(id) ?? 0,
+    }));
+    return [
+      { id: ALL_ID, label: 'Off' },
+      { id: 'all-themes', label: 'All themes', count: sectoral.length },
+      ...themes,
+    ];
   }, [allRows]);
 
   useEffect(() => {
-    if (!subCategoryOptions.length) return;
+    if (!categoryOptions.length) return;
     setActiveCategory((prev) => {
-      if (prev && subCategoryOptions.some((o) => o.id === prev)) return prev;
-      const largeCap = subCategoryOptions.find((o) => /large cap/i.test(o.id));
-      return largeCap?.id ?? subCategoryOptions[0].id;
+      if (prev && categoryOptions.some((o) => o.id === prev)) return prev;
+      const largeCap = categoryOptions.find((o) => /large cap/i.test(o.id));
+      return largeCap?.id ?? ALL_ID;
     });
-  }, [subCategoryOptions]);
+  }, [categoryOptions]);
 
   const filtered = useMemo(() => {
-    return allRows.filter((r) => !activeCategory || r.subCategory === activeCategory);
-  }, [allRows, activeCategory]);
+    const q = query.trim().toLowerCase();
+    return allRows.filter((r) => {
+      if (activeSector === 'all-themes') {
+        if (!r.sectorTheme) return false;
+      } else if (activeSector !== ALL_ID) {
+        if (r.sectorTheme !== activeSector) return false;
+      } else if (activeCategory !== ALL_ID) {
+        if (r.subCategory !== activeCategory) return false;
+      } else if (isSectoralSubCategory(r.subCategory)) {
+        // Category All + Sector Off → market-cap styles only.
+        return false;
+      }
+
+      if (!q) return true;
+      return (
+        r.amcLabel.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        (r.sectorTheme || '').toLowerCase().includes(q) ||
+        shortCategoryLabel(r.subCategory).toLowerCase().includes(q)
+      );
+    });
+  }, [allRows, activeCategory, activeSector, query]);
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -278,6 +353,13 @@ export default function MfScreenerPage() {
   );
 
   const dataLoading = csvLoading || snapshotLoading;
+
+  const activeFilterLabel = useMemo(() => {
+    if (activeSector === 'all-themes') return 'All themes';
+    if (activeSector !== ALL_ID) return activeSector;
+    if (activeCategory !== ALL_ID) return shortCategoryLabel(activeCategory);
+    return 'Market cap styles';
+  }, [activeCategory, activeSector]);
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDesc((d) => !d);
@@ -317,7 +399,8 @@ export default function MfScreenerPage() {
           MF screener
         </h1>
         <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">
-          Equity Direct Growth funds by category — rolling returns, CAGR, risk, and fundamentals.
+          Equity Direct Growth funds — filter by category or sector/theme, then compare rolling
+          returns, CAGR, risk, and fundamentals.
         </p>
       </div>
 
@@ -334,22 +417,24 @@ export default function MfScreenerPage() {
         </div>
       ) : null}
 
-      {subCategoryOptions.length ? (
-        <ScreenerCategoryTabs
-          options={subCategoryOptions}
-          activeId={activeCategory}
-          onChange={setActiveCategory}
+      {allRows.length ? (
+        <ScreenerFilters
+          query={query}
+          onQueryChange={setQuery}
+          categoryOptions={categoryOptions}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          sectorOptions={sectorOptions}
+          activeSector={activeSector}
+          onSectorChange={setActiveSector}
+          resultCount={sorted.length}
         />
       ) : null}
 
       <section className="mf-screener-table-wrap mt-4 overflow-hidden rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
         <div className="mf-screener-table-meta flex flex-wrap items-baseline gap-2 border-b border-pe-border px-3.5 py-2.5">
           <span className="text-sm font-bold text-pe-text">{sorted.length} Funds</span>
-          {activeCategory ? (
-            <span className="text-sm font-bold text-pe-accent">
-              {shortCategoryLabel(activeCategory)}
-            </span>
-          ) : null}
+          <span className="text-sm font-bold text-pe-accent">{activeFilterLabel}</span>
           {snapshotDate ? (
             <span className="ml-auto text-xs text-pe-text-muted">
               Data as of {formatSnapshotDate(snapshotDate)}
@@ -402,6 +487,11 @@ export default function MfScreenerPage() {
                       >
                         {row.amcLabel}
                       </button>
+                      {row.sectorTheme && activeSector === 'all-themes' ? (
+                        <p className="mt-0.5 text-[11px] font-medium text-pe-text-muted">
+                          {row.sectorTheme}
+                        </p>
+                      ) : null}
                     </td>
                     {ALL_SCREENER_COLUMNS.map((col) => {
                       const value = cellNumeric(col, scheme);
@@ -416,6 +506,16 @@ export default function MfScreenerPage() {
                   </tr>
                 );
               })}
+              {!dataLoading && !sorted.length ? (
+                <tr>
+                  <td
+                    colSpan={1 + ALL_SCREENER_COLUMNS.length}
+                    className="py-10 text-center text-sm text-pe-text-muted"
+                  >
+                    No funds match these filters.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
