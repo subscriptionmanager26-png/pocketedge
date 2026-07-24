@@ -8,6 +8,7 @@ export const SOURCES = {
   nseLiveIndices: 'https://www.nseindia.com/market-data/live-market-indices',
   nseAllIndicesApi: 'https://www.nseindia.com/api/allIndices',
   mcxSpot: 'https://www.mcxindia.com/market-data/spot-market-price#Recent',
+  ibjaHome: 'https://ibja.co/',
 };
 
 export const UA =

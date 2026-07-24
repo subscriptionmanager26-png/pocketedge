@@ -5,13 +5,14 @@ import MarketingShell from '../../components/MarketingShell';
 import { lookupMarketAssetsBatch } from '../../lib/marketDataApi';
 import { shouldPollMarket } from '../../lib/marketRefreshPolicy';
 import {
-  changeTone,
-  couponFromName,
-  formatChangePct,
   formatInr,
+  formatPremiumPct,
   formatSyncedAt,
+  IBJA_GOLD_999_KEY,
   loadSgbUniverse,
   maturityYearFromSymbol,
+  premiumTone,
+  sgbPremiumPct,
 } from '../../lib/sgb/format';
 import { resourcesPath } from '../../lib/routes';
 import '../../components/mfScreener/mfScreener.css';
@@ -38,18 +39,17 @@ function SortHeader({ label, active, dir, onClick, align = 'left' }) {
   );
 }
 
-function mergeUniverseWithQuotes(universeItems, quoteMap) {
+function mergeUniverseWithQuotes(universeItems, quoteMap, goldPerGram) {
   return (universeItems || []).map((row) => {
     const key = String(row.symbol).toUpperCase();
     const quote = quoteMap.get(key) || quoteMap.get(row.symbol) || null;
-    const name = quote?.name || key;
+    const ltp = quote?.price ?? quote?.ltp ?? null;
     return {
       symbol: key,
       isin: row.isin || quote?.isin || null,
-      name,
-      ltp: quote?.price ?? quote?.ltp ?? null,
-      changePct: quote?.changePct ?? null,
-      coupon: couponFromName(name),
+      name: quote?.name || key,
+      ltp,
+      premiumPct: sgbPremiumPct(ltp, goldPerGram),
       maturityYear: maturityYearFromSymbol(key),
       syncedAt: quote?.syncedAt || null,
     };
@@ -59,13 +59,13 @@ function mergeUniverseWithQuotes(universeItems, quoteMap) {
 export default function SgbTrackerPage() {
   const [universe, setUniverse] = useState(null);
   const [items, setItems] = useState([]);
+  const [goldSpot, setGoldSpot] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [syncedAt, setSyncedAt] = useState(null);
   const [query, setQuery] = useState('');
   const [yearId, setYearId] = useState(ALL_YEARS);
-  const [sortKey, setSortKey] = useState('maturityYear');
+  const [sortKey, setSortKey] = useState('premiumPct');
   const [sortDir, setSortDir] = useState('asc');
 
   useEffect(() => {
@@ -76,17 +76,25 @@ export default function SgbTrackerPage() {
       if (!baseItems?.length) return;
       if (isRefresh) setRefreshing(true);
       try {
-        const symbols = baseItems.map((row) => row.symbol);
+        // SGB LTP + IBJA gold both come from social_market_assets (BE).
+        const symbols = [...baseItems.map((row) => row.symbol), IBJA_GOLD_999_KEY];
         const map = await lookupMarketAssetsBatch(symbols);
         if (cancelled) return;
-        const merged = mergeUniverseWithQuotes(baseItems, map);
-        setItems(merged);
-        const latest = merged
-          .map((row) => row.syncedAt)
-          .filter(Boolean)
-          .sort()
-          .at(-1);
-        setSyncedAt(latest || new Date().toISOString());
+        const goldQuote = map.get(IBJA_GOLD_999_KEY) || null;
+        const goldPerGram =
+          goldQuote?.price != null && Number.isFinite(Number(goldQuote.price))
+            ? Number(goldQuote.price)
+            : null;
+        setGoldSpot(
+          goldPerGram != null
+            ? {
+                price: goldPerGram,
+                syncedAt: goldQuote?.syncedAt || null,
+                asOfDate: goldQuote?.asOfDate || null,
+              }
+            : null,
+        );
+        setItems(mergeUniverseWithQuotes(baseItems, map, goldPerGram));
         setError(null);
       } catch (err) {
         if (!cancelled && !isRefresh) {
@@ -196,11 +204,11 @@ export default function SgbTrackerPage() {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'symbol' || key === 'maturityYear' ? 'asc' : 'desc');
+      setSortDir(key === 'symbol' ? 'asc' : 'asc');
     }
   }
 
-  const syncedLabel = formatSyncedAt(syncedAt);
+  const goldSyncedLabel = formatSyncedAt(goldSpot?.syncedAt);
 
   return (
     <MarketingShell wide>
@@ -218,27 +226,37 @@ export default function SgbTrackerPage() {
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
           SGB tracker
         </h1>
-        <p className="mt-3 text-sm text-pe-text-secondary">
-          {syncedLabel ? (
-            <>
-              Last fetched{' '}
-              <time dateTime={syncedAt} className="font-semibold tabular-nums text-pe-text">
-                {syncedLabel}
-              </time>
-              {refreshing ? (
-                <span className="ml-2 inline-flex items-center gap-1 text-xs text-pe-text-muted">
-                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                  refreshing
-                </span>
-              ) : null}
-            </>
-          ) : loading ? (
-            <span className="inline-flex items-center gap-2 text-pe-text-muted">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              Loading live SGB prices…
+        {goldSpot?.price != null ? (
+          <p className="mt-3 text-sm text-pe-text-secondary">
+            IBJA Fine Gold (999){' '}
+            <span className="font-semibold tabular-nums text-pe-text">
+              ₹{formatInr(goldSpot.price, 0)}/g
             </span>
-          ) : null}
-        </p>
+            <span className="text-pe-text-muted"> excl. GST</span>
+            {goldSyncedLabel ? (
+              <>
+                {' '}
+                ·{' '}
+                <time dateTime={goldSpot.syncedAt} className="tabular-nums text-pe-text">
+                  {goldSyncedLabel}
+                </time>
+              </>
+            ) : null}
+            {refreshing ? (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs text-pe-text-muted">
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                refreshing
+              </span>
+            ) : null}
+          </p>
+        ) : loading ? (
+          <p className="mt-3 inline-flex items-center gap-2 text-sm text-pe-text-muted">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            Loading gold rate and SGB prices…
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-pe-text-muted">IBJA gold rate unavailable</p>
+        )}
       </div>
 
       {error ? (
@@ -315,7 +333,7 @@ export default function SgbTrackerPage() {
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
-            <table className="mf-screener-table w-full min-w-[520px]">
+            <table className="mf-screener-table w-full min-w-[360px]">
               <thead>
                 <tr>
                   <th className="text-left">
@@ -328,37 +346,19 @@ export default function SgbTrackerPage() {
                   </th>
                   <th className="text-right">
                     <SortHeader
+                      label="Premium / Discount"
+                      active={sortKey === 'premiumPct'}
+                      dir={sortDir}
+                      onClick={() => toggleSort('premiumPct')}
+                      align="right"
+                    />
+                  </th>
+                  <th className="text-right">
+                    <SortHeader
                       label="LTP"
                       active={sortKey === 'ltp'}
                       dir={sortDir}
                       onClick={() => toggleSort('ltp')}
-                      align="right"
-                    />
-                  </th>
-                  <th className="text-right">
-                    <SortHeader
-                      label="Change"
-                      active={sortKey === 'changePct'}
-                      dir={sortDir}
-                      onClick={() => toggleSort('changePct')}
-                      align="right"
-                    />
-                  </th>
-                  <th className="text-right">
-                    <SortHeader
-                      label="Coupon"
-                      active={sortKey === 'coupon'}
-                      dir={sortDir}
-                      onClick={() => toggleSort('coupon')}
-                      align="right"
-                    />
-                  </th>
-                  <th className="text-right">
-                    <SortHeader
-                      label="Maturity"
-                      active={sortKey === 'maturityYear'}
-                      dir={sortDir}
-                      onClick={() => toggleSort('maturityYear')}
                       align="right"
                     />
                   </th>
@@ -367,7 +367,7 @@ export default function SgbTrackerPage() {
               <tbody>
                 {loading && !items.length ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={3} className="py-10 text-center text-sm text-pe-text-muted">
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                         Loading…
@@ -377,25 +377,16 @@ export default function SgbTrackerPage() {
                 ) : null}
                 {filtered.map((row) => (
                   <tr key={row.symbol}>
-                    <td className="!whitespace-normal">
-                      <p className="font-semibold text-pe-text">{row.symbol}</p>
-                      <p className="mt-0.5 max-w-[240px] text-[12px] leading-snug text-pe-text-secondary">
-                        {row.name}
-                      </p>
+                    <td className="font-semibold text-pe-text">{row.symbol}</td>
+                    <td className={`text-right tabular-nums font-semibold ${premiumTone(row.premiumPct)}`}>
+                      {formatPremiumPct(row.premiumPct)}
                     </td>
                     <td className="text-right tabular-nums">{formatInr(row.ltp)}</td>
-                    <td className={`text-right tabular-nums font-semibold ${changeTone(row.changePct)}`}>
-                      {formatChangePct(row.changePct)}
-                    </td>
-                    <td className="text-right tabular-nums">
-                      {row.coupon != null ? `${row.coupon.toFixed(2)}%` : '—'}
-                    </td>
-                    <td className="text-right tabular-nums">{row.maturityYear ?? '—'}</td>
                   </tr>
                 ))}
                 {!loading && !filtered.length ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={3} className="py-10 text-center text-sm text-pe-text-muted">
                       No SGBs match this filter.
                     </td>
                   </tr>
@@ -405,8 +396,18 @@ export default function SgbTrackerPage() {
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-pe-text-muted">
-            Prices are live NSE SGB quotes from PocketEdge. Coupons and maturity years are parsed
-            from series names. {universe?.counts?.items != null ? `${universe.counts.items} series tracked.` : null}{' '}
+            SGB prices and IBJA Fine Gold (999) come from PocketEdge market data. Premium/discount is
+            SGB LTP vs IBJA ₹/g (excl. GST). Gold is refreshed hourly 10:00–19:00 IST from{' '}
+            <a
+              href="https://ibja.co/"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-pe-accent hover:underline"
+            >
+              ibja.co
+            </a>
+            .{' '}
+            {universe?.counts?.items != null ? `${universe.counts.items} series tracked.` : null}{' '}
             This is not investment advice.
           </p>
         </>

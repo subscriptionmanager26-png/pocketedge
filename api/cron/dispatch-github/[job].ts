@@ -15,6 +15,7 @@ const JOB_TO_WORKFLOW: Record<string, string> = {
   funds: 'social-market-price-funds.yml',
   commodities: 'social-market-price-commodities.yml',
   'asset-sync': 'social-market-asset-sync.yml',
+  ibja: 'social-market-price-ibja.yml',
 };
 
 /** Jobs scheduled via vercel.json — reject others even if secret is known. */

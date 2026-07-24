@@ -10,6 +10,7 @@
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=indices
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=funds
  *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=commodities
+ *   node --env-file=.env scripts/refresh-social-market-prices.mjs --mode=ibja
  *
  * Env:
  *   VITE_SUPABASE_URL / SUPABASE_URL
@@ -19,6 +20,7 @@
 import { parseNavAll, parseNavHistory } from './lib/indian-markets/amfi.js';
 import { fetchBseEquityQuotes, loadBseFallbackUniverse } from './lib/indian-markets/bse.js';
 import { SOURCES, UA } from './lib/indian-markets/constants.js';
+import { fetchIbjaGoldRates, IBJA_GOLD_999_KEY } from './lib/indian-markets/ibja.js';
 import { fetchMcxSpotPrices } from './lib/indian-markets/mcx.js';
 import {
   createNseSession,
@@ -56,9 +58,11 @@ function parseArgs(argv) {
     if (arg === '--no-history') args.writeHistory = false;
     if (arg === '--dry-run') args.dryRun = true;
   }
-  if (!['all', 'equity', 'indices', 'funds', 'fund-history', 'commodities'].includes(args.mode)) {
+  if (
+    !['all', 'equity', 'indices', 'funds', 'fund-history', 'commodities', 'ibja'].includes(args.mode)
+  ) {
     throw new Error(
-      `Invalid --mode=${args.mode}. Use all|equity|indices|funds|fund-history|commodities`
+      `Invalid --mode=${args.mode}. Use all|equity|indices|funds|fund-history|commodities|ibja`
     );
   }
   if (
@@ -753,6 +757,89 @@ async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedA
   };
 }
 
+/** IBJA Fine Gold (999) ₹/g — benchmark for SGB premium/discount. */
+async function refreshIbjaGold({ url, apiKey, writeHistory, syncedAt }) {
+  console.log('Fetching IBJA Fine Gold (999) rate...');
+  const quote = await fetchIbjaGoldRates();
+  const asOfDate = quote.asOfDate || istDateString();
+  const price = quote.fineGold999PerGram;
+
+  let previousClose = null;
+  let changePct = null;
+  try {
+    const base = url.replace(/\/$/, '');
+    const res = await fetch(
+      `${base}/rest/v1/social_market_assets?asset_type=eq.commodity&asset_key=eq.${encodeURIComponent(IBJA_GOLD_999_KEY)}&select=price,as_of_date,previous_close`,
+      { headers: restHeaders(apiKey) },
+    );
+    if (res.ok) {
+      const rows = await res.json();
+      const prev = rows?.[0];
+      const prevPrice = prev?.price != null ? Number(prev.price) : null;
+      if (
+        prevPrice != null &&
+        Number.isFinite(prevPrice) &&
+        prevPrice > 0 &&
+        prev?.as_of_date &&
+        prev.as_of_date !== asOfDate
+      ) {
+        previousClose = prevPrice;
+        changePct = ((price - previousClose) / previousClose) * 100;
+      } else if (prev?.previous_close != null && Number.isFinite(Number(prev.previous_close))) {
+        previousClose = Number(prev.previous_close);
+        if (previousClose > 0) changePct = ((price - previousClose) / previousClose) * 100;
+      }
+    }
+  } catch {
+    // Non-fatal — still upsert the spot.
+  }
+
+  const sessionTag = quote.session ? ` ${quote.session}` : '';
+  const assetRow = {
+    asset_type: 'commodity',
+    asset_key: IBJA_GOLD_999_KEY,
+    name: `IBJA Fine Gold (999)${sessionTag}`,
+    price,
+    change_pct: changePct,
+    previous_close: previousClose,
+    as_of_date: asOfDate,
+    price_source: 'ibja',
+    synced_at: syncedAt,
+  };
+
+  console.log(
+    `Upserting ${IBJA_GOLD_999_KEY}=${price} as_of=${asOfDate} session=${quote.session || '?'}...`,
+  );
+  const commodityUpdated = await upsertAssets(url, apiKey, [assetRow]);
+
+  let historyUpserted = 0;
+  if (writeHistory && asOfDate) {
+    historyUpserted = await upsertHistory(url, apiKey, [
+      {
+        asset_type: 'commodity',
+        asset_key: IBJA_GOLD_999_KEY,
+        as_of_date: asOfDate,
+        close_price: price,
+        previous_close: previousClose,
+        change_pct: changePct,
+        source: 'ibja',
+        synced_at: syncedAt,
+      },
+    ]);
+  }
+
+  return {
+    commodityUpdated,
+    historyUpserted,
+    commodityCount: 1,
+    ibja: {
+      price,
+      asOfDate,
+      session: quote.session,
+    },
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const syncedAt = new Date().toISOString();
@@ -907,6 +994,19 @@ async function main() {
       commodityUpdated = cm.commodityUpdated;
       historyUpserted += cm.historyUpserted;
       meta.commodities = cm.commodityCount;
+    }
+
+    // IBJA gold is on its own hourly schedule (10:00–19:00 IST); also via --mode=ibja|all.
+    if (args.mode === 'all' || args.mode === 'ibja') {
+      const ib = await refreshIbjaGold({
+        url,
+        apiKey,
+        writeHistory: args.writeHistory,
+        syncedAt,
+      });
+      commodityUpdated += ib.commodityUpdated;
+      historyUpserted += ib.historyUpserted;
+      meta.ibja = ib.ibja;
     }
 
     if (runId) {

@@ -1,5 +1,8 @@
 const UNIVERSE_URL = '/data/sgb/sgb-universe.json';
 
+/** Commodity key for IBJA Fine Gold (999) ₹/g — SGB premium benchmark. */
+export const IBJA_GOLD_999_KEY = 'IBJA-GOLD-999';
+
 export async function loadSgbUniverse() {
   const res = await fetch(UNIVERSE_URL, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`Failed to load SGB universe (${res.status})`);
@@ -25,6 +28,14 @@ export function couponFromName(name) {
   return Number.isFinite(n) ? n : null;
 }
 
+/** SGB LTP vs IBJA Fine Gold (999): (ltp / gold − 1) × 100. */
+export function sgbPremiumPct(ltp, goldPerGram) {
+  const price = Number(ltp);
+  const gold = Number(goldPerGram);
+  if (!Number.isFinite(price) || !Number.isFinite(gold) || gold <= 0) return null;
+  return (price / gold - 1) * 100;
+}
+
 export function formatInr(value, digits = 2) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
   return Number(value).toLocaleString('en-IN', {
@@ -40,11 +51,28 @@ export function formatChangePct(value) {
   return `${sign}${n.toFixed(2)}%`;
 }
 
+export function formatPremiumPct(value) {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const n = Number(value);
+  if (Math.abs(n) < 0.005) return 'Par';
+  const abs = Math.abs(n).toFixed(2);
+  return n > 0 ? `${abs}% premium` : `${abs}% discount`;
+}
+
 export function changeTone(value) {
   if (value == null || !Number.isFinite(Number(value))) return 'text-pe-text-muted';
   const n = Number(value);
   if (n > 0) return 'text-emerald-600';
   if (n < 0) return 'text-red-600';
+  return 'text-pe-text-secondary';
+}
+
+/** Discount to gold (negative premium) is favourable → emerald. */
+export function premiumTone(value) {
+  if (value == null || !Number.isFinite(Number(value))) return 'text-pe-text-muted';
+  const n = Number(value);
+  if (n < 0) return 'text-emerald-600';
+  if (n > 0) return 'text-red-600';
   return 'text-pe-text-secondary';
 }
 
