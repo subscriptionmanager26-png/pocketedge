@@ -191,3 +191,50 @@
     padding: 10px 8px;
   }
 }
+
+/* SGB tracker — mf-screener-table forces text-align:left; restore numeric columns. */
+.sgb-tracker-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.sgb-tracker-table th,
+.sgb-tracker-table td {
+  vertical-align: middle;
+}
+
+.sgb-tracker-table .sgb-col-symbol {
+  width: 36%;
+  text-align: left;
+}
+
+.sgb-tracker-table .sgb-col-prem {
+  width: 40%;
+  text-align: right;
+}
+
+.sgb-tracker-table .sgb-col-ltp {
+  width: 24%;
+  text-align: right;
+}
+
+.sgb-tracker-table .sgb-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.sgb-tracker-table .sgb-col-prem .sgb-sort,
+.sgb-tracker-table .sgb-col-ltp .sgb-sort {
+  justify-content: flex-end;
+  width: 100%;
+}

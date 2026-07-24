@@ -682,6 +682,50 @@ export async function listEtfMarketQuotes() {
   return { syncedAt: latest, amcSyncedAt: amcLatest, items };
 }
 
+const IBJA_GOLD_999_KEY = 'IBJA-GOLD-999';
+
+/** Single-scan SGB LTP + IBJA gold for the SGB tracker (avoids N-key batch lookup). */
+export async function listSgbMarketQuotes() {
+  if (!isSupabaseConfigured()) return { syncedAt: null, gold: null, items: [] };
+  const client = await ensureSupabase();
+  const { data, error } = await client.rpc('list_social_market_sgb_quotes');
+  if (error) throw error;
+
+  let latest = null;
+  let gold = null;
+  const items = [];
+  for (const row of data ?? []) {
+    const symbol = String(row.asset_key ?? row.assetKey ?? '')
+      .trim()
+      .toUpperCase();
+    if (!symbol) continue;
+    const syncedAt = row.synced_at ?? row.syncedAt ?? null;
+    if (syncedAt && (!latest || syncedAt > latest)) latest = syncedAt;
+    const kind = String(row.kind ?? '').toLowerCase();
+    const item = {
+      symbol,
+      name: row.name || symbol,
+      ltp: row.price != null ? Number(row.price) : null,
+      price: row.price != null ? Number(row.price) : null,
+      changePct: row.change_pct != null ? Number(row.change_pct) : null,
+      previousClose: row.previous_close != null ? Number(row.previous_close) : null,
+      asOfDate: row.as_of_date ?? row.asOfDate ?? null,
+      isin: row.isin ?? null,
+      syncedAt,
+      assetType: kind === 'gold' ? 'commodity' : 'bond',
+    };
+    if (kind === 'gold' || symbol === IBJA_GOLD_999_KEY) {
+      gold = item;
+      setCached('market-asset', IBJA_GOLD_999_KEY, item);
+      continue;
+    }
+    items.push(item);
+    setCached('market-asset', symbol, item);
+  }
+
+  return { syncedAt: latest, gold, items };
+}
+
 export async function resolveMarketStock(symbol) {
   const cached = findCachedMarketItem('stocks', symbol);
   if (cached) return cached;

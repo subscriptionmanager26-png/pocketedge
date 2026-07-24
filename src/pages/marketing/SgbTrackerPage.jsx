@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowDownUp, Loader2, Search } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
-import { lookupMarketAssetsBatch } from '../../lib/marketDataApi';
+import { listSgbMarketQuotes } from '../../lib/marketDataApi';
 import { shouldPollMarket } from '../../lib/marketRefreshPolicy';
 import {
   formatInr,
   formatPremiumPct,
   formatSyncedAt,
-  IBJA_GOLD_999_KEY,
   loadSgbUniverse,
   maturityYearFromSymbol,
   premiumTone,
@@ -20,15 +19,9 @@ import '../../components/mfScreener/mfScreener.css';
 const ALL_YEARS = 'all';
 const POLL_MS = 60_000;
 
-function SortHeader({ label, active, dir, onClick, align = 'left' }) {
+function SortHeader({ label, active, dir, onClick }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1 font-semibold ${
-        align === 'right' ? 'justify-end w-full' : ''
-      } ${active ? 'text-pe-text' : 'text-pe-text-muted'}`}
-    >
+    <button type="button" onClick={onClick} className={`sgb-sort ${active ? 'text-pe-text' : ''}`}>
       {label}
       {active ? (
         <span className="text-[10px]">{dir === 'asc' ? '↑' : '↓'}</span>
@@ -39,19 +32,19 @@ function SortHeader({ label, active, dir, onClick, align = 'left' }) {
   );
 }
 
-function mergeUniverseWithQuotes(universeItems, quoteMap, goldPerGram) {
-  return (universeItems || []).map((row) => {
-    const key = String(row.symbol).toUpperCase();
-    const quote = quoteMap.get(key) || quoteMap.get(row.symbol) || null;
-    const ltp = quote?.price ?? quote?.ltp ?? null;
+function buildRows(bondItems, goldPerGram, universeBySymbol) {
+  return (bondItems || []).map((quote) => {
+    const symbol = String(quote.symbol || '').toUpperCase();
+    const uni = universeBySymbol.get(symbol);
+    const ltp = quote.ltp ?? quote.price ?? null;
     return {
-      symbol: key,
-      isin: row.isin || quote?.isin || null,
-      name: quote?.name || key,
+      symbol,
+      isin: uni?.isin || quote.isin || null,
+      name: quote.name || symbol,
       ltp,
       premiumPct: sgbPremiumPct(ltp, goldPerGram),
-      maturityYear: maturityYearFromSymbol(key),
-      syncedAt: quote?.syncedAt || null,
+      maturityYear: maturityYearFromSymbol(symbol),
+      syncedAt: quote.syncedAt || null,
     };
   });
 }
@@ -71,30 +64,27 @@ export default function SgbTrackerPage() {
   useEffect(() => {
     let cancelled = false;
     let timer = null;
+    let universeBySymbol = new Map();
 
-    async function refreshQuotes(baseItems, { isRefresh = false } = {}) {
-      if (!baseItems?.length) return;
+    async function refreshQuotes({ isRefresh = false } = {}) {
       if (isRefresh) setRefreshing(true);
       try {
-        // SGB LTP + IBJA gold both come from social_market_assets (BE).
-        const symbols = [...baseItems.map((row) => row.symbol), IBJA_GOLD_999_KEY];
-        const map = await lookupMarketAssetsBatch(symbols);
+        const live = await listSgbMarketQuotes();
         if (cancelled) return;
-        const goldQuote = map.get(IBJA_GOLD_999_KEY) || null;
         const goldPerGram =
-          goldQuote?.price != null && Number.isFinite(Number(goldQuote.price))
-            ? Number(goldQuote.price)
+          live.gold?.price != null && Number.isFinite(Number(live.gold.price))
+            ? Number(live.gold.price)
             : null;
         setGoldSpot(
           goldPerGram != null
             ? {
                 price: goldPerGram,
-                syncedAt: goldQuote?.syncedAt || null,
-                asOfDate: goldQuote?.asOfDate || null,
+                syncedAt: live.gold?.syncedAt || null,
+                asOfDate: live.gold?.asOfDate || null,
               }
             : null,
         );
-        setItems(mergeUniverseWithQuotes(baseItems, map, goldPerGram));
+        setItems(buildRows(live.items, goldPerGram, universeBySymbol));
         setError(null);
       } catch (err) {
         if (!cancelled && !isRefresh) {
@@ -113,25 +103,46 @@ export default function SgbTrackerPage() {
       timer = null;
       if (!shouldPollMarket('bond')) return;
       timer = setInterval(() => {
-        if (shouldPollMarket('bond') && universeItems) {
-          refreshQuotes(universeItems, { isRefresh: true });
-        }
+        if (shouldPollMarket('bond')) refreshQuotes({ isRefresh: true });
       }, POLL_MS);
     }
 
-    let universeItems = null;
-
     (async () => {
       try {
-        const data = await loadSgbUniverse();
+        // Universe (static) + quotes (BE) in parallel — one RPC scan for all SGBs + gold.
+        const [data, live] = await Promise.all([
+          loadSgbUniverse().catch(() => null),
+          listSgbMarketQuotes(),
+        ]);
         if (cancelled) return;
-        universeItems = data.items || [];
-        setUniverse(data);
-        await refreshQuotes(universeItems);
+
+        if (data?.items?.length) {
+          setUniverse(data);
+          universeBySymbol = new Map(
+            data.items.map((row) => [String(row.symbol).toUpperCase(), row]),
+          );
+        }
+
+        const goldPerGram =
+          live.gold?.price != null && Number.isFinite(Number(live.gold.price))
+            ? Number(live.gold.price)
+            : null;
+        setGoldSpot(
+          goldPerGram != null
+            ? {
+                price: goldPerGram,
+                syncedAt: live.gold?.syncedAt || null,
+                asOfDate: live.gold?.asOfDate || null,
+              }
+            : null,
+        );
+        setItems(buildRows(live.items, goldPerGram, universeBySymbol));
+        setError(null);
+        setLoading(false);
         schedule();
       } catch (err) {
         if (!cancelled) {
-          setError(err?.message || 'Failed to load SGB universe');
+          setError(err?.message || 'Failed to load SGB data');
           setLoading(false);
         }
       }
@@ -143,10 +154,8 @@ export default function SgbTrackerPage() {
         timer = null;
         return;
       }
-      if (universeItems) {
-        refreshQuotes(universeItems, { isRefresh: true });
-        schedule();
-      }
+      refreshQuotes({ isRefresh: true });
+      schedule();
     }
 
     document.addEventListener('visibilitychange', onVisibility);
@@ -204,7 +213,7 @@ export default function SgbTrackerPage() {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'symbol' ? 'asc' : 'asc');
+      setSortDir('asc');
     }
   }
 
@@ -333,10 +342,10 @@ export default function SgbTrackerPage() {
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
-            <table className="mf-screener-table w-full min-w-[360px]">
+            <table className="mf-screener-table sgb-tracker-table w-full min-w-[360px]">
               <thead>
                 <tr>
-                  <th className="text-left">
+                  <th className="sgb-col-symbol">
                     <SortHeader
                       label="SGB"
                       active={sortKey === 'symbol'}
@@ -344,22 +353,20 @@ export default function SgbTrackerPage() {
                       onClick={() => toggleSort('symbol')}
                     />
                   </th>
-                  <th className="text-right">
+                  <th className="sgb-col-prem">
                     <SortHeader
                       label="Premium / Discount"
                       active={sortKey === 'premiumPct'}
                       dir={sortDir}
                       onClick={() => toggleSort('premiumPct')}
-                      align="right"
                     />
                   </th>
-                  <th className="text-right">
+                  <th className="sgb-col-ltp">
                     <SortHeader
                       label="LTP"
                       active={sortKey === 'ltp'}
                       dir={sortDir}
                       onClick={() => toggleSort('ltp')}
-                      align="right"
                     />
                   </th>
                 </tr>
@@ -377,11 +384,11 @@ export default function SgbTrackerPage() {
                 ) : null}
                 {filtered.map((row) => (
                   <tr key={row.symbol}>
-                    <td className="font-semibold text-pe-text">{row.symbol}</td>
-                    <td className={`text-right tabular-nums font-semibold ${premiumTone(row.premiumPct)}`}>
+                    <td className="sgb-col-symbol font-semibold text-pe-text">{row.symbol}</td>
+                    <td className={`sgb-col-prem tabular-nums font-semibold ${premiumTone(row.premiumPct)}`}>
                       {formatPremiumPct(row.premiumPct)}
                     </td>
-                    <td className="text-right tabular-nums">{formatInr(row.ltp)}</td>
+                    <td className="sgb-col-ltp tabular-nums">{formatInr(row.ltp)}</td>
                   </tr>
                 ))}
                 {!loading && !filtered.length ? (
@@ -407,7 +414,11 @@ export default function SgbTrackerPage() {
               ibja.co
             </a>
             .{' '}
-            {universe?.counts?.items != null ? `${universe.counts.items} series tracked.` : null}{' '}
+            {universe?.counts?.items != null
+              ? `${universe.counts.items} series in universe.`
+              : items.length
+                ? `${items.length} series tracked.`
+                : null}{' '}
             This is not investment advice.
           </p>
         </>
