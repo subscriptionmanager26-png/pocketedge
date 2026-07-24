@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { fetchNseStocksTraded } from './lib/nse-stocks-fetch.mjs';
+import { fetchNseEtfLiveQuotes } from './lib/nse-etf-fetch.mjs';
 import { socialServiceWorkerPlugin } from './vite.sw-plugin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,6 +30,19 @@ function nseApiPlugin() {
           sendJson(res, 200, payload, 's-maxage=900, stale-while-revalidate=1800');
         } catch (error) {
           sendJson(res, 502, { error: error.message || 'Failed to fetch NSE stocks traded' });
+        }
+      });
+
+      server.middlewares.use('/api/etf-live', async (req, res) => {
+        if (req.method !== 'GET') {
+          sendJson(res, 405, { error: 'Method not allowed' });
+          return;
+        }
+        try {
+          const payload = await fetchNseEtfLiveQuotes();
+          sendJson(res, 200, payload, 'public, s-maxage=30, stale-while-revalidate=60');
+        } catch (error) {
+          sendJson(res, 502, { error: error.message || 'Failed to fetch NSE ETF quotes' });
         }
       });
     },

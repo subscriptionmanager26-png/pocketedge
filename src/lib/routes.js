@@ -78,6 +78,9 @@ export function resourcesPath(tool) {
     .trim()
     .toLowerCase();
   if (key === 'mf-screener' || key === 'screener') return '/resources/mf-screener';
+  if (key === 'etf-inav' || key === 'etf-inav-tracker' || key === 'inav') {
+    return '/resources/etf-inav';
+  }
   return '/resources';
 }
 
@@ -115,7 +118,7 @@ export function parseAppPath(pathname) {
     };
   }
 
-  const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener)\/?$/);
+  const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener|etf-inav)\/?$/);
   if (resourcesToolMatch) {
     return {
       kind: 'marketing',

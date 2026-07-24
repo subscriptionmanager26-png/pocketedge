@@ -74,6 +74,7 @@ const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
 const LearningPage = lazy(() => import('./pages/marketing/LearningPage'));
 const ResourcesPage = lazy(() => import('./pages/marketing/ResourcesPage'));
 const MfScreenerPage = lazy(() => import('./pages/marketing/MfScreenerPage'));
+const EtfInavPage = lazy(() => import('./pages/marketing/EtfInavPage'));
 const DisclosuresPage = lazy(() => import('./pages/marketing/DisclosuresPage'));
 
 function RouteSuspense({ children }) {
@@ -84,6 +85,7 @@ function MarketingRoute({ page, section }) {
   if (page === 'insights') return <InsightsPage />;
   if (page === 'learning') return <LearningPage />;
   if (page === 'resources' && section === 'mf-screener') return <MfScreenerPage />;
+  if (page === 'resources' && section === 'etf-inav') return <EtfInavPage />;
   if (page === 'resources') return <ResourcesPage />;
   if (page === 'disclosures') return <DisclosuresPage section={section} />;
   return <HomePage />;

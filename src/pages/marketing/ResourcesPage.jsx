@@ -6,9 +6,10 @@ import { resourcesPath } from '../../lib/routes';
 const TOOLS = [
   {
     title: 'ETF iNAV tracker',
-    body: 'Track indicative NAVs for popular ETFs through the trading day.',
+    body: 'Live LTP and NAV for NSE ETFs, with premium/discount vs NAV.',
     icon: LineChart,
-    status: 'Coming soon',
+    href: resourcesPath('etf-inav'),
+    status: 'Open',
   },
   {
     title: 'SGB tracker',
