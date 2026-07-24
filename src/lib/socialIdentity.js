@@ -1,5 +1,5 @@
 import { CURRENT_USER, getPerson, getPersonByHandle } from '../data/mockData';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { ensureSupabase, isSupabaseConfigured } from './supabase';
 import { skipAuthForDev } from './sessionStore';
 
 let selfProfile = null;
@@ -87,7 +87,9 @@ export function rememberPerson(person) {
 
 async function fetchProfileByUsername(username) {
   if (!useLiveIdentity()) return null;
-  const { data, error } = await supabase.rpc('get_social_profile', { p_username: username });
+  const client = await ensureSupabase();
+  if (!client) return null;
+  const { data, error } = await client.rpc('get_social_profile', { p_username: username });
   if (error) throw error;
   return data;
 }
@@ -127,7 +129,10 @@ export async function resolvePerson(userId) {
     return profileToPerson(byUserId.get(userId));
   }
 
-  const { data, error } = await supabase
+  const client = await ensureSupabase();
+  if (!client) return null;
+
+  const { data, error } = await client
     .from('social_profiles')
     .select('user_id, username, display_name, bio, avatar_url, location, focus, created_at')
     .eq('user_id', userId)
@@ -157,7 +162,9 @@ export async function resolvePeople(userIds = []) {
   );
 
   if (missing.length) {
-    const { data, error } = await supabase
+    const client = await ensureSupabase();
+    if (!client) return unique.map((id) => peekPerson(id)).filter(Boolean);
+    const { data, error } = await client
       .from('social_profiles')
       .select('user_id, username, display_name, bio, avatar_url, location, focus, created_at')
       .in('user_id', missing);

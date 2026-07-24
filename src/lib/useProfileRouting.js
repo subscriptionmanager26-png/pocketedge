@@ -11,6 +11,12 @@ function clearMarketSelection(setters) {
   setters.setSelectedCommodityId(null);
 }
 
+function isDeepLinkPath(pathname) {
+  const kind = parseAppPath(pathname).kind;
+  return kind === 'profile' || kind === 'post' || kind === 'stock' || kind === 'etf'
+    || kind === 'fund' || kind === 'index' || kind === 'commodity';
+}
+
 /**
  * Keeps App tab/profile/asset state in sync with shareable URLs.
  */
@@ -40,7 +46,10 @@ export function useProfileRouting({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  /** True while URL→state is applying (blocks state→URL overwrite). */
   const applyingUrl = useRef(false);
+  /** Pathname we're hydrating from the address bar; blocks state→URL until done. */
+  const pendingUrlPath = useRef(null);
 
   const setters = {
     setTab,
@@ -55,129 +64,148 @@ export function useProfileRouting({
     setSelectedCommodityId,
   };
 
-  // URL -> state (apply non-profile routes immediately; profile routes wait for profileReady)
+  // Mark deep-link paths as pending immediately so state→URL cannot clobber them
+  // before authView becomes 'app' (default tab is 'feed').
+  useEffect(() => {
+    if (authView === 'app') return;
+    if (isDeepLinkPath(location.pathname)) {
+      pendingUrlPath.current = location.pathname;
+    }
+  }, [authView, location.pathname]);
+
+  // URL -> state
   useEffect(() => {
     if (authView !== 'app') return;
 
-    const parsed = parseAppPath(location.pathname);
-    const needsProfile = parsed.kind === 'profile';
-    if (needsProfile && !profileReady) return;
+    const pathname = location.pathname;
+    const parsed = parseAppPath(pathname);
+    let cancelled = false;
 
     applyingUrl.current = true;
+    pendingUrlPath.current = pathname;
 
     const finish = () => {
+      if (cancelled) return;
       queueMicrotask(() => {
+        if (cancelled) return;
         applyingUrl.current = false;
+        if (pendingUrlPath.current === pathname) {
+          pendingUrlPath.current = null;
+        }
       });
     };
 
-    if (parsed.kind === 'profile') {
-      resolvePersonByHandle(parsed.username).then((person) => {
-        if (!person) {
-          finish();
+    const apply = async () => {
+      try {
+        if (parsed.kind === 'profile') {
+          const person = await resolvePersonByHandle(parsed.username);
+          if (cancelled) return;
+          if (!person) return;
+          clearMarketSelection(setters);
+          setSelectedPostId(null);
+          setProfileUserId(person.id);
+          setProfileMode(person.id === getAppCurrentUserId() ? 'own' : 'public');
+          setProfilePortfolioId(parsed.portfolioId);
+          onProfileResolved?.(person);
+          setTab('profile');
           return;
         }
-        clearMarketSelection(setters);
-        setSelectedPostId(null);
-        setProfileUserId(person.id);
-        setProfileMode(person.id === getAppCurrentUserId() ? 'own' : 'public');
-        setProfilePortfolioId(parsed.portfolioId);
-        onProfileResolved?.(person);
-        setTab('profile');
+
+        if (parsed.kind === 'post') {
+          clearMarketSelection(setters);
+          setProfilePortfolioId(null);
+          setSelectedPostId(parsed.postId);
+          setTab('feed');
+          return;
+        }
+
+        if (parsed.kind === 'stock' || parsed.kind === 'etf') {
+          // AMFI scheme codes are numeric — treat accidental /stock/<code> as fund.
+          if (parsed.kind === 'stock' && /^\d{6,}$/.test(String(parsed.symbol ?? ''))) {
+            setProfilePortfolioId(null);
+            setSelectedPostId(null);
+            setSelectedTicker(null);
+            setSelectedTickerKind('stock');
+            setSelectedIndexId(null);
+            setSelectedCommodityId(null);
+            setSelectedFundId(String(parsed.symbol));
+            setTab('markets');
+            navigate(`/fund/${encodeURIComponent(String(parsed.symbol))}`, { replace: true });
+            return;
+          }
+
+          setProfilePortfolioId(null);
+          setSelectedPostId(null);
+          setSelectedFundId(null);
+          setSelectedIndexId(null);
+          setSelectedCommodityId(null);
+          setSelectedTicker(parsed.symbol);
+          setSelectedTickerKind(parsed.kind === 'etf' ? 'etf' : 'stock');
+          setTab('markets');
+          return;
+        }
+
+        if (parsed.kind === 'fund') {
+          setProfilePortfolioId(null);
+          setSelectedPostId(null);
+          setSelectedTicker(null);
+          setSelectedTickerKind('stock');
+          setSelectedIndexId(null);
+          setSelectedCommodityId(null);
+          setSelectedFundId(parsed.schemeCode);
+          setTab('markets');
+          return;
+        }
+
+        if (parsed.kind === 'index') {
+          setProfilePortfolioId(null);
+          setSelectedPostId(null);
+          setSelectedTicker(null);
+          setSelectedTickerKind('stock');
+          setSelectedFundId(null);
+          setSelectedCommodityId(null);
+          setSelectedIndexId(parsed.indexId);
+          setTab('markets');
+          return;
+        }
+
+        if (parsed.kind === 'commodity') {
+          setProfilePortfolioId(null);
+          setSelectedPostId(null);
+          setSelectedTicker(null);
+          setSelectedTickerKind('stock');
+          setSelectedFundId(null);
+          setSelectedIndexId(null);
+          setSelectedCommodityId(parsed.commodityId);
+          setTab('markets');
+          return;
+        }
+
+        if (parsed.kind === 'tab') {
+          clearMarketSelection(setters);
+          setSelectedPostId(null);
+          setTab(parsed.tab);
+          if (parsed.tab !== 'profile') {
+            setProfilePortfolioId(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to hydrate route from URL', err);
+      } finally {
         finish();
-      });
-      return;
-    }
-
-    if (parsed.kind === 'post') {
-      clearMarketSelection(setters);
-      setProfilePortfolioId(null);
-      setSelectedPostId(parsed.postId);
-      setTab('feed');
-      finish();
-      return;
-    }
-
-    if (parsed.kind === 'stock' || parsed.kind === 'etf') {
-      // AMFI scheme codes are numeric — treat accidental /stock/<code> as fund.
-      if (parsed.kind === 'stock' && /^\d{6,}$/.test(String(parsed.symbol ?? ''))) {
-        setProfilePortfolioId(null);
-        setSelectedPostId(null);
-        setSelectedTicker(null);
-        setSelectedTickerKind('stock');
-        setSelectedIndexId(null);
-        setSelectedCommodityId(null);
-        setSelectedFundId(String(parsed.symbol));
-        setTab('markets');
-        navigate(`/fund/${encodeURIComponent(String(parsed.symbol))}`, { replace: true });
-        finish();
-        return;
       }
+    };
 
-      setProfilePortfolioId(null);
-      setSelectedPostId(null);
-      setSelectedFundId(null);
-      setSelectedIndexId(null);
-      setSelectedCommodityId(null);
-      setSelectedTicker(parsed.symbol);
-      setSelectedTickerKind(parsed.kind === 'etf' ? 'etf' : 'stock');
-      setTab('markets');
-      finish();
-      return;
-    }
+    void apply();
 
-    if (parsed.kind === 'fund') {
-      setProfilePortfolioId(null);
-      setSelectedPostId(null);
-      setSelectedTicker(null);
-      setSelectedTickerKind('stock');
-      setSelectedIndexId(null);
-      setSelectedCommodityId(null);
-      setSelectedFundId(parsed.schemeCode);
-      setTab('markets');
-      finish();
-      return;
-    }
-
-    if (parsed.kind === 'index') {
-      setProfilePortfolioId(null);
-      setSelectedPostId(null);
-      setSelectedTicker(null);
-      setSelectedTickerKind('stock');
-      setSelectedFundId(null);
-      setSelectedCommodityId(null);
-      setSelectedIndexId(parsed.indexId);
-      setTab('markets');
-      finish();
-      return;
-    }
-
-    if (parsed.kind === 'commodity') {
-      setProfilePortfolioId(null);
-      setSelectedPostId(null);
-      setSelectedTicker(null);
-      setSelectedTickerKind('stock');
-      setSelectedFundId(null);
-      setSelectedIndexId(null);
-      setSelectedCommodityId(parsed.commodityId);
-      setTab('markets');
-      finish();
-      return;
-    }
-
-    if (parsed.kind === 'tab') {
-      clearMarketSelection(setters);
-      setSelectedPostId(null);
-      setTab(parsed.tab);
-      if (parsed.tab !== 'profile') {
-        setProfilePortfolioId(null);
-      }
-      finish();
-    }
+    return () => {
+      cancelled = true;
+    };
   }, [
     authView,
-    profileReady,
     location.pathname,
+    navigate,
+    onProfileResolved,
     setProfileMode,
     setProfilePortfolioId,
     setProfileUserId,
@@ -192,7 +220,8 @@ export function useProfileRouting({
 
   // state -> URL
   useEffect(() => {
-    if (authView !== 'app' || !profileReady || applyingUrl.current) return;
+    if (authView !== 'app' || !profileReady) return;
+    if (applyingUrl.current || pendingUrlPath.current) return;
 
     const target = pathFromAppState({
       tab,

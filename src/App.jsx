@@ -262,7 +262,9 @@ export default function App() {
           identifyPostHogUser(user);
           markAuthReady();
           const gen = ++authGen;
-          setAuthView('bootstrapping');
+          // Keep a cached 'app' view while re-validating so deep-link hydration
+          // is not cancelled mid-flight by a bootstrapping flicker.
+          setAuthView((prev) => (prev === 'app' || prev === 'onboarding' ? prev : 'bootstrapping'));
           resolveAuthViewForUserAsync(user).then((view) => {
             if (cancelled || gen !== authGen) return;
             setAuthView(view);
