@@ -4,76 +4,53 @@ import { isInNseSession } from '../marketRefreshPolicy';
 const LIVE_URL = '/api/etf-live';
 export const ETF_INAV_POLL_MS = 60_000;
 
-export async function fetchEtfLiveQuotes() {
+async function fetchNseLtpOnly() {
   const res = await fetch(LIVE_URL, { cache: 'no-store' });
   if (!res.ok) {
-    throw new Error(`Failed to load live ETF quotes (${res.status})`);
+    throw new Error(`Failed to load live ETF LTPs (${res.status})`);
   }
-  return res.json();
+  const payload = await res.json();
+  return {
+    syncedAt: payload.syncedAt || null,
+    items: (payload.items || []).map((row) => ({
+      symbol: String(row.symbol).toUpperCase(),
+      ltp: row.ltp ?? null,
+      changePct: row.changePct ?? null,
+      syncedAt: payload.syncedAt || null,
+      source: 'nse-ltp',
+    })),
+  };
 }
 
 /**
- * Fast path: one RPC that returns all ETF LTP+NAV rows.
- * Falls back to NSE /api/etf-live only if many NAVs are still missing.
+ * Live LTP only (DB / NSE). AMC iNAV never comes from here — that stays on the snapshot scrape.
  */
-export async function fetchMergedLiveQuotes(_symbols = []) {
-  let dbItems = [];
-  let dbSyncedAt = null;
-
+export async function fetchMergedLiveQuotes() {
   try {
     const db = await listEtfMarketQuotes();
-    dbItems = db.items || [];
-    dbSyncedAt = db.syncedAt || null;
+    if (db.items?.length) {
+      return {
+        syncedAt: db.syncedAt,
+        items: db.items.map((row) => ({
+          symbol: row.symbol,
+          ltp: row.ltp ?? row.price ?? null,
+          changePct: row.changePct ?? null,
+          syncedAt: row.syncedAt || db.syncedAt,
+          source: 'db',
+        })),
+        source: 'db',
+      };
+    }
   } catch (err) {
     console.warn('list_social_market_etf_quotes failed', err);
   }
 
-  const bySymbol = new Map(dbItems.map((row) => [row.symbol, { ...row, source: 'db' }]));
-  const missingNav = dbItems.filter((row) => row.nav == null).length;
-  const shouldFillFromNse =
-    dbItems.length === 0 || missingNav > Math.max(5, Math.floor(dbItems.length * 0.25));
-
-  if (shouldFillFromNse) {
-    try {
-      const nse = await fetchEtfLiveQuotes();
-      for (const row of nse.items || []) {
-        const key = String(row.symbol).toUpperCase();
-        const existing = bySymbol.get(key) || {
-          symbol: key,
-          name: row.name || key,
-          ltp: null,
-          nav: null,
-          changePct: null,
-          previousClose: null,
-          syncedAt: null,
-          source: 'nse',
-        };
-        bySymbol.set(key, {
-          ...existing,
-          name: existing.name || row.name || key,
-          ltp: existing.ltp ?? row.ltp ?? null,
-          nav: existing.nav ?? (row.nav != null && Number(row.nav) > 0 ? Number(row.nav) : null),
-          changePct: existing.changePct ?? row.changePct ?? null,
-          previousClose: existing.previousClose ?? row.previousClose ?? null,
-          syncedAt: existing.syncedAt || nse.syncedAt,
-          source: existing.ltp != null && existing.nav != null ? 'db' : 'db+nse',
-        });
-      }
-      if (!dbSyncedAt) dbSyncedAt = nse.syncedAt || null;
-    } catch {
-      // DB-only is fine if NSE fill fails.
-    }
+  try {
+    const nse = await fetchNseLtpOnly();
+    return { ...nse, source: 'nse-ltp' };
+  } catch {
+    return { syncedAt: null, items: [], source: 'none' };
   }
-
-  const items = [...bySymbol.values()];
-  const syncedAt =
-    items
-      .map((row) => row.syncedAt)
-      .filter(Boolean)
-      .sort()
-      .at(-1) || dbSyncedAt;
-
-  return { syncedAt, items, source: shouldFillFromNse ? 'db+nse' : 'db' };
 }
 
 export function shouldPollEtfInav({ date = new Date(), visible = true } = {}) {
@@ -81,6 +58,17 @@ export function shouldPollEtfInav({ date = new Date(), visible = true } = {}) {
   return isInNseSession(date);
 }
 
+function amcInavFromRow(row) {
+  const raw = row?.amcInav ?? row?.inav ?? null;
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Premium = live LTP ÷ AMC iNAV scrape.
+ * Never use NSE NAV for the iNAV column.
+ */
 export function mergeLiveIntoSnapshotItems(snapshotItems, liveItems) {
   const liveBySymbol = new Map(
     (liveItems || []).map((row) => [String(row.symbol).toUpperCase(), row]),
@@ -89,19 +77,18 @@ export function mergeLiveIntoSnapshotItems(snapshotItems, liveItems) {
   return (snapshotItems || []).map((row) => {
     const live = liveBySymbol.get(String(row.symbol).toUpperCase());
     const ltp = live?.ltp ?? null;
-    const amcInav = row.amcInav ?? row.inav ?? null;
-    const nav = live?.nav ?? null;
-    const inav = nav ?? amcInav;
+    const amcInav = amcInavFromRow(row);
     const premium =
-      ltp != null && inav != null && Number(inav) !== 0 ? Number(ltp) / Number(inav) : null;
+      ltp != null && amcInav != null ? Number(ltp) / Number(amcInav) : null;
 
     return {
       ...row,
-      // Never keep stale snapshot LTP/NAV once live merge runs.
       ltp,
-      nav,
       amcInav,
-      inav,
+      inav: amcInav,
+      // Keep NSE nav off the displayed NAV field.
+      nav: null,
+      nseNav: row.nseNav ?? null,
       changePct: live?.changePct ?? null,
       premium,
       premiumPct: premium == null ? null : (premium - 1) * 100,
@@ -111,16 +98,19 @@ export function mergeLiveIntoSnapshotItems(snapshotItems, liveItems) {
   });
 }
 
-/** Catalog-only rows for first paint before DB quotes arrive (no prices). */
+/** First paint: show AMC iNAV immediately; LTP fills in after DB quotes. */
 export function catalogItemsWithoutQuotes(snapshotItems) {
-  return (snapshotItems || []).map((row) => ({
-    ...row,
-    ltp: null,
-    nav: null,
-    amcInav: row.amcInav ?? row.inav ?? null,
-    inav: null,
-    changePct: null,
-    premium: null,
-    premiumPct: null,
-  }));
+  return (snapshotItems || []).map((row) => {
+    const amcInav = amcInavFromRow(row);
+    return {
+      ...row,
+      ltp: null,
+      nav: null,
+      amcInav,
+      inav: amcInav,
+      changePct: null,
+      premium: null,
+      premiumPct: null,
+    };
+  });
 }

@@ -94,29 +94,29 @@ export default function EtfInavPage() {
 
     (async () => {
       try {
-        // Catalog + quotes in parallel — don't wait on snapshot before hitting DB.
-        const [data, live] = await Promise.all([
-          loadEtfInavSnapshot(),
-          fetchMergedLiveQuotes().catch((err) => {
-            console.warn('ETF quotes preload failed', err);
-            return null;
-          }),
-        ]);
+        const dataPromise = loadEtfInavSnapshot();
+        const livePromise = fetchMergedLiveQuotes().catch((err) => {
+          console.warn('ETF LTP preload failed', err);
+          return null;
+        });
+
+        const data = await dataPromise;
         if (cancelled) return;
         catalog = data;
         snapshotRef.current = data;
         setSnapshot(data);
+        // Paint AMC iNAV immediately; LTP merges when DB returns.
+        setItems(catalogItemsWithoutQuotes(data.items || []));
+        setLoading(false);
 
+        const live = await livePromise;
+        if (cancelled) return;
         if (live?.items?.length) {
           setItems(mergeLiveIntoSnapshotItems(data.items || [], live.items));
           setQuoteSyncedAt(live.syncedAt || new Date().toISOString());
-          setLoading(false);
-          schedule();
-          return;
+        } else {
+          await refreshQuotes();
         }
-
-        setItems(catalogItemsWithoutQuotes(data.items || []));
-        await refreshQuotes();
         schedule();
       } catch (err) {
         if (!cancelled) {
@@ -355,7 +355,7 @@ export default function EtfInavPage() {
                   </th>
                   <th className="text-right">
                     <SortHeader
-                      label="NAV"
+                      label="iNAV"
                       active={sortKey === 'inav'}
                       dir={sortDir}
                       onClick={() => toggleSort('inav')}
@@ -416,8 +416,8 @@ export default function EtfInavPage() {
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-pe-text-muted">
-            LTP and NAV come from PocketEdge market data (NSE). Premium = LTP ÷ NAV. If live NAV is
-            missing, AMC indicative NAV is used. This is not investment advice.
+            iNAV is AMC indicative NAV from our scrapes. LTP is live NSE. Premium = LTP ÷ AMC iNAV.
+            This is not investment advice.
             {snapshot?.counts?.items != null ? ` ${snapshot.counts.items} ETFs tracked.` : null}
           </p>
         </>

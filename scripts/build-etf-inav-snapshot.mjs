@@ -91,7 +91,9 @@ async function main() {
       amc,
       category,
       ltp,
+      // AMC scrape is the iNAV truth for the tracker (not NSE nav).
       inav,
+      amcInav: inav,
       nseNav: nse ? num(nse.nav) : null,
       changePct: nse ? num(nse.changePct) : null,
       premium: ratio,
