@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowDownUp, Loader2, Search } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
-import { ScreenerCategoryTabs } from '../../components/mfScreener/ScreenerCategoryTabs';
 import {
   ETF_INAV_CATEGORIES,
+  ETF_INAV_CATEGORY_SHORT,
   formatPremiumPct,
   formatPrice,
   formatSnapshotTime,
@@ -14,6 +14,7 @@ import {
 } from '../../lib/etfInav/format';
 import {
   ETF_INAV_POLL_MS,
+  catalogItemsWithoutQuotes,
   fetchMergedLiveQuotes,
   mergeLiveIntoSnapshotItems,
   shouldPollEtfInav,
@@ -57,46 +58,29 @@ export default function EtfInavPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const data = await loadEtfInavSnapshot();
-        if (cancelled) return;
-        snapshotRef.current = data;
-        setSnapshot(data);
-        setItems(data.items || []);
-        setError(null);
-      } catch (err) {
-        if (!cancelled) setError(err?.message || 'Failed to load ETF iNAV data');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!snapshot?.items?.length) return undefined;
-
-    let cancelled = false;
     let timer = null;
+    let catalog = null;
 
-    async function refreshQuotes() {
+    async function refreshQuotes({ isRefresh = false } = {}) {
       const base = snapshotRef.current;
       if (!base?.items?.length) return;
-      setQuotesRefreshing(true);
+      if (isRefresh) setQuotesRefreshing(true);
       try {
         const symbols = base.items.map((row) => row.symbol);
         const live = await fetchMergedLiveQuotes(symbols);
         if (cancelled) return;
-        const merged = mergeLiveIntoSnapshotItems(base.items, live.items);
-        setItems(merged);
+        setItems(mergeLiveIntoSnapshotItems(base.items, live.items));
         setQuoteSyncedAt(live.syncedAt || new Date().toISOString());
-      } catch {
-        // Keep last good snapshot/live merge; don't wipe the table.
+        setError(null);
+      } catch (err) {
+        if (!cancelled && !isRefresh) {
+          setError(err?.message || 'Failed to load ETF quotes');
+        }
       } finally {
-        if (!cancelled) setQuotesRefreshing(false);
+        if (!cancelled) {
+          setLoading(false);
+          setQuotesRefreshing(false);
+        }
       }
     }
 
@@ -105,12 +89,28 @@ export default function EtfInavPage() {
       timer = null;
       if (!shouldPollEtfInav()) return;
       timer = setInterval(() => {
-        if (shouldPollEtfInav()) refreshQuotes();
+        if (shouldPollEtfInav()) refreshQuotes({ isRefresh: true });
       }, ETF_INAV_POLL_MS);
     }
 
-    refreshQuotes();
-    schedule();
+    (async () => {
+      try {
+        const data = await loadEtfInavSnapshot();
+        if (cancelled) return;
+        catalog = data;
+        snapshotRef.current = data;
+        setSnapshot(data);
+        // Metadata only — never paint stale snapshot LTP/NAV.
+        setItems(catalogItemsWithoutQuotes(data.items || []));
+        await refreshQuotes();
+        schedule();
+      } catch (err) {
+        if (!cancelled) {
+          setError(err?.message || 'Failed to load ETF iNAV data');
+          setLoading(false);
+        }
+      }
+    })();
 
     function onVisibility() {
       if (document.hidden) {
@@ -118,8 +118,10 @@ export default function EtfInavPage() {
         timer = null;
         return;
       }
-      refreshQuotes();
-      schedule();
+      if (catalog || snapshotRef.current) {
+        refreshQuotes({ isRefresh: true });
+        schedule();
+      }
     }
 
     document.addEventListener('visibilitychange', onVisibility);
@@ -128,7 +130,7 @@ export default function EtfInavPage() {
       if (timer) clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [snapshot]);
+  }, []);
 
   const categoryOptions = useMemo(() => {
     const counts = Object.fromEntries(ETF_INAV_CATEGORIES.map((c) => [c, 0]));
@@ -136,8 +138,13 @@ export default function EtfInavPage() {
       if (counts[item.category] != null) counts[item.category] += 1;
     }
     return [
-      { id: ALL_ID, label: 'All', count: items.length },
-      ...ETF_INAV_CATEGORIES.map((c) => ({ id: c, label: c, count: counts[c] || 0 })),
+      { id: ALL_ID, label: 'All', shortLabel: 'All', count: items.length },
+      ...ETF_INAV_CATEGORIES.map((c) => ({
+        id: c,
+        label: c,
+        shortLabel: ETF_INAV_CATEGORY_SHORT[c] || c,
+        count: counts[c] || 0,
+      })),
     ];
   }, [items]);
 
@@ -199,10 +206,6 @@ export default function EtfInavPage() {
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
           ETF iNAV tracker
         </h1>
-        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">
-          Compare exchange last traded price with NAV. Premium is LTP ÷ NAV — above 1 is a
-          premium (red), below 1 is a discount (green).
-        </p>
         <p className="mt-3 text-sm text-pe-text-secondary">
           {quotesLabel ? (
             <>
@@ -226,20 +229,13 @@ export default function EtfInavPage() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="flex items-center gap-2 text-sm text-pe-text-secondary">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          Loading ETF iNAV data…
-        </div>
-      ) : null}
-
       {error ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       ) : null}
 
-      {!loading && !error ? (
+      {!error || items.length ? (
         <>
           <div className="mb-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -259,7 +255,6 @@ export default function EtfInavPage() {
               <p className="shrink-0 text-xs tabular-nums text-pe-text-muted">{filtered.length}</p>
             </div>
 
-            {/* Mobile: compact native select */}
             <label className="block sm:hidden">
               <span className="sr-only">Category</span>
               <select
@@ -281,13 +276,36 @@ export default function EtfInavPage() {
               </select>
             </label>
 
-            {/* Desktop: horizontal category tabs */}
-            <div className="hidden border-b border-pe-border sm:block">
-              <ScreenerCategoryTabs
-                options={categoryOptions}
-                activeId={categoryId}
-                onChange={setCategoryId}
-              />
+            <div
+              className="hidden gap-1.5 overflow-x-auto pb-1 sm:flex"
+              role="tablist"
+              aria-label="ETF categories"
+            >
+              {categoryOptions.map((opt) => {
+                const active = opt.id === categoryId;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    title={opt.label}
+                    onClick={() => setCategoryId(opt.id)}
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                      active
+                        ? 'bg-pe-text text-pe-canvas'
+                        : 'bg-pe-surface text-pe-text-secondary hover:bg-pe-border/60'
+                    }`}
+                  >
+                    {opt.shortLabel}
+                    <span
+                      className={`ml-1.5 tabular-nums ${active ? 'opacity-70' : 'text-pe-text-muted'}`}
+                    >
+                      {opt.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -301,6 +319,15 @@ export default function EtfInavPage() {
                       active={sortKey === 'symbol'}
                       dir={sortDir}
                       onClick={() => toggleSort('symbol')}
+                    />
+                  </th>
+                  <th className="text-right">
+                    <SortHeader
+                      label="Premium"
+                      active={sortKey === 'premiumPct'}
+                      dir={sortDir}
+                      onClick={() => toggleSort('premiumPct')}
+                      align="right"
                     />
                   </th>
                   <th className="text-right">
@@ -321,18 +348,19 @@ export default function EtfInavPage() {
                       align="right"
                     />
                   </th>
-                  <th className="text-right">
-                    <SortHeader
-                      label="Premium"
-                      active={sortKey === 'premiumPct'}
-                      dir={sortDir}
-                      onClick={() => toggleSort('premiumPct')}
-                      align="right"
-                    />
-                  </th>
                 </tr>
               </thead>
               <tbody>
+                {loading && !quoteSyncedAt ? (
+                  <tr>
+                    <td colSpan={4} className="py-10 text-center text-sm text-pe-text-muted">
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        Loading quotes…
+                      </span>
+                    </td>
+                  </tr>
+                ) : null}
                 {filtered.map((row) => {
                   const tone = premiumTone(row.premium);
                   const etfName = row.etfName || row.name;
@@ -351,18 +379,18 @@ export default function EtfInavPage() {
                           </p>
                         ) : null}
                       </td>
-                      <td className="text-right tabular-nums">{formatPrice(row.ltp)}</td>
-                      <td className="text-right tabular-nums">{formatPrice(row.inav)}</td>
                       <td className={`text-right tabular-nums font-semibold ${tone}`}>
                         <span>{formatPremiumPct(row.premiumPct)}</span>
                         <span className="mt-0.5 block text-[10px] font-medium opacity-80">
                           {premiumLabel(row.premium)}
                         </span>
                       </td>
+                      <td className="text-right tabular-nums">{formatPrice(row.ltp)}</td>
+                      <td className="text-right tabular-nums">{formatPrice(row.inav)}</td>
                     </tr>
                   );
                 })}
-                {!filtered.length ? (
+                {!loading && quoteSyncedAt && !filtered.length ? (
                   <tr>
                     <td colSpan={4} className="py-10 text-center text-sm text-pe-text-muted">
                       No ETFs match this filter.
@@ -374,9 +402,9 @@ export default function EtfInavPage() {
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-pe-text-muted">
-            LTP prefers live prices from PocketEdge (refreshed through the session); NAV is from
-            NSE and refreshes about every minute while the market is open. If NSE NAV is missing,
-            AMC indicative NAV is used. Premium = LTP ÷ NAV. This is not investment advice.
+            LTP and NAV come from PocketEdge market data (NSE). Premium = LTP ÷ NAV. If live NAV is
+            missing, AMC indicative NAV is used. This is not investment advice.
+            {snapshot?.counts?.items != null ? ` ${snapshot.counts.items} ETFs tracked.` : null}
           </p>
         </>
       ) : null}

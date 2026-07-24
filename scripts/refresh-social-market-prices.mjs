@@ -243,6 +243,7 @@ function equityAssetRows(quotes, assetType, asOfDate, syncedAt) {
       as_of_date: asOfDate,
       price_source: 'nse',
       synced_at: syncedAt,
+      ...(assetType === 'etf' && q.nav != null ? { nav: q.nav } : {}),
     }));
 }
 
@@ -439,6 +440,7 @@ async function refreshEquity({ url, apiKey, writeHistory, asOfDate, syncedAt, dr
     ltp: row.ltp,
     previousClose: row.previousClose,
     changePct: row.changePct,
+    nav: row.nav ?? null,
   }));
 
   const stockAssetTypeByKey = new Map();

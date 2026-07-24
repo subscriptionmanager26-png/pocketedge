@@ -218,6 +218,7 @@ export function marketAssetRowToItem(row) {
     name,
     price,
     ltp: price,
+    nav: row.nav ?? null,
     changePct,
     previousClose,
     asOfDate,

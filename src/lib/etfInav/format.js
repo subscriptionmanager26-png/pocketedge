@@ -1,8 +1,8 @@
-import { ETF_INAV_CATEGORIES } from './categories';
+import { ETF_INAV_CATEGORIES, ETF_INAV_CATEGORY_SHORT } from './categories';
 
 const SNAPSHOT_URL = '/data/etf-inav/etf-inav-snapshot.json';
 
-export { ETF_INAV_CATEGORIES };
+export { ETF_INAV_CATEGORIES, ETF_INAV_CATEGORY_SHORT };
 
 export async function loadEtfInavSnapshot() {
   const res = await fetch(SNAPSHOT_URL, { cache: 'no-cache' });

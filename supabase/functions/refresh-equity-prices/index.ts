@@ -19,6 +19,7 @@ type EquityQuote = {
   ltp: number;
   previousClose: number | null;
   changePct: number | null;
+  nav?: number | null;
 };
 
 type AssetRow = {
@@ -33,6 +34,7 @@ type AssetRow = {
   exchange: 'NSE';
   exchange_symbol: string;
   synced_at: string;
+  nav?: number | null;
 };
 
 type HistoryRow = {
@@ -145,6 +147,7 @@ function mapEtfs(payload: unknown): EquityQuote[] {
       ltp,
       previousClose: chn != null ? ltp - chn : null,
       changePct: numberOrNull(row.per),
+      nav: numberOrNull(row.nav),
     });
   }
   return out;
@@ -168,6 +171,7 @@ function toAssetRows(
     exchange: 'NSE',
     exchange_symbol: q.symbol,
     synced_at: syncedAt,
+    ...(assetType === 'etf' && q.nav != null ? { nav: q.nav } : {}),
   }));
 }
 

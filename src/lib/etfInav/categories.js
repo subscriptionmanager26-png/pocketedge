@@ -9,6 +9,17 @@ export const ETF_INAV_CATEGORIES = [
   'Sectoral/Thematic Index',
 ];
 
+/** Short labels for compact chip filters. */
+export const ETF_INAV_CATEGORY_SHORT = {
+  International: 'Intl',
+  'Broad Market Index': 'Broad',
+  Gold: 'Gold',
+  Silver: 'Silver',
+  Debt: 'Debt',
+  'Factor Index': 'Factor',
+  'Sectoral/Thematic Index': 'Sectoral',
+};
+
 /**
  * Classify an ETF from NSE name / symbol / optional AMC scheme name.
  * Heuristic only — good enough for tracker filtering.
