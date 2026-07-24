@@ -12,11 +12,18 @@ export const COMPOSE_SHARE_HOLDINGS = 5;
 export const SHARE_SORT_ALLOCATION = 'allocation';
 export const SHARE_SORT_PERFORMANCE = 'performance';
 
-function holdingWeight(holding, totalValue) {
+function holdingWeight(holding, totalValue, { preferDeclaredWeight = false } = {}) {
   const fromWeight = Number(holding?.weightPct ?? holding?.weight);
+  if (preferDeclaredWeight && Number.isFinite(fromWeight) && fromWeight > 0) {
+    return fromWeight;
+  }
+  const qty = Number(holding?.qty) || 0;
+  const price = Number(holding?.price) || Number(holding?.avg) || 0;
+  const liveValue = qty > 0 ? qty * price : 0;
+  const value = liveValue > 0 ? liveValue : Number(holding?.value) || 0;
+  if (totalValue > 0 && value > 0) return (value / totalValue) * 100;
   if (Number.isFinite(fromWeight) && fromWeight > 0) return fromWeight;
-  const value = Number(holding?.value) || 0;
-  return totalValue > 0 ? (value / totalValue) * 100 : 0;
+  return 0;
 }
 
 function holdingSectorKey(holding, asset) {
@@ -32,7 +39,7 @@ function holdingSectorKey(holding, asset) {
   return String(raw).trim() || 'Other';
 }
 
-function mapHoldingRow(holding, asset, totalValue) {
+function mapHoldingRow(holding, asset, totalValue, preferDeclaredWeight = false) {
   const label = holdingDisplayLabel(holding, asset);
   const assetType = holding?.assetType ?? asset?.kind ?? 'stock';
   const logoIconUrl =
@@ -47,16 +54,24 @@ function mapHoldingRow(holding, asset, totalValue) {
     assetType,
     sector: holdingSectorKey(holding, asset),
     logoIconUrl,
-    weight: Number(holdingWeight(holding, totalValue).toFixed(1)),
+    weight: Number(holdingWeight(holding, totalValue, { preferDeclaredWeight }).toFixed(1)),
     totalReturnPct: getHoldingTotalReturnPct(holding, asset),
   };
 }
 
 function buildRows(portfolio, assetsByKey = {}) {
   const holdings = (portfolio.holdings ?? []).filter(Boolean);
+  const preferDeclaredWeight = portfolio?.kind === 'watchlist';
   if (holdings.length) {
-    const totalValue = holdings.reduce((sum, h) => sum + (Number(h.value) || 0), 0);
-    return holdings.map((h) => mapHoldingRow(h, assetsByKey[h.ticker], totalValue));
+    const totalValue = holdings.reduce((sum, h) => {
+      const qty = Number(h.qty) || 0;
+      const price = Number(h.price) || Number(h.avg) || 0;
+      const live = qty > 0 ? qty * price : 0;
+      return sum + (live > 0 ? live : Number(h.value) || 0);
+    }, 0);
+    return holdings.map((h) =>
+      mapHoldingRow(h, assetsByKey[h.ticker], totalValue, preferDeclaredWeight)
+    );
   }
 
   const tickers = portfolio.tickers ?? [];

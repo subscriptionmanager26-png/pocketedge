@@ -155,11 +155,8 @@ export function getPortfolioReturn(portfolio, period = '1M') {
   return returns[period] ?? returns['1M'] ?? 0;
 }
 
-/** Lifetime total return % for a single holding. */
+/** Lifetime total return % for a single holding. Prefer live qty/avg/price. */
 export function getHoldingTotalReturnPct(holding, asset = null) {
-  const stored = Number(holding?.pnlPct ?? holding?.pnl_pct ?? holding?.totalReturnPct);
-  if (Number.isFinite(stored)) return stored;
-
   const qty = Number(holding?.qty) || 0;
   const avg = Number(holding?.avg) || 0;
   if (qty > 0 && avg > 0) {
@@ -173,6 +170,9 @@ export function getHoldingTotalReturnPct(holding, asset = null) {
           : avg;
     return ((price - avg) / avg) * 100;
   }
+
+  const stored = Number(holding?.pnlPct ?? holding?.pnl_pct ?? holding?.totalReturnPct);
+  if (Number.isFinite(stored)) return stored;
   return 0;
 }
 
@@ -222,10 +222,16 @@ export function getPortfolioTotalReturnPct(portfolio) {
           : qty * avg;
       const storedValue = Number(h.value);
       const price = Number(h.price);
+      const liveValue =
+        qty > 0
+          ? qty * (Number.isFinite(price) && price > 0 ? price : avg)
+          : 0;
       const value =
-        Number.isFinite(storedValue) && storedValue > 0
-          ? storedValue
-          : qty * (Number.isFinite(price) && price > 0 ? price : avg);
+        liveValue > 0
+          ? liveValue
+          : Number.isFinite(storedValue) && storedValue > 0
+            ? storedValue
+            : 0;
       totalValue += value;
       invested += cost;
     }

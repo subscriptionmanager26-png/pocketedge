@@ -1763,9 +1763,13 @@ function PortfolioHoldingsList({ portfolio }) {
     return keys;
   }, [portfolio.holdings, portfolio.tickers]);
 
+  const isWatchlist = portfolio.kind === 'watchlist';
+
   const needsClientResolve = useMemo(
-    () => portfolioHoldingsNeedClientResolve(portfolio),
-    [portfolio.holdings, portfolio.tickers]
+    () => isWatchlist
+      ? portfolioHoldingsNeedClientResolve(portfolio)
+      : (holdingKeys.length > 0),
+    [portfolio.holdings, portfolio.tickers, portfolio.kind, holdingKeys.length, isWatchlist]
   );
 
   useEffect(() => {
@@ -1773,7 +1777,7 @@ function PortfolioHoldingsList({ portfolio }) {
   }, [portfolio.id]);
 
   useEffect(() => {
-    // Paint holdings immediately (weights/names from RPC), then fill quotes/logos.
+    // Paint holdings immediately, then fill live quotes for live books.
     setAssetsByKey(assetsFromHoldings(portfolio.holdings));
     if (!holdingKeys.length || !needsClientResolve) return undefined;
 
@@ -1821,11 +1825,14 @@ function PortfolioHoldingsList({ portfolio }) {
         const value = (Number(h.qty) || 0) * price;
         const fromWeight = Number(h.weightPct ?? h.weight);
         const weight =
-          Number.isFinite(fromWeight) && fromWeight > 0
+          isWatchlist && Number.isFinite(fromWeight) && fromWeight > 0
             ? fromWeight
             : totalValue > 0
               ? (value / totalValue) * 100
-              : 0;
+              : Number.isFinite(fromWeight) && fromWeight > 0
+                ? fromWeight
+                : 0;
+        const pricedHolding = { ...h, price };
         return {
           key: h.ticker,
           title: holdingDisplayLabel(h, asset),
@@ -1838,7 +1845,7 @@ function PortfolioHoldingsList({ portfolio }) {
                   ? asset.name
                   : '',
           weight,
-          itemReturn: getHoldingTotalReturnPct(h, asset),
+          itemReturn: getHoldingTotalReturnPct(pricedHolding, asset),
           assetType: h.assetType ?? asset?.kind ?? 'stock',
           logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
         };

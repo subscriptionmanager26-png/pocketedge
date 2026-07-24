@@ -19,22 +19,25 @@ export function getSupabaseForPublicShare() {
   return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-function holdingWeight(h, totalValue) {
+function holdingWeight(h, totalValue, preferDeclaredWeight = false) {
   const fromWeight = Number(h?.weightPct ?? h?.weight);
-  if (Number.isFinite(fromWeight) && fromWeight > 0) return fromWeight;
+  if (preferDeclaredWeight && Number.isFinite(fromWeight) && fromWeight > 0) return fromWeight;
   const qty = Number(h?.qty) || 0;
   const price = Number(h?.price) || Number(h?.avg) || 0;
-  const value = Number(h?.value) || qty * price;
-  return totalValue > 0 ? (value / totalValue) * 100 : 0;
+  const liveValue = qty > 0 ? qty * price : 0;
+  const value = liveValue > 0 ? liveValue : Number(h?.value) || 0;
+  if (totalValue > 0 && value > 0) return (value / totalValue) * 100;
+  if (Number.isFinite(fromWeight) && fromWeight > 0) return fromWeight;
+  return 0;
 }
 
 function holdingReturnPct(h) {
-  const stored = Number(h?.pnlPct ?? h?.pnl_pct);
-  if (Number.isFinite(stored)) return stored;
   const qty = Number(h?.qty) || 0;
   const avg = Number(h?.avg) || 0;
   const price = Number(h?.price) || avg;
   if (qty > 0 && avg > 0) return ((price - avg) / avg) * 100;
+  const stored = Number(h?.pnlPct ?? h?.pnl_pct);
+  if (Number.isFinite(stored)) return stored;
   return 0;
 }
 
@@ -44,17 +47,19 @@ function holdingSectorKey(h) {
 
 export function buildSnapshotFromPortfolio(portfolio, { sort = 'allocation' } = {}) {
   const holdings = (portfolio.holdings ?? []).filter((h) => h?.ticker);
+  const preferDeclaredWeight = portfolio?.kind === 'watchlist';
   const totalValue = holdings.reduce((sum, h) => {
     const qty = Number(h?.qty) || 0;
     const price = Number(h?.price) || Number(h?.avg) || 0;
-    return sum + (Number(h?.value) || qty * price);
+    const live = qty > 0 ? qty * price : 0;
+    return sum + (live > 0 ? live : Number(h?.value) || 0);
   }, 0);
 
   const rows = holdings.map((h) => ({
     ticker: h.ticker,
     label: h.assetName || h.ticker,
     logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? null,
-    weight: Number(holdingWeight(h, totalValue).toFixed(1)),
+    weight: Number(holdingWeight(h, totalValue, preferDeclaredWeight).toFixed(1)),
     totalReturnPct: holdingReturnPct(h),
     sector: holdingSectorKey(h),
   }));

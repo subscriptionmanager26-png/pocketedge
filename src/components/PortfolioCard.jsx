@@ -18,16 +18,28 @@ const TOP_N = 4;
 
 function getPositions(portfolio) {
   const holdings = portfolio.holdings ?? [];
+  const isWatchlist = portfolio.kind === 'watchlist';
   if (holdings.length) {
-    const totalValue = holdings.reduce((sum, h) => sum + (Number(h.value) || 0), 0);
+    const totalValue = holdings.reduce((sum, h) => {
+      const qty = Number(h.qty) || 0;
+      const price = Number(h.price) || Number(h.avg) || 0;
+      const live = qty > 0 ? qty * price : 0;
+      return sum + (live > 0 ? live : Number(h.value) || 0);
+    }, 0);
     return holdings.map((h) => {
+      const qty = Number(h.qty) || 0;
+      const price = Number(h.price) || Number(h.avg) || 0;
+      const liveValue = qty > 0 ? qty * price : 0;
+      const value = liveValue > 0 ? liveValue : Number(h.value) || 0;
       const fromWeight = Number(h.weightPct ?? h.weight);
       const weight =
-        Number.isFinite(fromWeight) && fromWeight > 0
+        isWatchlist && Number.isFinite(fromWeight) && fromWeight > 0
           ? fromWeight
           : totalValue > 0
-            ? ((Number(h.value) || 0) / totalValue) * 100
-            : 0;
+            ? (value / totalValue) * 100
+            : Number.isFinite(fromWeight) && fromWeight > 0
+              ? fromWeight
+              : 0;
       return {
         ticker: h.ticker,
         label: holdingDisplayLabel(h),
