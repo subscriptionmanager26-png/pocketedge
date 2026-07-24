@@ -150,6 +150,10 @@ async function fetchRemoteMeta() {
 async function fetchRemoteSnapshot() {
   const res = await fetch(SNAPSHOT_URL, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`Failed to load screener snapshot (${res.status})`);
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('Failed to load screener snapshot (unexpected response)');
+  }
   return res.json();
 }
 

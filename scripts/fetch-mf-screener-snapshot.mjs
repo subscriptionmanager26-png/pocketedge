@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 30_000;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const outDir = path.join(root, 'public', 'data', 'screener');
-const csvPath = path.join(outDir, 'amfi-equity-direct-growth.csv');
+const schemesPath = path.join(outDir, 'amfi-equity-direct-growth.json');
 const snapshotPath = path.join(outDir, 'screener-snapshot.json');
 const metaPath = path.join(outDir, 'screener-snapshot-meta.json');
 
@@ -29,38 +29,12 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function parseCsvLine(line) {
-  const out = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const c = line[i];
-    if (inQuotes) {
-      if (c === '"' && line[i + 1] === '"') {
-        cur += '"';
-        i += 1;
-      } else if (c === '"') inQuotes = false;
-      else cur += c;
-    } else if (c === '"') inQuotes = true;
-    else if (c === ',') {
-      out.push(cur);
-      cur = '';
-    } else cur += c;
-  }
-  out.push(cur);
-  return out;
-}
-
 function loadEquityDirectGrowthCodes() {
-  const text = readFileSync(csvPath, 'utf8');
-  const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  const codes = [];
-  for (let i = 1; i < lines.length; i += 1) {
-    const cols = parseCsvLine(lines[i]);
-    const amfiCode = cols[0]?.trim();
-    if (!amfiCode || !/^\d+$/.test(amfiCode)) continue;
-    codes.push(amfiCode);
-  }
+  const rows = JSON.parse(readFileSync(schemesPath, 'utf8'));
+  if (!Array.isArray(rows)) throw new Error(`Expected array in ${schemesPath}`);
+  const codes = rows
+    .map((r) => String(r?.amfiCode ?? '').trim())
+    .filter((code) => /^\d+$/.test(code));
   return [...new Set(codes)].sort((a, b) => a.localeCompare(b));
 }
 
@@ -123,8 +97,8 @@ async function fetchScheme(amfiCode, attempt = 0) {
 }
 
 async function main() {
-  if (!existsSync(csvPath)) {
-    throw new Error(`Missing ${csvPath} — equity Direct Growth scheme list required`);
+  if (!existsSync(schemesPath)) {
+    throw new Error(`Missing ${schemesPath} — equity Direct Growth scheme list required`);
   }
 
   const codes = loadEquityDirectGrowthCodes();
