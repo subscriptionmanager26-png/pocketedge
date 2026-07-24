@@ -6,7 +6,6 @@ import { ScreenerCategoryTabs } from '../../components/mfScreener/ScreenerCatego
 import {
   ETF_INAV_CATEGORIES,
   formatPremiumPct,
-  formatPremiumRatio,
   formatPrice,
   formatSnapshotTime,
   loadEtfInavSnapshot,
@@ -178,12 +177,11 @@ export default function EtfInavPage() {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'symbol' || key === 'etfName' ? 'asc' : 'desc');
+      setSortDir(key === 'symbol' ? 'asc' : 'desc');
     }
   }
 
   const quotesLabel = formatSnapshotTime(quoteSyncedAt);
-  const withBoth = items.filter((r) => r.ltp != null && r.inav != null).length;
 
   return (
     <MarketingShell wide>
@@ -205,16 +203,26 @@ export default function EtfInavPage() {
           Compare exchange last traded price with NAV. Premium is LTP ÷ NAV — above 1 is a
           premium (red), below 1 is a discount (green).
         </p>
-        <p className="mt-2 text-xs text-pe-text-muted">
+        <p className="mt-3 text-sm text-pe-text-secondary">
           {quotesLabel ? (
             <>
-              Quotes {quotesLabel}
-              {quotesRefreshing ? ' · refreshing…' : ' · live every minute in session'}
+              Last fetched{' '}
+              <time dateTime={quoteSyncedAt} className="font-semibold tabular-nums text-pe-text">
+                {quotesLabel}
+              </time>
+              {quotesRefreshing ? (
+                <span className="ml-2 inline-flex items-center gap-1 text-xs text-pe-text-muted">
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                  refreshing
+                </span>
+              ) : null}
             </>
           ) : (
-            'Loading live quotes…'
+            <span className="inline-flex items-center gap-2 text-pe-text-muted">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              Fetching live quotes…
+            </span>
           )}
-          {withBoth != null ? ` · ${withBoth} ETFs with LTP + NAV` : null}
         </p>
       </div>
 
@@ -233,49 +241,66 @@ export default function EtfInavPage() {
 
       {!loading && !error ? (
         <>
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="relative block w-full max-w-md">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted"
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search symbol, name, or AMC"
-                className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-9 pr-3 text-sm text-pe-text outline-none ring-pe-accent focus:ring-2"
-              />
-            </label>
-            <p className="text-xs text-pe-text-muted">{filtered.length} shown</p>
-          </div>
+          <div className="mb-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <label className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search symbol or name"
+                  className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-9 pr-3 text-sm text-pe-text outline-none ring-pe-accent focus:ring-2"
+                />
+              </label>
+              <p className="shrink-0 text-xs tabular-nums text-pe-text-muted">{filtered.length}</p>
+            </div>
 
-          <div className="mb-4 border-b border-pe-border">
-            <ScreenerCategoryTabs
-              options={categoryOptions}
-              activeId={categoryId}
-              onChange={setCategoryId}
-            />
+            {/* Mobile: compact native select */}
+            <label className="block sm:hidden">
+              <span className="sr-only">Category</span>
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full appearance-none rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-3 pr-8 text-sm font-medium text-pe-text outline-none ring-pe-accent focus:ring-2"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.75rem center',
+                }}
+              >
+                {categoryOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label} ({opt.count})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* Desktop: horizontal category tabs */}
+            <div className="hidden border-b border-pe-border sm:block">
+              <ScreenerCategoryTabs
+                options={categoryOptions}
+                activeId={categoryId}
+                onChange={setCategoryId}
+              />
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
-            <table className="mf-screener-table min-w-[720px]">
+            <table className="mf-screener-table w-full min-w-[480px]">
               <thead>
                 <tr>
                   <th className="text-left">
                     <SortHeader
-                      label="Symbol"
+                      label="ETF"
                       active={sortKey === 'symbol'}
                       dir={sortDir}
                       onClick={() => toggleSort('symbol')}
-                    />
-                  </th>
-                  <th className="text-left">
-                    <SortHeader
-                      label="ETF"
-                      active={sortKey === 'etfName'}
-                      dir={sortDir}
-                      onClick={() => toggleSort('etfName')}
                     />
                   </th>
                   <th className="text-right">
@@ -298,15 +323,6 @@ export default function EtfInavPage() {
                   </th>
                   <th className="text-right">
                     <SortHeader
-                      label="LTP / NAV"
-                      active={sortKey === 'premium'}
-                      dir={sortDir}
-                      onClick={() => toggleSort('premium')}
-                      align="right"
-                    />
-                  </th>
-                  <th className="text-right">
-                    <SortHeader
                       label="Premium"
                       active={sortKey === 'premiumPct'}
                       dir={sortDir}
@@ -319,30 +335,24 @@ export default function EtfInavPage() {
               <tbody>
                 {filtered.map((row) => {
                   const tone = premiumTone(row.premium);
+                  const etfName = row.etfName || row.name;
                   return (
                     <tr key={row.symbol}>
-                      <td>
+                      <td className="!whitespace-normal">
                         <Link
                           to={etfPath(row.symbol)}
                           className="font-semibold text-pe-accent hover:underline"
                         >
                           {row.symbol}
                         </Link>
-                        {row.amc ? (
-                          <p className="mt-0.5 text-[11px] text-pe-text-muted">{row.amc}</p>
+                        {etfName ? (
+                          <p className="mt-0.5 max-w-[220px] text-[12px] leading-snug text-pe-text-secondary sm:max-w-[280px]">
+                            {etfName}
+                          </p>
                         ) : null}
-                      </td>
-                      <td>
-                        <p className="max-w-[240px] truncate text-sm text-pe-text" title={row.etfName}>
-                          {row.etfName || row.name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-pe-text-muted">{row.category}</p>
                       </td>
                       <td className="text-right tabular-nums">{formatPrice(row.ltp)}</td>
                       <td className="text-right tabular-nums">{formatPrice(row.inav)}</td>
-                      <td className={`text-right tabular-nums font-semibold ${tone}`}>
-                        {formatPremiumRatio(row.premium)}
-                      </td>
                       <td className={`text-right tabular-nums font-semibold ${tone}`}>
                         <span>{formatPremiumPct(row.premiumPct)}</span>
                         <span className="mt-0.5 block text-[10px] font-medium opacity-80">
@@ -354,7 +364,7 @@ export default function EtfInavPage() {
                 })}
                 {!filtered.length ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={4} className="py-10 text-center text-sm text-pe-text-muted">
                       No ETFs match this filter.
                     </td>
                   </tr>
