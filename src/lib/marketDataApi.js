@@ -640,6 +640,41 @@ export async function lookupMarketAssetsBatch(keys) {
   return map;
 }
 
+/** Single-scan ETF LTP/NAV list for the iNAV tracker (avoids N-key batch lookup). */
+export async function listEtfMarketQuotes() {
+  if (!isSupabaseConfigured()) return { syncedAt: null, items: [] };
+  const client = await ensureSupabase();
+  const { data, error } = await client.rpc('list_social_market_etf_quotes');
+  if (error) throw error;
+
+  let latest = null;
+  const items = [];
+  for (const row of data ?? []) {
+    const symbol = String(row.asset_key ?? row.assetKey ?? '')
+      .trim()
+      .toUpperCase();
+    if (!symbol) continue;
+    const syncedAt = row.synced_at ?? row.syncedAt ?? null;
+    if (syncedAt && (!latest || syncedAt > latest)) latest = syncedAt;
+    const navRaw = row.nav != null ? Number(row.nav) : null;
+    const item = {
+      symbol,
+      name: row.name || symbol,
+      ltp: row.price != null ? Number(row.price) : null,
+      price: row.price != null ? Number(row.price) : null,
+      nav: navRaw != null && navRaw > 0 ? navRaw : null,
+      changePct: row.change_pct != null ? Number(row.change_pct) : null,
+      previousClose: row.previous_close != null ? Number(row.previous_close) : null,
+      syncedAt,
+      assetType: 'etf',
+    };
+    items.push(item);
+    setCached('market-asset', symbol, item);
+  }
+
+  return { syncedAt: latest, items };
+}
+
 export async function resolveMarketStock(symbol) {
   const cached = findCachedMarketItem('stocks', symbol);
   if (cached) return cached;

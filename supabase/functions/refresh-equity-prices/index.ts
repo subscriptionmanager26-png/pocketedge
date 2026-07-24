@@ -11,6 +11,9 @@ const NSE_SEED_URL = `${NSE_BASE}/market-data/stocks-traded`;
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const LOCK_NAME = 'refresh-equity-prices';
+/** Meta row used to throttle ETF NAV writes (LTP still updates every cron tick). */
+const ETF_NAV_META_JOB = 'etf-nav-last-write';
+const ETF_NAV_REFRESH_MS = 60_000;
 const BATCH_SIZE = 500;
 
 type EquityQuote = {
@@ -158,6 +161,7 @@ function toAssetRows(
   assetType: 'stock' | 'etf',
   asOfDate: string,
   syncedAt: string,
+  { includeNav = true }: { includeNav?: boolean } = {},
 ): AssetRow[] {
   return quotes.map((q) => ({
     asset_type: assetType,
@@ -171,8 +175,41 @@ function toAssetRows(
     exchange: 'NSE',
     exchange_symbol: q.symbol,
     synced_at: syncedAt,
-    ...(assetType === 'etf' && q.nav != null ? { nav: q.nav } : {}),
+    ...(assetType === 'etf' && includeNav && q.nav != null && q.nav > 0 ? { nav: q.nav } : {}),
   }));
+}
+
+/** Write ETF NAV at most once per minute; omit nav on other ticks so coalesce keeps prior value. */
+async function shouldWriteEtfNav(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+  { writeHistory, force }: { writeHistory: boolean; force: boolean },
+): Promise<boolean> {
+  if (writeHistory || force) return true;
+  const { data, error } = await client
+    .from('social_market_job_config')
+    .select('updated_at')
+    .eq('job_name', ETF_NAV_META_JOB)
+    .maybeSingle();
+  if (error) throw new Error(`etf-nav throttle read: ${error.message}`);
+  if (!data?.updated_at) return true;
+  const ageMs = Date.now() - new Date(data.updated_at).getTime();
+  return !Number.isFinite(ageMs) || ageMs >= ETF_NAV_REFRESH_MS;
+}
+
+async function markEtfNavWritten(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+): Promise<void> {
+  const { error } = await client.from('social_market_job_config').upsert(
+    {
+      job_name: ETF_NAV_META_JOB,
+      auth_token: 'meta',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'job_name' },
+  );
+  if (error) throw new Error(`etf-nav throttle write: ${error.message}`);
 }
 
 function toHistoryRows(
@@ -274,13 +311,15 @@ Deno.serve(async (req: Request) => {
     const etfQuotes = mapEtfs(etfPayload);
     const etfSymbols = new Set(etfQuotes.map((q) => q.symbol));
     const stockQuotes = mapStocksTraded(stocksPayload).filter((q) => !etfSymbols.has(q.symbol));
+    const writeEtfNav = await shouldWriteEtfNav(client, { writeHistory, force });
 
     const assets = [
       ...toAssetRows(stockQuotes, 'stock', asOfDate, syncedAt),
-      ...toAssetRows(etfQuotes, 'etf', asOfDate, syncedAt),
+      ...toAssetRows(etfQuotes, 'etf', asOfDate, syncedAt, { includeNav: writeEtfNav }),
     ];
 
     const assetsUpserted = await rpcBatch(client, 'bulk_upsert_social_market_assets', assets);
+    if (writeEtfNav) await markEtfNavWritten(client);
 
     let historyUpserted = 0;
     if (writeHistory) {
@@ -300,6 +339,7 @@ Deno.serve(async (req: Request) => {
         assets_upserted: assetsUpserted,
         history_upserted: historyUpserted,
         write_history: writeHistory,
+        etf_nav_written: writeEtfNav,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );

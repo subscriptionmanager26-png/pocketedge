@@ -66,8 +66,7 @@ export default function EtfInavPage() {
       if (!base?.items?.length) return;
       if (isRefresh) setQuotesRefreshing(true);
       try {
-        const symbols = base.items.map((row) => row.symbol);
-        const live = await fetchMergedLiveQuotes(symbols);
+        const live = await fetchMergedLiveQuotes();
         if (cancelled) return;
         setItems(mergeLiveIntoSnapshotItems(base.items, live.items));
         setQuoteSyncedAt(live.syncedAt || new Date().toISOString());
@@ -95,12 +94,27 @@ export default function EtfInavPage() {
 
     (async () => {
       try {
-        const data = await loadEtfInavSnapshot();
+        // Catalog + quotes in parallel — don't wait on snapshot before hitting DB.
+        const [data, live] = await Promise.all([
+          loadEtfInavSnapshot(),
+          fetchMergedLiveQuotes().catch((err) => {
+            console.warn('ETF quotes preload failed', err);
+            return null;
+          }),
+        ]);
         if (cancelled) return;
         catalog = data;
         snapshotRef.current = data;
         setSnapshot(data);
-        // Metadata only — never paint stale snapshot LTP/NAV.
+
+        if (live?.items?.length) {
+          setItems(mergeLiveIntoSnapshotItems(data.items || [], live.items));
+          setQuoteSyncedAt(live.syncedAt || new Date().toISOString());
+          setLoading(false);
+          schedule();
+          return;
+        }
+
         setItems(catalogItemsWithoutQuotes(data.items || []));
         await refreshQuotes();
         schedule();

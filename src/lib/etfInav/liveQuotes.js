@@ -1,4 +1,4 @@
-import { lookupMarketAssetsBatch } from '../marketDataApi';
+import { listEtfMarketQuotes } from '../marketDataApi';
 import { isInNseSession } from '../marketRefreshPolicy';
 
 const LIVE_URL = '/api/etf-live';
@@ -12,41 +12,26 @@ export async function fetchEtfLiveQuotes() {
   return res.json();
 }
 
-/** Primary path: LTP + NAV from social_market_assets. */
-export async function fetchDbEtfQuotes(symbols = []) {
-  const unique = [...new Set(symbols.map((s) => String(s).trim().toUpperCase()).filter(Boolean))];
-  if (!unique.length) return { syncedAt: null, items: [], source: 'db' };
-
-  const dbMap = await lookupMarketAssetsBatch(unique);
-  let latest = null;
-  const items = unique.map((symbol) => {
-    const db = dbMap.get(symbol);
-    const syncedAt = db?.syncedAt || null;
-    if (syncedAt && (!latest || syncedAt > latest)) latest = syncedAt;
-    return {
-      symbol,
-      name: db?.name || symbol,
-      ltp: db?.price ?? db?.ltp ?? null,
-      nav: db?.nav != null && Number(db.nav) > 0 ? Number(db.nav) : null,
-      changePct: db?.changePct ?? null,
-      previousClose: db?.previousClose ?? null,
-      syncedAt,
-      source: 'db',
-    };
-  });
-
-  return { syncedAt: latest, items, source: 'db' };
-}
-
 /**
- * DB-first quotes. If many NAVs are still missing (pre-backfill), fill NAV from NSE once.
+ * Fast path: one RPC that returns all ETF LTP+NAV rows.
+ * Falls back to NSE /api/etf-live only if many NAVs are still missing.
  */
-export async function fetchMergedLiveQuotes(symbols = []) {
-  const db = await fetchDbEtfQuotes(symbols);
-  const bySymbol = new Map(db.items.map((row) => [row.symbol, { ...row }]));
+export async function fetchMergedLiveQuotes(_symbols = []) {
+  let dbItems = [];
+  let dbSyncedAt = null;
 
-  const missingNav = db.items.filter((row) => row.nav == null).length;
-  const shouldFillFromNse = missingNav > Math.max(5, Math.floor(db.items.length * 0.25));
+  try {
+    const db = await listEtfMarketQuotes();
+    dbItems = db.items || [];
+    dbSyncedAt = db.syncedAt || null;
+  } catch (err) {
+    console.warn('list_social_market_etf_quotes failed', err);
+  }
+
+  const bySymbol = new Map(dbItems.map((row) => [row.symbol, { ...row, source: 'db' }]));
+  const missingNav = dbItems.filter((row) => row.nav == null).length;
+  const shouldFillFromNse =
+    dbItems.length === 0 || missingNav > Math.max(5, Math.floor(dbItems.length * 0.25));
 
   if (shouldFillFromNse) {
     try {
@@ -67,13 +52,14 @@ export async function fetchMergedLiveQuotes(symbols = []) {
           ...existing,
           name: existing.name || row.name || key,
           ltp: existing.ltp ?? row.ltp ?? null,
-          nav: existing.nav ?? row.nav ?? null,
+          nav: existing.nav ?? (row.nav != null && Number(row.nav) > 0 ? Number(row.nav) : null),
           changePct: existing.changePct ?? row.changePct ?? null,
           previousClose: existing.previousClose ?? row.previousClose ?? null,
           syncedAt: existing.syncedAt || nse.syncedAt,
           source: existing.ltp != null && existing.nav != null ? 'db' : 'db+nse',
         });
       }
+      if (!dbSyncedAt) dbSyncedAt = nse.syncedAt || null;
     } catch {
       // DB-only is fine if NSE fill fails.
     }
@@ -85,7 +71,7 @@ export async function fetchMergedLiveQuotes(symbols = []) {
       .map((row) => row.syncedAt)
       .filter(Boolean)
       .sort()
-      .at(-1) || db.syncedAt;
+      .at(-1) || dbSyncedAt;
 
   return { syncedAt, items, source: shouldFillFromNse ? 'db+nse' : 'db' };
 }
