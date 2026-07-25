@@ -13,8 +13,22 @@ import { extractTickers, sameTicker } from '../lib/tickers';
 
 /** Feed cards truncate long bodies; full text + comments only on the open post. */
 const FEED_PREVIEW_CHARS = 200;
+const NEWS_PREVIEW_CHARS = 320;
 
-function previewBody(body) {
+function previewBody(body, { preserveLayout = false } = {}) {
+  if (preserveLayout) {
+    const text = body.trim();
+    if (text.length <= NEWS_PREVIEW_CHARS) {
+      return { text, truncated: false };
+    }
+    const slice = text.slice(0, NEWS_PREVIEW_CHARS);
+    const cut = slice.lastIndexOf(' ');
+    return {
+      text: `${slice.slice(0, cut > 220 ? cut : NEWS_PREVIEW_CHARS).trimEnd()}…`,
+      truncated: true,
+    };
+  }
+
   const text = body.replace(/\n+/g, ' ').trim();
   if (text.length <= FEED_PREVIEW_CHARS) {
     return { text: body, truncated: false };
@@ -38,8 +52,10 @@ export default function PostCard({
   const isDetail = variant === 'detail';
   void enrichmentTick;
   const person = getPersonSync(post.authorId);
-  const displayBody = isDetail ? post.body : previewBody(post.body).text;
-  const truncated = !isDetail && previewBody(post.body).truncated;
+  const isNewsPost = post.via?.source === 'mn_news_ai_summaries';
+  const preview = previewBody(post.body, { preserveLayout: isNewsPost });
+  const displayBody = isDetail ? post.body : preview.text;
+  const truncated = !isDetail && preview.truncated;
   const tickers = extractTickers(post.body);
   if (post.trade?.ticker && !tickers.some((t) => sameTicker(t, post.trade.ticker))) {
     tickers.unshift(post.trade.ticker);
@@ -139,6 +155,7 @@ export default function PostCard({
             <TickerText
               text={displayBody}
               authorId={post.authorId}
+              boldContentLine={isNewsPost ? 1 : null}
               activeTicker={tickerPopup?.ticker ?? null}
               activeSource={tickerPopup?.source}
               onOpenTicker={openTicker}

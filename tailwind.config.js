@@ -5,6 +5,8 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          'Inter Variable',
+          'Inter',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',
@@ -16,6 +18,8 @@ export default {
           'sans-serif',
         ],
         display: [
+          'Inter Variable',
+          'Inter',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',
@@ -27,6 +31,8 @@ export default {
           'sans-serif',
         ],
         serif: [
+          'Inter Variable',
+          'Inter',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',
