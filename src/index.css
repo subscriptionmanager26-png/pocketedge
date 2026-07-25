@@ -74,22 +74,6 @@ textarea {
   background: rgba(255, 103, 25, 0.16);
 }
 
-/* Inline "See more" on the last visible line of a clamped feed post body. */
-.pe-ticker-text-clamp::before {
-  content: '';
-  float: left;
-  width: 0;
-  height: calc(100% - 1.55em);
-}
-
-.pe-ticker-see-more {
-  position: relative;
-  margin-left: 0.35em;
-  /* Soft mask so the clipped word under See more doesn't look hard-cut. */
-  box-shadow: -0.6em 0 0.4em 0.15em var(--pe-canvas);
-  background: var(--pe-canvas);
-}
-
 /* Marketing landing — mobile viewport fit for pinned CTA */
 @media (max-width: 1023px) {
   .pe-landing {
