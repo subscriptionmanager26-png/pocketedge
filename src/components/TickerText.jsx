@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { getPosition } from '../data/mockData';
 import {
   MENTION_PARTS_RE,
@@ -19,13 +19,36 @@ export default function TickerText({
   onOpenTicker,
   onCloseTicker,
   onOpenStock,
+  maxLines = null,
+  onSeeMore,
 }) {
+  const rootRef = useRef(null);
   const [localActive, setLocalActive] = useState(null);
+  const [truncated, setTruncated] = useState(false);
   const uncontrolled = activeTicker === undefined;
   const active = uncontrolled ? localActive : activeTicker;
   const source = uncontrolled ? 'mention' : activeSource;
   // Prefer navigating to the security page; position details live in the bottom tags.
   const openSecurity = Boolean(onOpenStock);
+  const clampLines = Number(maxLines) > 0 ? Number(maxLines) : null;
+
+  useLayoutEffect(() => {
+    if (!clampLines) {
+      setTruncated(false);
+      return undefined;
+    }
+    const el = rootRef.current;
+    if (!el) return undefined;
+
+    const measure = () => {
+      setTruncated(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    measure();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [text, clampLines]);
 
   const renderText = (line, lineIndex) => {
     const parts = line.split(MENTION_PARTS_RE);
@@ -101,13 +124,35 @@ export default function TickerText({
   });
 
   return (
-    <p className={`whitespace-pre-wrap text-left text-[16px] font-normal leading-[1.55] text-pe-ink ${className}`}>
+    <div
+      ref={rootRef}
+      className={`whitespace-pre-wrap text-left text-[16px] font-normal leading-[1.55] text-pe-ink ${
+        clampLines ? 'pe-ticker-text-clamp' : ''
+      } ${className}`}
+      style={
+        clampLines
+          ? { maxHeight: `calc(1.55em * ${clampLines})`, overflow: 'hidden' }
+          : undefined
+      }
+    >
+      {clampLines && truncated ? (
+        <button
+          type="button"
+          className="pe-ticker-see-more float-right clear-both text-[14px] font-semibold text-pe-link"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSeeMore?.();
+          }}
+        >
+          See more
+        </button>
+      ) : null}
       {lines.map(({ line, contentLineIndex: index }, i) => (
         <span key={i}>
           {renderText(line, index)}
           {i < lines.length - 1 ? '\n' : null}
         </span>
       ))}
-    </p>
+    </div>
   );
 }

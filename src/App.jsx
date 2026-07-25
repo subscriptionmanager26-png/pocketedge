@@ -560,6 +560,7 @@ export default function App() {
 
   const closePost = useCallback(() => {
     backScroll();
+    setSelectedPostId(null);
     navigateBack(navigate, location, tabPath('feed'));
   }, [backScroll, location, navigate]);
 
@@ -620,6 +621,7 @@ export default function App() {
 
   const openPost = (postId) => {
     clearMarketSelection();
+    resetScroll();
     setSelectedPostId(postId);
     setTab('feed');
     navigate(postPath(postId));

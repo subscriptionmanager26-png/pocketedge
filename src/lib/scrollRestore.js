@@ -8,12 +8,18 @@ export function saveScrollPosition(routeKey, scrollTop) {
   positions.set(routeKey, next);
 }
 
-/** Keep the highest known position — content swaps can clamp a late read to 0. */
-export function rememberScrollPosition(routeKey, scrollTop) {
+/**
+ * Persist scroll on leave. Ignore 0 when we already have a position — opening a
+ * shorter page (e.g. post detail) can clamp scrollY to 0 before we snapshot.
+ */
+export function rememberScrollPositionOnLeave(routeKey, scrollTop) {
   if (!routeKey) return;
   const next = Math.max(0, Number(scrollTop) || 0);
-  const prev = positions.get(routeKey) ?? 0;
-  if (next >= prev) positions.set(routeKey, next);
+  if (next > 0) {
+    positions.set(routeKey, next);
+    return;
+  }
+  // Keep the last live scroll value if the read already collapsed to 0.
 }
 
 export function getScrollPosition(routeKey) {

@@ -24,11 +24,32 @@ import { prefetchTab } from '../lib/tabPrefetch';
 import {
   getScrollPosition,
   readScrollTop,
-  rememberScrollPosition,
+  rememberScrollPositionOnLeave,
   saveScrollPosition,
   writeScrollTop,
   disableBrowserScrollRestoration,
 } from '../lib/scrollRestore';
+
+/** Detail → list transitions should restore even when browser back skipped scrollAction. */
+function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
+  if (scrollAction === 'back') return true;
+  if (!prevKey || !nextKey) return false;
+  if (nextKey === 'feed' && String(prevKey).startsWith('post:')) return true;
+  if (
+    nextKey === 'markets' &&
+    /^(stock|etf|fund|index|commodity):/.test(String(prevKey))
+  ) {
+    return true;
+  }
+  if (
+    String(prevKey).includes(':portfolio:') &&
+    String(nextKey).startsWith('profile:') &&
+    !String(nextKey).includes(':portfolio:')
+  ) {
+    return true;
+  }
+  return false;
+}
 
 const DESKTOP_TABS = [
   { id: 'feed', label: 'Feed', icon: Home },
@@ -90,21 +111,22 @@ export default function Shell({
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
   const routeKeyRef = useRef(routeKey);
+  const restoringRef = useRef(false);
   routeKeyRef.current = routeKey;
 
   useEffect(() => {
     disableBrowserScrollRestoration();
   }, []);
 
-  // Continuously remember scroll for the active route. Opening a post remounts
-  // shorter content and can clamp window.scrollY to 0 before a leave-handler runs.
+  // Track live scroll for the active route (actual position, including scroll-up).
   useEffect(() => {
     const container = scrollContainerRef.current;
     let ticking = false;
 
     const persist = () => {
       ticking = false;
-      rememberScrollPosition(routeKeyRef.current, readScrollTop(container));
+      if (restoringRef.current) return;
+      saveScrollPosition(routeKeyRef.current, readScrollTop(container));
     };
 
     const onScroll = () => {
@@ -181,32 +203,42 @@ export default function Shell({
     if (prevKey === routeKey) return;
 
     if (prevKey) {
-      // Don't overwrite a tracked feed position with a post-collapse clamp to 0.
-      rememberScrollPosition(prevKey, readScrollTop(container));
+      // Prefer the live read; if content already clamped to 0, keep last tracked value.
+      rememberScrollPositionOnLeave(prevKey, readScrollTop(container));
     }
 
-    const restore = scrollAction === 'back' ? getScrollPosition(routeKey) : 0;
-    if (scrollAction !== 'back') {
+    const restoreScroll = shouldRestoreScroll(prevKey, routeKey, scrollAction);
+    const restore = restoreScroll ? getScrollPosition(routeKey) : 0;
+    if (!restoreScroll) {
       // Fresh forward navigation: start at top and clear any stale restore target.
       saveScrollPosition(routeKey, 0);
     }
     prevRouteKeyRef.current = routeKey;
+    restoringRef.current = restore > 0;
 
     let cancelled = false;
     let attempts = 0;
     const maxAttempts = restore > 0 ? 24 : 1;
+
+    const finish = () => {
+      restoringRef.current = false;
+      if (restore > 0) {
+        saveScrollPosition(routeKey, restore);
+      }
+      onScrollActionConsumed?.();
+    };
 
     const apply = () => {
       if (cancelled) return;
       writeScrollTop(container, restore);
       attempts += 1;
       if (restore <= 0 || attempts >= maxAttempts) {
-        onScrollActionConsumed?.();
+        finish();
         return;
       }
       const current = readScrollTop(container);
       if (current >= restore - 2) {
-        onScrollActionConsumed?.();
+        finish();
         return;
       }
       window.setTimeout(apply, attempts < 8 ? 16 : 50);
@@ -219,6 +251,7 @@ export default function Shell({
 
     return () => {
       cancelled = true;
+      restoringRef.current = false;
       cancelAnimationFrame(raf);
     };
   }, [routeKey, scrollAction, onScrollActionConsumed]);
