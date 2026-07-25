@@ -3,7 +3,12 @@ import TickerText from './TickerText';
 import { getPersonSync } from '../lib/socialIdentity';
 import { timeAgo } from '../lib/format';
 
-export default function CommentRow({ comment, enrichmentTick = 0, onOpenProfile }) {
+export default function CommentRow({
+  comment,
+  enrichmentTick = 0,
+  onOpenProfile,
+  onOpenStock,
+}) {
   void enrichmentTick;
   const person = getPersonSync(comment.authorId);
   const openAuthor = () => onOpenProfile?.(comment.authorId);
@@ -27,6 +32,7 @@ export default function CommentRow({ comment, enrichmentTick = 0, onOpenProfile 
           text={comment.body}
           authorId={comment.authorId}
           className="mt-1.5 !font-sans !text-sm !leading-6"
+          onOpenStock={onOpenStock}
         />
       </div>
     </div>

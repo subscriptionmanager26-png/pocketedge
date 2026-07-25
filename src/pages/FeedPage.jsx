@@ -12,6 +12,7 @@ export default function FeedPage({
   loading = false,
   onOpenProfile,
   onOpenPost,
+  onOpenStock,
   onToggleLike,
 }) {
   const followingIds = useMemo(() => getFollowingIds(), [graphTick]);
@@ -73,6 +74,7 @@ export default function FeedPage({
           enrichmentTick={enrichmentTick}
           onOpenProfile={onOpenProfile}
           onOpenPost={onOpenPost}
+          onOpenStock={onOpenStock}
           onToggleLike={onToggleLike}
         />
       ))}

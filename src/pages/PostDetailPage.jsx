@@ -12,6 +12,7 @@ export default function PostDetailPage({
   posts,
   onBack,
   onOpenProfile,
+  onOpenStock,
   onAddComment,
   onToggleLike,
   fetchPost,
@@ -122,6 +123,7 @@ export default function PostDetailPage({
         variant="detail"
         enrichmentTick={enrichmentTick}
         onOpenProfile={onOpenProfile}
+        onOpenStock={onOpenStock}
         onToggleLike={onToggleLike}
       />
 

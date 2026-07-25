@@ -18,11 +18,14 @@ export default function TickerText({
   activeSource,
   onOpenTicker,
   onCloseTicker,
+  onOpenStock,
 }) {
   const [localActive, setLocalActive] = useState(null);
   const uncontrolled = activeTicker === undefined;
   const active = uncontrolled ? localActive : activeTicker;
   const source = uncontrolled ? 'mention' : activeSource;
+  // Prefer navigating to the security page; position details live in the bottom tags.
+  const openSecurity = Boolean(onOpenStock);
 
   const renderText = (line, lineIndex) => {
     const parts = line.split(MENTION_PARTS_RE);
@@ -42,10 +45,14 @@ export default function TickerText({
           const position = getPosition(authorId, key);
           const styles = statusStyles(position?.status);
           const isSelected = sameTicker(active, key);
-          const showCard = isSelected && source === 'mention';
+          const showCard = !openSecurity && isSelected && source === 'mention';
 
           const toggle = (event) => {
             event.stopPropagation();
+            if (openSecurity) {
+              onOpenStock?.(key);
+              return;
+            }
             if (uncontrolled) {
               setLocalActive(isSelected ? null : key);
               return;

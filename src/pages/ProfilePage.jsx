@@ -144,6 +144,7 @@ export default function ProfilePage({
   onExitPublicPreview,
   onOpenProfile,
   onOpenPost,
+  onOpenStock,
   onGraphChange,
   onMobileHeaderActionsChange,
   onRegisterPortfolioBackHandler,
@@ -515,6 +516,7 @@ export default function ProfilePage({
                 enrichmentTick={enrichmentTick}
                 onOpenProfile={onOpenProfile}
                 onOpenPost={onOpenPost}
+                onOpenStock={onOpenStock}
               />
             ))
           )}

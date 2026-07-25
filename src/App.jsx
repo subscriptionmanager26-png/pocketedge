@@ -911,6 +911,7 @@ export default function App() {
                 posts={posts}
                 onBack={closePost}
                 onOpenProfile={openProfile}
+                onOpenStock={openStock}
                 onAddComment={(text) => handleAddComment(selectedPostId, text)}
                 onToggleLike={handleTogglePostLike}
                 fetchPost={usePostBackend() ? fetchPost : null}
@@ -925,6 +926,7 @@ export default function App() {
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
+              onOpenStock={openStock}
               onToggleLike={handleTogglePostLike}
             />
           )
@@ -1050,6 +1052,7 @@ export default function App() {
               }}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
+              onOpenStock={openStock}
               onGraphChange={() => setGraphTick((n) => n + 1)}
               onMobileHeaderActionsChange={setMobileHeaderActions}
               onRegisterPortfolioBackHandler={(handler) => {

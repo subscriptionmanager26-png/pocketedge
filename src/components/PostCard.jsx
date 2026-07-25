@@ -47,6 +47,7 @@ export default function PostCard({
   enrichmentTick = 0,
   onOpenProfile,
   onOpenPost,
+  onOpenStock,
   onToggleLike,
 }) {
   const isDetail = variant === 'detail';
@@ -65,7 +66,7 @@ export default function PostCard({
   }
   const [liked, setLiked] = useState(post.liked ?? false);
   const [likes, setLikes] = useState(post.likes ?? 0);
-  // One popup per post: remember which control opened it (mention vs bottom tag).
+  // Position popup for bottom disclosure tags only; @mentions open the security page.
   const [tickerPopup, setTickerPopup] = useState(null);
   const commentCount = Math.max(
     Array.isArray(post.comments) ? post.comments.length : 0,
@@ -156,10 +157,7 @@ export default function PostCard({
               text={displayBody}
               authorId={post.authorId}
               boldContentLine={isNewsPost ? 1 : null}
-              activeTicker={tickerPopup?.ticker ?? null}
-              activeSource={tickerPopup?.source}
-              onOpenTicker={openTicker}
-              onCloseTicker={closeTicker}
+              onOpenStock={onOpenStock}
             />
             {truncated && (
               <span className="mt-1 inline-block text-[14px] font-semibold text-pe-link">
@@ -265,6 +263,7 @@ export default function PostCard({
                 comment={c}
                 enrichmentTick={enrichmentTick}
                 onOpenProfile={onOpenProfile}
+                onOpenStock={onOpenStock}
               />
             ))
           )}
