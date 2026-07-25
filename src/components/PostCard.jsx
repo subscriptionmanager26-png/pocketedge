@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Avatar from './Avatar';
 import CommentRow from './CommentRow';
@@ -10,9 +10,95 @@ import { PortfolioSharePreview } from './ComposeModal';
 import { getPersonSync } from '../lib/socialIdentity';
 import { formatCount, timeAgo } from '../lib/format';
 import { extractTickers, sameTicker } from '../lib/tickers';
+import { clampPostBody, createTextMeasurer, fontFromStyle } from '../lib/clampPostBody';
 
 /** Feed cards show at most this many lines; full text is on the open post. */
 const FEED_PREVIEW_LINES = 4;
+const SEE_MORE_LABEL = 'See more';
+const ELLIPSIS = '…';
+const MAX_SHRINK_STEPS = 8;
+
+function dropTrailingWord(text) {
+  const trimmed = text.replace(/\s+$/u, '');
+  const boundary = Math.max(trimmed.lastIndexOf(' '), trimmed.lastIndexOf('\n'));
+  if (boundary <= 0) {
+    // No word boundary left — trim a few characters so bold mentions can still fit.
+    if (trimmed.length <= 1) return null;
+    return trimmed.slice(0, -1);
+  }
+  const next = trimmed.slice(0, boundary).replace(/\s+$/u, '');
+  return next && next !== text ? next : null;
+}
+
+/**
+ * Clamp a post body to `maxLines`, leaving room for the inline "… See more".
+ * Canvas metrics use the body font, so bold mentions/titles can still render a
+ * hair wider — a post-paint pass shrinks until the height fits.
+ */
+function useClampedBody(body, { maxLines, enabled }) {
+  const containerRef = useRef(null);
+  const shrinkStepsRef = useRef(0);
+  const [clamped, setClamped] = useState(() => ({ text: body, truncated: false }));
+
+  useLayoutEffect(() => {
+    if (!enabled) {
+      shrinkStepsRef.current = 0;
+      setClamped((prev) =>
+        prev.text === body && !prev.truncated ? prev : { text: body, truncated: false }
+      );
+      return undefined;
+    }
+
+    const el = containerRef.current;
+    if (!el) return undefined;
+
+    // Height changes also notify the observer; only a width change needs a redo.
+    let lastWidth = -1;
+
+    const recompute = () => {
+      const width = el.clientWidth;
+      if (!(width > 0) || width === lastWidth) return;
+      lastWidth = width;
+
+      const style = getComputedStyle(el);
+      const measure = createTextMeasurer(fontFromStyle(style));
+      const measureStrong = createTextMeasurer(fontFromStyle(style, '600'));
+      if (!measure || !measureStrong) {
+        setClamped({ text: body, truncated: false });
+        return;
+      }
+
+      const suffixWidth = measure(`${ELLIPSIS} `) + measureStrong(SEE_MORE_LABEL);
+      const next = clampPostBody(body, { maxLines, width, measure, suffixWidth });
+      shrinkStepsRef.current = 0;
+      setClamped((prev) =>
+        prev.text === next.text && prev.truncated === next.truncated ? prev : next
+      );
+    };
+
+    recompute();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recompute) : null;
+    observer?.observe(el);
+    return () => observer?.disconnect();
+  }, [body, maxLines, enabled]);
+
+  useLayoutEffect(() => {
+    if (!enabled || !clamped.truncated) return;
+    const el = containerRef.current;
+    if (!el || shrinkStepsRef.current >= MAX_SHRINK_STEPS) return;
+
+    const style = getComputedStyle(el);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.55;
+    if (!(lineHeight > 0) || el.scrollHeight <= lineHeight * maxLines + 1) return;
+
+    const next = dropTrailingWord(clamped.text);
+    if (next == null || next === clamped.text) return;
+    shrinkStepsRef.current += 1;
+    setClamped({ text: next, truncated: true });
+  }, [clamped, enabled, maxLines]);
+
+  return [containerRef, clamped];
+}
 
 export default function PostCard({
   post,
@@ -42,6 +128,11 @@ export default function PostCard({
     Array.isArray(post.comments) ? post.comments.length : 0,
     Number(post.commentCount) || 0
   );
+  const bodyText = String(post.body ?? '');
+  const [bodyRef, clampedBody] = useClampedBody(bodyText, {
+    maxLines: FEED_PREVIEW_LINES,
+    enabled: !isDetail,
+  });
 
   useEffect(() => {
     setLiked(post.liked ?? false);
@@ -124,12 +215,28 @@ export default function PostCard({
             tabIndex={!isDetail ? 0 : undefined}
           >
             <TickerText
-              text={post.body}
+              containerRef={bodyRef}
+              text={isDetail ? bodyText : clampedBody.text}
               authorId={post.authorId}
               boldContentLine={isNewsPost ? 1 : null}
               onOpenStock={onOpenStock}
-              maxLines={isDetail ? null : FEED_PREVIEW_LINES}
-              onSeeMore={openPost}
+              trailing={
+                !isDetail && clampedBody.truncated ? (
+                  <>
+                    {`${ELLIPSIS} `}
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        stopBubble(event);
+                        openPost();
+                      }}
+                      className="inline font-semibold text-pe-link hover:underline"
+                    >
+                      {SEE_MORE_LABEL}
+                    </button>
+                  </>
+                ) : null
+              }
             />
           </div>
 
