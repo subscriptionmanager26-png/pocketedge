@@ -20,7 +20,7 @@ export const LOGO_VARIANT_DETAIL = 'icon-256.png';
 const ICON_FILE_RE = /\/icon-(?:64|128|256)\.png$/i;
 
 /** Bump when logo paths/variants change — busts poisoned browser 404 disk cache. */
-export const LOGO_ASSET_CACHE_VERSION = '3';
+export const LOGO_ASSET_CACHE_VERSION = '4';
 
 function withLogoCacheBust(path) {
   const raw = typeof path === 'string' ? path.trim() : '';
