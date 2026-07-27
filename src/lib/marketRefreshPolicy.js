@@ -6,6 +6,7 @@ import {
   resolveMarketStock,
   searchMarketTab,
 } from './marketDataApi';
+import { isInFundNavPublishWindow } from './fundDayPnl';
 
 /** @typedef {'index'|'stock'|'etf'|'bond'|'commodity'|'fund'} MarketAssetType */
 
@@ -133,10 +134,10 @@ export function getMarketRefreshPolicy({ tab, assetType: rawAssetType } = {}) {
   };
 }
 
-/** Portfolio holdings may span classes — poll during NSE or MCX hours. */
+/** Portfolio holdings may span classes — poll during NSE/MCX or the evening fund NAV window. */
 export function shouldPollPortfolioRefresh(date = new Date()) {
   if (!isDocumentVisible()) return false;
-  return isInNseSession(date) || isInMcxSession(date);
+  return isInNseSession(date) || isInMcxSession(date) || isInFundNavPublishWindow(date);
 }
 
 export const PORTFOLIO_POLL_INTERVAL_MS = 60_000;

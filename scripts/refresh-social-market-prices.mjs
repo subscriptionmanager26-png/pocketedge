@@ -217,10 +217,12 @@ function fundDayChange({ nav, asOfDate, existing }) {
 
   let previousClose = null;
   if (existing?.asOfDate && existing.asOfDate !== asOfDate && Number.isFinite(existing.price)) {
-    // New NAV date → prior stored NAV is yesterday's close.
+    // New NAV date → prior stored NAV is the Day's PnL baseline.
+    // Schemes that publish daily advance as_of_date every evening; schemes that
+    // skip a day keep the prior baseline until their next NAV appears.
     previousClose = existing.price;
   } else if (Number.isFinite(existing?.previousClose)) {
-    // Same-day refresh → keep the prior baseline.
+    // Same-day refresh (e.g. 21:30 / 21:50 / 22:10 IST polls) → keep baseline.
     previousClose = existing.previousClose;
   }
 

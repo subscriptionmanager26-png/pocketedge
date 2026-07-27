@@ -20,7 +20,6 @@ const JOB_TO_WORKFLOW: Record<string, string> = {
 
 /** Jobs scheduled via vercel.json — reject others even if secret is known. */
 const VERCEL_SCHEDULED_JOBS = new Set([
-  'funds',
   'asset-sync',
 ]);
 

@@ -4,10 +4,6 @@
   "framework": "vite",
   "crons": [
     {
-      "path": "/api/cron/dispatch-github/funds",
-      "schedule": "30 16 * * *"
-    },
-    {
       "path": "/api/cron/dispatch-github/asset-sync",
       "schedule": "30 2 * * 0"
     }

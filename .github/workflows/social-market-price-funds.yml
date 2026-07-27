@@ -1,12 +1,15 @@
 name: Social market price refresh (funds)
 
 # Daily AMFI NAV sync into social_market_assets + social_market_price_history.
-# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
+# Primary clock: Supabase pg_cron → dispatch-github-workflow (on-time).
+# GH schedule below is a fallback if Supabase dispatch misses.
 
 on:
   schedule:
-    # 10:00 PM IST — NAVs are usually published by then.
-    - cron: '30 16 * * *'
+    # 21:30 / 21:50 / 22:10 IST — AMFI NAVs usually land in this window.
+    - cron: '0 16 * * *'
+    - cron: '20 16 * * *'
+    - cron: '40 16 * * *'
   workflow_dispatch:
     inputs:
       history_date:

@@ -280,6 +280,8 @@ export default function PortfolioPage({
           logoIconUrl: asset?.logoIconUrl ?? holding.logoIconUrl ?? null,
           price,
           changePct: asset?.item?.changePct ?? holding.changePct ?? null,
+          asOfDate: asset?.item?.asOfDate ?? asset?.item?.navDate ?? holding.asOfDate ?? null,
+          navDate: asset?.item?.navDate ?? asset?.item?.asOfDate ?? holding.navDate ?? null,
         };
       }),
     };

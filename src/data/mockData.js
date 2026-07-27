@@ -4,6 +4,7 @@ import {
   readCachedPosition,
   readCachedPortfolioWeightPct,
 } from '../lib/authorPositionsCache';
+import { dayChangePctForPnl } from '../lib/fundDayPnl';
 
 export const CURRENT_USER = {
   id: 'u_me',
@@ -1375,7 +1376,8 @@ export function computePortfolioDisplayMetrics(portfolio) {
     : (portfolio.holdings ?? []).map(recalcHolding);
 
   const holdings = holdingsBase.map((h) => {
-    const changePct = Number(h.changePct ?? STOCKS[h.ticker]?.changePct ?? 0) || 0;
+    // Funds: Day's PnL only after today's NAV is in (typically ~10:10 PM IST).
+    const changePct = dayChangePctForPnl(h);
     const todayPnl = (h.value ?? 0) * (changePct / 100);
     return {
       ...h,
