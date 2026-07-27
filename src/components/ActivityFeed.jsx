@@ -360,10 +360,17 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                     assetType: h.assetType,
                   });
                 }}
-                className="grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] grid-rows-[auto_auto] gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface sm:gap-x-3.5 sm:px-5 sm:py-5"
+                className="flex w-full items-start gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface sm:gap-x-3.5 sm:px-5 sm:py-5"
               >
-                {/* Row 1: Invested + Signal tag ⟷ % */}
-                <div className="col-start-1 row-start-1 row-span-2 self-center">
+                {/*
+                  Center logo in a fixed band:
+                  Invested line (leading-5) + gap-0.5 + first name line (leading-5).
+                  Extra wrapped name lines sit below this band and do not move the logo.
+                */}
+                <div
+                  data-holding-logo
+                  className="flex h-[calc(1.25rem+0.125rem+1.25rem)] w-8 shrink-0 items-center justify-center"
+                >
                   <AssetLogo
                     logoIconUrl={h.logoIconUrl}
                     assetType={isFund ? 'fund' : isEtf ? 'etf' : h.assetType ?? 'stock'}
@@ -374,45 +381,57 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                     className="shrink-0"
                   />
                 </div>
-                <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-2">
-                  <p className="min-w-0 truncate text-[12px] font-semibold leading-5 tabular-nums text-pe-text-muted">
-                    Invested {investedText ?? '—'}
-                  </p>
-                  {form ? <FormStatusTag form={form} /> : null}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex h-5 items-center justify-between gap-3">
+                    <div
+                      data-holding-invested
+                      className="flex h-5 min-w-0 items-center gap-2"
+                    >
+                      <p className="min-w-0 truncate text-[12px] font-semibold leading-5 tabular-nums text-pe-text-muted">
+                        Invested {investedText ?? '—'}
+                      </p>
+                      {form ? (
+                        <span className="inline-flex max-h-5 items-center overflow-visible">
+                          <FormStatusTag form={form} />
+                        </span>
+                      ) : null}
+                    </div>
+                    <p
+                      className={`inline-flex h-5 shrink-0 items-center justify-end gap-0.5 whitespace-nowrap text-right text-[12px] font-semibold leading-5 tabular-nums ${
+                        hasSecondary
+                          ? metricValue.secondarySigned
+                            ? pnlClass(secondaryTone ?? 0)
+                            : 'text-pe-text-muted'
+                          : 'text-pe-text-muted'
+                      }`}
+                    >
+                      {SecondaryIcon ? (
+                        <SecondaryIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
+                      ) : null}
+                      {secondaryText ?? '—'}
+                    </p>
+                  </div>
+
+                  <div className="mt-0.5 flex items-start justify-between gap-3">
+                    <p
+                      data-holding-name
+                      className="min-w-0 line-clamp-2 text-[15px] font-semibold leading-5 text-pe-text"
+                      title={label}
+                    >
+                      {label}
+                    </p>
+                    <p
+                      className={`inline-flex h-5 shrink-0 items-center justify-end gap-0.5 whitespace-nowrap text-right text-[15px] font-semibold leading-5 tabular-nums ${
+                        metricValue.primarySigned
+                          ? pnlClass(metricValue.primary ?? 0)
+                          : 'text-pe-text'
+                      }`}
+                    >
+                      <span>{primaryText}</span>
+                    </p>
+                  </div>
                 </div>
-                <p
-                  className={`col-start-3 row-start-1 inline-flex items-center justify-end gap-0.5 self-start whitespace-nowrap text-right text-[12px] font-semibold leading-5 tabular-nums ${
-                    hasSecondary
-                      ? metricValue.secondarySigned
-                        ? pnlClass(secondaryTone ?? 0)
-                        : 'text-pe-text-muted'
-                      : 'text-pe-text-muted'
-                  }`}
-                >
-                  {SecondaryIcon ? (
-                    <SecondaryIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
-                  ) : null}
-                  {secondaryText ?? '—'}
-                </p>
-
-                {/* Row 2: Logo + Name ⟷ Absolute / Current value */}
-                <span aria-hidden="true" className="col-start-1 row-start-2" />
-                <p
-                  className="col-start-2 row-start-2 min-w-0 self-start line-clamp-2 text-[15px] font-semibold leading-5 text-pe-text"
-                  title={label}
-                >
-                  {label}
-                </p>
-                <p
-                  className={`col-start-3 row-start-2 inline-flex items-center justify-end gap-0.5 self-start whitespace-nowrap text-right text-[15px] font-semibold leading-5 tabular-nums ${
-                    metricValue.primarySigned
-                      ? pnlClass(metricValue.primary ?? 0)
-                      : 'text-pe-text'
-                  }`}
-                >
-                  <span>{primaryText}</span>
-                </p>
-
               </button>
             );
           })}
