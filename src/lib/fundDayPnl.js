@@ -56,6 +56,6 @@ export function isInFundNavPublishWindow(date = new Date()) {
   const minute = Number(parts.find((p) => p.type === 'minute')?.value);
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) return false;
   const mins = hour * 60 + minute;
-  // Poll a bit before first fetch and after last so UI picks up new NAVs.
-  return mins >= 21 * 60 + 15 && mins <= 22 * 60 + 30;
+  // Poll through the evening NAV window so the UI picks up fresh NAVs.
+  return mins >= 21 * 60 + 15 && mins <= 23 * 60 + 45;
 }
