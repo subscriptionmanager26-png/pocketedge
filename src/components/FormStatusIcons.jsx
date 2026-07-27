@@ -47,11 +47,11 @@ export function FormStatusIcon({ form, className = 'h-5 w-5' }) {
 const TAG_CLASS = {
   in_form: 'border-pe-positive/30 bg-pe-positive/10 text-pe-positive',
   out_of_form: 'border-pe-negative/30 bg-pe-negative/10 text-pe-negative',
-  unsure: 'border-pe-border-strong bg-pe-surface text-pe-text-muted',
+  unsure: 'border-pe-border-strong bg-transparent text-pe-text-muted',
 };
 
 const TAG_LABEL = {
-  in_form: 'In form',
+  in_form: 'In Form',
   out_of_form: 'Out of Form',
   unsure: 'Neutral',
 };
@@ -60,7 +60,7 @@ export function FormStatusTag({ form }) {
   if (!form || !TAG_LABEL[form]) return null;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${TAG_CLASS[form]}`}
+      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[12px] font-semibold tracking-wide ${TAG_CLASS[form]}`}
     >
       <FormStatusIcon form={form} className="h-3.5 w-3.5 shrink-0" />
       {TAG_LABEL[form]}

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -547,72 +547,79 @@ export default function PortfolioPage({
       <section className="border-b border-pe-border px-4 py-5">
         {metrics?.kind === 'portfolio' ? (
           <>
-            <div className="grid grid-cols-2 gap-x-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[13px] font-semibold text-pe-text-muted">Initial Invested</p>
-                  <PortfolioKindMetaTags portfolio={activeList} />
+            <div>
+              <div className="grid grid-cols-2 gap-x-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
+                    <PortfolioKindMetaTags portfolio={activeList} />
+                  </div>
+                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                    {formatInr(metrics.totalValue)}
+                  </p>
                 </div>
-                <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
-                  {formatInr(metrics.invested)}
-                </p>
-                <PortfolioDeltaLine
-                  amount={metrics.totalPnl}
-                  pct={metrics.totalPnlPct}
-                  suffix="total"
-                />
+                <div className="min-w-0 text-right">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">Initial Investment</p>
+                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                    {formatInr(metrics.invested)}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 text-right">
-                <p className="text-[13px] font-semibold text-pe-text-muted">Current Value</p>
-                <p className="mt-1 text-[28px] font-bold tracking-tight tabular-nums text-pe-text">
-                  {formatInr(metrics.totalValue)}
-                </p>
-                <PortfolioDeltaLine
-                  amount={metrics.todayPnl}
-                  pct={metrics.todayPnlPct}
-                  suffix="today"
-                  align="right"
-                />
+              <div className="mt-3 rounded-[12px] border border-pe-border bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
+                <div className="flex flex-col gap-1.5">
+                  <PortfolioDeltaLine
+                    label="Total PnL"
+                    amount={metrics.totalPnl}
+                    pct={metrics.totalPnlPct}
+                  />
+                  <PortfolioDeltaLine
+                    label="Day's PnL"
+                    amount={metrics.todayPnl}
+                    pct={metrics.todayPnlPct}
+                  />
+                </div>
               </div>
             </div>
           </>
         ) : null}
 
-        <div className="mt-5 grid grid-cols-3 items-stretch gap-2">
-          {FORM_METRIC_ORDER.map((formId) => {
-            const meta = FORM_META[formId];
-            const count = formBuckets[formId]?.length ?? 0;
-            const selected = formSheet === formId;
-            return (
-              <button
-                key={formId}
-                type="button"
-                onClick={() => setFormSheet(formId)}
-                className={`flex h-full min-w-0 flex-col rounded-[12px] border bg-white px-2.5 py-2.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)] transition hover:border-pe-border-strong hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_6px_16px_rgba(0,0,0,0.08)] ${
-                  selected ? 'border-pe-accent' : 'border-pe-border'
-                }`}
-              >
-                <p className="text-[17px] font-bold tabular-nums leading-none text-pe-text">
-                  {count}
-                </p>
-                <div className="mt-1.5 flex min-w-0 items-start gap-1">
-                  <FormStatusIcon form={formId} className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <div className="mt-5 rounded-[12px] border border-pe-border bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
+          <p className="text-[15px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
+            Signals
+          </p>
+          <div className="mt-2.5 grid grid-cols-3 items-stretch gap-2">
+            {FORM_METRIC_ORDER.map((formId) => {
+              const meta = FORM_META[formId];
+              const count = formBuckets[formId]?.length ?? 0;
+              return (
+                <button
+                  key={formId}
+                  type="button"
+                  onClick={() => setFormSheet(formId)}
+                  className="flex h-full min-w-0 flex-col rounded-[12px] border border-transparent bg-white px-2.5 py-2.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_8px_rgba(0,0,0,0.06)] transition hover:shadow-[0_1px_3px_rgba(0,0,0,0.07),0_4px_12px_rgba(0,0,0,0.08)]"
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
+                    <p className="text-[15px] font-bold tabular-nums leading-none text-pe-text">
+                      {count}
+                    </p>
+                  </div>
                   <p
-                    className="min-w-0 text-[10px] font-bold uppercase leading-snug tracking-[0.04em] text-pe-text-muted"
+                    className="mt-1.5 min-w-0 text-[12px] font-semibold uppercase leading-snug tracking-[0.04em] text-pe-text-muted"
                     title={meta.label}
                   >
                     {meta.label}
                   </p>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
+          {formSheet && FORM_META[formSheet]?.description ? (
+            <p className="mt-2.5 text-[12px] leading-snug text-pe-text-secondary">
+              {FORM_META[formSheet].description}
+            </p>
+          ) : null}
         </div>
-        {formSheet && FORM_META[formSheet]?.description ? (
-          <p className="mt-2.5 text-[12px] leading-snug text-pe-text-secondary">
-            {FORM_META[formSheet].description}
-          </p>
-        ) : null}
       </section>
 
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
@@ -690,32 +697,29 @@ const CONTENT_TABS = [
   { id: 'posts', label: 'Posts' },
 ];
 
-function PortfolioDeltaLine({ amount, pct, suffix, align = 'left' }) {
+function formatSignedInr(amount) {
+  if (amount == null || Number.isNaN(Number(amount))) return '—';
+  const value = Number(amount);
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return `${sign}${formatInr(Math.abs(value), { compact: true })}`;
+}
+
+function PortfolioDeltaLine({ label, amount, pct }) {
   const tone = amount ?? pct ?? 0;
-  const up = tone > 0;
-  const down = tone < 0;
-  const Icon = up ? ArrowUp : down ? ArrowDown : null;
-  const amountText =
-    amount == null || Number.isNaN(amount)
-      ? '-'
-      : formatInr(Math.abs(Number(amount)), { compact: true }).replace(/^₹/, '');
+  const amountText = formatSignedInr(amount);
   const pctText =
     pct != null && Number.isFinite(Number(pct))
       ? `${Math.abs(Number(pct)).toFixed(2)}%`
       : null;
 
   return (
-    <p
-      className={`mt-1.5 inline-flex items-center gap-0.5 text-[13px] font-semibold tabular-nums ${
-        align === 'right' ? 'justify-end' : ''
-      } ${pnlClass(tone)}`}
-    >
-      {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
-      <span>
+    <div className="flex w-full items-baseline justify-between gap-3 text-[12px] font-semibold">
+      <p className="shrink-0 text-pe-text-muted">{label}</p>
+      <p className={`min-w-0 text-right tabular-nums ${pnlClass(tone)}`}>
         {amountText}
-        {pctText ? ` ( ${pctText} )` : ''} {suffix}
-      </span>
-    </p>
+        {pctText ? ` (${pctText})` : ''}
+      </p>
+    </div>
   );
 }
 

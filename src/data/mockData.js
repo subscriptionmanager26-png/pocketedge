@@ -194,6 +194,7 @@ export const MY_PORTFOLIO = {
   holdings: [
     {
       ticker: 'RELIANCE',
+      form: 'in_form',
       qty: 25,
       avg: 2410,
       price: 2574.2,
@@ -204,6 +205,7 @@ export const MY_PORTFOLIO = {
     },
     {
       ticker: 'HDFCBANK',
+      form: 'out_of_form',
       qty: 40,
       avg: 1520,
       price: 1665.8,
@@ -214,6 +216,7 @@ export const MY_PORTFOLIO = {
     },
     {
       ticker: 'ICICIBANK',
+      form: 'unsure',
       qty: 55,
       avg: 980,
       price: 1059.4,
@@ -231,6 +234,19 @@ export const MY_PORTFOLIO = {
       pnl: 12_736,
       pnlPct: 22.1,
       spark: STOCKS.TATAMOTORS.spark,
+    },
+    {
+      ticker: '118778',
+      assetType: 'fund',
+      assetName: 'Nippon India Small Cap Fund - Direct Plan Growth Plan - Growth Option',
+      qty: 250.4,
+      avg: 148.2,
+      price: 202.3113,
+      invested: 37_109,
+      value: 50_659,
+      pnl: 13_550,
+      pnlPct: 36.5,
+      changePct: 0.42,
     },
   ],
   watchlists: [
