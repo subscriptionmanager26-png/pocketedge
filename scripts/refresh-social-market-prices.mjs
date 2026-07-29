@@ -130,6 +130,62 @@ async function updateFetchRun(url, apiKey, id, patch) {
   }
 }
 
+async function insertNavIngestRun(url, apiKey, row) {
+  const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/social_market_nav_ingest_runs`, {
+    method: 'POST',
+    headers: restHeaders(apiKey),
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`insert nav ingest run HTTP ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data[0] : data;
+}
+
+/** Summarize AMFI NAV dates + how many schemes advanced vs our stored quote. */
+function summarizeFundNavArrival(assetRows, existingByKey, istToday) {
+  const dateCounts = {};
+  let todayNavCount = 0;
+  let newDateAdvances = 0;
+  let firstSeenToday = 0;
+
+  for (const row of assetRows) {
+    const asOfDate = row.as_of_date;
+    if (!asOfDate) continue;
+    dateCounts[asOfDate] = (dateCounts[asOfDate] || 0) + 1;
+    if (asOfDate === istToday) todayNavCount += 1;
+
+    const existing = existingByKey.get(row.asset_key);
+    if (existing?.asOfDate && existing.asOfDate !== asOfDate) {
+      newDateAdvances += 1;
+      if (asOfDate === istToday) firstSeenToday += 1;
+    } else if (!existing?.asOfDate && asOfDate === istToday) {
+      // Brand-new scheme appearing already on today's NAV date.
+      newDateAdvances += 1;
+      firstSeenToday += 1;
+    }
+  }
+
+  return { dateCounts, todayNavCount, newDateAdvances, firstSeenToday };
+}
+
+function logFundNavArrival({ syncedAt, istToday, totalSchemes, arrival }) {
+  const { dateCounts, todayNavCount, newDateAdvances, firstSeenToday } = arrival;
+  const sortedDates = Object.entries(dateCounts).sort((a, b) => b[0].localeCompare(a[0]));
+  const pctToday = totalSchemes ? ((100 * todayNavCount) / totalSchemes).toFixed(1) : '0.0';
+  console.log(
+    `NAV arrival @ ${syncedAt} IST today=${istToday}: ` +
+      `today_nav=${todayNavCount}/${totalSchemes} (${pctToday}%) ` +
+      `new_date_advances=${newDateAdvances} (of which today=${firstSeenToday})`
+  );
+  for (const [date, count] of sortedDates.slice(0, 8)) {
+    const pct = totalSchemes ? ((100 * count) / totalSchemes).toFixed(1) : '0.0';
+    console.log(`  as_of_date ${date}: ${count} (${pct}%)`);
+  }
+}
+
 async function rpcBatch(url, apiKey, fnName, rows) {
   if (!rows.length) return 0;
   const rpcUrl = `${url.replace(/\/$/, '')}/rest/v1/rpc/${fnName}`;
@@ -239,18 +295,31 @@ function fundDayChange({ nav, asOfDate, existing }) {
 function equityAssetRows(quotes, assetType, asOfDate, syncedAt) {
   return quotes
     .filter((q) => q.symbol && q.ltp != null)
-    .map((q) => ({
-      asset_type: assetType,
-      asset_key: q.symbol,
-      name: q.name ?? q.symbol,
-      price: q.ltp,
-      change_pct: q.changePct ?? null,
-      previous_close: q.previousClose ?? null,
-      as_of_date: asOfDate,
-      price_source: 'nse',
-      synced_at: syncedAt,
-      ...(assetType === 'etf' && q.nav != null ? { nav: q.nav } : {}),
-    }));
+    .map((q) => {
+      const row = {
+        asset_type: assetType,
+        asset_key: q.symbol,
+        name: q.name ?? q.symbol,
+        price: q.ltp,
+        change_pct: q.changePct ?? null,
+        previous_close: q.previousClose ?? null,
+        as_of_date: asOfDate,
+        price_source: 'nse',
+        exchange: 'NSE',
+        exchange_symbol: q.symbol,
+        synced_at: syncedAt,
+        ...(assetType === 'etf' && q.nav != null ? { nav: q.nav } : {}),
+      };
+      if (q.marketCapCr != null && Number.isFinite(q.marketCapCr) && q.marketCapCr > 0) {
+        row.market_cap_cr = q.marketCapCr;
+        row.market_cap_rs = q.marketCapCr * 1e7;
+        row.market_cap_as_of = asOfDate;
+        row.market_cap_source = 'nse_stocks_traded';
+        row.market_cap_synced_at = syncedAt;
+        if (q.series) row.market_cap_series = String(q.series).trim().toUpperCase();
+      }
+      return row;
+    });
 }
 
 function equityHistoryRows(quotes, assetType, asOfDate, syncedAt) {
@@ -586,6 +655,7 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
 
   console.log('Loading existing fund quotes for day-change baseline...');
   const existingByKey = await fetchExistingFundQuotes(url, apiKey);
+  const istToday = istDateString();
 
   const assetByKey = new Map();
   const historyByKey = new Map();
@@ -593,7 +663,7 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   for (const scheme of schemes) {
     const key = String(scheme.schemeCode ?? '').trim();
     if (!key || scheme.nav == null) continue;
-    const asOfDate = scheme.navDate || istDateString();
+    const asOfDate = scheme.navDate || istToday;
     const { previousClose, changePct } = fundDayChange({
       nav: scheme.nav,
       asOfDate,
@@ -638,6 +708,29 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
   const historyRows = [...historyByKey.values()];
   const fundIsinRows = [...fundIsinByValue.values()];
 
+  const arrival = summarizeFundNavArrival(assetRows, existingByKey, istToday);
+  logFundNavArrival({
+    syncedAt,
+    istToday,
+    totalSchemes: assetRows.length,
+    arrival,
+  });
+
+  try {
+    await insertNavIngestRun(url, apiKey, {
+      run_at: syncedAt,
+      ist_date: istToday,
+      total_schemes: assetRows.length,
+      today_nav_count: arrival.todayNavCount,
+      new_date_advances: arrival.newDateAdvances,
+      date_counts: arrival.dateCounts,
+      source: 'amfi_navall',
+      meta: { first_seen_today: arrival.firstSeenToday },
+    });
+  } catch (err) {
+    console.warn('Could not persist NAV ingest run snapshot:', err.message);
+  }
+
   console.log(`Upserting ${assetRows.length} fund NAVs...`);
   const fundUpdated = await upsertAssets(url, apiKey, assetRows);
   console.log(`Upserting ${fundIsinRows.length} mutual-fund ISIN mappings...`);
@@ -649,7 +742,19 @@ async function refreshFunds({ url, apiKey, writeHistory, syncedAt }) {
     historyUpserted = await upsertHistory(url, apiKey, historyRows);
   }
 
-  return { fundUpdated, fundIsinsUpdated, historyUpserted, schemeCount: assetRows.length };
+  return {
+    fundUpdated,
+    fundIsinsUpdated,
+    historyUpserted,
+    schemeCount: assetRows.length,
+    navArrival: {
+      istToday,
+      todayNavCount: arrival.todayNavCount,
+      newDateAdvances: arrival.newDateAdvances,
+      firstSeenToday: arrival.firstSeenToday,
+      dateCounts: arrival.dateCounts,
+    },
+  };
 }
 
 function amfiHistoryUrl(isoDate) {
@@ -971,6 +1076,7 @@ async function main() {
       historyUpserted += fd.historyUpserted;
       meta.funds = fd.schemeCount;
       meta.fund_isins = fd.fundIsinsUpdated;
+      if (fd.navArrival) meta.nav_arrival = fd.navArrival;
     }
 
     if (args.mode === 'fund-history') {
