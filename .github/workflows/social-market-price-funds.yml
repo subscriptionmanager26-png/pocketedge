@@ -6,9 +6,10 @@ name: Social market price refresh (funds)
 
 on:
   schedule:
-    # Every 10 min from 21:30–23:30 IST (16:00–18:00 UTC).
-    - cron: '*/10 16-17 * * *'
-    - cron: '0 18 * * *'
+    # Every 10 min from 21:30 IST through 00:20 IST (16:00–18:50 UTC),
+    # plus 00:30 IST (19:00 UTC).
+    - cron: '*/10 16-18 * * *'
+    - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
       history_date:
