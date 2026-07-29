@@ -1,18 +1,15 @@
 name: Social market price refresh (equity)
 
-# PocketEdge is the quote source for search/detail.
-# Refresh NSE stocks + ETFs and the approved BSE-only fallback universe into
-# social_market_assets (+ daily history point).
-# Note: indices are refreshed by Supabase cron + edge function.
-# Note: NSE stocks/ETFs also have a parallel Supabase 15s edge writer
-# (refresh-equity-prices). This GH job remains the backup (+ BSE/SGB coverage).
-# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
+# EOD history stamp for equity (NSE/BSE/SGB already live via Supabase edge).
+# Intraday LTP:
+#   - refresh-equity-prices (NSE stocks/ETFs, 15s)
+#   - refresh-bse-prices (BSE fallback, 60s)
+#   - refresh-sgb-prices (SGB, 60s)
+# This workflow only runs post-close (and manual dispatch) with writeHistory.
 
 on:
   schedule:
-    # Every 15 min during NSE cash session (approx 09:15–15:30 IST = 03:45–10:00 UTC)
-    - cron: '0,15,30,45 4-10 * * 1-5'
-    # One post-close snapshot so the day closes into history
+    # Post-close snapshot ~15:45 IST = 10:15 UTC weekdays
     - cron: '15 10 * * 1-5'
   workflow_dispatch:
 
@@ -32,7 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Refresh equity quotes
+      - name: Refresh equity quotes (EOD history)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

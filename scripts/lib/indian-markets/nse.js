@@ -119,13 +119,17 @@ export async function fetchStocksTraded(nseFetch) {
       const ltp = row.lastPrice != null ? Number(row.lastPrice) : null;
       const previousClose = row.previousClose != null ? Number(row.previousClose) : null;
       const changePct = row.pchange != null ? Number(row.pchange) : null;
+      const marketCapCr = row.totalMarketCap != null ? Number(row.totalMarketCap) : null;
       return {
         symbol,
         name: row.meta?.companyName ?? row.companyName ?? symbol,
         ltp: Number.isFinite(ltp) ? ltp : null,
         previousClose: Number.isFinite(previousClose) ? previousClose : null,
         changePct: Number.isFinite(changePct) ? changePct : null,
-        series: row.series ?? null,
+        series: row.series ? String(row.series).trim().toUpperCase() : null,
+        // NSE totalMarketCap is already in ₹ crore.
+        marketCapCr:
+          Number.isFinite(marketCapCr) && marketCapCr > 0 ? marketCapCr : null,
       };
     })
     .filter(Boolean);

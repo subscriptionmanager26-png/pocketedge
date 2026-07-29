@@ -2,8 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
 
 /**
  * Parallel NSE stocks + ETFs quote writer (15s path).
- * GitHub Actions equity job remains the backup until this proves stable.
- * Does not touch BSE fallback / SGB — those stay on the GH equity workflow.
+ * BSE fallback and SGB have their own edge functions; GH equity is EOD history only.
  */
 
 const NSE_BASE = 'https://www.nseindia.com';
@@ -23,6 +22,9 @@ type EquityQuote = {
   previousClose: number | null;
   changePct: number | null;
   nav?: number | null;
+  series?: string | null;
+  /** NSE totalMarketCap is already in ₹ crore. */
+  marketCapCr?: number | null;
 };
 
 type AssetRow = {
@@ -38,6 +40,12 @@ type AssetRow = {
   exchange_symbol: string;
   synced_at: string;
   nav?: number | null;
+  market_cap_rs?: number;
+  market_cap_cr?: number;
+  market_cap_as_of?: string;
+  market_cap_series?: string;
+  market_cap_source?: string;
+  market_cap_synced_at?: string;
 };
 
 type HistoryRow = {
@@ -123,12 +131,15 @@ function mapStocksTraded(payload: unknown): EquityQuote[] {
     const symbol = String(row.symbol ?? '').trim().toUpperCase();
     const ltp = numberOrNull(row.lastPrice);
     if (!symbol || ltp == null) continue;
+    const marketCapCr = numberOrNull(row.totalMarketCap);
     out.push({
       symbol,
       name: String(meta.companyName ?? row.companyName ?? symbol).trim() || symbol,
       ltp,
       previousClose: numberOrNull(row.previousClose),
       changePct: numberOrNull(row.pchange),
+      series: String(row.series ?? '').trim().toUpperCase() || null,
+      marketCapCr: marketCapCr != null && marketCapCr > 0 ? marketCapCr : null,
     });
   }
   return out;
@@ -163,20 +174,31 @@ function toAssetRows(
   syncedAt: string,
   { includeNav = true }: { includeNav?: boolean } = {},
 ): AssetRow[] {
-  return quotes.map((q) => ({
-    asset_type: assetType,
-    asset_key: q.symbol,
-    name: q.name,
-    price: q.ltp,
-    change_pct: q.changePct,
-    previous_close: q.previousClose,
-    as_of_date: asOfDate,
-    price_source: 'nse',
-    exchange: 'NSE',
-    exchange_symbol: q.symbol,
-    synced_at: syncedAt,
-    ...(assetType === 'etf' && includeNav && q.nav != null && q.nav > 0 ? { nav: q.nav } : {}),
-  }));
+  return quotes.map((q) => {
+    const row: AssetRow = {
+      asset_type: assetType,
+      asset_key: q.symbol,
+      name: q.name,
+      price: q.ltp,
+      change_pct: q.changePct,
+      previous_close: q.previousClose,
+      as_of_date: asOfDate,
+      price_source: 'nse',
+      exchange: 'NSE',
+      exchange_symbol: q.symbol,
+      synced_at: syncedAt,
+      ...(assetType === 'etf' && includeNav && q.nav != null && q.nav > 0 ? { nav: q.nav } : {}),
+    };
+    if (q.marketCapCr != null && q.marketCapCr > 0) {
+      row.market_cap_cr = q.marketCapCr;
+      row.market_cap_rs = q.marketCapCr * 1e7;
+      row.market_cap_as_of = asOfDate;
+      row.market_cap_source = 'nse_stocks_traded';
+      row.market_cap_synced_at = syncedAt;
+      if (q.series) row.market_cap_series = q.series;
+    }
+    return row;
+  });
 }
 
 /** Write ETF NAV at most once per minute; omit nav on other ticks so coalesce keeps prior value. */
@@ -288,7 +310,7 @@ Deno.serve(async (req: Request) => {
   const lockOwner = crypto.randomUUID();
   const { data: lockAcquired, error: lockErr } = await client.rpc('acquire_social_market_job_lock', {
     p_job_name: LOCK_NAME,
-    p_ttl_seconds: 90,
+    p_ttl_seconds: 30,
     p_owner: lockOwner,
   });
   if (lockErr) {
