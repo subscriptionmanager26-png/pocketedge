@@ -3,7 +3,7 @@ import {
   fetchMarketSearchItem,
   renderAssetSeoHtml,
   siteOrigin,
-} from '../seoAssetServer.js';
+} from './seoAssetServer.js';
 
 export async function handleEquitySeoRequest(
   request: Request,
