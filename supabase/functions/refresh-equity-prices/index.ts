@@ -167,6 +167,39 @@ function mapEtfs(payload: unknown): EquityQuote[] {
   return out;
 }
 
+/**
+ * NSE stocksTraded can emit the same symbol on multiple series (EQ/BE/…).
+ * bulk_upsert uses ON CONFLICT (asset_type, asset_key) and rejects duplicate
+ * keys inside a single INSERT batch.
+ */
+function dedupeQuotesBySymbol(quotes: EquityQuote[]): EquityQuote[] {
+  const bySymbol = new Map<string, EquityQuote>();
+  const seriesRank = (series: string | null | undefined) => {
+    const s = String(series ?? '').toUpperCase();
+    if (s === 'EQ') return 3;
+    if (s === 'BE' || s === 'BZ') return 2;
+    if (s) return 1;
+    return 0;
+  };
+  for (const quote of quotes) {
+    const existing = bySymbol.get(quote.symbol);
+    if (!existing) {
+      bySymbol.set(quote.symbol, quote);
+      continue;
+    }
+    const rankNew = seriesRank(quote.series);
+    const rankOld = seriesRank(existing.series);
+    if (rankNew > rankOld) {
+      bySymbol.set(quote.symbol, quote);
+      continue;
+    }
+    if (rankNew === rankOld && (quote.marketCapCr ?? 0) > (existing.marketCapCr ?? 0)) {
+      bySymbol.set(quote.symbol, quote);
+    }
+  }
+  return [...bySymbol.values()];
+}
+
 function toAssetRows(
   quotes: EquityQuote[],
   assetType: 'stock' | 'etf',
@@ -330,9 +363,11 @@ Deno.serve(async (req: Request) => {
       nseJson('/api/etf', cookie, `${NSE_BASE}/market-data/exchange-traded-funds-etf`),
     ]);
 
-    const etfQuotes = mapEtfs(etfPayload);
+    const etfQuotes = dedupeQuotesBySymbol(mapEtfs(etfPayload));
     const etfSymbols = new Set(etfQuotes.map((q) => q.symbol));
-    const stockQuotes = mapStocksTraded(stocksPayload).filter((q) => !etfSymbols.has(q.symbol));
+    const stockQuotes = dedupeQuotesBySymbol(
+      mapStocksTraded(stocksPayload).filter((q) => !etfSymbols.has(q.symbol)),
+    );
     const writeEtfNav = await shouldWriteEtfNav(client, { writeHistory, force });
 
     const assets = [

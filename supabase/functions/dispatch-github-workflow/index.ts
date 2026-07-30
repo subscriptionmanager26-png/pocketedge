@@ -2,19 +2,17 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
 
 /**
  * Dispatch a GitHub Actions workflow_dispatch from Supabase Cron.
- * Used for sub-daily jobs that Vercel Hobby cannot schedule.
+ * Used for jobs that stay on GH (MCX commodities + AMC ETF iNAV).
+ * Equity / funds / IBJA were removed so backups cannot mask edge failures.
  *
  * Auth: x-dispatch-token == social_market_job_config.auth_token for job_name
  * Secrets: GITHUB_DISPATCH_TOKEN (Supabase edge secret only — never store PAT in DB)
  */
 
 const JOB_TO_WORKFLOW: Record<string, string> = {
-  equity: 'social-market-price-equity.yml',
-  funds: 'social-market-price-funds.yml',
   commodities: 'social-market-price-commodities.yml',
   'asset-sync': 'social-market-asset-sync.yml',
   'amc-inav': 'refresh-amc-etf-inav.yml',
-  ibja: 'social-market-price-ibja.yml',
 };
 
 const LOCK_NAME = 'dispatch-github-workflow';

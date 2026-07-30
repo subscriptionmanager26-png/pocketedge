@@ -1,15 +1,9 @@
 name: Social market price refresh (funds)
 
-# Daily AMFI NAV sync into social_market_assets + social_market_price_history.
-# Primary clock: Supabase pg_cron → dispatch-github-workflow (on-time).
-# GH schedule below is a fallback if Supabase dispatch misses.
+# DISABLED — AMFI fund NAVs are edge-owned (refresh-fund-navs).
+# Do not re-enable while validating the edge pipeline.
 
 on:
-  schedule:
-    # Every 10 min from 21:30 IST through 00:20 IST (16:00–18:50 UTC),
-    # plus 00:30 IST (19:00 UTC).
-    - cron: '*/10 16-18 * * *'
-    - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
       history_date:
@@ -26,6 +20,7 @@ permissions:
 
 jobs:
   refresh:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -33,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Refresh mutual fund NAVs
+      - name: Refresh mutual fund NAVs — disabled
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

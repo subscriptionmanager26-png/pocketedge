@@ -1,16 +1,12 @@
 name: Social market price refresh (equity)
 
-# EOD history stamp for equity (NSE/BSE/SGB already live via Supabase edge).
-# Intraday LTP:
-#   - refresh-equity-prices (NSE stocks/ETFs, 15s)
-#   - refresh-bse-prices (BSE fallback, 60s)
-#   - refresh-sgb-prices (SGB, 60s)
-# This workflow only runs post-close (and manual dispatch) with writeHistory.
+# DISABLED for automatic / backup use.
+# Intraday + EOD equity LTP/history is edge-owned:
+#   refresh-equity-prices / refresh-bse-prices / refresh-sgb-prices
+# Keep this file only for a true emergency; do not re-enable schedules
+# while validating the edge pipeline.
 
 on:
-  schedule:
-    # Post-close snapshot ~15:45 IST = 10:15 UTC weekdays
-    - cron: '15 10 * * 1-5'
   workflow_dispatch:
 
 concurrency:
@@ -22,6 +18,7 @@ permissions:
 
 jobs:
   refresh:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -29,7 +26,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Refresh equity quotes (EOD history)
+      - name: Refresh equity quotes (emergency only — currently disabled)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

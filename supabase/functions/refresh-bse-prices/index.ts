@@ -283,7 +283,7 @@ Deno.serve(async (req: Request) => {
   const lockOwner = crypto.randomUUID();
   const { data: lockAcquired, error: lockErr } = await client.rpc('acquire_social_market_job_lock', {
     p_job_name: LOCK_NAME,
-    p_ttl_seconds: 90,
+    p_ttl_seconds: 120,
     p_owner: lockOwner,
   });
   if (lockErr) {

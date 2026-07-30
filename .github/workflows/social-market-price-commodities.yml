@@ -1,14 +1,9 @@
 name: Social market price refresh (commodities)
 
-# MCX spot prices into social_market_assets + social_market_price_history.
-# Primary clock: Vercel Cron → workflow_dispatch (GH schedule is fallback).
+# Remains on GitHub: MCX blocks Supabase edge egress (403).
+# Dispatched by pg_cron → dispatch-github-workflow (hourly + EOD).
 
 on:
-  schedule:
-    # Hourly weekdays during MCX hours (approx 09:00–23:30 IST = 03:30–18:00 UTC)
-    - cron: '0 4-18 * * 1-5'
-    # End-of-day snapshot for history
-    - cron: '45 18 * * 1-5'
   workflow_dispatch:
 
 concurrency:
