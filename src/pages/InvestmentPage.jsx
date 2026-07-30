@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
+import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import NewsList from '../components/NewsList';
@@ -22,13 +23,25 @@ import {
 } from '../lib/marketDataApi';
 import { fetchAssetHolders } from '../lib/assetHoldersApi';
 import { isDevMockMode } from '../lib/appMode';
+import { fundPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
+import { useSeoMeta } from '../hooks/useSeoMeta';
+
+/** Growth + Direct schemes are indexable; other plan variants stay public but noindex. */
+export function isSelectiveFundForSeo(fund) {
+  const name = String(fund?.name ?? fund?.schemeName ?? '').toLowerCase();
+  const hay = `${name} ${String(fund?.plan ?? '')} ${String(fund?.option ?? '')}`.toLowerCase();
+  const isDirect = /\bdirect\b/.test(hay);
+  const isGrowth = /\bgrowth\b/.test(hay) && !/\bidcw\b|\bdividend\b/.test(hay);
+  return isDirect && isGrowth;
+}
 
 export default function InvestmentPage({
   fundId,
   onBack,
   onOpenProfile,
   onOpenPortfolio,
+  guestMode = false,
 }) {
   const seedFund = getFund(fundId);
   const [marketFund, setMarketFund] = useState(() => {
@@ -48,6 +61,21 @@ export default function InvestmentPage({
       nav: null,
     });
   const [tab, setTab] = useState('insights');
+  const indexable = isSelectiveFundForSeo(fund);
+  const categoryLine = [fund.category, fund.amc].filter(Boolean).join(' · ');
+
+  useSeoMeta(
+    guestMode
+      ? {
+          title: fund.name || `Fund ${fundId}`,
+          description: categoryLine
+            ? `${fund.name} — ${categoryLine}. NAV and details on PocketEdge.`
+            : `${fund.name || fundId} mutual fund details on PocketEdge.`,
+          path: fundPath(fundId),
+          noindex: !indexable,
+        }
+      : null
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +193,14 @@ export default function InvestmentPage({
         changePct={fund.changePct}
         previousClose={fund.previousClose}
         change={fund.change}
+        subtitle={categoryLine || undefined}
       />
+
+      <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
+        {categoryLine
+          ? `${fund.name} is a ${categoryLine} scheme. View NAV, community posts, and holders on PocketEdge.`
+          : `${fund.name} mutual fund details on PocketEdge.`}
+      </p>
 
       <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
 
@@ -176,21 +211,38 @@ export default function InvestmentPage({
       )}
 
       {tab === 'discussions' && (
-        <DiscussionsList
-          posts={discussions}
-          onOpenProfile={onOpenProfile}
-          emptyMessage="No posts yet - posts about this fund will show up here."
-        />
+        guestMode ? (
+          <GuestSignInCta action="join fund discussions" />
+        ) : (
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage="No posts yet - posts about this fund will show up here."
+          />
+        )
       )}
 
       {tab === 'holders' && (
-        <HoldersList
-          holders={holders}
-          loading={holdersLoading}
-          onOpenProfile={onOpenProfile}
-          onOpenPortfolio={onOpenPortfolio}
-          emptyMessage="No disclosed holders yet."
-        />
+        guestMode ? (
+          <>
+            <HoldersList
+              holders={holders}
+              loading={holdersLoading}
+              onOpenProfile={undefined}
+              onOpenPortfolio={undefined}
+              emptyMessage="No disclosed holders yet."
+            />
+            <GuestSignInCta action="follow holders and open portfolios" />
+          </>
+        ) : (
+          <HoldersList
+            holders={holders}
+            loading={holdersLoading}
+            onOpenProfile={onOpenProfile}
+            onOpenPortfolio={onOpenPortfolio}
+            emptyMessage="No disclosed holders yet."
+          />
+        )
       )}
 
       {tab === 'news' && (

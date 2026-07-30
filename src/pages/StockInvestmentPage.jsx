@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
+import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import NewsList from '../components/NewsList';
@@ -11,6 +13,7 @@ import {
   STOCK_INVESTMENT_TABS,
 } from '../components/InvestmentSections';
 import { getStock, getStockNews } from '../data/stockData';
+import { getCompanyBrief } from '../data/companyBriefs';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchAssetHolders } from '../lib/assetHoldersApi';
 import {
@@ -27,8 +30,10 @@ import {
   marketStockToDetail,
   resolveMarketStock,
 } from '../lib/marketDataApi';
+import { businessModelBriefPath, etfPath, stockPath } from '../lib/routes';
 import { formatTicker } from '../lib/tickers';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 
 function peekCachedStockDetail(ticker) {
   const cached =
@@ -36,11 +41,20 @@ function peekCachedStockDetail(ticker) {
   return cached ? marketStockToDetail(cached) : null;
 }
 
+function briefExcerpt(brief) {
+  const prose = brief?.sections?.executiveSummary?.prose || brief?.tagline || '';
+  const text = String(prose).trim();
+  if (!text) return null;
+  if (text.length <= 280) return text;
+  return `${text.slice(0, 277).trim()}…`;
+}
+
 export default function StockInvestmentPage({
   ticker,
   onBack,
   onOpenProfile,
   onOpenPortfolio,
+  guestMode = false,
 }) {
   const seedStock = getStock(ticker);
   const [marketStock, setMarketStock] = useState(() => peekCachedStockDetail(ticker));
@@ -52,6 +66,7 @@ export default function StockInvestmentPage({
   const [marketLoading, setMarketLoading] = useState(
     () => !peekCachedStockDetail(ticker) && !seedStock
   );
+  const [brief, setBrief] = useState(null);
   const stock = useMemo(() => {
     if (marketStock) return marketStock;
     if (seedStock) {
@@ -72,6 +87,20 @@ export default function StockInvestmentPage({
   }, [marketStock, seedStock, ticker]);
   const displayStock = stock;
   const [tab, setTab] = useState('insights');
+  const symbolKey = formatTicker(ticker);
+  const excerpt = briefExcerpt(brief);
+
+  useSeoMeta(
+    guestMode
+      ? {
+          title: `${displayStock.name || symbolKey}${isEtf ? ' ETF' : ' share price'}`,
+          description: excerpt
+            ? `${excerpt} Track ${symbolKey} on PocketEdge.`
+            : `${displayStock.name || symbolKey} (${symbolKey}) — live price, insights, and news on PocketEdge.`,
+          path: isEtf ? etfPath(ticker) : stockPath(ticker),
+        }
+      : null
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +130,24 @@ export default function StockInvestmentPage({
       cancelled = true;
     };
   }, [ticker]);
+
+  useEffect(() => {
+    if (isEtf) {
+      setBrief(null);
+      return undefined;
+    }
+    let cancelled = false;
+    getCompanyBrief(ticker)
+      .then((next) => {
+        if (!cancelled) setBrief(next);
+      })
+      .catch(() => {
+        if (!cancelled) setBrief(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, isEtf]);
 
   const refreshStock = useCallback(async () => {
     const resolved = await resolveMarketStock(ticker, { force: true });
@@ -274,6 +321,26 @@ export default function StockInvestmentPage({
         priceSource={displayStock.priceSource}
       />
 
+      {excerpt ? (
+        <div className="border-b border-pe-border px-4 py-4">
+          <p className="text-sm leading-relaxed text-pe-text-secondary">{excerpt}</p>
+          <Link
+            to={businessModelBriefPath(ticker)}
+            className="mt-2 inline-block text-sm font-semibold text-pe-accent hover:underline"
+          >
+            Full business model →
+          </Link>
+        </div>
+      ) : !isEtf ? (
+        <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
+          Live quotes, AI insights, and news for {formatTicker(ticker)} on PocketEdge.
+        </p>
+      ) : (
+        <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
+          ETF price, discussions, and holders for {formatTicker(ticker)} on PocketEdge.
+        </p>
+      )}
+
       <UnderlineTabs
         tabs={isEtf ? INVESTMENT_TABS : STOCK_INVESTMENT_TABS}
         active={tab}
@@ -295,21 +362,38 @@ export default function StockInvestmentPage({
       )}
 
       {tab === 'discussions' && (
-        <DiscussionsList
-          posts={discussions}
-          onOpenProfile={onOpenProfile}
-          emptyMessage="No posts yet - posts mentioning this stock will show up here."
-        />
+        guestMode ? (
+          <GuestSignInCta action="join discussions" />
+        ) : (
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage="No posts yet - posts mentioning this stock will show up here."
+          />
+        )
       )}
 
       {tab === 'holders' && (
-        <HoldersList
-          holders={holders}
-          loading={holdersLoading}
-          onOpenProfile={onOpenProfile}
-          onOpenPortfolio={onOpenPortfolio}
-          emptyMessage="No disclosed holders yet."
-        />
+        guestMode ? (
+          <>
+            <HoldersList
+              holders={holders}
+              loading={holdersLoading}
+              onOpenProfile={undefined}
+              onOpenPortfolio={undefined}
+              emptyMessage="No disclosed holders yet."
+            />
+            <GuestSignInCta action="follow holders and open portfolios" />
+          </>
+        ) : (
+          <HoldersList
+            holders={holders}
+            loading={holdersLoading}
+            onOpenProfile={onOpenProfile}
+            onOpenPortfolio={onOpenPortfolio}
+            emptyMessage="No disclosed holders yet."
+          />
+        )
       )}
 
       {tab === 'news' && (

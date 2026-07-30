@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
+import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
@@ -10,12 +11,15 @@ import {
 import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
+import { commodityPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 
 export default function CommodityDetailPage({
   commodityId,
   onBack,
   onOpenProfile,
+  guestMode = false,
 }) {
   const [commodity, setCommodity] = useState(() => {
     const cached = findCachedMarketItem('commodity', commodityId);
@@ -95,6 +99,16 @@ export default function CommodityDetailPage({
     onRefresh: refreshCommodity,
     deps: [commodityId, loading],
   });
+
+  useSeoMeta(
+    guestMode
+      ? {
+          title: `${commodity?.name || commodityId} commodity`,
+          description: `Spot price and market info for ${commodity?.name || commodityId} on PocketEdge.`,
+          path: commodityPath(commodityId),
+        }
+      : null
+  );
 
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : []
@@ -179,11 +193,15 @@ export default function CommodityDetailPage({
       )}
 
       {tab === 'discussions' && (
-        <DiscussionsList
-          posts={discussions}
-          onOpenProfile={onOpenProfile}
-          emptyMessage={`No posts yet - posts mentioning ${commodity.name} will show up here.`}
-        />
+        guestMode ? (
+          <GuestSignInCta action="join commodity discussions" />
+        ) : (
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage={`No posts yet - posts mentioning ${commodity.name} will show up here.`}
+          />
+        )
       )}
 
       {tab === 'holders' && (

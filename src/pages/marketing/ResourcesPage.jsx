@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { BarChart3, Coins, LineChart } from 'lucide-react';
 import MarketingShell from '../../components/MarketingShell';
 import { resourcesPath } from '../../lib/routes';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 
 const TOOLS = [
   {
@@ -28,6 +29,12 @@ const TOOLS = [
 ];
 
 export default function ResourcesPage() {
+  useSeoMeta({
+    title: 'Market tools',
+    description:
+      'ETF iNAV tracker, SGB tracker, and mutual fund screener — lightweight investing research tools on PocketEdge.',
+    path: '/resources',
+  });
   return (
     <MarketingShell wide>
       <div className="mb-8">

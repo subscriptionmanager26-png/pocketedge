@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import MarketingShell from '../../components/MarketingShell';
 import { disclosuresPath } from '../../lib/routes';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 
 const DOCS = [
   {
@@ -128,6 +129,17 @@ function LegalDoc({ section }) {
 }
 
 export default function DisclosuresPage({ section = null }) {
+  const sectionPath = section ? `/disclosures/${section}` : '/disclosures';
+  useSeoMeta({
+    title: section === 'privacy'
+      ? 'Privacy policy'
+      : section === 'terms' || section === 'terms-of-service'
+        ? 'Terms'
+        : 'Legal & policies',
+    description:
+      'Privacy, terms, and how PocketEdge operates as an information platform — not as a broker or advisor.',
+    path: sectionPath,
+  });
   return (
     <MarketingShell>
       {section ? (

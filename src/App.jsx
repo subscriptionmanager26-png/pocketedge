@@ -49,7 +49,7 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, isPublicMarketsPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
   navigateToProfile,
@@ -70,6 +70,7 @@ const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const PublicMarketsRoute = lazy(() => import('./pages/PublicMarketsRoute'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
 const BusinessModelPage = lazy(() => import('./pages/marketing/BusinessModelPage'));
 const CompanyBriefPage = lazy(() => import('./pages/marketing/CompanyBriefPage'));
@@ -832,6 +833,26 @@ export default function App() {
   }, [tab]);
 
   if (authView === 'bootstrapping') {
+    const bootPath = parseAppPath(location.pathname);
+    // Public marketing + markets can paint without waiting on /api/boot for guests.
+    if (bootPath.kind === 'marketing') {
+      return (
+        <RouteSuspense>
+          <MarketingRoute
+            page={bootPath.page}
+            section={bootPath.section}
+            symbol={bootPath.symbol}
+          />
+        </RouteSuspense>
+      );
+    }
+    if (!authUser && isPublicMarketsPath(bootPath)) {
+      return (
+        <RouteSuspense>
+          <PublicMarketsRoute />
+        </RouteSuspense>
+      );
+    }
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-pe-canvas px-6">
         <div className="h-9 w-9 rounded-[10px] bg-pe-accent" aria-hidden="true" />
@@ -852,6 +873,14 @@ export default function App() {
           section={parsedPath.section}
           symbol={parsedPath.symbol}
         />
+      </RouteSuspense>
+    );
+  }
+
+  if (authView !== 'app' && authView !== 'onboarding' && isPublicMarketsPath(parsedPath)) {
+    return (
+      <RouteSuspense>
+        <PublicMarketsRoute />
       </RouteSuspense>
     );
   }

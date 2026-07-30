@@ -143,7 +143,9 @@ export function isSocialBot(userAgent) {
     ua.includes('whatsapp') ||
     ua.includes('telegrambot') ||
     ua.includes('discordbot') ||
-    ua.includes('googlebot')
+    ua.includes('googlebot') ||
+    ua.includes('bingbot') ||
+    ua.includes('applebot')
   );
 }
 

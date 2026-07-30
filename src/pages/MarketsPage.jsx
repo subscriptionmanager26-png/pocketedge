@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import AssetLogo from '../components/AssetLogo';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { useMarketTabData } from '../hooks/useMarketTabData';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
 import { markTabPaint } from '../lib/perfMarks';
 import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import {
+  commodityPath,
+  etfPath,
+  fundPath,
+  indexPath,
+  stockPath,
+  tabPath,
+} from '../lib/routes';
 import { formatTicker } from '../lib/tickers';
 
 const MARKET_TABS = [
@@ -44,10 +54,22 @@ export default function MarketsPage({
   onSelectFund,
   onSelectIndex,
   onSelectCommodity,
+  guestMode = false,
 }) {
   const [query, setQuery] = useState('');
   const tab = sectionTab;
   const { items, loading, error } = useMarketTabData(tab, query);
+
+  useSeoMeta(
+    guestMode
+      ? {
+          title: 'Markets',
+          description:
+            'Search Indian stocks, mutual funds, ETFs, indices, and commodities on PocketEdge.',
+          path: tabPath('markets'),
+        }
+      : null
+  );
 
   useEffect(() => {
     markTabPaint('markets');
@@ -80,6 +102,15 @@ export default function MarketsPage({
       </PageHeader>
 
       <div className="px-4 py-6">
+        {guestMode ? (
+          <div className="mb-5">
+            <h1 className="text-xl font-bold tracking-tight text-pe-text">Markets</h1>
+            <p className="mt-1 text-sm text-pe-text-secondary">
+              Search Indian stocks, mutual funds, ETFs, indices, and commodities.
+            </p>
+          </div>
+        ) : null}
+
         {searchHint ? (
           <p className="mb-4 text-xs text-pe-text-muted">{searchHint}</p>
         ) : null}
@@ -95,6 +126,7 @@ export default function MarketsPage({
             {items.map((stock, index) => (
               <MarketRow
                 key={stock.id ?? stock.symbol}
+                to={stockPath(stock.id ?? stock.symbol)}
                 title={formatTicker(stock.symbol)}
                 subtitle={stock.name}
                 logoIconUrl={stock.logoIconUrl}
@@ -105,7 +137,11 @@ export default function MarketsPage({
                 changePct={stock.changePct}
                 previousClose={stock.previousClose}
                 change={stock.change}
-                onClick={() => onSelectStock?.(stock.id ?? stock.symbol, { seed: stock })}
+                onClick={
+                  onSelectStock
+                    ? () => onSelectStock?.(stock.id ?? stock.symbol, { seed: stock })
+                    : undefined
+                }
               />
             ))}
           </MarketList>
@@ -116,6 +152,7 @@ export default function MarketsPage({
             {items.map((fund, index) => (
               <MarketRow
                 key={fund.schemeCode}
+                to={fundPath(fund.schemeCode)}
                 title={fund.name}
                 subtitle={[fund.category, fund.subCategory].filter(Boolean).join(' · ') || fund.amc}
                 logoIconUrl={fund.logoIconUrl}
@@ -126,7 +163,7 @@ export default function MarketsPage({
                 changePct={fund.changePct}
                 previousClose={fund.previousClose}
                 change={fund.change}
-                onClick={() => onSelectFund?.(fund.schemeCode, fund)}
+                onClick={onSelectFund ? () => onSelectFund?.(fund.schemeCode, fund) : undefined}
               />
             ))}
           </MarketList>
@@ -137,6 +174,7 @@ export default function MarketsPage({
             {items.map((etf) => (
               <MarketRow
                 key={etf.id ?? etf.symbol}
+                to={etfPath(etf.id ?? etf.symbol)}
                 title={formatTicker(etf.symbol)}
                 subtitle={etf.name}
                 logoIconUrl={etf.logoIconUrl}
@@ -146,7 +184,11 @@ export default function MarketsPage({
                 changePct={etf.changePct}
                 previousClose={etf.previousClose}
                 change={etf.change}
-                onClick={() => onSelectStock?.(etf.id ?? etf.symbol, { kind: 'etf', seed: etf })}
+                onClick={
+                  onSelectStock
+                    ? () => onSelectStock?.(etf.id ?? etf.symbol, { kind: 'etf', seed: etf })
+                    : undefined
+                }
               />
             ))}
           </MarketList>
@@ -157,6 +199,7 @@ export default function MarketsPage({
             {items.map((index) => (
               <MarketRow
                 key={index.id}
+                to={indexPath(index.id)}
                 title={index.name}
                 subtitle={formatIndexGroup(index.group)}
                 logoIconUrl={index.logoIconUrl}
@@ -168,7 +211,7 @@ export default function MarketsPage({
                 changePct={index.changePct}
                 previousClose={index.previousClose}
                 change={index.change}
-                onClick={() => onSelectIndex?.(index.id, index)}
+                onClick={onSelectIndex ? () => onSelectIndex?.(index.id, index) : undefined}
               />
             ))}
           </MarketList>
@@ -179,6 +222,7 @@ export default function MarketsPage({
             {items.map((item) => (
               <MarketRow
                 key={item.id}
+                to={commodityPath(item.id)}
                 title={item.name}
                 subtitle={[item.unit, item.location].filter(Boolean).join(' · ')}
                 logoIconUrl={item.logoIconUrl}
@@ -188,7 +232,9 @@ export default function MarketsPage({
                 changePct={item.changePct}
                 previousClose={item.previousClose}
                 change={item.change}
-                onClick={() => onSelectCommodity?.(item.id, item)}
+                onClick={
+                  onSelectCommodity ? () => onSelectCommodity?.(item.id, item) : undefined
+                }
               />
             ))}
           </MarketList>
@@ -209,6 +255,7 @@ function MarketList({ children, empty, emptyMessage }) {
 }
 
 function MarketRow({
+  to,
   title,
   subtitle,
   logoIconUrl,
@@ -223,7 +270,6 @@ function MarketRow({
   formatAsCurrency = true,
   onClick,
 }) {
-  const Tag = onClick ? 'button' : 'div';
   const amount = dayChangeAmount({ price, changePct, previousClose, change });
   const hasPct = changePct != null && Number.isFinite(Number(changePct));
   const tone = amount != null ? amount : hasPct ? changePct : 0;
@@ -235,14 +281,9 @@ function MarketRow({
     return formatPrice(n);
   };
 
-  return (
-    <Tag
-      type={onClick ? 'button' : undefined}
-      onClick={onClick}
-      className={`flex w-full items-center justify-between gap-3 py-3.5 text-left ${
-        onClick ? 'transition hover:bg-pe-surface' : ''
-      }`}
-    >
+  const className = 'flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface';
+  const body = (
+    <>
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <AssetLogo
           logoIconUrl={logoIconUrl}
@@ -268,6 +309,33 @@ function MarketRow({
           </p>
         ) : null}
       </div>
-    </Tag>
+    </>
   );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        onClick={(event) => {
+          if (onClick) {
+            event.preventDefault();
+            onClick();
+          }
+        }}
+        className={className}
+      >
+        {body}
+      </Link>
+    );
+  }
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {body}
+      </button>
+    );
+  }
+
+  return <div className={className}>{body}</div>;
 }

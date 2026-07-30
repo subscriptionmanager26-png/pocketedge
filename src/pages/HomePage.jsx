@@ -5,6 +5,7 @@ import AuthLayoutHeader from '../components/AuthLayoutHeader';
 import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
 import { tabPath } from '../lib/routes';
 import { signInWithGoogle } from '../lib/supabase';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 import { useLandingViewport } from './useLandingViewport';
 
 const ASSETS = '/landing/assets';
@@ -179,6 +180,12 @@ function CtaBlock({ compact = false, loading, error, onGetStarted, isAuthenticat
 }
 
 export default function HomePage() {
+  useSeoMeta({
+    title: 'PocketEdge — See what real investors own and say',
+    description:
+      'Browse Indian stocks, mutual funds, and ETFs. Read company business models and portfolio insights before you invest.',
+    path: '/',
+  });
   const landingRef = useRef(null);
   const isAuthenticated = useIsAuthenticated();
   const [drawerOpen, setDrawerOpen] = useState(false);

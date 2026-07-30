@@ -20,6 +20,7 @@ import {
   shouldPollEtfInav,
 } from '../../lib/etfInav/liveQuotes';
 import { etfPath, resourcesPath } from '../../lib/routes';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 import '../../components/mfScreener/mfScreener.css';
 
 const ALL_ID = 'all';
@@ -44,6 +45,11 @@ function SortHeader({ label, active, dir, onClick, align = 'left' }) {
 }
 
 export default function EtfInavPage() {
+  useSeoMeta({
+    title: 'ETF iNAV tracker',
+    description: 'Live LTP and NAV for NSE ETFs, with premium or discount versus NAV.',
+    path: '/resources/etf-inav',
+  });
   const [snapshot, setSnapshot] = useState(null);
   const [items, setItems] = useState([]);
   const [error, setError] = useState(null);

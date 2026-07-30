@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /settings
+Disallow: /activity
+Disallow: /portfolio
+Disallow: /feed
 
 Sitemap: https://www.pocketedge.in/sitemap.xml

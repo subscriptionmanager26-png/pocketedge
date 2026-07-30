@@ -14,6 +14,7 @@ import {
   sgbPremiumPct,
 } from '../../lib/sgb/format';
 import { resourcesPath } from '../../lib/routes';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 import '../../components/mfScreener/mfScreener.css';
 
 const ALL_YEARS = 'all';
@@ -50,6 +51,12 @@ function buildRows(bondItems, goldPerGram, universeBySymbol) {
 }
 
 export default function SgbTrackerPage() {
+  useSeoMeta({
+    title: 'SGB tracker',
+    description:
+      'Live Sovereign Gold Bond series prices, coupons, and maturity years on PocketEdge.',
+    path: '/resources/sgb',
+  });
   const [universe, setUniverse] = useState(null);
   const [items, setItems] = useState([]);
   const [goldSpot, setGoldSpot] = useState(null);

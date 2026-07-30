@@ -221,6 +221,21 @@ export function parseAppPath(pathname) {
   return { kind: 'tab', tab: KNOWN_TABS.has(tab) ? tab : 'feed' };
 }
 
+/** Markets hub, search, and asset detail URLs that can render without auth. */
+export function isPublicMarketsPath(parsed) {
+  if (!parsed) return false;
+  if (parsed.kind === 'tab' && (parsed.tab === 'markets' || parsed.tab === 'search')) {
+    return true;
+  }
+  return (
+    parsed.kind === 'stock' ||
+    parsed.kind === 'etf' ||
+    parsed.kind === 'fund' ||
+    parsed.kind === 'index' ||
+    parsed.kind === 'commodity'
+  );
+}
+
 export function pathFromAppState({
   tab,
   profileUserId,

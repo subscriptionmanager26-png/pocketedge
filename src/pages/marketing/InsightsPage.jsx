@@ -16,6 +16,7 @@ import {
   fetchIndustryExplanationFeed,
   isStockNewsConfigured,
 } from '../../lib/stockNewsApi';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 
 const SCOPE_TABS = [
   { id: 'stock', label: 'Stocks' },
@@ -490,6 +491,12 @@ function InsightCard({ row, scope }) {
 }
 
 export default function InsightsPage() {
+  useSeoMeta({
+    title: 'Market Insights',
+    description:
+      'AI-assisted daily stock insights — see what moved and why, with plain-language summaries for Indian equities.',
+    path: '/insights',
+  });
   const configured = isStockNewsConfigured();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const dateOptions = useMemo(() => buildDateOptions(), []);

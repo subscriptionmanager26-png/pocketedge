@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
+import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import {
@@ -11,12 +12,15 @@ import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { getIndexDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
+import { indexPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 
 export default function IndexDetailPage({
   indexId,
   onBack,
   onOpenProfile,
+  guestMode = false,
 }) {
   const [index, setIndex] = useState(() => {
     const cached = findCachedMarketItem('indices', indexId);
@@ -95,6 +99,16 @@ export default function IndexDetailPage({
 
   const displayIndex = index;
 
+  useSeoMeta(
+    guestMode
+      ? {
+          title: `${displayIndex?.name || indexId} index`,
+          description: `Track ${displayIndex?.name || indexId} index levels and community discussion on PocketEdge.`,
+          path: indexPath(indexId),
+        }
+      : null
+  );
+
   const [discussions, setDiscussions] = useState(() =>
     isDevMockMode() ? getIndexDiscussions(indexId, displayIndex?.name) : []
   );
@@ -171,11 +185,15 @@ export default function IndexDetailPage({
       )}
 
       {tab === 'discussions' && (
-        <DiscussionsList
-          posts={discussions}
-          onOpenProfile={onOpenProfile}
-          emptyMessage={`No posts yet - posts mentioning ${displayIndex.name} will show up here.`}
-        />
+        guestMode ? (
+          <GuestSignInCta action="join index discussions" />
+        ) : (
+          <DiscussionsList
+            posts={discussions}
+            onOpenProfile={onOpenProfile}
+            emptyMessage={`No posts yet - posts mentioning ${displayIndex.name} will show up here.`}
+          />
+        )
       )}
 
       {tab === 'holders' && (

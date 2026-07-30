@@ -18,6 +18,7 @@ import {
 } from '../../lib/mfScreener/format';
 import { getFundReturn, listFundReturns, parseUpvalyMetric } from '../../lib/mfScreener/metrics';
 import { simplifySchemeName } from '../../lib/mfScreener/schemeNames';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 import {
   isSectoralSubCategory,
   resolveSectorTheme,
@@ -186,6 +187,12 @@ function FundDetail({ row, scheme, snapshotLoading, onBack }) {
 }
 
 export default function MfScreenerPage() {
+  useSeoMeta({
+    title: 'Mutual fund screener',
+    description:
+      'Screen equity Direct Growth mutual funds by category, returns, risk, and fundamentals.',
+    path: '/resources/mf-screener',
+  });
   const [allRows, setAllRows] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const [csvLoading, setCsvLoading] = useState(true);

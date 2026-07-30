@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { TrendingUp, Users } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
@@ -16,7 +17,9 @@ import AssetLogo from '../components/AssetLogo';
 import { QuoteChangeBlock } from '../components/AssetProductHeader';
 import { MARKET_MIN_SEARCH_CHARS, searchMarketTab } from '../lib/marketDataApi';
 import { preloadAssetLogos } from '../lib/assetLogo';
+import { etfPath, fundPath, indexPath, stockPath, tabPath } from '../lib/routes';
 import { formatTicker } from '../lib/tickers';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 
 const RESULT_TABS = [
   { id: 'people', label: 'People' },
@@ -42,14 +45,25 @@ export default function SearchPage({
   onSelectFund,
   onSelectIndex,
   onGraphChange,
+  guestMode = false,
 }) {
   const [query, setQuery] = useState('');
-  const [resultTab, setResultTab] = useState('people');
+  const [resultTab, setResultTab] = useState(guestMode ? 'stocks' : 'people');
   const [graphTick, setGraphTick] = useState(0);
   const [marketResults, setMarketResults] = useState({});
   const [marketSearching, setMarketSearching] = useState(false);
   const [peopleResults, setPeopleResults] = useState([]);
   const [peopleSearching, setPeopleSearching] = useState(false);
+
+  useSeoMeta(
+    guestMode
+      ? {
+          title: 'Search markets',
+          description: 'Search Indian stocks, mutual funds, ETFs, and indices on PocketEdge.',
+          path: tabPath('search'),
+        }
+      : null
+  );
 
   const debouncedQuery = useDebouncedValue(query.trim());
   const isMarketSearch = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
@@ -130,20 +144,36 @@ export default function SearchPage({
   const activeMarketResults = marketResults[resultTab] ?? [];
   const displayedMarketResults = activeMarketResults;
 
+  const searchTabs = guestMode
+    ? RESULT_TABS.filter((t) => ['stocks', 'mutual_funds', 'etf', 'indices'].includes(t.id))
+    : RESULT_TABS;
+
   return (
     <div>
       <PageHeader>
         <PageHeaderSearch
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search people, topics, stocks, funds…"
+          placeholder={
+            guestMode
+              ? 'Search stocks, funds, ETFs…'
+              : 'Search people, topics, stocks, funds…'
+          }
           autoFocus
         />
       </PageHeader>
 
       {!q ? (
         <div className="space-y-8 px-4 py-6">
-          {isDevMockMode() ? (
+          {guestMode ? (
+            <section className="py-4 text-center">
+              <h1 className="text-xl font-bold tracking-tight text-pe-text">Search markets</h1>
+              <p className="mt-2 text-sm text-pe-text-secondary">
+                Type at least {MARKET_MIN_SEARCH_CHARS} characters to find stocks, mutual funds,
+                ETFs, or indices.
+              </p>
+            </section>
+          ) : isDevMockMode() ? (
             <>
               <section>
                 <SectionLabel icon={TrendingUp}>Trending topics</SectionLabel>
@@ -201,7 +231,7 @@ export default function SearchPage({
       ) : (
         <div>
           <div className="flex overflow-x-auto border-b border-pe-border">
-            {RESULT_TABS.map((t) => (
+            {searchTabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
@@ -302,20 +332,14 @@ function marketSearchAssetMeta(tab, item) {
 
 function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex }) {
   const { assetType, assetKey } = marketSearchAssetMeta(tab, item);
+  const className =
+    'flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50';
 
   if (tab === 'stocks' || tab === 'etf') {
     const price = item.price ?? item.ltp;
-    return (
-      <button
-        type="button"
-        onClick={() =>
-          onSelectStock?.(item.id ?? item.symbol, {
-            kind: tab === 'etf' ? 'etf' : 'stock',
-            seed: item,
-          })
-        }
-        className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
-      >
+    const to = tab === 'etf' ? etfPath(item.id ?? item.symbol) : stockPath(item.id ?? item.symbol);
+    const body = (
+      <>
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <AssetLogo
             logoIconUrl={item.logoIconUrl}
@@ -336,17 +360,29 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
           previousClose={item.previousClose}
           change={item.change}
         />
-      </button>
+      </>
+    );
+    return (
+      <Link
+        to={to}
+        onClick={(event) => {
+          if (!onSelectStock) return;
+          event.preventDefault();
+          onSelectStock?.(item.id ?? item.symbol, {
+            kind: tab === 'etf' ? 'etf' : 'stock',
+            seed: item,
+          });
+        }}
+        className={className}
+      >
+        {body}
+      </Link>
     );
   }
 
   if (tab === 'mutual_funds') {
-    return (
-      <button
-        type="button"
-        onClick={() => onSelectFund?.(item.schemeCode, item)}
-        className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
-      >
+    const body = (
+      <>
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <AssetLogo
             logoIconUrl={item.logoIconUrl}
@@ -369,15 +405,32 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
           previousClose={item.previousClose}
           change={item.change}
         />
-      </button>
+      </>
+    );
+    return (
+      <Link
+        to={fundPath(item.schemeCode)}
+        onClick={(event) => {
+          if (!onSelectFund) return;
+          event.preventDefault();
+          onSelectFund?.(item.schemeCode, item);
+        }}
+        className={className}
+      >
+        {body}
+      </Link>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelectIndex?.(item.id, item)}
-      className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition hover:bg-pe-surface/50"
+    <Link
+      to={indexPath(item.id)}
+      onClick={(event) => {
+        if (!onSelectIndex) return;
+        event.preventDefault();
+        onSelectIndex?.(item.id, item);
+      }}
+      className={className}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <AssetLogo
@@ -405,7 +458,7 @@ function MarketSearchRow({ tab, item, onSelectStock, onSelectFund, onSelectIndex
         previousClose={item.previousClose}
         change={item.change}
       />
-    </button>
+    </Link>
   );
 }
 

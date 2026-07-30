@@ -11,6 +11,7 @@ import {
 
 export const MARKETING_NAV_ITEMS = [
   { label: 'Insights', href: insightsPath() },
+  { label: 'Markets', href: tabPath('markets') },
   { label: 'Business Model', href: businessModelPath() },
   { label: 'Disclosures', href: disclosuresPath() },
   { label: 'Resources', href: resourcesPath() },
@@ -19,6 +20,17 @@ export const MARKETING_NAV_ITEMS = [
 function navItemActive(pathname, href) {
   if (href === '/disclosures') return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
   if (href === '/resources') return pathname === '/resources' || pathname.startsWith('/resources/');
+  if (href === '/markets') {
+    return (
+      pathname === '/markets' ||
+      pathname === '/search' ||
+      pathname.startsWith('/stock/') ||
+      pathname.startsWith('/etf/') ||
+      pathname.startsWith('/fund/') ||
+      pathname.startsWith('/index/') ||
+      pathname.startsWith('/commodity/')
+    );
+  }
   if (href === '/business-model') {
     return (
       pathname === '/business-model' ||

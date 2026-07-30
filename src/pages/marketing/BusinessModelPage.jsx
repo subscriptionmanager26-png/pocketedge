@@ -9,11 +9,18 @@ import {
 } from '../../data/companyBriefs';
 import { businessModelBriefPath, stockPath } from '../../lib/routes';
 import { resolveAssetLogoUrl, LOGO_VARIANT_LIST } from '../../lib/assetLogo';
+import { useSeoMeta } from '../../hooks/useSeoMeta';
 
 /**
  * Business Model hub — Screener-backed company briefs + search.
  */
 export default function BusinessModelPage() {
+  useSeoMeta({
+    title: 'Business Model',
+    description:
+      'Plain-language company briefs for listed Indian stocks — industry, products, and how the business works.',
+    path: '/business-model',
+  });
   const [query, setQuery] = useState('');
   const [indexItems, setIndexItems] = useState([]);
   const [indexCount, setIndexCount] = useState(0);
