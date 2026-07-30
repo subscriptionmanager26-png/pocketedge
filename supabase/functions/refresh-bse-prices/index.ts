@@ -10,7 +10,9 @@ const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const LOCK_NAME = 'refresh-bse-prices';
 const BATCH_SIZE = 500;
-const REQUEST_DELAY_MS = 150;
+const PAGE_CONCURRENCY = 24;
+const PAGE_TIMEOUT_MS = 8_000;
+const FETCH_DEADLINE_MS = 50_000;
 const ISIN_PATTERN = /^[A-Z0-9]{12}$/;
 
 type UniverseRow = { symbol: string; isin: string };
@@ -59,29 +61,36 @@ function isCashSession(now = new Date()): boolean {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function parseUniverseCsv(text: string): UniverseRow[] {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const header = lines[0].split(',').map((c) => c.trim());
-  const symbolIndex = header.indexOf('BSE SYMBOL');
-  const isinIndex = header.indexOf('ISIN No');
-  if (symbolIndex < 0 || isinIndex < 0) {
-    throw new Error('BSE universe must include BSE SYMBOL and ISIN No columns');
-  }
-  const seenSymbols = new Set<string>();
-  const seenIsins = new Set<string>();
+function extractRows(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+  const obj = payload as Record<string, unknown>;
+  const rows = obj.Table ?? obj.Table1 ?? obj.data ?? [];
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function loadBseUniverse(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+): Promise<UniverseRow[]> {
   const rows: UniverseRow[] = [];
-  for (const line of lines.slice(1)) {
-    const cols = line.split(',');
-    const symbol = String(cols[symbolIndex] ?? '').trim().toUpperCase();
-    const isin = String(cols[isinIndex] ?? '').trim().toUpperCase();
-    if (!symbol || !ISIN_PATTERN.test(isin) || seenSymbols.has(symbol) || seenIsins.has(isin)) {
-      continue;
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await client
+      .from('social_market_bse_universe')
+      .select('symbol,isin')
+      .order('symbol')
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(`bse universe load: ${error.message}`);
+    const batch = Array.isArray(data) ? data : [];
+    for (const row of batch) {
+      const symbol = String(row?.symbol ?? '').trim().toUpperCase();
+      const isin = String(row?.isin ?? '').trim().toUpperCase();
+      if (symbol && ISIN_PATTERN.test(isin)) rows.push({ symbol, isin });
     }
-    seenSymbols.add(symbol);
-    seenIsins.add(isin);
-    rows.push({ symbol, isin });
+    if (batch.length < pageSize) break;
   }
+  if (!rows.length) throw new Error('BSE universe table is empty');
   return rows;
 }
 
@@ -92,7 +101,7 @@ function mapBseRow(row: Record<string, unknown>): BseQuote | null {
   const ltp = numberOrNull(row.Price);
   const previousClose = numberOrNull(row.PreCloseRate);
   const reportedChangePct = numberOrNull(
-    row.PerChange ?? row.PChange ?? row.ChangePercent ?? row.PercentageChange,
+    row.PercentChange ?? row.PerChange ?? row.PChange ?? row.ChangePercent ?? row.PercentageChange,
   );
   const changePct =
     reportedChangePct ??
@@ -118,7 +127,7 @@ function bseHeaders(): Record<string, string> {
   };
 }
 
-async function fetchBsePage(page: number, retries = 4): Promise<unknown> {
+async function fetchBsePage(page: number, retries = 2): Promise<unknown> {
   const params = new URLSearchParams({
     flag: 'Equity',
     ddlVal1: 'All',
@@ -131,32 +140,31 @@ async function fetchBsePage(page: number, retries = 4): Promise<unknown> {
   let failure: unknown;
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
-      const response = await fetch(`${BSE_EQUITY_URL}?${params}`, { headers: bseHeaders() });
+      const response = await fetch(`${BSE_EQUITY_URL}?${params}`, {
+        headers: bseHeaders(),
+        signal: AbortSignal.timeout(PAGE_TIMEOUT_MS),
+      });
       if (!response.ok) throw new Error(`BSE page ${page} failed: ${response.status}`);
       return await response.json();
     } catch (error) {
       failure = error;
-      if (attempt + 1 < retries) await delay(500 * 2 ** attempt);
+      if (attempt + 1 < retries) await delay(200 * (attempt + 1));
     }
   }
   throw failure instanceof Error ? failure : new Error(String(failure));
 }
 
-async function fetchBseEquityQuotes(): Promise<BseQuote[]> {
-  const firstPayload = (await fetchBsePage(1)) as Record<string, unknown> | unknown[];
-  const firstRows = Array.isArray(firstPayload)
-    ? firstPayload
-    : ((firstPayload as Record<string, unknown>).Table ??
-        (firstPayload as Record<string, unknown>).Table1 ??
-        (firstPayload as Record<string, unknown>).data ??
-        []) as unknown[];
-  if (!Array.isArray(firstRows) || firstRows.length === 0) {
+async function fetchBseEquityQuotes(): Promise<{ quotes: BseQuote[]; pagesOk: number; pagesFailed: number; pageCount: number }> {
+  const started = Date.now();
+  const firstPayload = await fetchBsePage(1);
+  const firstRows = extractRows(firstPayload);
+  if (firstRows.length === 0) {
     throw new Error('BSE equity response did not include listing rows');
   }
   const total = numberOrNull(
-    (firstPayload as Record<string, unknown>).Rcount ??
-      (firstPayload as Record<string, unknown>).TotalRecords ??
-      (firstPayload as Record<string, unknown>).total ??
+    (firstPayload as Record<string, unknown>)?.Rcount ??
+      (firstPayload as Record<string, unknown>)?.TotalRecords ??
+      (firstPayload as Record<string, unknown>)?.total ??
       (firstRows[0] as Record<string, unknown>)?.Rcount,
   );
   const pageCount = total ? Math.ceil(total / firstRows.length) : 1;
@@ -165,22 +173,34 @@ async function fetchBseEquityQuotes(): Promise<BseQuote[]> {
     const quote = mapBseRow(row as Record<string, unknown>);
     if (quote) quotes.set(quote.scripCode, quote);
   }
-  for (let page = 2; page <= pageCount; page += 1) {
-    await delay(REQUEST_DELAY_MS);
-    const payload = (await fetchBsePage(page)) as Record<string, unknown> | unknown[];
-    const rows = Array.isArray(payload)
-      ? payload
-      : ((payload as Record<string, unknown>).Table ??
-          (payload as Record<string, unknown>).Table1 ??
-          (payload as Record<string, unknown>).data ??
-          []) as unknown[];
-    if (!Array.isArray(rows)) throw new Error(`BSE page ${page} did not include listing rows`);
-    for (const row of rows) {
-      const quote = mapBseRow(row as Record<string, unknown>);
-      if (quote) quotes.set(quote.scripCode, quote);
+
+  let pagesOk = 1;
+  let pagesFailed = 0;
+  const remaining = Array.from({ length: Math.max(0, pageCount - 1) }, (_, i) => i + 2);
+
+  for (let i = 0; i < remaining.length; i += PAGE_CONCURRENCY) {
+    if (Date.now() - started > FETCH_DEADLINE_MS) break;
+    const batch = remaining.slice(i, i + PAGE_CONCURRENCY);
+    const results = await Promise.allSettled(batch.map((page) => fetchBsePage(page)));
+    for (const result of results) {
+      if (result.status !== 'fulfilled') {
+        pagesFailed += 1;
+        continue;
+      }
+      const rows = extractRows(result.value);
+      if (!rows.length) {
+        pagesFailed += 1;
+        continue;
+      }
+      pagesOk += 1;
+      for (const row of rows) {
+        const quote = mapBseRow(row as Record<string, unknown>);
+        if (quote) quotes.set(quote.scripCode, quote);
+      }
     }
   }
-  return [...quotes.values()];
+
+  return { quotes: [...quotes.values()], pagesOk, pagesFailed, pageCount };
 }
 
 async function loadNseStockSymbols(
@@ -278,12 +298,12 @@ Deno.serve(async (req: Request) => {
   try {
     const syncedAt = new Date().toISOString();
     const asOfDate = dateInIst();
-    const universeText = await Deno.readTextFile(new URL('./universe.csv', import.meta.url));
-    const universe = parseUniverseCsv(universeText);
-    const [bseQuotes, nseSymbols] = await Promise.all([
+    const universe = await loadBseUniverse(client);
+    const [bseFetch, nseSymbols] = await Promise.all([
       fetchBseEquityQuotes(),
       loadNseStockSymbols(client),
     ]);
+    const bseQuotes = bseFetch.quotes;
 
     const universeBySymbol = new Map(universe.map((row) => [row.symbol, row]));
     const candidatesBySymbol = new Map<string, BseQuote[]>();
@@ -351,6 +371,9 @@ Deno.serve(async (req: Request) => {
         as_of_date: asOfDate,
         universe: universe.length,
         fetched: bseQuotes.length,
+        pages_ok: bseFetch.pagesOk,
+        pages_failed: bseFetch.pagesFailed,
+        page_count: bseFetch.pageCount,
         matched,
         missing,
         ambiguous,

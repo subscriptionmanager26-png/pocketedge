@@ -1,6 +1,7 @@
 import { setCached } from './queryCache';
 
-const MARKET_ASSET_TTL_MS = 30_000;
+/** Keep ≤ poll interval so 15s ticks are not served from a 30s stale cache. */
+const MARKET_ASSET_TTL_MS = 15_000;
 
 /** Seed detail resolve from a list/search item so navigation paints without RPC. */
 export function seedMarketAssetCache(item, keyHint = null) {

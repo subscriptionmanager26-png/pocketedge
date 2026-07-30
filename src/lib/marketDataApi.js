@@ -8,7 +8,8 @@ export { seedMarketAssetCache } from './marketAssetSeed';
 
 const BASE = '/data/markets';
 const MARKET_SEARCH_TTL_MS = 30_000;
-const MARKET_ASSET_TTL_MS = 30_000;
+/** Align with 15s equity poll so refresh ticks are not served from a longer stale cache. */
+const MARKET_ASSET_TTL_MS = 15_000;
 
 export const MARKET_PREVIEW_LIMIT = 40;
 export const MARKET_SEARCH_LIMIT = 50;
@@ -396,7 +397,8 @@ export async function fetchMarketPreview(tab, { force = false } = {}) {
   const file = TAB_PREVIEW[tab] ?? TAB_FULL[tab];
   if (!file) throw new Error(`Unknown market tab: ${tab}`);
   const payload = await fetchJson(file);
-  const items = await enrichMarketItemsWithLogos(payload.items ?? [], assetType);
+  // Do not block first paint / price resolve on logo RPC.
+  const items = payload.items ?? [];
   const result = {
     syncedAt: payload.syncedAt ?? null,
     items,
@@ -405,6 +407,10 @@ export async function fetchMarketPreview(tab, { force = false } = {}) {
     source: 'static',
   };
   writeMarketPreviewCache(tab, result);
+  void enrichMarketItemsWithLogos(items, assetType).then((withLogos) => {
+    if (withLogos === items) return;
+    writeMarketPreviewCache(tab, { ...result, items: withLogos });
+  });
   return result;
 }
 
@@ -488,28 +494,18 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
       try {
         const rpcResult = await searchMarketTabRpc(tab, q, limit);
         if (rpcResult) {
-          return {
-            ...rpcResult,
-            items: await enrichMarketItemsWithLogos(rpcResult.items ?? [], assetType),
-          };
+          // Return prices immediately; logos may already be on RPC rows.
+          return rpcResult;
         }
       } catch (err) {
         console.warn('search_social_market_assets failed', err);
       }
 
-      const local = await searchMarketTabLocal(tab, q, limit);
-      return {
-        ...local,
-        items: await enrichMarketItemsWithLogos(local.items ?? [], assetType),
-      };
+      return searchMarketTabLocal(tab, q, limit);
     });
   }
 
-  const local = await searchMarketTabLocal(tab, q, limit);
-  return {
-    ...local,
-    items: await enrichMarketItemsWithLogos(local.items ?? [], assetType),
-  };
+  return searchMarketTabLocal(tab, q, limit);
 }
 
 export async function searchAllMarkets(query, limitPerTab = 12) {
@@ -568,10 +564,12 @@ export function findCachedMarketItem(tab, id) {
   return null;
 }
 
-async function lookupMarketAssetRpc(key) {
+async function lookupMarketAssetRpc(key, { force = false } = {}) {
   if (!useMarketLogoLookup()) return null;
-  const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
-  if (hit !== undefined) return hit;
+  if (!force) {
+    const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
+    if (hit !== undefined) return hit;
+  }
 
   const { data, error } = await supabase.rpc('lookup_social_market_asset', {
     p_key: key,
@@ -583,21 +581,23 @@ async function lookupMarketAssetRpc(key) {
   return item;
 }
 
-export async function lookupMarketAssetsBatch(keys) {
+export async function lookupMarketAssetsBatch(keys, { force = false } = {}) {
   const unique = [...new Set(keys.map((key) => String(key ?? '').trim()).filter(Boolean))];
   if (!unique.length) return new Map();
 
   const map = new Map();
   const missing = [];
   for (const key of unique) {
-    const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
-    if (hit !== undefined) {
-      if (hit) {
-        map.set(key, hit);
-        const alias = hit.symbol ?? hit.schemeCode ?? hit.id;
-        if (alias) map.set(alias, hit);
+    if (!force) {
+      const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
+      if (hit !== undefined) {
+        if (hit) {
+          map.set(key, hit);
+          const alias = hit.symbol ?? hit.schemeCode ?? hit.id;
+          if (alias) map.set(alias, hit);
+        }
+        continue;
       }
-      continue;
     }
     missing.push(key);
   }
@@ -726,16 +726,18 @@ export async function listSgbMarketQuotes() {
   return { syncedAt: latest, gold, items };
 }
 
-export async function resolveMarketStock(symbol) {
-  const cached = findCachedMarketItem('stocks', symbol);
-  if (cached) return cached;
+export async function resolveMarketStock(symbol, { force = false } = {}) {
+  if (!force) {
+    const cached = findCachedMarketItem('stocks', symbol);
+    if (cached) return cached;
 
-  const etfCached = findCachedMarketItem('etf', symbol);
-  if (etfCached) return etfCached;
+    const etfCached = findCachedMarketItem('etf', symbol);
+    if (etfCached) return etfCached;
+  }
 
   if (useMarketRpc()) {
     try {
-      const found = await lookupMarketAssetRpc(symbol);
+      const found = await lookupMarketAssetRpc(symbol, { force });
       if (found && (found.assetType === 'stock' || found.assetType === 'etf')) {
         seedMarketAssetCache(found, symbol);
         return found;

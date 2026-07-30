@@ -13,7 +13,7 @@ import {
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve, holdingsNeedLogoResolve, enrichPortfolioHoldingsLogos } from '../lib/portfolioAssetUniverse';
 import { lookupMarketAssetsBatch } from '../lib/marketDataApi';
 import {
   PORTFOLIO_POLL_INTERVAL_MS,
@@ -170,17 +170,27 @@ export default function PortfolioPage({
       return undefined;
     }
 
-    // Paint immediately from server-enriched holdings, then refresh gaps (quotes and/or logos).
+    // Paint immediately from server-enriched holdings, then refresh price gaps.
+    // Logo fill is separate so missing logos never block live quote resolve.
     setAssetsByKey(assetsFromHoldings(activeList?.holdings));
-    if (!holdingsNeedClientResolve(activeList?.holdings)) return undefined;
+    const needPrices = holdingsNeedLiveResolve(activeList?.holdings);
+    const needLogos = holdingsNeedLogoResolve(activeList?.holdings);
+    if (!needPrices && !needLogos) return undefined;
 
-    resolvePortfolioAssets(holdingKeys).then((resolved) => {
-      if (cancelled) return;
-      setAssetsByKey((prev) => ({
-        ...prev,
-        ...Object.fromEntries(resolved.entries()),
-      }));
-    });
+    if (needPrices) {
+      resolvePortfolioAssets(holdingKeys).then((resolved) => {
+        if (cancelled) return;
+        setAssetsByKey((prev) => ({
+          ...prev,
+          ...Object.fromEntries(resolved.entries()),
+        }));
+      });
+    } else if (needLogos) {
+      enrichPortfolioHoldingsLogos(activeList?.holdings).then((holdings) => {
+        if (cancelled) return;
+        setAssetsByKey(assetsFromHoldings(holdings));
+      });
+    }
 
     return () => {
       cancelled = true;
@@ -189,7 +199,7 @@ export default function PortfolioPage({
 
   const refreshPortfolioAssets = useCallback(async () => {
     if (!holdingKeys.length) return;
-    const batch = await lookupMarketAssetsBatch(holdingKeys);
+    const batch = await lookupMarketAssetsBatch(holdingKeys, { force: true });
     if (!batch.size) return;
 
     setAssetsByKey((prev) => {

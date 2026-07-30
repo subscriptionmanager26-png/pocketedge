@@ -103,7 +103,7 @@ export default function StockInvestmentPage({
   }, [ticker]);
 
   const refreshStock = useCallback(async () => {
-    const resolved = await resolveMarketStock(ticker);
+    const resolved = await resolveMarketStock(ticker, { force: true });
     if (!resolved) return;
     if (resolved.assetType === 'etf') setIsEtf(true);
     else setIsEtf(false);

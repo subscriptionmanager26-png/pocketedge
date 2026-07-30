@@ -44,12 +44,12 @@ export function useMarketQuoteRefresh({
 
   const hasDataRef = useRef(false);
 
-  const runFetch = useCallback(async () => {
+  const runFetch = useCallback(async ({ force = false } = {}) => {
     if (fetchFn) return fetchFn();
 
     if (mode === 'preview') {
       if (!tab) throw new Error('tab required for preview mode');
-      return fetchMarketPreview(tab);
+      return fetchMarketPreview(tab, { force });
     }
 
     if (mode === 'search') {
@@ -59,13 +59,13 @@ export function useMarketQuoteRefresh({
 
     if (mode === 'lookup') {
       if (keys.length > 1) {
-        return lookupMarketAssetsBatch(keys);
+        return lookupMarketAssetsBatch(keys, { force });
       }
       const key = keys[0];
       if (!key) return null;
       const resolve = getResolveFn(assetType);
       if (!resolve) throw new Error(`No resolve function for asset type: ${assetType}`);
-      return resolve(key);
+      return resolve(key, { force });
     }
 
     return null;
@@ -112,7 +112,7 @@ export function useMarketQuoteRefresh({
       else if (!hasDataRef.current) setLoading(true);
 
       try {
-        const result = await runFetch();
+        const result = await runFetch({ force: isRefresh });
         applyResult(result, { isRefresh });
         if (!isRefresh) setError(null);
       } catch (err) {

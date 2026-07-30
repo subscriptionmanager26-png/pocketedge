@@ -45,6 +45,65 @@ function nseApiPlugin() {
           sendJson(res, 502, { error: error.message || 'Failed to fetch NSE ETF quotes' });
         }
       });
+
+      server.middlewares.use('/api/market-quotes', async (req, res) => {
+        if (req.method !== 'GET') {
+          sendJson(res, 405, { error: 'Method not allowed' });
+          return;
+        }
+        try {
+          const url = new URL(req.url, 'http://localhost');
+          const keys = String(url.searchParams.get('keys') ?? '')
+            .split(',')
+            .map((k) => k.trim())
+            .filter(Boolean)
+            .slice(0, 40);
+          if (!keys.length) {
+            sendJson(res, 400, { error: 'keys query required' });
+            return;
+          }
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+          const supabaseKey =
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.SUPABASE_ANON_KEY ||
+            process.env.VITE_SUPABASE_ANON_KEY;
+          if (!supabaseUrl || !supabaseKey) {
+            sendJson(res, 500, { error: 'Supabase not configured' });
+            return;
+          }
+          const client = createClient(supabaseUrl, supabaseKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data, error } = await client
+            .from('social_market_assets')
+            .select(
+              'asset_key,asset_type,name,price,change_pct,previous_close,as_of_date,synced_at,logo_icon_url'
+            )
+            .in('asset_key', keys);
+          if (error) throw error;
+          const byKey = new Map((data ?? []).map((row) => [String(row.asset_key ?? ''), row]));
+          const items = keys.map((requested) => {
+            const row = byKey.get(requested) ?? byKey.get(requested.toUpperCase()) ?? null;
+            if (!row) return { key: requested, assetKey: null, price: null };
+            return {
+              key: requested,
+              assetKey: row.asset_key ?? null,
+              assetType: row.asset_type ?? null,
+              name: row.name ?? null,
+              price: row.price != null ? Number(row.price) : null,
+              changePct: row.change_pct != null ? Number(row.change_pct) : null,
+              previousClose: row.previous_close != null ? Number(row.previous_close) : null,
+              asOfDate: row.as_of_date ?? null,
+              syncedAt: row.synced_at ?? null,
+              logoIconUrl: row.logo_icon_url ?? null,
+            };
+          });
+          sendJson(res, 200, { items }, 'public, s-maxage=10, stale-while-revalidate=30');
+        } catch (error) {
+          sendJson(res, 502, { error: error.message || 'Failed to fetch market quotes' });
+        }
+      });
     },
   };
 }
