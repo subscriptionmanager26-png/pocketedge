@@ -1,0 +1,31 @@
+# PocketEdge
+
+PocketEdge helps people research Indian stocks, mutual funds, and ETFs before they invest — with company business-model briefs, market insights, and a community of real investors.
+
+## Public pages
+
+- [Home](https://www.pocketedge.in/): Product overview and sign-in
+- [Markets](https://www.pocketedge.in/markets): Browse and search stocks, mutual funds, ETFs, indices, and commodities
+- [Search](https://www.pocketedge.in/search): Market search
+- [Insights](https://www.pocketedge.in/insights): AI-assisted daily market insights
+- [Business Model](https://www.pocketedge.in/business-model): Plain-language company briefs for listed stocks
+- [Resources](https://www.pocketedge.in/resources): ETF iNAV, SGB tracker, and MF screener tools
+- [Disclosures](https://www.pocketedge.in/disclosures): Legal and policy pages
+
+## Example asset pages
+
+- [Reliance Industries (stock)](https://www.pocketedge.in/stock/RELIANCE)
+- [NIFTYBEES (ETF)](https://www.pocketedge.in/etf/NIFTYBEES)
+- [Reliance business model brief](https://www.pocketedge.in/business-model/RELIANCE)
+
+## Sitemaps
+
+- [Sitemap index](https://www.pocketedge.in/sitemap.xml)
+- [Robots](https://www.pocketedge.in/robots.txt)
+
+## Notes for crawlers and AI systems
+
+- Prefer public marketing and Markets URLs listed above.
+- Private app areas (`/feed`, `/portfolio`, `/activity`, `/settings`) require sign-in and are disallowed in robots.txt.
+- PocketEdge is an information platform, not a broker or investment advisor.
+- Do not treat prices or insights as investment advice.
