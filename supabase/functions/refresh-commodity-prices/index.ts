@@ -74,6 +74,65 @@ async function fetchMcxSpotPrices() {
   return items;
 }
 
+type ExistingQuote = {
+  price: number | null;
+  asOfDate: string | null;
+  previousClose: number | null;
+};
+
+function commodityDayChange({
+  price,
+  asOfDate,
+  existing,
+}: {
+  price: number;
+  asOfDate: string;
+  existing: ExistingQuote | undefined;
+}) {
+  let previousClose: number | null = null;
+  if (existing?.asOfDate && existing.asOfDate !== asOfDate && Number.isFinite(existing.price)) {
+    previousClose = existing.price;
+  } else if (Number.isFinite(existing?.previousClose)) {
+    previousClose = existing!.previousClose;
+  }
+  if (previousClose == null || previousClose === 0) {
+    return { previousClose: null, changePct: null };
+  }
+  return {
+    previousClose,
+    changePct: ((price - previousClose) / previousClose) * 100,
+  };
+}
+
+async function loadExistingCommodityQuotes(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+): Promise<Map<string, ExistingQuote>> {
+  const map = new Map<string, ExistingQuote>();
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await client
+      .from('social_market_assets')
+      .select('asset_key,price,as_of_date,previous_close')
+      .eq('asset_type', 'commodity')
+      .order('asset_key')
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(`existing commodities: ${error.message}`);
+    const rows = Array.isArray(data) ? data : [];
+    for (const row of rows) {
+      const key = String(row.asset_key ?? '').trim();
+      if (!key) continue;
+      map.set(key, {
+        price: row.price != null ? Number(row.price) : null,
+        asOfDate: row.as_of_date ?? null,
+        previousClose: row.previous_close != null ? Number(row.previous_close) : null,
+      });
+    }
+    if (rows.length < pageSize) break;
+  }
+  return map;
+}
+
 async function rpcBatch(
   // deno-lint-ignore no-explicit-any
   client: any,
@@ -146,7 +205,10 @@ Deno.serve(async (req: Request) => {
   try {
     const syncedAt = new Date().toISOString();
     const fallbackDate = dateInIst();
-    const items = await fetchMcxSpotPrices();
+    const [items, existingByKey] = await Promise.all([
+      fetchMcxSpotPrices(),
+      loadExistingCommodityQuotes(client),
+    ]);
     const assetByKey = new Map<string, Record<string, unknown>>();
     const historyByKey = new Map<string, Record<string, unknown>>();
 
@@ -156,11 +218,19 @@ Deno.serve(async (req: Request) => {
       if (!symbol || item.spotPrice == null || !Number.isFinite(item.spotPrice)) continue;
       const assetKey = `${symbol}-${location}`.toUpperCase();
       const rowAsOf = parseMcxDate(item.date, fallbackDate);
-      const change = Number.isFinite(item.change) ? item.change : null;
-      const previousClose =
-        change != null && Number.isFinite(item.spotPrice) ? item.spotPrice - change : null;
-      const changePct =
-        previousClose != null && previousClose !== 0 ? (change! / previousClose) * 100 : null;
+      // Prefer day-over-day vs prior session close; MCX tick `change` is often ~₹0.4.
+      let { previousClose, changePct } = commodityDayChange({
+        price: item.spotPrice,
+        asOfDate: rowAsOf,
+        existing: existingByKey.get(assetKey),
+      });
+      if (previousClose == null) {
+        const change = Number.isFinite(item.change) ? item.change : null;
+        previousClose =
+          change != null && Number.isFinite(item.spotPrice) ? item.spotPrice - change : null;
+        changePct =
+          previousClose != null && previousClose !== 0 ? (change! / previousClose) * 100 : null;
+      }
 
       assetByKey.set(assetKey, {
         asset_type: 'commodity',

@@ -797,9 +797,55 @@ async function backfillFundHistory({ url, apiKey, historyDate, syncedAt }) {
   return { historyUpserted, schemeCount: rows.length };
 }
 
+/** Existing MCX/IBJA commodity rows — day change vs prior session close (not MCX tick delta). */
+async function fetchExistingCommodityQuotes(url, apiKey) {
+  const base = url.replace(/\/$/, '');
+  const map = new Map();
+  const pageSize = 1000;
+  let from = 0;
+
+  for (;;) {
+    const to = from + pageSize - 1;
+    const res = await fetch(
+      `${base}/rest/v1/social_market_assets?asset_type=eq.commodity&select=asset_key,price,as_of_date,previous_close&order=asset_key.asc`,
+      {
+        headers: {
+          ...restHeaders(apiKey),
+          Range: `${from}-${to}`,
+          Prefer: 'count=exact',
+        },
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`fetch existing commodities HTTP ${res.status}: ${text}`);
+    }
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) break;
+    for (const row of rows) {
+      const key = String(row.asset_key ?? '').trim();
+      if (!key) continue;
+      map.set(key, {
+        price: row.price != null ? Number(row.price) : null,
+        asOfDate: row.as_of_date ?? null,
+        previousClose: row.previous_close != null ? Number(row.previous_close) : null,
+      });
+    }
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return map;
+}
+
+function commodityDayChange({ price, asOfDate, existing }) {
+  return fundDayChange({ nav: price, asOfDate, existing });
+}
+
 async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedAt }) {
   console.log('Fetching MCX spot market prices...');
   const { items } = await fetchMcxSpotPrices();
+  const existingByKey = await fetchExistingCommodityQuotes(url, apiKey);
 
   const assetByKey = new Map();
   const historyByKey = new Map();
@@ -811,13 +857,20 @@ async function refreshCommodities({ url, apiKey, writeHistory, asOfDate, syncedA
 
     const assetKey = `${symbol}-${location}`.toUpperCase();
     const rowAsOf = parseMcxDate(item.date, asOfDate);
-    const change = Number.isFinite(item.change) ? item.change : null;
-    const previousClose =
-      change != null && Number.isFinite(item.spotPrice) ? item.spotPrice - change : null;
-    const changePct =
-      previousClose != null && previousClose !== 0
-        ? (change / previousClose) * 100
-        : null;
+    // Prefer day-over-day vs prior session close. MCX `change` is often a tiny
+    // intraday tick (~₹0.4) which rounds to 0.00% in the Markets UI.
+    let { previousClose, changePct } = commodityDayChange({
+      price: item.spotPrice,
+      asOfDate: rowAsOf,
+      existing: existingByKey.get(assetKey),
+    });
+    if (previousClose == null) {
+      const change = Number.isFinite(item.change) ? item.change : null;
+      previousClose =
+        change != null && Number.isFinite(item.spotPrice) ? item.spotPrice - change : null;
+      changePct =
+        previousClose != null && previousClose !== 0 ? (change / previousClose) * 100 : null;
+    }
 
     assetByKey.set(assetKey, {
       asset_type: 'commodity',
