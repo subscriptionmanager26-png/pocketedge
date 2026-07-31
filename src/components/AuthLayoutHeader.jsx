@@ -19,6 +19,8 @@ export const MARKETING_NAV_GROUPS = [
     label: 'Stocks',
     items: [
       { label: 'Browse stocks', href: marketsPath('stocks') },
+      { label: 'Browse indices', href: marketsPath('indices') },
+      { label: 'Browse commodities', href: marketsPath('commodity') },
       { label: 'Insights', href: insightsPath() },
       { label: 'Business Model', href: businessModelPath() },
     ],
@@ -37,18 +39,8 @@ export const MARKETING_NAV_GROUPS = [
     items: [{ label: 'SGB tracker', href: resourcesPath('sgb') }],
   },
   {
-    id: 'indices',
-    label: 'Indices',
-    items: [{ label: 'Browse indices', href: marketsPath('indices') }],
-  },
-  {
-    id: 'commodity',
-    label: 'Commodity',
-    items: [{ label: 'Browse commodities', href: marketsPath('commodity') }],
-  },
-  {
     id: 'mutual_funds',
-    label: 'Mutual Funds',
+    label: 'MF',
     items: [
       { label: 'Browse funds', href: marketsPath('mutual_funds') },
       { label: 'MF screener', href: resourcesPath('mf-screener') },
@@ -57,10 +49,7 @@ export const MARKETING_NAV_GROUPS = [
   {
     id: 'more',
     label: 'More',
-    items: [
-      { label: 'Resources', href: resourcesPath() },
-      { label: 'Disclosures', href: disclosuresPath() },
-    ],
+    items: [{ label: 'Disclosures', href: disclosuresPath() }],
   },
 ];
 
