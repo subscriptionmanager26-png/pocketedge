@@ -96,14 +96,8 @@ export function QuoteChangeBlock({
 
   return (
     <div className={className}>
-      <p className={labelClass}>Current Price</p>
       <p className={priceClass}>{priceDisplay}</p>
-      {hasChange ? (
-        <div className="mt-1">
-          <p className={labelClass}>Today&apos;s Change</p>
-          <p className={changeClass}>{changeText}</p>
-        </div>
-      ) : null}
+      {hasChange ? <p className={changeClass}>{changeText}</p> : null}
     </div>
   );
 }
