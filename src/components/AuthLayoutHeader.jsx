@@ -1,38 +1,105 @@
-import { Menu, X } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown, Menu, Search, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import LogoMark from './LogoMark';
 import {
-  disclosuresPath,
-  insightsPath,
   businessModelPath,
+  disclosuresPath,
+  explorePath,
+  insightsPath,
+  marketsPath,
+  parseMarketSection,
   resourcesPath,
   tabPath,
 } from '../lib/routes';
 
-export const MARKETING_NAV_ITEMS = [
-  { label: 'Insights', href: insightsPath() },
-  { label: 'Markets', href: tabPath('markets') },
-  { label: 'Business Model', href: businessModelPath() },
-  { label: 'Disclosures', href: disclosuresPath() },
-  { label: 'Resources', href: resourcesPath() },
+export const MARKETING_NAV_GROUPS = [
+  {
+    id: 'stocks',
+    label: 'Stocks',
+    items: [
+      { label: 'Browse stocks', href: marketsPath('stocks') },
+      { label: 'Insights', href: insightsPath() },
+      { label: 'Business Model', href: businessModelPath() },
+    ],
+  },
+  {
+    id: 'etf',
+    label: 'ETFs',
+    items: [
+      { label: 'Browse ETFs', href: marketsPath('etf') },
+      { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
+    ],
+  },
+  {
+    id: 'bonds',
+    label: 'Bonds',
+    items: [{ label: 'SGB tracker', href: resourcesPath('sgb') }],
+  },
+  {
+    id: 'indices',
+    label: 'Indices',
+    items: [{ label: 'Browse indices', href: marketsPath('indices') }],
+  },
+  {
+    id: 'commodity',
+    label: 'Commodity',
+    items: [{ label: 'Browse commodities', href: marketsPath('commodity') }],
+  },
+  {
+    id: 'mutual_funds',
+    label: 'Mutual Funds',
+    items: [
+      { label: 'Browse funds', href: marketsPath('mutual_funds') },
+      { label: 'MF screener', href: resourcesPath('mf-screener') },
+    ],
+  },
+  {
+    id: 'more',
+    label: 'More',
+    items: [
+      { label: 'Resources', href: resourcesPath() },
+      { label: 'Disclosures', href: disclosuresPath() },
+    ],
+  },
 ];
 
-function navItemActive(pathname, href) {
-  if (href === '/disclosures') return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
-  if (href === '/resources') return pathname === '/resources' || pathname.startsWith('/resources/');
-  if (href === '/markets') {
-    return (
-      pathname === '/markets' ||
-      pathname === '/search' ||
-      pathname === '/explore' ||
-      pathname.startsWith('/stock/') ||
-      pathname.startsWith('/etf/') ||
-      pathname.startsWith('/fund/') ||
-      pathname.startsWith('/index/') ||
-      pathname.startsWith('/commodity/')
-    );
+/** Flat list for in-app menus (unique hrefs, first label wins). */
+export const MARKETING_NAV_ITEMS = (() => {
+  const seen = new Set();
+  const items = [];
+  for (const group of MARKETING_NAV_GROUPS) {
+    for (const item of group.items) {
+      if (seen.has(item.href)) continue;
+      seen.add(item.href);
+      items.push(item);
+    }
   }
-  if (href === '/business-model') {
+  return items;
+})();
+
+function hrefActive(pathname, search, href) {
+  const [pathPart, queryPart] = href.split('?');
+  if (pathPart === '/disclosures') {
+    return pathname === '/disclosures' || pathname.startsWith('/disclosures/');
+  }
+  if (pathPart === '/resources') {
+    return pathname === '/resources';
+  }
+  if (pathPart === '/markets') {
+    const wanted = parseMarketSection(queryPart ? `?${queryPart}` : '') || 'stocks';
+    if (pathname === '/markets') {
+      const current = parseMarketSection(search) || 'stocks';
+      return current === wanted;
+    }
+    if (wanted === 'stocks') return pathname.startsWith('/stock/');
+    if (wanted === 'etf') return pathname.startsWith('/etf/');
+    if (wanted === 'mutual_funds') return pathname.startsWith('/fund/');
+    if (wanted === 'indices') return pathname.startsWith('/index/');
+    if (wanted === 'commodity') return pathname.startsWith('/commodity/');
+    return false;
+  }
+  if (pathPart === '/business-model') {
     return (
       pathname === '/business-model' ||
       pathname.startsWith('/business-model/') ||
@@ -40,7 +107,14 @@ function navItemActive(pathname, href) {
       pathname.startsWith('/learning/')
     );
   }
-  return pathname === href;
+  if (pathPart === '/insights') {
+    return pathname === '/insights' || pathname.startsWith('/insights/');
+  }
+  return pathname === pathPart || pathname.startsWith(`${pathPart}/`);
+}
+
+function groupActive(pathname, search, group) {
+  return group.items.some((item) => hrefActive(pathname, search, item.href));
 }
 
 function PrimaryCta({ isAuthenticated, loading, onGetStarted, onCloseDrawer, className }) {
@@ -64,6 +138,114 @@ function PrimaryCta({ isAuthenticated, loading, onGetStarted, onCloseDrawer, cla
   );
 }
 
+function ExploreSearchField({ className = '', compact = false }) {
+  const navigate = useNavigate();
+  const [value, setValue] = useState('');
+
+  const goExplore = () => {
+    navigate(explorePath(value));
+  };
+
+  return (
+    <form
+      className={`relative flex min-w-0 items-center ${className}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        goExplore();
+      }}
+    >
+      <Search
+        className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-pe-text-muted ${
+          compact ? 'h-4 w-4' : 'h-4 w-4'
+        }`}
+        aria-hidden
+      />
+      <input
+        type="search"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        placeholder="Explore stocks, funds, ETFs…"
+        aria-label="Explore"
+        className={`w-full rounded-full border border-pe-border bg-pe-surface text-pe-text outline-none ring-pe-accent placeholder:text-pe-text-muted focus:border-pe-accent focus:ring-2 ${
+          compact ? 'h-9 py-1.5 pl-9 pr-3 text-[15px]' : 'h-10 py-2 pl-9 pr-4 text-[15px]'
+        }`}
+      />
+    </form>
+  );
+}
+
+function NavDropdown({ group, pathname, search }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const menuId = useId();
+  const active = groupActive(pathname, search, group);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        className={`inline-flex items-center gap-0.5 text-[15px] font-medium transition hover:text-pe-accent ${
+          active || open ? 'text-pe-accent' : 'text-pe-text-secondary'
+        }`}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {group.label}
+        <ChevronDown className={`h-3.5 w-3.5 transition ${open ? 'rotate-180' : ''}`} aria-hidden />
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="menu"
+          className="absolute left-0 top-full z-50 min-w-[12rem] pt-2"
+        >
+          <div className="overflow-hidden rounded-xl border border-pe-border bg-pe-canvas py-1.5 shadow-lg">
+            {group.items.map((item) => {
+              const itemActive = hrefActive(pathname, search, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className={`block px-3.5 py-2.5 text-[15px] font-medium transition hover:bg-pe-surface hover:text-pe-accent ${
+                    itemActive ? 'text-pe-accent' : 'text-pe-text'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AuthLayoutHeader({
   badge,
   drawerOpen,
@@ -76,35 +258,38 @@ export default function AuthLayoutHeader({
 }) {
   const location = useLocation();
   const ctaClass =
-    'rounded-md bg-pe-accent px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
+    'shrink-0 rounded-md bg-pe-accent px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
   const drawerCtaClass =
     'mt-2 rounded-md bg-pe-accent px-3 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
 
   return (
     <>
       <header className="pe-landing-nav sticky top-0 z-40 shrink-0 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-14 max-w-feed items-center justify-between gap-3 px-4 md:h-[72px] lg:max-w-6xl lg:px-8">
-          <Link to="/" className="min-w-0 shrink-0" onClick={onCloseDrawer} aria-label="PocketEdge home">
+        <div className="mx-auto flex h-14 max-w-feed items-center gap-3 px-4 md:h-[72px] lg:max-w-6xl lg:gap-4 lg:px-8">
+          <Link
+            to="/"
+            className="min-w-0 shrink-0"
+            onClick={onCloseDrawer}
+            aria-label="PocketEdge home"
+          >
             <LogoMark size="sm" showWordmark />
           </Link>
 
           {showMarketingNav ? (
             <>
-              <nav className="hidden items-center gap-8 lg:flex" aria-label="Main navigation">
-                {MARKETING_NAV_ITEMS.map((item) => {
-                  const active = navItemActive(location.pathname, item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={`text-[15px] font-medium transition hover:text-pe-accent ${
-                        active ? 'text-pe-accent' : 'text-pe-text-secondary'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+              <nav
+                className="hidden min-w-0 flex-1 items-center gap-4 xl:gap-5 lg:flex"
+                aria-label="Main navigation"
+              >
+                {MARKETING_NAV_GROUPS.map((group) => (
+                  <NavDropdown
+                    key={group.id}
+                    group={group}
+                    pathname={location.pathname}
+                    search={location.search}
+                  />
+                ))}
+                <ExploreSearchField className="ml-auto w-full max-w-[16rem] xl:max-w-[18rem]" />
                 <PrimaryCta
                   isAuthenticated={isAuthenticated}
                   loading={loading}
@@ -114,9 +299,11 @@ export default function AuthLayoutHeader({
                 />
               </nav>
 
+              <ExploreSearchField className="min-w-0 flex-1 lg:hidden" compact />
+
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-md text-pe-text transition hover:bg-pe-surface lg:hidden"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-pe-text transition hover:bg-pe-surface lg:hidden"
                 aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={drawerOpen}
                 aria-controls="auth-layout-drawer"
@@ -145,7 +332,7 @@ export default function AuthLayoutHeader({
 
           <aside
             id="auth-layout-drawer"
-            className={`fixed right-0 top-0 z-[60] flex h-full w-[min(300px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 lg:hidden print:hidden ${
+            className={`fixed right-0 top-0 z-[60] flex h-full w-[min(320px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 lg:hidden print:hidden ${
               drawerOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
             aria-hidden={!drawerOpen}
@@ -161,22 +348,35 @@ export default function AuthLayoutHeader({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex flex-col gap-1 p-3">
-              {MARKETING_NAV_ITEMS.map((item) => {
-                const active = navItemActive(location.pathname, item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    onClick={onCloseDrawer}
-                    className={`rounded-lg px-3 py-3.5 text-left text-[15px] font-medium transition hover:bg-pe-surface ${
-                      active ? 'bg-pe-surface text-pe-accent' : 'text-pe-text'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
+            <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+              {MARKETING_NAV_GROUPS.map((group) => (
+                <div key={group.id}>
+                  <p className="px-3 pb-1 text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {group.items.map((item) => {
+                      const active = hrefActive(
+                        location.pathname,
+                        location.search,
+                        item.href
+                      );
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          onClick={onCloseDrawer}
+                          className={`rounded-lg px-3 py-3 text-left text-[15px] font-medium transition hover:bg-pe-surface ${
+                            active ? 'bg-pe-surface text-pe-accent' : 'text-pe-text'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
               <PrimaryCta
                 isAuthenticated={isAuthenticated}
                 loading={loading}

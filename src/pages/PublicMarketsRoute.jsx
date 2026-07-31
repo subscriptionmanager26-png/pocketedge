@@ -2,7 +2,13 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import MarketingShell from '../components/MarketingShell';
 import { RouteFallbackSkeleton } from '../components/PageSkeletons';
-import { isPublicMarketsPath, parseAppPath, tabPath } from '../lib/routes';
+import {
+  isPublicMarketsPath,
+  marketsPath,
+  parseAppPath,
+  parseMarketSection,
+  tabPath,
+} from '../lib/routes';
 import { signInWithGoogle } from '../lib/supabase';
 
 const MarketsPage = lazy(() => import('./MarketsPage'));
@@ -58,7 +64,9 @@ export default function PublicMarketsRoute() {
   const location = useLocation();
   const navigate = useNavigate();
   const parsed = parseAppPath(location.pathname);
-  const [marketsSectionTab, setMarketsSectionTab] = useState('stocks');
+  const [marketsSectionTab, setMarketsSectionTab] = useState(
+    () => parseMarketSection(location.search) || 'stocks'
+  );
 
   useEffect(() => {
     if (location.pathname === '/search' || location.pathname.startsWith('/search/')) {
@@ -66,9 +74,23 @@ export default function PublicMarketsRoute() {
     }
   }, [location.pathname, navigate]);
 
+  useEffect(() => {
+    if (parsed.kind === 'tab' && parsed.tab === 'markets') {
+      setMarketsSectionTab(parseMarketSection(location.search) || 'stocks');
+    }
+  }, [location.search, parsed.kind, parsed.tab]);
+
   const goMarkets = useCallback(() => {
-    navigate(tabPath('markets'));
-  }, [navigate]);
+    navigate(marketsPath(marketsSectionTab));
+  }, [navigate, marketsSectionTab]);
+
+  const handleSectionTabChange = useCallback(
+    (next) => {
+      setMarketsSectionTab(next);
+      navigate(marketsPath(next), { replace: true });
+    },
+    [navigate]
+  );
 
   if (!isPublicMarketsPath(parsed)) {
     return null;
@@ -112,7 +134,7 @@ export default function PublicMarketsRoute() {
         <MarketsPage
           guestMode
           sectionTab={marketsSectionTab}
-          onSectionTabChange={setMarketsSectionTab}
+          onSectionTabChange={handleSectionTabChange}
         />
       </RouteSuspense>
     );
@@ -125,7 +147,7 @@ export default function PublicMarketsRoute() {
     <MarketingShell wide>
       <div className="mb-3 flex flex-wrap items-center gap-3 text-sm print:hidden">
         <Link
-          to={tabPath('markets')}
+          to={marketsPath(marketsSectionTab)}
           className={`font-semibold ${
             onMarketsHub ? 'text-pe-accent' : 'text-pe-text-secondary hover:text-pe-accent'
           }`}

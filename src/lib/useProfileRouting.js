@@ -32,6 +32,7 @@ export function useProfileRouting({
   selectedFundId,
   selectedIndexId,
   selectedCommodityId,
+  marketsSectionTab = 'stocks',
   setTab,
   setProfileUserId,
   setProfilePortfolioId,
@@ -239,11 +240,17 @@ export function useProfileRouting({
       selectedFundId,
       selectedIndexId,
       selectedCommodityId,
+      marketsSectionTab,
       getHandleForUserId: getHandleForUserIdSync,
     });
 
-    if (target && location.pathname !== target) {
-      navigate(target);
+    if (!target) return;
+
+    const targetUrl = new URL(target, 'https://pocketedge.local');
+    const samePath = location.pathname === targetUrl.pathname;
+    const sameSearch = (location.search || '') === targetUrl.search;
+    if (!(samePath && sameSearch)) {
+      navigate(`${targetUrl.pathname}${targetUrl.search}`);
     }
   }, [
     authView,
@@ -257,7 +264,9 @@ export function useProfileRouting({
     selectedFundId,
     selectedIndexId,
     selectedCommodityId,
+    marketsSectionTab,
     location.pathname,
+    location.search,
     navigate,
   ]);
 }

@@ -65,6 +65,45 @@ export function tabPath(tab) {
   return `/${tab}`;
 }
 
+export const MARKET_SECTIONS = new Set([
+  'stocks',
+  'mutual_funds',
+  'etf',
+  'indices',
+  'commodity',
+]);
+
+/** Markets hub with optional section deep-link, e.g. /markets?section=stocks */
+export function marketsPath(section) {
+  const key = String(section ?? '')
+    .trim()
+    .toLowerCase();
+  if (key && MARKET_SECTIONS.has(key)) {
+    return `/markets?section=${encodeURIComponent(key)}`;
+  }
+  return '/markets';
+}
+
+export function parseMarketSection(search) {
+  const raw =
+    typeof search === 'string'
+      ? new URLSearchParams(search.startsWith('?') ? search : `?${search}`).get('section')
+      : search instanceof URLSearchParams
+        ? search.get('section')
+        : null;
+  const key = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  return MARKET_SECTIONS.has(key) ? key : null;
+}
+
+/** Explore hub with optional query, e.g. /explore?q=reliance */
+export function explorePath(query) {
+  const q = String(query ?? '').trim();
+  if (!q) return '/explore';
+  return `/explore?q=${encodeURIComponent(q)}`;
+}
+
 export function insightsPath() {
   return '/insights';
 }
@@ -266,6 +305,7 @@ export function pathFromAppState({
   selectedFundId,
   selectedIndexId,
   selectedCommodityId,
+  marketsSectionTab,
   getHandleForUserId,
 }) {
   if (selectedPostId) return postPath(selectedPostId);
@@ -282,6 +322,9 @@ export function pathFromAppState({
     if (handle) return profilePath(handle, { portfolioId: profilePortfolioId });
     // Avoid `/profile` — it is not a known tab and parseAppPath falls back to feed.
     return null;
+  }
+  if (tab === 'markets') {
+    return marketsPath(marketsSectionTab || 'stocks');
   }
   return tabPath(tab);
 }

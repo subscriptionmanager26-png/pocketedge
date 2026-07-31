@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
@@ -82,13 +82,20 @@ export default function ExplorePage({
   onGraphChange,
   guestMode = false,
 }) {
-  const [query, setQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') ?? '';
+  const [query, setQuery] = useState(initialQuery);
   const [resultTab, setResultTab] = useState(guestMode ? 'stocks' : 'people');
   const [graphTick, setGraphTick] = useState(0);
   const [peopleResults, setPeopleResults] = useState([]);
   const [peopleSearching, setPeopleSearching] = useState(false);
   const [suggestedPeople, setSuggestedPeople] = useState([]);
   const [suggestedLoading, setSuggestedLoading] = useState(false);
+
+  useEffect(() => {
+    const next = searchParams.get('q') ?? '';
+    setQuery((prev) => (prev === next ? prev : next));
+  }, [searchParams]);
 
   useSeoMeta(
     guestMode

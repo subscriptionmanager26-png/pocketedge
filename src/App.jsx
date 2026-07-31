@@ -49,7 +49,7 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, isPublicMarketsPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, isPublicMarketsPath, marketsPath, parseMarketSection, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
   navigateToProfile,
@@ -147,7 +147,9 @@ export default function App() {
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [profileSeedPerson, setProfileSeedPerson] = useState(null);
-  const [marketsSectionTab, setMarketsSectionTab] = useState('stocks');
+  const [marketsSectionTab, setMarketsSectionTab] = useState(
+    () => parseMarketSection(typeof window !== 'undefined' ? window.location.search : '') || 'stocks'
+  );
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const portfolioBackRef = useRef(null);
@@ -163,6 +165,28 @@ export default function App() {
   const resetScroll = useCallback(() => setScrollAction('reset'), []);
   const backScroll = useCallback(() => setScrollAction('back'), []);
   const consumeScrollAction = useCallback(() => setScrollAction('reset'), []);
+
+  useEffect(() => {
+    if (tab !== 'markets') return;
+    if (selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId) return;
+    const section = parseMarketSection(location.search) || 'stocks';
+    setMarketsSectionTab(section);
+  }, [
+    tab,
+    location.search,
+    selectedTicker,
+    selectedFundId,
+    selectedIndexId,
+    selectedCommodityId,
+  ]);
+
+  const handleMarketsSectionTabChange = useCallback(
+    (next) => {
+      setMarketsSectionTab(next);
+      navigate(marketsPath(next), { replace: true });
+    },
+    [navigate]
+  );
 
   const routeKey = useMemo(() => {
     if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
@@ -204,6 +228,7 @@ export default function App() {
     selectedFundId,
     selectedIndexId,
     selectedCommodityId,
+    marketsSectionTab,
     setTab,
     setProfileUserId,
     setProfilePortfolioId,
@@ -695,7 +720,8 @@ export default function App() {
     setSelectedPostId(null);
     setProfilePortfolioId(null);
     if (next === 'markets') {
-      setMarketsSectionTab('stocks');
+      const section = parseMarketSection(location.search) || 'stocks';
+      setMarketsSectionTab(section);
     }
     if (next !== 'markets') {
       clearMarketSelection();
@@ -705,6 +731,10 @@ export default function App() {
       setProfileUserId(currentUserId);
       setProfileReturnTab(next);
       navigateToProfile(navigate, currentUserId);
+      return;
+    }
+    if (next === 'markets') {
+      navigate(marketsPath(parseMarketSection(location.search) || marketsSectionTab || 'stocks'));
       return;
     }
     navigateToTab(navigate, next);
@@ -1060,7 +1090,7 @@ export default function App() {
             <RouteSuspense>
               <MarketsPage
                 sectionTab={marketsSectionTab}
-                onSectionTabChange={setMarketsSectionTab}
+                onSectionTabChange={handleMarketsSectionTabChange}
                 onSelectStock={openStock}
                 onSelectFund={openFund}
                 onSelectIndex={openIndex}
