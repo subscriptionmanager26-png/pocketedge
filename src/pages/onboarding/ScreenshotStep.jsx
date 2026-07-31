@@ -140,7 +140,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
           into one holdings summary…
         </p>
         <div className="mt-10">
-          <div className="flex items-center justify-between gap-3 text-[13px]">
+          <div className="flex items-center justify-between gap-3 text-[12px]">
             <p className="font-semibold text-pe-text">
               Screenshot {Math.max(1, progress.current)} of {Math.max(1, progress.total || shots.length)}
             </p>
@@ -190,7 +190,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
         badge="Summary"
         footer={
           <>
-            {error ? <p className="mb-2 text-[13px] text-pe-negative">{error}</p> : null}
+            {error ? <p className="mb-2 text-[12px] text-pe-negative">{error}</p> : null}
             <button type="button" onClick={analyse} className={primaryBtnClass}>
               <span>Analyse the portfolio</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -230,7 +230,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
       badge="Screenshot"
       footer={
         <>
-          {error ? <p className="mb-2 text-[13px] text-pe-negative">{error}</p> : null}
+          {error ? <p className="mb-2 text-[12px] text-pe-negative">{error}</p> : null}
           <button
             type="button"
             onClick={handleNext}
@@ -299,7 +299,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                className="text-[13px] font-semibold text-pe-accent hover:text-pe-accent-pressed"
+                className="text-[12px] font-semibold text-pe-accent hover:text-pe-accent-pressed"
               >
                 Add more
               </button>
@@ -311,7 +311,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
                   className="overflow-hidden rounded-lg border border-pe-border"
                 >
                   <div className="flex items-center justify-between gap-3 border-b border-pe-border bg-pe-surface px-3 py-2">
-                    <p className="min-w-0 truncate text-[13px] font-medium text-pe-text">
+                    <p className="min-w-0 truncate text-[12px] font-medium text-pe-text">
                       {shot.name}
                     </p>
                     <button
@@ -337,7 +337,7 @@ export default function ScreenshotStep({ onBack, onSubmit }) {
                 shots.forEach((shot) => URL.revokeObjectURL(shot.url));
                 setShots([]);
               }}
-              className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-pe-text-secondary hover:text-pe-negative"
+              className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-pe-text-secondary hover:text-pe-negative"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Clear all

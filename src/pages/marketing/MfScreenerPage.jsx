@@ -495,7 +495,7 @@ export default function MfScreenerPage() {
                         {row.amcLabel}
                       </button>
                       {row.sectorTheme && activeSector === 'all-themes' ? (
-                        <p className="mt-0.5 text-[11px] font-medium text-pe-text-muted">
+                        <p className="mt-0.5 text-[12px] font-medium text-pe-text-muted">
                           {row.sectorTheme}
                         </p>
                       ) : null}

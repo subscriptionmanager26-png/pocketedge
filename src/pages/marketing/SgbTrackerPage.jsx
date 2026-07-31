@@ -25,7 +25,7 @@ function SortHeader({ label, active, dir, onClick }) {
     <button type="button" onClick={onClick} className={`sgb-sort ${active ? 'text-pe-text' : ''}`}>
       {label}
       {active ? (
-        <span className="text-[10px]">{dir === 'asc' ? '↑' : '↓'}</span>
+        <span className="text-[12px]">{dir === 'asc' ? '↑' : '↓'}</span>
       ) : (
         <ArrowDownUp className="h-3 w-3 opacity-40" aria-hidden />
       )}

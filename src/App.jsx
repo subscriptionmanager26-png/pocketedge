@@ -68,7 +68,9 @@ const CommodityDetailPage = lazy(() => import('./pages/CommodityDetailPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const SearchPage = lazy(() => import('./pages/SearchPage'));
+const SearchPage = lazy(() => import('./pages/ExplorePage'));
+const ExplorePage = SearchPage;
+const IdeasPage = lazy(() => import('./pages/IdeasPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const PublicMarketsRoute = lazy(() => import('./pages/PublicMarketsRoute'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
@@ -510,10 +512,12 @@ export default function App() {
 
   const MARKET_RETURN_LABELS = {
     feed: 'Feed',
-    search: 'Search',
+    explore: 'Explore',
+    ideas: 'Ideas',
     activity: 'Activity',
     portfolio: 'Portfolio',
     markets: 'Markets',
+    search: 'Explore',
   };
 
   const captureMarketReturnContext = useCallback(() => {
@@ -544,7 +548,7 @@ export default function App() {
 
   const getMarketBackLabel = useCallback(() => {
     const ctx = marketReturnContextRef.current;
-    if (!ctx || ctx.tab === 'markets') return 'Markets';
+    if (!ctx || ctx.tab === 'markets') return 'Explore';
     return MARKET_RETURN_LABELS[ctx.tab] ?? 'Back';
   }, []);
 
@@ -555,8 +559,13 @@ export default function App() {
 
   const closeMarketDetail = useCallback(() => {
     backScroll();
+    const ctx = marketReturnContextRef.current;
     marketReturnContextRef.current = null;
-    navigateBack(navigate, location, tabPath('markets'));
+    clearMarketSelection();
+    const fallbackTab =
+      ctx?.tab && ctx.tab !== 'markets' && ctx.tab !== 'search' ? ctx.tab : 'explore';
+    setTab(fallbackTab);
+    navigateBack(navigate, location, tabPath(fallbackTab));
   }, [backScroll, location, navigate]);
 
   const closePost = useCallback(() => {
@@ -856,7 +865,7 @@ export default function App() {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-pe-canvas px-6">
         <div className="h-9 w-9 rounded-[10px] bg-pe-accent" aria-hidden="true" />
-        <p className="text-[13px] font-semibold tracking-wide text-pe-text-muted">PocketEdge</p>
+        <p className="text-[12px] font-semibold tracking-wide text-pe-text-muted">PocketEdge</p>
         <div className="h-0.5 w-[120px] overflow-hidden rounded-full bg-pe-surface" aria-hidden="true">
           <div className="h-full w-2/5 animate-pulse rounded-full bg-pe-accent" />
         </div>
@@ -962,14 +971,23 @@ export default function App() {
             />
           )
         )}
-        {tab === 'search' && (
+        {tab === 'explore' && (
           <RouteSuspense>
-            <SearchPage
+            <ExplorePage
               onOpenProfile={openProfile}
               onSelectStock={openStock}
               onSelectFund={openFund}
               onSelectIndex={openIndex}
+              onSelectCommodity={openCommodity}
               onGraphChange={() => setGraphTick((n) => n + 1)}
+            />
+          </RouteSuspense>
+        )}
+        {tab === 'ideas' && (
+          <RouteSuspense>
+            <IdeasPage
+              onOpenProfile={openProfile}
+              onOpenPortfolio={openProfilePortfolio}
             />
           </RouteSuspense>
         )}

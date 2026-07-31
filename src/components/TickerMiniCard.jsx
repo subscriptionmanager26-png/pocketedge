@@ -111,7 +111,7 @@ function TickerCardContent({ ticker, authorId, onClose }) {
           {asset?.kind === 'fund' ? (
             <p className="mt-0.5 text-[12px] text-pe-text-muted">Mutual fund</p>
           ) : name && name !== displayKey ? (
-            <p className="mt-0.5 truncate text-[13px] text-pe-text-secondary">{name}</p>
+            <p className="mt-0.5 truncate text-[12px] text-pe-text-secondary">{name}</p>
           ) : null}
         </div>
         <button
@@ -125,7 +125,7 @@ function TickerCardContent({ ticker, authorId, onClose }) {
       </div>
 
       <div className="mb-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+        <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
           Current price
         </p>
         {priceLoading ? (
@@ -143,12 +143,12 @@ function TickerCardContent({ ticker, authorId, onClose }) {
       </div>
 
       <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-2.5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+        <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
           {author?.name
             ? `${String(author.name).trim().split(/\s+/)[0]}'s holding`
             : 'Author holding'}
         </p>
-        <p className="mt-1 text-[17px] font-semibold text-pe-text">
+        <p className="mt-1 text-[15px] font-semibold text-pe-text">
           {holdingPct != null ? `${holdingPct.toFixed(1)}% of book` : 'Holds'}
         </p>
       </div>

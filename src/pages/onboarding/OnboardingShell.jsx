@@ -5,7 +5,7 @@ export const primaryBtnClass =
   'inline-flex w-full items-center justify-center gap-2 rounded-md bg-pe-accent py-3 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40';
 
 export const sectionLabelClass =
-  'text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted';
+  'text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted';
 
 /** Auth chrome shared with signup / fund-review onboarding. */
 export default function OnboardingShell({

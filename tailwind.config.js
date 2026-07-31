@@ -2,6 +2,23 @@
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    // Site-wide type scale: 8, 12, 15, 20, 24, 28 only.
+    // Remap Tailwind defaults so text-sm/base/lg/… never emit off-scale sizes.
+    fontSize: {
+      xs: ['12px', { lineHeight: '1.4' }],
+      sm: ['15px', { lineHeight: '1.45' }],
+      base: ['15px', { lineHeight: '1.5' }],
+      lg: ['20px', { lineHeight: '1.35' }],
+      xl: ['20px', { lineHeight: '1.3' }],
+      '2xl': ['24px', { lineHeight: '1.25' }],
+      '3xl': ['28px', { lineHeight: '1.2' }],
+      '4xl': ['28px', { lineHeight: '1.15' }],
+      '5xl': ['28px', { lineHeight: '1.1' }],
+      '6xl': ['28px', { lineHeight: '1.1' }],
+      '7xl': ['28px', { lineHeight: '1.05' }],
+      '8xl': ['28px', { lineHeight: '1' }],
+      '9xl': ['28px', { lineHeight: '1' }],
+    },
     extend: {
       fontFamily: {
         sans: [

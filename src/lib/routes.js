@@ -115,7 +115,17 @@ export function disclosuresPath(section) {
   return '/disclosures';
 }
 
-const KNOWN_TABS = new Set(['feed', 'search', 'activity', 'portfolio', 'markets', 'settings']);
+const KNOWN_TABS = new Set([
+  'feed',
+  'explore',
+  'ideas',
+  'activity',
+  'portfolio',
+  'markets',
+  'settings',
+  // Legacy alias — parseAppPath maps this to explore.
+  'search',
+]);
 const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures']);
 const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
@@ -218,13 +228,23 @@ export function parseAppPath(pathname) {
   }
 
   const tab = pathname.replace(/^\//, '').split('/')[0] || 'feed';
-  return { kind: 'tab', tab: KNOWN_TABS.has(tab) ? tab : 'feed' };
+  if (!KNOWN_TABS.has(tab)) {
+    return { kind: 'tab', tab: 'feed' };
+  }
+  // Legacy /search bookmarks → Explore.
+  if (tab === 'search') {
+    return { kind: 'tab', tab: 'explore', redirectFrom: 'search' };
+  }
+  return { kind: 'tab', tab };
 }
 
-/** Markets hub, search, and asset detail URLs that can render without auth. */
+/** Markets hub, Explore, and asset detail URLs that can render without auth. */
 export function isPublicMarketsPath(parsed) {
   if (!parsed) return false;
-  if (parsed.kind === 'tab' && (parsed.tab === 'markets' || parsed.tab === 'search')) {
+  if (
+    parsed.kind === 'tab' &&
+    (parsed.tab === 'markets' || parsed.tab === 'explore' || parsed.tab === 'search')
+  ) {
     return true;
   }
   return (

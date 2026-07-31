@@ -33,10 +33,10 @@ function AssetSuggestionRow({ asset, onSelect }) {
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-[14px] font-semibold text-pe-text">
+            <span className="truncate text-[15px] font-semibold text-pe-text">
               {displaySymbol(asset)}
             </span>
-            <span className="shrink-0 rounded-full bg-pe-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-text-muted">
+            <span className="shrink-0 rounded-full bg-pe-surface px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-pe-text-muted">
               {asset.kindLabel}
             </span>
           </div>
@@ -321,16 +321,16 @@ export default function PortfolioAssetSearchField({
                   }`}
                 >
                   {query.length > 0 && query.length < MARKET_MIN_SEARCH_CHARS ? (
-                    <p className="px-4 py-3 text-[13px] text-pe-text-muted">
+                    <p className="px-4 py-3 text-[12px] text-pe-text-muted">
                       Type at least {MARKET_MIN_SEARCH_CHARS} characters…
                     </p>
                   ) : null}
 
                   {canSearch ? (
                     loading ? (
-                      <p className="px-4 py-3 text-[13px] text-pe-text-muted">Searching…</p>
+                      <p className="px-4 py-3 text-[12px] text-pe-text-muted">Searching…</p>
                     ) : suggestions.length === 0 ? (
-                      <p className="px-4 py-3 text-[13px] text-pe-text-muted">No matches found.</p>
+                      <p className="px-4 py-3 text-[12px] text-pe-text-muted">No matches found.</p>
                     ) : (
                       suggestions.map((asset) => (
                         <AssetSuggestionRow

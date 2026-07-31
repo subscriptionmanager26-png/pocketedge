@@ -12,8 +12,8 @@ import {
 } from '../lib/assetLogo';
 
 const SIZES = {
-  xs: { className: 'h-6 w-6 text-[10px]', px: 24, variant: LOGO_VARIANT_LIST },
-  sm: { className: 'h-8 w-8 text-[11px]', px: 32, variant: LOGO_VARIANT_LIST },
+  xs: { className: 'h-6 w-6 text-[12px]', px: 24, variant: LOGO_VARIANT_LIST },
+  sm: { className: 'h-8 w-8 text-[12px]', px: 32, variant: LOGO_VARIANT_LIST },
   md: { className: 'h-12 w-12 text-base', px: 48, variant: LOGO_VARIANT_DETAIL },
 };
 

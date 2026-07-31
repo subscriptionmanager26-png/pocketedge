@@ -24,7 +24,7 @@ export function AnalyzingStep({ holdings }) {
           {holdings.slice(0, 6).map((h) => (
             <li
               key={h.ticker}
-              className="flex items-center justify-between px-4 py-3 text-[13px]"
+              className="flex items-center justify-between px-4 py-3 text-[12px]"
             >
               <span className="font-semibold text-pe-text">{h.ticker}</span>
               <span className="text-pe-text-muted">checking momentum…</span>
@@ -69,7 +69,7 @@ export default function AnalysisStep({
       footer={
         <>
           {finishError ? (
-            <p className="mb-2 text-[13px] text-pe-negative">{finishError}</p>
+            <p className="mb-2 text-[12px] text-pe-negative">{finishError}</p>
           ) : null}
           <button
             type="button"
@@ -80,13 +80,13 @@ export default function AnalysisStep({
             <span>{finishing ? 'Saving…' : 'Enter PocketEdge'}</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
-          <p className="mt-3 text-center text-[13px] text-pe-text-muted">
+          <p className="mt-3 text-center text-[12px] text-pe-text-muted">
             We&apos;ll save this as your portfolio so you can keep editing in the app.
           </p>
         </>
       }
     >
-      <p className="text-[13px] font-semibold text-pe-text-muted">Via {sourceLabel}</p>
+      <p className="text-[12px] font-semibold text-pe-text-muted">Via {sourceLabel}</p>
       <p className="mt-2 text-2xl font-bold text-pe-text md:text-3xl">{summary.headline}</p>
       <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
         {summary.detail}
@@ -110,7 +110,7 @@ export default function AnalysisStep({
         />
       </div>
 
-      <p className="mt-3 text-[13px] text-pe-text-muted">
+      <p className="mt-3 text-[12px] text-pe-text-muted">
         Portfolio value {formatInr(summary.totalValue)} · invested{' '}
         {formatInr(summary.totalInvested)}
       </p>
@@ -146,7 +146,7 @@ export default function AnalysisStep({
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-[14px] font-semibold text-pe-text">
+                      <p className="text-[15px] font-semibold text-pe-text">
                         {formatInr(row.value)}
                       </p>
                       <p
@@ -184,10 +184,10 @@ function Stat({ label, value, accent }) {
         : 'text-pe-text';
   return (
     <div className="rounded-lg border border-pe-border bg-pe-surface px-3 py-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+      <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
         {label}
       </p>
-      <p className={`mt-1 text-[22px] font-bold ${valueClass}`}>{value}</p>
+      <p className={`mt-1 text-[20px] font-bold ${valueClass}`}>{value}</p>
     </div>
   );
 }

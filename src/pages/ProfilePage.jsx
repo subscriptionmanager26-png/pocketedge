@@ -1139,7 +1139,7 @@ function PortfolioDetailView({
   };
 
   const compactInputClass =
-    'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[14px]';
+    'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[15px]';
 
   const rowGridClass = isWatchlist
     ? 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2'
@@ -1204,7 +1204,7 @@ function PortfolioDetailView({
               </div>
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+              <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Unrealised gains
               </p>
               <p
@@ -1237,7 +1237,7 @@ function PortfolioDetailView({
         <div className="px-4 py-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+              <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
                 Holdings
               </p>
               <p className="mt-1 text-sm text-pe-text-secondary">
@@ -1266,7 +1266,7 @@ function PortfolioDetailView({
                     type="button"
                     disabled={importingHoldings}
                     onClick={() => excelInputRef.current?.click()}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[13px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[12px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
                   >
                     <FileSpreadsheet className="h-3.5 w-3.5" />
                     Upload Excel
@@ -1275,7 +1275,7 @@ function PortfolioDetailView({
                     type="button"
                     disabled={importingHoldings}
                     onClick={() => screenshotInputRef.current?.click()}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[13px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[12px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
                   >
                     <ImagePlus className="h-3.5 w-3.5" />
                     Upload screenshot
@@ -1291,7 +1291,7 @@ function PortfolioDetailView({
                     </p>
                   </div>
                   {importProgress.fileName ? (
-                    <p className="mt-1 truncate text-[11px] text-pe-text-muted">
+                    <p className="mt-1 truncate text-[12px] text-pe-text-muted">
                       {importProgress.fileName}
                     </p>
                   ) : null}
@@ -1346,19 +1346,19 @@ function PortfolioDetailView({
 
           <div className="mt-4 space-y-2">
             <div className={`${rowGridClass} px-0.5`}>
-              <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+              <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Ticker
               </p>
               {isWatchlist ? (
-                <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                   Weight %
                 </p>
               ) : (
                 <>
-                  <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                     {costMode === COST_MODES.avg ? 'Avg price' : 'Total invested'}
                   </p>
-                  <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                     Qty
                   </p>
                 </>
@@ -1696,7 +1696,7 @@ function PortfolioDiscussion({
 
   return (
     <section id="portfolio-discussion" className="border-t border-pe-border px-4 py-5">
-      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+      <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
         Discussion · {comments.length}
       </p>
 
@@ -1902,13 +1902,13 @@ function PortfolioHoldingsList({ portfolio }) {
     <div>
       <section className="px-4 pt-4">
         <div className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-end gap-2 border-b border-pe-border py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+          <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
             Holdings
           </p>
-          <p className="text-right text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Allocation
           </p>
-          <p className="text-right text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             {periodLabel} return
           </p>
         </div>

@@ -6,7 +6,7 @@ import {
   Check,
   ChevronDown,
   Home,
-  LineChart,
+  Lightbulb,
   Menu,
   Pencil,
   Search,
@@ -36,7 +36,7 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
   if (!prevKey || !nextKey) return false;
   if (nextKey === 'feed' && String(prevKey).startsWith('post:')) return true;
   if (
-    nextKey === 'markets' &&
+    (nextKey === 'markets' || nextKey === 'explore') &&
     /^(stock|etf|fund|index|commodity):/.test(String(prevKey))
   ) {
     return true;
@@ -53,10 +53,10 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
 
 const DESKTOP_TABS = [
   { id: 'feed', label: 'Feed', icon: Home },
-  { id: 'search', label: 'Search', icon: Search },
+  { id: 'explore', label: 'Explore', icon: Search },
+  { id: 'ideas', label: 'Ideas', icon: Lightbulb },
   { id: 'activity', label: 'Activity', icon: Bell },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
-  { id: 'markets', label: 'Markets', icon: LineChart },
   { id: 'menu', label: 'Menu', icon: Menu },
 ];
 
@@ -301,7 +301,7 @@ export default function Shell({
                   <button
                     type="button"
                     onClick={() => goTab(id)}
-                    className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
+                    className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
                       active
                         ? 'font-semibold text-pe-accent'
                         : 'font-medium text-pe-text-secondary'
@@ -338,7 +338,7 @@ export default function Shell({
                 onClick={() => goTab(id)}
                 onMouseEnter={() => prefetchTab(id)}
                 onTouchStart={() => prefetchTab(id)}
-                className={`flex min-h-12 items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
+                className={`flex min-h-12 items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
                   active
                     ? 'font-semibold text-pe-accent'
                     : 'font-medium text-pe-text-secondary'
@@ -348,7 +348,7 @@ export default function Shell({
                   <span className="relative">
                     <Icon className="h-6 w-6" strokeWidth={2} />
                     {id === 'activity' && activityUnread > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
+                      <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[8px] font-bold text-white">
                         {activityUnread > 9 ? '9+' : activityUnread}
                       </span>
                     )}
@@ -362,7 +362,7 @@ export default function Shell({
           <button
             type="button"
             onClick={onCompose}
-            className="mt-2 flex min-h-12 w-full items-center justify-center rounded-full bg-pe-accent px-4 text-center text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed active:scale-[0.99]"
+            className="mt-2 flex min-h-12 w-full items-center justify-center rounded-full bg-pe-accent px-4 text-center text-[20px] font-bold text-white transition hover:bg-pe-accent-pressed active:scale-[0.99]"
           >
             Post
           </button>
@@ -372,7 +372,7 @@ export default function Shell({
           <button
             type="button"
             onClick={onProfile}
-            className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[15px] leading-5 transition hover:bg-pe-surface ${
+            className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
               tab === 'profile'
                 ? 'font-semibold text-pe-accent'
                 : 'font-medium text-pe-text-secondary'
@@ -382,10 +382,10 @@ export default function Shell({
               <Avatar person={currentUser} size="sm" />
             </span>
             <span className="min-w-0 flex-1 pr-2">
-              <span className="block truncate text-[15px] font-medium leading-5 text-pe-text">
+              <span className="block truncate text-[20px] font-medium leading-6 text-pe-text">
                 {currentUser.name}
               </span>
-              <span className="block truncate text-[13px] text-pe-text-muted">
+              <span className="block truncate text-[12px] text-pe-text-muted">
                 @{currentUser.handle}
               </span>
             </span>
@@ -468,7 +468,7 @@ export default function Shell({
                       >
                         <Bell className="h-5 w-5" />
                         {activityUnread > 0 && (
-                          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[10px] font-bold text-white">
+                          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[12px] font-bold text-white">
                             {activityUnread > 9 ? '9+' : activityUnread}
                           </span>
                         )}
@@ -504,7 +504,7 @@ export default function Shell({
                       aria-expanded={desktopMenuOpen}
                       aria-label={`Feed menu. Currently ${feedTitle}`}
                     >
-                      <span className="text-[17px] font-semibold leading-6 tracking-tight text-pe-text">
+                      <span className="text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
                         {feedTitle}
                       </span>
                       <ChevronDown
@@ -552,7 +552,7 @@ export default function Shell({
                 onClick={() => goTab(id)}
                 onMouseEnter={() => prefetchTab(id)}
                 onTouchStart={() => prefetchTab(id)}
-                className={`relative flex h-full min-w-[4.25rem] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition ${
+                className={`relative flex h-full min-w-[4.25rem] flex-col items-center justify-center gap-0.5 text-[12px] font-medium transition ${
                   active ? 'text-pe-accent' : 'text-pe-text-muted'
                 }`}
               >
@@ -608,7 +608,7 @@ export default function Shell({
 
 function AppMenuLinks({ onNavigate, onSettings, compact = false }) {
   const itemClass = compact
-    ? 'flex w-full items-center rounded-md px-2.5 py-2 text-left text-[14px] font-medium text-pe-text transition hover:bg-pe-surface'
+    ? 'flex w-full items-center rounded-md px-2.5 py-2 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface'
     : 'flex w-full items-center rounded-lg px-3 py-3.5 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface';
 
   return (

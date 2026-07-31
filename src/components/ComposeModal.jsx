@@ -249,7 +249,7 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
                   : 'Share a thesis… type @ to tag a security'
               }
               rows={share ? 4 : 6}
-              className="w-full resize-none bg-transparent text-[17px] leading-[1.65] text-pe-ink outline-none placeholder:font-sans placeholder:text-[15px] placeholder:text-pe-text-muted"
+              className="w-full resize-none bg-transparent text-[15px] leading-[1.65] text-pe-ink outline-none placeholder:font-sans placeholder:text-[15px] placeholder:text-pe-text-muted"
             />
 
             {showSuggestions && menuPos ? (
@@ -276,10 +276,10 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
                       className="w-full border-b border-pe-border px-3 py-2.5 text-left last:border-b-0 hover:bg-pe-surface"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-semibold text-pe-text">
+                        <span className="text-[15px] font-semibold text-pe-text">
                           {asset.kind === 'fund' ? asset.name : formatTicker(asset.key)}
                         </span>
-                        <span className="rounded-full bg-pe-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-text-muted">
+                        <span className="rounded-full bg-pe-surface px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide text-pe-text-muted">
                           {asset.kindLabel}
                         </span>
                       </div>
@@ -365,13 +365,13 @@ export function PortfolioSharePreview({ share }) {
     <div className="rounded-[12px] border border-pe-border bg-pe-surface px-3.5 py-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Portfolio
           </p>
           <p className="mt-0.5 truncate text-[15px] font-semibold text-pe-text">{share.name}</p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             {share.period}
           </p>
           <p className={`mt-0.5 text-[15px] font-bold ${pnlClass(share.returnPct)}`}>
@@ -384,12 +384,12 @@ export function PortfolioSharePreview({ share }) {
         {(share.topHoldings ?? []).map((holding) => (
           <div key={holding.ticker} className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[14px] font-semibold text-pe-text">{holding.label}</p>
+              <p className="truncate text-[15px] font-semibold text-pe-text">{holding.label}</p>
               <p className="truncate text-[12px] text-pe-text-muted">
                 {holding.weight.toFixed(1)}% of portfolio
               </p>
             </div>
-            <p className={`shrink-0 text-[13px] font-semibold ${pnlClass(holding.returnPct)}`}>
+            <p className={`shrink-0 text-[12px] font-semibold ${pnlClass(holding.returnPct)}`}>
               {formatPct(holding.returnPct)}
             </p>
           </div>

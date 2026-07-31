@@ -359,7 +359,7 @@ function StockFilterFields({
             aria-label="Minimum move percent"
             className={`${fieldClass} w-full pr-6`}
           />
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-pe-text-muted">
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-pe-text-muted">
             %
           </span>
         </div>
@@ -784,7 +784,7 @@ export default function InsightsPage() {
               <Filter className="h-4 w-4" />
               Filters
               {activeFilterCount ? (
-                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-pe-accent px-1 text-[11px] font-bold text-white">
+                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-pe-accent px-1 text-[12px] font-bold text-white">
                   {activeFilterCount}
                 </span>
               ) : null}

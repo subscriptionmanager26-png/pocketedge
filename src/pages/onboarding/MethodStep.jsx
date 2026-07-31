@@ -55,7 +55,7 @@ function MethodRow({ icon, title, description, onClick, badge }) {
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-[15px] font-semibold text-pe-text">{title}</p>
           {badge ? (
-            <span className="rounded-md border border-pe-accent-border bg-pe-accent-wash px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-pe-accent">
+            <span className="rounded-md border border-pe-accent-border bg-pe-accent-wash px-1.5 py-0.5 text-[12px] font-bold uppercase tracking-wide text-pe-accent">
               {badge}
             </span>
           ) : null}

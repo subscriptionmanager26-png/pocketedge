@@ -44,7 +44,7 @@ export default function ActivityPage({
   return (
     <div>
       <PageHeader>
-        <h1 className="text-[17px] font-semibold leading-6 tracking-tight text-pe-text">
+        <h1 className="text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
           Activity
         </h1>
       </PageHeader>
@@ -90,7 +90,7 @@ function ActivitySection({
   return (
     <section className="border-b border-pe-border">
       <div className="px-4 py-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
           {title}
         </p>
       </div>

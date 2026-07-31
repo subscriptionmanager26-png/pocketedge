@@ -97,6 +97,12 @@ export function useProfileRouting({
 
     const apply = async () => {
       try {
+        if (parsed.redirectFrom === 'search') {
+          navigate(tabPath('explore'), { replace: true });
+          finish();
+          return;
+        }
+
         if (parsed.kind === 'profile') {
           const person = await resolvePersonByHandle(parsed.username);
           if (cancelled) return;

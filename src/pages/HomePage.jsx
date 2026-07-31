@@ -83,8 +83,8 @@ function Headline({ className = '' }) {
     <h1
       className={`pe-landing-headline font-sans font-bold leading-[1.08] tracking-tight text-pe-text ${className}`}
     >
-      <span className="block text-[2rem] md:text-5xl lg:text-[3.25rem]">Before you invest..</span>
-      <span className="mt-1 block text-[2rem] text-pe-accent md:text-5xl lg:text-[3.25rem]">
+      <span className="block text-[28px] md:text-5xl lg:text-[28px]">Before you invest..</span>
+      <span className="mt-1 block text-[28px] text-pe-accent md:text-5xl lg:text-[28px]">
         See what real investors own and say
       </span>
       <svg className="mt-2 h-2.5 w-28 md:w-32" viewBox="0 0 160 12" fill="none" aria-hidden="true">

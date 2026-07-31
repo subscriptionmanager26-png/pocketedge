@@ -152,7 +152,7 @@ export default function PostCard({
   return (
     <article className="border-b border-pe-border px-4 py-5 md:py-6">
       {post.via && post.via.kind !== 'person' && (
-        <p className="mb-2 text-[13px] text-pe-text-muted">
+        <p className="mb-2 text-[12px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>
           <span>
             {' '}
@@ -182,7 +182,7 @@ export default function PostCard({
               >
                 {person.name}
               </button>
-              <span className="shrink-0 text-[13px] leading-5 text-pe-text-muted">
+              <span className="shrink-0 text-[12px] leading-5 text-pe-text-muted">
                 · {timeAgo(post.createdAt)}
               </span>
             </div>
@@ -192,7 +192,7 @@ export default function PostCard({
                 stopBubble(event);
                 openAuthor();
               }}
-              className="mt-0.5 block truncate text-[13px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
+              className="mt-0.5 block truncate text-[12px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
             >
               @{person.handle}
             </button>
@@ -325,7 +325,7 @@ export default function PostCard({
 
       {isDetail && (
         <div className="mt-5 border-t border-pe-border pt-1">
-          <p className="py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+          <p className="py-3 text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
             Comments · {commentCount}
           </p>
           {!(post.comments?.length) ? (

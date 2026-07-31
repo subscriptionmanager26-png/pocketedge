@@ -72,7 +72,7 @@ export function QuoteChangeBlock({
     size === 'detail'
       ? `text-[20px] font-semibold tabular-nums ${pnlClass(tone)}`
       : `text-sm font-semibold tabular-nums ${pnlClass(tone)}`;
-  const labelClass = 'text-[10px] font-bold uppercase tracking-[0.06em] text-pe-text-muted';
+  const labelClass = 'text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted';
   const changeText = `${amount != null ? formatValue(amount) : '-'}${
     showPct ? ` (${formatPct(pctValue)})` : ''
   }`;
@@ -149,7 +149,7 @@ export default function AssetProductHeader({
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-pe-text-muted">
               {ticker}
               {String(priceSource ?? '').toLowerCase() === 'bse' ? (
-                <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-pe-accent">
+                <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[8px] font-bold tracking-wide text-pe-accent">
                   BSE
                 </span>
               ) : null}

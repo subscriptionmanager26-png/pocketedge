@@ -62,7 +62,7 @@ export default function ProfileHero({
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <h1 className="min-w-0 truncate text-[22px] font-bold leading-tight text-pe-text md:text-2xl">
+            <h1 className="min-w-0 truncate text-[20px] font-bold leading-tight text-pe-text md:text-2xl">
               {displayName}
             </h1>
 

@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PocketEdge - Real Insights for Real Investors</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          fontSize: {
+            xs: ['12px', { lineHeight: '1.4' }],
+            sm: ['15px', { lineHeight: '1.45' }],
+            base: ['15px', { lineHeight: '1.5' }],
+            lg: ['20px', { lineHeight: '1.35' }],
+            xl: ['20px', { lineHeight: '1.3' }],
+            '2xl': ['24px', { lineHeight: '1.25' }],
+            '3xl': ['28px', { lineHeight: '1.2' }],
+            '4xl': ['28px', { lineHeight: '1.15' }],
+            '5xl': ['28px', { lineHeight: '1.1' }],
+            '6xl': ['28px', { lineHeight: '1.1' }],
+            '7xl': ['28px', { lineHeight: '1.05' }],
+            '8xl': ['28px', { lineHeight: '1' }],
+            '9xl': ['28px', { lineHeight: '1' }],
+          },
+        },
+      };
+    </script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,7 +111,7 @@
             </header>
 
             <!-- Main Headline -->
-            <h1 class="text-6xl sm:text-7xl lg:text-[5.5rem] font-semibold leading-[1.05] tracking-tight mb-6">
+            <h1 class="text-[28px] font-semibold leading-[1.05] tracking-tight mb-6">
                 See top <br>
                 <span class="text-brand italic pr-2">rated funds.</span>
             </h1>
@@ -108,7 +129,7 @@
                         <i class="ph-fill ph-users-three text-brand text-2xl"></i>
                     </div>
                     <div>
-                        <p class="text-[1.1rem] text-gray-800 leading-snug">See opinions & reviews<br>from real investors</p>
+                        <p class="text-[20px] text-gray-800 leading-snug">See opinions & reviews<br>from real investors</p>
                     </div>
                 </li>
 
@@ -117,7 +138,7 @@
                         <i class="ph-fill ph-star text-brand text-2xl"></i>
                     </div>
                     <div>
-                        <p class="text-[1.1rem] text-gray-800 leading-snug">Discover top rated<br>stocks & mutual funds</p>
+                        <p class="text-[20px] text-gray-800 leading-snug">Discover top rated<br>stocks & mutual funds</p>
                     </div>
                 </li>
 
@@ -126,7 +147,7 @@
                         <i class="ph-fill ph-chat-circle-text text-brand text-2xl"></i>
                     </div>
                     <div>
-                        <p class="text-[1.1rem] text-gray-800 leading-snug">Read honest<br>reviews & insights</p>
+                        <p class="text-[20px] text-gray-800 leading-snug">Read honest<br>reviews & insights</p>
                     </div>
                 </li>
 
@@ -135,7 +156,7 @@
                         <i class="ph-bold ph-trend-up text-brand text-2xl"></i>
                     </div>
                     <div>
-                        <p class="text-[1.1rem] text-gray-800 leading-snug">Track performance<br>in real time</p>
+                        <p class="text-[20px] text-gray-800 leading-snug">Track performance<br>in real time</p>
                     </div>
                 </li>
             </ul>
@@ -177,7 +198,7 @@
                             <div>
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-gray-900">Rahul Verma</span>
-                                    <span class="text-[10px] font-bold text-brand bg-[#FFF0E5] px-2 py-0.5 rounded-md uppercase tracking-wider">Premium</span>
+                                    <span class="text-[12px] font-bold text-brand bg-[#FFF0E5] px-2 py-0.5 rounded-md uppercase tracking-wider">Premium</span>
                                     <span class="text-sm text-gray-400 ml-1">2h</span>
                                 </div>
                                 <p class="text-gray-600 text-sm mt-0.5">Added <a href="#" class="text-blue-600 font-medium hover:underline">$NVDA</a> to my portfolio</p>
@@ -341,10 +362,10 @@
                                 <div>
                                     <div class="flex items-center gap-2 mb-0.5">
                                         <span class="text-[15px] font-bold text-gray-900">Ankit Mehta</span>
-                                        <span class="text-[9px] font-bold text-brand bg-[#FFF0E5] px-1.5 py-0.5 rounded uppercase tracking-wider">Premium</span>
+                                        <span class="text-[8px] font-bold text-brand bg-[#FFF0E5] px-1.5 py-0.5 rounded uppercase tracking-wider">Premium</span>
                                     </div>
                                     <div class="flex items-center justify-between w-[220px]">
-                                        <div class="flex text-brand text-[11px] gap-0.5">
+                                        <div class="flex text-brand text-[12px] gap-0.5">
                                             <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
                                         </div>
                                         <span class="text-xs text-gray-400 font-medium">2d ago</span>
@@ -355,8 +376,8 @@
                             
                             <!-- Tags -->
                             <div class="flex flex-wrap gap-2 mb-4">
-                                <span class="bg-gray-100/80 text-gray-600 text-[11px] font-medium px-2.5 py-1 rounded-md">Long term pick</span>
-                                <span class="bg-gray-100/80 text-gray-600 text-[11px] font-medium px-2.5 py-1 rounded-md">Well diversified</span>
+                                <span class="bg-gray-100/80 text-gray-600 text-[12px] font-medium px-2.5 py-1 rounded-md">Long term pick</span>
+                                <span class="bg-gray-100/80 text-gray-600 text-[12px] font-medium px-2.5 py-1 rounded-md">Well diversified</span>
                             </div>
                             
                             <!-- Interaction -->
@@ -381,7 +402,7 @@
                                         <span class="text-[15px] font-bold text-gray-900">Neha Iyer</span>
                                     </div>
                                     <div class="flex items-center justify-between w-[220px]">
-                                        <div class="flex text-[11px] gap-0.5">
+                                        <div class="flex text-[12px] gap-0.5">
                                             <i class="ph-fill ph-star text-brand"></i><i class="ph-fill ph-star text-brand"></i><i class="ph-fill ph-star text-brand"></i><i class="ph-fill ph-star text-brand"></i><i class="ph-fill ph-star text-gray-200"></i>
                                         </div>
                                         <span class="text-xs text-gray-400 font-medium">3d ago</span>

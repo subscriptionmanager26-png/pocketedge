@@ -10,7 +10,7 @@ import {
 } from '../../lib/portfolioEdit';
 
 const compactInputClass =
-  'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[14px]';
+  'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[15px]';
 
 const rowGridClass =
   'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
@@ -151,13 +151,13 @@ export default function HoldingsEditTable({
   return (
     <div>
       <div className="rounded-lg border border-pe-border bg-pe-surface px-4 py-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
           Total invested
         </p>
         <p className="mt-1 text-[28px] font-bold tabular-nums tracking-tight text-pe-text">
           {formatInr(totalInvested)}
         </p>
-        <p className="mt-1 text-[13px] text-pe-text-secondary">
+        <p className="mt-1 text-[12px] text-pe-text-secondary">
           {holdingCount === 0
             ? 'Add holdings below - match this with Total invested in your broker app.'
             : `${holdingCount} holding${holdingCount === 1 ? '' : 's'} · check this against your broker app`}
@@ -166,7 +166,7 @@ export default function HoldingsEditTable({
 
       <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+          <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
             Holdings
           </p>
           {hint ? <p className="mt-1 text-sm text-pe-text-secondary">{hint}</p> : null}
@@ -176,13 +176,13 @@ export default function HoldingsEditTable({
 
       <div className="mt-4 space-y-2">
         <div className={`${rowGridClass} px-0.5`}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Ticker
           </p>
-          <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             {costLabel}
           </p>
-          <p className="text-right text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Qty
           </p>
           <span className="h-4 w-9 shrink-0" aria-hidden="true" />

@@ -196,7 +196,7 @@ export const SHARE_COL_VALUE = 64;
 export const SHARE_COL_GAP = 6;
 /** Single-line row; two-line names grow naturally. */
 export const SHARE_ROW_MIN_HEIGHT = 34;
-export const SHARE_NAME_FONT_SIZE = 10;
+export const SHARE_NAME_FONT_SIZE = 8;
 export const SHARE_NAME_LINE_HEIGHT = 1.3;
 export const SHARE_NAME_MAX_LINES = 2;
 

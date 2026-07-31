@@ -24,6 +24,7 @@ function navItemActive(pathname, href) {
     return (
       pathname === '/markets' ||
       pathname === '/search' ||
+      pathname === '/explore' ||
       pathname.startsWith('/stock/') ||
       pathname.startsWith('/etf/') ||
       pathname.startsWith('/fund/') ||

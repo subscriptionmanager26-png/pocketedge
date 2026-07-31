@@ -38,7 +38,7 @@ export default function ManualStep({ onBack, onSubmit }) {
       badge="Manual"
       footer={
         <>
-          {error ? <p className="mb-2 text-[13px] text-pe-negative">{error}</p> : null}
+          {error ? <p className="mb-2 text-[12px] text-pe-negative">{error}</p> : null}
           <button type="button" onClick={handleSubmit} className={primaryBtnClass}>
             <span>Analyse the portfolio</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />

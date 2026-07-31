@@ -45,9 +45,9 @@ const markdownComponents = {
   ),
   code: ({ inline, children }) =>
     inline ? (
-      <code className="rounded bg-pe-surface px-1 py-0.5 font-mono text-[13px] text-pe-text">{children}</code>
+      <code className="rounded bg-pe-surface px-1 py-0.5 font-mono text-[12px] text-pe-text">{children}</code>
     ) : (
-      <code className="block overflow-x-auto rounded-md bg-pe-surface p-3 font-mono text-[13px] text-pe-text">
+      <code className="block overflow-x-auto rounded-md bg-pe-surface p-3 font-mono text-[12px] text-pe-text">
         {children}
       </code>
     ),
@@ -55,7 +55,7 @@ const markdownComponents = {
   hr: () => <hr className="my-4 border-pe-border" />,
   table: ({ children }) => (
     <div className="mb-3 overflow-x-auto rounded-md border border-pe-border last:mb-0">
-      <table className="min-w-full border-collapse text-left text-[13px]">{children}</table>
+      <table className="min-w-full border-collapse text-left text-[12px]">{children}</table>
     </div>
   ),
   thead: ({ children }) => <thead className="bg-pe-surface">{children}</thead>,

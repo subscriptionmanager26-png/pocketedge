@@ -96,7 +96,7 @@ function ItemLogo({ src, label, size }) {
         height: size,
         borderRadius: px(7),
         border: `1px solid ${COLORS.border}`,
-        fontSize: px(11),
+        fontSize: px(12),
         fontWeight: 600,
         color: COLORS.text,
       }}
@@ -190,17 +190,17 @@ function ListSection({
               borderRadius: px(11),
               background: iconBg,
               color: iconColor,
-              fontSize: px(10),
+              fontSize: px(12),
               fontWeight: 700,
             }}
           >
             {iconChar}
           </div>
-          <div style={{ display: 'flex', fontSize: px(13), fontWeight: 700, color: COLORS.text }}>
+          <div style={{ display: 'flex', fontSize: px(12), fontWeight: 700, color: COLORS.text }}>
             {title}
           </div>
         </div>
-        <div style={{ display: 'flex', fontSize: px(9), fontWeight: 500, color: COLORS.text }}>
+        <div style={{ display: 'flex', fontSize: px(8), fontWeight: 500, color: COLORS.text }}>
           {subtitle}
         </div>
       </div>
@@ -279,7 +279,7 @@ export default async function handler(request) {
                   style={{ width: px(18), height: px(18) }}
                 />
               ) : null}
-              <div style={{ display: 'flex', fontSize: px(13), fontWeight: 700 }}>PocketEdge</div>
+              <div style={{ display: 'flex', fontSize: px(12), fontWeight: 700 }}>PocketEdge</div>
             </div>
             <div
               style={{
@@ -344,14 +344,14 @@ export default async function handler(request) {
                   style={{ width: px(16), height: px(16) }}
                 />
               ) : null}
-              <div style={{ display: 'flex', fontSize: px(11), fontWeight: 500, color: COLORS.text }}>
+              <div style={{ display: 'flex', fontSize: px(12), fontWeight: 500, color: COLORS.text }}>
                 Stay Updated with PocketEdge
               </div>
             </div>
             <div
               style={{
                 display: 'flex',
-                fontSize: px(11),
+                fontSize: px(12),
                 fontWeight: 700,
                 color: COLORS.brandOrange,
               }}

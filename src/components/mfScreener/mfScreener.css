@@ -38,7 +38,7 @@
 }
 
 .mf-screener-cat-tab-label {
-  font-size: 0.6875rem;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   text-align: center;
@@ -50,7 +50,7 @@
 }
 
 .mf-screener-cat-tab-count {
-  font-size: 0.625rem;
+  font-size: 12px;
   font-weight: 600;
   color: var(--pe-text-muted);
 }
@@ -58,7 +58,7 @@
 .mf-screener-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 12px;
 }
 
 .mf-screener-table th,
@@ -72,7 +72,7 @@
 
 .mf-screener-table th {
   background: var(--pe-surface);
-  font-size: 0.7rem;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--pe-text-secondary);
@@ -83,7 +83,7 @@
 
 .mf-screener-th-group {
   text-align: center;
-  font-size: 0.625rem;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.06em;
   color: var(--pe-text-muted);
@@ -102,7 +102,7 @@
   min-width: 54px;
   top: 22px;
   background: var(--pe-surface);
-  font-size: 0.65rem;
+  font-size: 12px;
   padding: 4px 6px;
   line-height: 1.2;
 }
@@ -139,7 +139,7 @@
   border: none;
   background: none;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
   text-align: left;
@@ -231,7 +231,7 @@
   border-radius: 10px;
   background: var(--pe-canvas);
   padding: 10px 12px 10px 36px;
-  font-size: 0.875rem;
+  font-size: 15px;
   color: var(--pe-text);
   outline: none;
 }
@@ -249,7 +249,7 @@
 }
 
 .mf-screener-filters-count {
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   color: var(--pe-text-muted);
 }
@@ -261,7 +261,7 @@
   border: none;
   background: none;
   padding: 0;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   color: var(--pe-accent);
   cursor: pointer;
@@ -282,7 +282,7 @@
   flex-shrink: 0;
   width: 4.5rem;
   padding-top: 7px;
-  font-size: 0.6875rem;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -304,7 +304,7 @@
   border-radius: 999px;
   background: var(--pe-canvas);
   padding: 6px 11px;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   color: var(--pe-text-secondary);
   cursor: pointer;
@@ -323,7 +323,7 @@
 }
 
 .mf-screener-filter-chip-count {
-  font-size: 0.6875rem;
+  font-size: 12px;
   font-weight: 600;
   opacity: 0.65;
 }

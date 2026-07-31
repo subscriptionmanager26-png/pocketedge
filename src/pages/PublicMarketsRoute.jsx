@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import MarketingShell from '../components/MarketingShell';
 import { RouteFallbackSkeleton } from '../components/PageSkeletons';
@@ -6,7 +6,7 @@ import { isPublicMarketsPath, parseAppPath, tabPath } from '../lib/routes';
 import { signInWithGoogle } from '../lib/supabase';
 
 const MarketsPage = lazy(() => import('./MarketsPage'));
-const SearchPage = lazy(() => import('./SearchPage'));
+const ExplorePage = lazy(() => import('./ExplorePage'));
 const StockInvestmentPage = lazy(() => import('./StockInvestmentPage'));
 const InvestmentPage = lazy(() => import('./InvestmentPage'));
 const IndexDetailPage = lazy(() => import('./IndexDetailPage'));
@@ -51,7 +51,7 @@ function GuestSignInBanner() {
 }
 
 /**
- * Public Markets / Search / asset detail shell for logged-out visitors.
+ * Public Markets / Explore / asset detail shell for logged-out visitors.
  * URL is the source of truth; market rows use real <Link> hrefs for crawlers.
  */
 export default function PublicMarketsRoute() {
@@ -59,6 +59,12 @@ export default function PublicMarketsRoute() {
   const navigate = useNavigate();
   const parsed = parseAppPath(location.pathname);
   const [marketsSectionTab, setMarketsSectionTab] = useState('stocks');
+
+  useEffect(() => {
+    if (location.pathname === '/search' || location.pathname.startsWith('/search/')) {
+      navigate(tabPath('explore'), { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   const goMarkets = useCallback(() => {
     navigate(tabPath('markets'));
@@ -70,10 +76,10 @@ export default function PublicMarketsRoute() {
 
   let content = null;
 
-  if (parsed.kind === 'tab' && parsed.tab === 'search') {
+  if (parsed.kind === 'tab' && parsed.tab === 'explore') {
     content = (
       <RouteSuspense>
-        <SearchPage guestMode />
+        <ExplorePage guestMode />
       </RouteSuspense>
     );
   } else if (parsed.kind === 'stock' || parsed.kind === 'etf') {
@@ -113,7 +119,7 @@ export default function PublicMarketsRoute() {
   }
 
   const onMarketsHub = parsed.kind === 'tab' && parsed.tab === 'markets';
-  const onSearch = parsed.kind === 'tab' && parsed.tab === 'search';
+  const onExplore = parsed.kind === 'tab' && parsed.tab === 'explore';
 
   return (
     <MarketingShell wide>
@@ -130,12 +136,12 @@ export default function PublicMarketsRoute() {
           ·
         </span>
         <Link
-          to={tabPath('search')}
+          to={tabPath('explore')}
           className={`font-semibold ${
-            onSearch ? 'text-pe-accent' : 'text-pe-text-secondary hover:text-pe-accent'
+            onExplore ? 'text-pe-accent' : 'text-pe-text-secondary hover:text-pe-accent'
           }`}
         >
-          Search
+          Explore
         </Link>
       </div>
       <GuestSignInBanner />

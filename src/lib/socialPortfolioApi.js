@@ -4,8 +4,10 @@ import {
   applyPortfolioHoldingsUpdate,
   deleteUserPortfolio,
   enrichUserPortfolio,
+  getPerson,
   getUserPortfolio,
   getUserPortfolios,
+  USER_PORTFOLIOS,
 } from '../data/mockData';
 import { enrichPortfolioHoldingsLogos } from './portfolioAssetUniverse';
 import { supabase, isSupabaseConfigured } from './supabase';
@@ -287,4 +289,76 @@ export function discardLocalDraft(ownerId, portfolioId) {
     return deleteUserPortfolio(ownerId, portfolioId);
   }
   return false;
+}
+
+/**
+ * Discover published portfolios across the network (public-redacted).
+ * @returns {Promise<Array<{ portfolio: object, owner: { id, name, handle, avatarUrl?, bio? } }>>}
+ */
+export async function fetchDiscoverPortfolios({ query = '', limit = 20, offset = 0 } = {}) {
+  if (!useBackend()) {
+    const needle = String(query ?? '').trim().toLowerCase();
+    const rows = [];
+    for (const [ownerId, list] of Object.entries(USER_PORTFOLIOS)) {
+      const owner = getPerson(ownerId);
+      if (!owner) continue;
+      for (const raw of list ?? []) {
+        if (raw.isDraft || raw.isArchived) continue;
+        const portfolio = enrichUserPortfolio(raw);
+        const hay = [
+          portfolio.name,
+          portfolio.objective,
+          portfolio.thesis,
+          owner.name,
+          owner.handle,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (needle && !hay.includes(needle)) continue;
+        rows.push({
+          portfolio,
+          owner: {
+            id: owner.id,
+            name: owner.name,
+            handle: owner.handle,
+            avatarUrl: owner.avatarUrl ?? null,
+            bio: owner.bio ?? null,
+          },
+        });
+      }
+    }
+    rows.sort(
+      (a, b) =>
+        new Date(b.portfolio.updatedAt ?? 0).getTime() -
+        new Date(a.portfolio.updatedAt ?? 0).getTime()
+    );
+    return rows.slice(offset, offset + limit);
+  }
+
+  const { data, error } = await supabase.rpc('list_discover_portfolios', {
+    p_query: query?.trim() || null,
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) throw error;
+  const rows = Array.isArray(data) ? data : [];
+  return rows
+    .map((row) => {
+      const portfolio = mapRpcRow(row.portfolio);
+      const ownerRaw = row.owner ?? {};
+      if (!portfolio || !ownerRaw.id) return null;
+      return {
+        portfolio,
+        owner: {
+          id: ownerRaw.id,
+          name: ownerRaw.name ?? ownerRaw.handle ?? 'Investor',
+          handle: ownerRaw.handle ?? '',
+          avatarUrl: ownerRaw.avatarUrl ?? ownerRaw.avatar_url ?? null,
+          bio: ownerRaw.bio ?? null,
+        },
+      };
+    })
+    .filter(Boolean);
 }

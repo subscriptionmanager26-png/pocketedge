@@ -51,7 +51,7 @@ function ItemLogo({ logoIconUrl, assetKey, name, size = SHARE_COL_LOGO }) {
         overflow: 'hidden',
         backgroundColor: backdrop === 'dark' ? '#27272a' : '#ffffff',
         color: COLORS.text,
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
         flexShrink: 0,
       }}
@@ -178,7 +178,7 @@ function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, 
           </div>
           <h2
             style={{
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 700,
               color: COLORS.text,
               margin: 0,
@@ -188,7 +188,7 @@ function ShareListSection({ title, subtitle, iconTone, icon, rows, renderValue, 
             {title}
           </h2>
         </div>
-        <span style={{ fontSize: 9, fontWeight: 500, color: COLORS.text, flexShrink: 0 }}>
+        <span style={{ fontSize: 8, fontWeight: 500, color: COLORS.text, flexShrink: 0 }}>
           {subtitle}
         </span>
       </header>
@@ -262,7 +262,7 @@ export default function PortfolioShareCard({
             height={18}
             style={{ width: 18, height: 18, objectFit: 'contain' }}
           />
-          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: '-0.025em' }}>
+          <span style={{ fontWeight: 700, fontSize: 12, letterSpacing: '-0.025em' }}>
             PocketEdge
           </span>
         </div>
@@ -331,7 +331,7 @@ export default function PortfolioShareCard({
             height={16}
             style={{ width: 16, height: 16, objectFit: 'contain' }}
           />
-          <span style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.25, color: COLORS.text }}>
+          <span style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.25, color: COLORS.text }}>
             Stay Updated with PocketEdge
           </span>
         </div>
@@ -339,7 +339,7 @@ export default function PortfolioShareCard({
           <div style={{ width: 1, height: 12, backgroundColor: COLORS.footerDivider }} />
           <span
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               color: COLORS.brandOrange,
               whiteSpace: 'nowrap',

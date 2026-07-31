@@ -36,7 +36,7 @@ function SortHeader({ label, active, dir, onClick, align = 'left' }) {
     >
       {label}
       {active ? (
-        <span className="text-[10px]">{dir === 'asc' ? '↑' : '↓'}</span>
+        <span className="text-[12px]">{dir === 'asc' ? '↑' : '↓'}</span>
       ) : (
         <ArrowDownUp className="h-3 w-3 opacity-40" aria-hidden />
       )}
@@ -401,7 +401,7 @@ export default function EtfInavPage() {
                       </td>
                       <td className={`text-right tabular-nums font-semibold ${tone}`}>
                         <span>{formatPremiumPct(row.premiumPct)}</span>
-                        <span className="mt-0.5 block text-[10px] font-medium opacity-80">
+                        <span className="mt-0.5 block text-[12px] font-medium opacity-80">
                           {premiumLabel(row.premium)}
                         </span>
                       </td>
@@ -410,7 +410,7 @@ export default function EtfInavPage() {
                         {formatPrice(row.inav)}
                         {row.usedNseFallback ? (
                           <span
-                            className="mt-0.5 block text-[10px] font-medium text-pe-text-muted"
+                            className="mt-0.5 block text-[12px] font-medium text-pe-text-muted"
                             title="AMC iNAV premium/discount exceeded 30%; using NSE iNAV"
                           >
                             NSE iNAV

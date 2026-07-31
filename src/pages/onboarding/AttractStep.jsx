@@ -12,7 +12,7 @@ export default function AttractStep({ onContinue }) {
             <span>Check my portfolio</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
-          <p className="mt-3 text-center text-[13px] text-pe-text-muted">
+          <p className="mt-3 text-center text-[12px] text-pe-text-muted">
             Takes about a minute. You can edit holdings anytime after.
           </p>
         </>

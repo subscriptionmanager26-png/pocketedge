@@ -148,7 +148,7 @@ export default function PortfolioCard({
           className="mt-4 block w-full text-left"
         >
           <div className="rounded-[12px] border border-pe-border bg-white px-3.5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
               Top {TOP_N} holdings
             </p>
             <div className="mt-3 space-y-2">
@@ -162,9 +162,9 @@ export default function PortfolioCard({
                       name={row.label}
                       size="xs"
                     />
-                    <p className="truncate text-[14px] font-semibold text-pe-text">{row.label}</p>
+                    <p className="truncate text-[15px] font-semibold text-pe-text">{row.label}</p>
                   </div>
-                  <p className="shrink-0 text-[13px] font-semibold tabular-nums text-pe-text">
+                  <p className="shrink-0 text-[12px] font-semibold tabular-nums text-pe-text">
                     {formatPct(row.weight, { signed: false })}
                   </p>
                 </div>
