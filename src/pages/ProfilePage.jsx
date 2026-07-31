@@ -151,6 +151,7 @@ export default function ProfilePage({
   onOpenSourcePortfolio,
   onFollowListModeChange,
   onRegisterFollowListBackHandler,
+  onRequireSignIn,
 }) {
   const appUser = getAppCurrentUser();
   const isOwn = mode === 'own';
@@ -483,6 +484,10 @@ export default function ProfilePage({
         onOpenFollowers={() => setFollowListMode('followers')}
         onOpenFollowing={() => setFollowListMode('following')}
         onToggleFollow={async () => {
+          if (onRequireSignIn) {
+            onRequireSignIn();
+            return;
+          }
           const next = await toggleFollow(person.id);
           setFollowingState(next);
           onGraphChange?.();

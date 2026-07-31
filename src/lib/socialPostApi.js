@@ -219,6 +219,25 @@ export async function fetchFeedPosts({ limit = 50, offset = 0 } = {}) {
   return posts;
 }
 
+/** Logged-out landing feed — same shape as fetchFeedPosts, no auth required. */
+export async function fetchPublicFeedPosts({ limit = 50, offset = 0 } = {}) {
+  const { data, error } = await supabase.rpc('list_public_feed_posts', {
+    p_limit: limit,
+    p_offset: offset,
+  });
+  if (error) throw error;
+  return (data?.items ?? []).map((row) => mapPostRow(row));
+}
+
+/** Public post detail for guests (comments included). */
+export async function fetchPublicPost(postId) {
+  const { data, error } = await supabase.rpc('get_public_social_post', {
+    p_post_id: postId,
+  });
+  if (error) throw error;
+  return mapPostRow(data, { comments: data.comments ?? [] });
+}
+
 /** Posts that mention any of the given tickers within the last `days` days. */
 export async function fetchPostsMentioningTickers(
   tickers,

@@ -65,18 +65,20 @@ export function useProfileRouting({
     setSelectedCommodityId,
   };
 
+  const routingActive = authView === 'app' || authView === 'landing';
+
   // Mark deep-link paths as pending immediately so state→URL cannot clobber them
-  // before authView becomes 'app' (default tab is 'feed').
+  // before authView becomes 'app'/'landing' (default tab is 'feed').
   useEffect(() => {
-    if (authView === 'app') return;
+    if (routingActive) return;
     if (isDeepLinkPath(location.pathname)) {
       pendingUrlPath.current = location.pathname;
     }
-  }, [authView, location.pathname]);
+  }, [routingActive, location.pathname]);
 
   // URL -> state
   useEffect(() => {
-    if (authView !== 'app') return;
+    if (!routingActive) return;
 
     const pathname = location.pathname;
     const parsed = parseAppPath(pathname);
@@ -227,7 +229,7 @@ export function useProfileRouting({
 
   // state -> URL
   useEffect(() => {
-    if (authView !== 'app' || !profileReady) return;
+    if (!routingActive || !profileReady) return;
     if (applyingUrl.current || pendingUrlPath.current) return;
 
     const target = pathFromAppState({

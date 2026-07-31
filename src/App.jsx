@@ -23,7 +23,7 @@ import {
   resolveAuthViewForUserAsync,
   skipAuthForDev,
 } from './lib/sessionStore';
-import { cleanOAuthCallbackUrl, ensureSupabase, isSupabaseConfigured, shouldLoadSupabaseEarly, signOutFromSupabase } from './lib/supabase';
+import { cleanOAuthCallbackUrl, ensureSupabase, isSupabaseConfigured, shouldLoadSupabaseEarly, signInWithGoogle, signOutFromSupabase } from './lib/supabase';
 import { seedMarketAssetCache } from './lib/marketAssetSeed';
 import { identifyPostHogUser, resetPostHogUser } from './lib/posthog';
 import { clearWatchlists } from './lib/watchlistStore';
@@ -42,6 +42,8 @@ import {
   buildOptimisticPostComment,
   createPost,
   fetchPost,
+  fetchPublicFeedPosts,
+  fetchPublicPost,
   togglePostLike,
   usePostBackend,
 } from './lib/socialPostApi';
@@ -49,13 +51,14 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, isPublicMarketsPath, marketsPath, parseMarketSection, postPath, profilePath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, marketsPath, parseMarketSection, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
   navigateToProfile,
   navigateToTab,
   useProfileRouting,
 } from './lib/useProfileRouting';
+import GuestSignInCta from './components/GuestSignInCta';
 
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const OnboardingFlow = lazy(() => import('./pages/onboarding/OnboardingFlow'));
@@ -71,8 +74,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SearchPage = lazy(() => import('./pages/ExplorePage'));
 const ExplorePage = SearchPage;
 const IdeasPage = lazy(() => import('./pages/IdeasPage'));
-const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
-const PublicMarketsRoute = lazy(() => import('./pages/PublicMarketsRoute'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
 const BusinessModelPage = lazy(() => import('./pages/marketing/BusinessModelPage'));
 const CompanyBriefPage = lazy(() => import('./pages/marketing/CompanyBriefPage'));
@@ -327,11 +328,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (authView === 'landing') {
+      setSelfProfile(null);
+      setProfileReady(true);
+      return undefined;
+    }
+
     if (authView !== 'app' || !authUser?.id) {
       setSelfProfile(null);
       setProfileReady(true);
       setPostsLoading(false);
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -352,9 +359,37 @@ export default function App() {
     };
   }, [authView, authUser?.id]);
 
+  // Guest landing: public For You feed inside the same Shell frame.
   useEffect(() => {
-    if (authView !== 'app') return;
-    if (tab === 'markets' || tab === 'portfolio' || tab === 'profile') {
+    if (authView !== 'landing') return undefined;
+    if (!isSupabaseConfigured() || skipAuthForDev()) {
+      setPostsLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setPostsLoading(true);
+    fetchPublicFeedPosts()
+      .then((next) => {
+        if (cancelled) return;
+        setPosts(next);
+      })
+      .catch((err) => {
+        console.error('fetchPublicFeedPosts failed', err);
+        if (!cancelled) setPosts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPostsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authView]);
+
+  useEffect(() => {
+    if (authView !== 'app' && authView !== 'landing') return;
+    if (tab === 'markets' || tab === 'portfolio' || tab === 'profile' || tab === 'explore') {
       markTabPaint(tab);
     }
   }, [authView, tab]);
@@ -435,12 +470,28 @@ export default function App() {
     setTab('feed');
   };
 
+  const requireSignIn = useCallback(async () => {
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      console.error('Sign-in failed', err);
+    }
+  }, []);
+
   const openCompose = () => {
+    if (authView === 'landing') {
+      void requireSignIn();
+      return;
+    }
     setComposePortfolioShare(null);
     setComposeOpen(true);
   };
 
   const handleAddComment = async (postId, text) => {
+    if (authView === 'landing') {
+      void requireSignIn();
+      return;
+    }
     const trimmed = text.trim();
     if (!trimmed) return;
 
@@ -508,6 +559,10 @@ export default function App() {
   };
 
   const handleTogglePostLike = (postId) => {
+    if (authView === 'landing') {
+      void requireSignIn();
+      return;
+    }
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
@@ -521,6 +576,10 @@ export default function App() {
   };
 
   const setFeedModeAndStay = (mode) => {
+    if (authView === 'landing' && mode === 'following') {
+      void requireSignIn();
+      return;
+    }
     resetScroll();
     setFeedMode(mode);
     setSelectedPostId(null);
@@ -663,6 +722,10 @@ export default function App() {
   };
 
   const openSettings = () => {
+    if (authView === 'landing') {
+      void requireSignIn();
+      return;
+    }
     resetScroll();
     setSelectedPostId(null);
     setSettingsReturnTab(tab === 'settings' ? settingsReturnTab : tab);
@@ -684,6 +747,13 @@ export default function App() {
 
   const openProfile = (userId) => {
     if (!userId) return;
+    if (
+      authView === 'landing' &&
+      (userId === currentUserId || userId === CURRENT_USER.id || userId === 'u_me')
+    ) {
+      void requireSignIn();
+      return;
+    }
     resetScroll();
     setSelectedPostId(null);
     setProfilePortfolioId(null);
@@ -704,6 +774,13 @@ export default function App() {
 
   const openProfilePortfolio = (userId, portfolioId) => {
     if (!userId || !portfolioId) return;
+    if (
+      authView === 'landing' &&
+      (userId === currentUserId || userId === CURRENT_USER.id || userId === 'u_me')
+    ) {
+      void requireSignIn();
+      return;
+    }
     resetScroll();
     setSelectedPostId(null);
     setProfileReturnTab(tab === 'profile' || tab === 'settings' ? profileReturnTab : tab);
@@ -715,6 +792,17 @@ export default function App() {
   };
 
   const handleTabChange = (next) => {
+    if (
+      authView === 'landing' &&
+      (next === 'ideas' ||
+        next === 'activity' ||
+        next === 'portfolio' ||
+        next === 'profile' ||
+        next === 'settings')
+    ) {
+      void requireSignIn();
+      return;
+    }
     resetScroll();
     setTab(next);
     setSelectedPostId(null);
@@ -757,27 +845,30 @@ export default function App() {
     setPostsLoading(false);
   };
 
+  const inShell = authView === 'app' || authView === 'landing';
+  const guestMode = authView === 'landing';
+
   const pageTitleOverride =
-    authView === 'app' && tab === 'settings'
+    inShell && tab === 'settings'
       ? 'Settings'
-      : authView === 'app' && selectedPostId && tab === 'feed'
+      : inShell && selectedPostId && tab === 'feed'
         ? 'Post'
-        : authView === 'app' && tab === 'activity'
+        : inShell && tab === 'activity'
           ? 'Activity'
-          : authView === 'app' && tab === 'profile' && profileMode === 'public'
+          : inShell && tab === 'profile' && profileMode === 'public'
             ? getPerson(profileUserId)?.name
-          : authView === 'app' && tab === 'markets' && selectedCommodityId
+          : inShell && tab === 'markets' && selectedCommodityId
             ? selectedCommodityId
-          : authView === 'app' && tab === 'markets' && selectedIndexId
+          : inShell && tab === 'markets' && selectedIndexId
             ? selectedIndexId
-          : authView === 'app' && tab === 'markets' && selectedFundId
+          : inShell && tab === 'markets' && selectedFundId
             ? getFund(selectedFundId)?.name ?? 'Fund'
-            : authView === 'app' && tab === 'markets' && selectedTicker
+            : inShell && tab === 'markets' && selectedTicker
               ? STOCKS[selectedTicker]?.name ?? selectedTicker
             : undefined;
 
   const mobileBack = useMemo(() => {
-    if (authView !== 'app') return null;
+    if (!inShell) return null;
     if (selectedPostId && tab === 'feed') {
       return { label: 'Back', onBack: closePost };
     }
@@ -841,6 +932,7 @@ export default function App() {
     }
     return null;
   }, [
+    inShell,
     authView,
     selectedPostId,
     tab,
@@ -873,7 +965,7 @@ export default function App() {
 
   if (authView === 'bootstrapping') {
     const bootPath = parseAppPath(location.pathname);
-    // Public marketing + markets can paint without waiting on /api/boot for guests.
+    // Public marketing can paint without waiting on auth for guests.
     if (bootPath.kind === 'marketing') {
       return (
         <RouteSuspense>
@@ -882,13 +974,6 @@ export default function App() {
             section={bootPath.section}
             symbol={bootPath.symbol}
           />
-        </RouteSuspense>
-      );
-    }
-    if (!authUser && isPublicMarketsPath(bootPath)) {
-      return (
-        <RouteSuspense>
-          <PublicMarketsRoute />
         </RouteSuspense>
       );
     }
@@ -916,25 +1001,6 @@ export default function App() {
     );
   }
 
-  if (authView !== 'app' && authView !== 'onboarding' && isPublicMarketsPath(parsedPath)) {
-    return (
-      <RouteSuspense>
-        <PublicMarketsRoute />
-      </RouteSuspense>
-    );
-  }
-
-  if (authView === 'landing') {
-    if (parsedPath.kind === 'profile' && parsedPath.username) {
-      return (
-        <RouteSuspense>
-          <PublicProfilePage username={parsedPath.username} />
-        </RouteSuspense>
-      );
-    }
-    return <HomePage />;
-  }
-
   if (authView === 'onboarding') {
     return (
       <RouteSuspense>
@@ -946,6 +1012,10 @@ export default function App() {
     );
   }
 
+  if (authView !== 'app' && authView !== 'landing') {
+    return null;
+  }
+
   return (
     <>
       <Shell
@@ -953,13 +1023,17 @@ export default function App() {
         feedMode={feedMode}
         pageTitleOverride={pageTitleOverride}
         mobileBack={mobileBack}
-        activityUnread={activityUnread}
+        activityUnread={guestMode ? 0 : activityUnread}
         routeKey={routeKey}
         scrollAction={scrollAction}
         onScrollActionConsumed={consumeScrollAction}
         onTabChange={handleTabChange}
         onFeedModeChange={setFeedModeAndStay}
         onProfile={() => {
+          if (guestMode) {
+            void requireSignIn();
+            return;
+          }
           resetScroll();
           setSelectedPostId(null);
           setProfileMode('own');
@@ -971,6 +1045,8 @@ export default function App() {
         onSettings={openSettings}
         onGoHome={goHome}
         onCompose={openCompose}
+        guestMode={guestMode}
+        onRequireSignIn={requireSignIn}
         mobileActions={mobileHeaderActions}
       >
         {tab === 'feed' && (
@@ -984,21 +1060,42 @@ export default function App() {
                 onOpenStock={openStock}
                 onAddComment={(text) => handleAddComment(selectedPostId, text)}
                 onToggleLike={handleTogglePostLike}
-                fetchPost={usePostBackend() ? fetchPost : null}
+                fetchPost={
+                  guestMode
+                    ? fetchPublicPost
+                    : usePostBackend()
+                      ? fetchPost
+                      : null
+                }
               />
             </RouteSuspense>
           ) : (
-            <FeedPage
-              posts={posts}
-              feedMode={feedMode}
-              graphTick={graphTick}
-              loading={postsLoading}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-              onOpenProfile={openProfile}
-              onOpenPost={openPost}
-              onOpenStock={openStock}
-              onToggleLike={handleTogglePostLike}
-            />
+            <>
+              {guestMode ? (
+                <div className="border-b border-pe-border px-4 py-2.5 text-center text-[12px] text-pe-text-secondary">
+                  Browsing as a guest.{' '}
+                  <button
+                    type="button"
+                    onClick={() => void requireSignIn()}
+                    className="font-semibold text-pe-accent hover:underline"
+                  >
+                    Sign in
+                  </button>{' '}
+                  to post, follow, and manage your portfolio.
+                </div>
+              ) : null}
+              <FeedPage
+                posts={posts}
+                feedMode={feedMode}
+                graphTick={graphTick}
+                loading={postsLoading}
+                onGraphChange={() => setGraphTick((n) => n + 1)}
+                onOpenProfile={openProfile}
+                onOpenPost={openPost}
+                onOpenStock={openStock}
+                onToggleLike={handleTogglePostLike}
+              />
+            </>
           )
         )}
         {tab === 'explore' && (
@@ -1013,44 +1110,53 @@ export default function App() {
             />
           </RouteSuspense>
         )}
-        {tab === 'ideas' && (
-          <RouteSuspense>
-            <IdeasPage
-              onOpenProfile={openProfile}
-              onOpenPortfolio={openProfilePortfolio}
-            />
-          </RouteSuspense>
-        )}
-        {tab === 'activity' && (
-          <RouteSuspense>
-            <ActivityPage
-              items={activityItems}
-              onOpenProfile={openProfile}
-              onOpenPost={(postId) => {
-                markActivityRead(
-                  activityItems.find((item) => item.meta?.postId === postId)?.id ?? ''
-                );
-                openPost(postId);
-              }}
-              onOpenStock={(ticker) => {
-                const item = activityItems.find((i) => i.ticker === ticker);
-                if (item) markActivityRead(item.id);
-                openStock(ticker);
-              }}
-            />
-          </RouteSuspense>
-        )}
-        {tab === 'portfolio' && (
-          <RouteSuspense>
-            <PortfolioPage
-              onSelectStock={openStock}
-              onSelectFund={openFund}
-              onOpenProfile={openProfile}
-              onOpenPost={openPost}
-              onOpenSourcePortfolio={openProfilePortfolio}
-            />
-          </RouteSuspense>
-        )}
+        {tab === 'ideas' &&
+          (guestMode ? (
+            <GuestSignInCta action="browse portfolio ideas" />
+          ) : (
+            <RouteSuspense>
+              <IdeasPage
+                onOpenProfile={openProfile}
+                onOpenPortfolio={openProfilePortfolio}
+              />
+            </RouteSuspense>
+          ))}
+        {tab === 'activity' &&
+          (guestMode ? (
+            <GuestSignInCta action="see your activity" />
+          ) : (
+            <RouteSuspense>
+              <ActivityPage
+                items={activityItems}
+                onOpenProfile={openProfile}
+                onOpenPost={(postId) => {
+                  markActivityRead(
+                    activityItems.find((item) => item.meta?.postId === postId)?.id ?? ''
+                  );
+                  openPost(postId);
+                }}
+                onOpenStock={(ticker) => {
+                  const item = activityItems.find((i) => i.ticker === ticker);
+                  if (item) markActivityRead(item.id);
+                  openStock(ticker);
+                }}
+              />
+            </RouteSuspense>
+          ))}
+        {tab === 'portfolio' &&
+          (guestMode ? (
+            <GuestSignInCta action="manage your portfolio" />
+          ) : (
+            <RouteSuspense>
+              <PortfolioPage
+                onSelectStock={openStock}
+                onSelectFund={openFund}
+                onOpenProfile={openProfile}
+                onOpenPost={openPost}
+                onOpenSourcePortfolio={openProfilePortfolio}
+              />
+            </RouteSuspense>
+          ))}
         {tab === 'markets' &&
           (selectedCommodityId ? (
             <RouteSuspense>
@@ -1098,69 +1204,86 @@ export default function App() {
               />
             </RouteSuspense>
           ))}
-        {tab === 'profile' && (
-          <RouteSuspense>
-            <ProfilePage
-              mode={profileMode}
-              userId={profileUserId}
-              initialPerson={
-                profileSeedPerson?.id === profileUserId ? profileSeedPerson : null
-              }
-              posts={posts}
-              selectedPortfolioId={profilePortfolioId}
-              onSelectPortfolio={(id) => {
-                resetScroll();
-                setProfilePortfolioId(id);
-                navigateToProfile(navigate, profileUserId, { portfolioId: id });
-              }}
-              onClearPortfolio={() => {
-                backScroll();
-                navigateBack(navigate, location, profileBackFallback());
-              }}
-              onBack={() => {
-                backScroll();
-                navigateBack(navigate, location, tabPath(profileReturnTab || 'feed'));
-              }}
-              onOpenPublicPreview={() => {
-                setProfileUserId(currentUserId);
-                setProfileMode('public');
-              }}
-              onExitPublicPreview={() => {
-                setProfileUserId(currentUserId);
-                setProfileMode('own');
-              }}
-              onOpenProfile={openProfile}
-              onOpenPost={openPost}
-              onOpenStock={openStock}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-              onMobileHeaderActionsChange={setMobileHeaderActions}
-              onRegisterPortfolioBackHandler={(handler) => {
-                portfolioBackRef.current = handler;
-              }}
-              onFollowListModeChange={setProfileFollowListMode}
-              onRegisterFollowListBackHandler={(handler) => {
-                followListBackRef.current = handler;
-              }}
-              onOpenSourcePortfolio={openProfilePortfolio}
-            />
-          </RouteSuspense>
-        )}
-        {tab === 'settings' && (
-          <RouteSuspense>
-            <SettingsPage onLogout={handleLogout} />
-          </RouteSuspense>
-        )}
+        {tab === 'profile' &&
+          (guestMode && profileMode === 'own' ? (
+            <GuestSignInCta action="view your profile" />
+          ) : (
+            <RouteSuspense>
+              <ProfilePage
+                mode={profileMode}
+                userId={profileUserId}
+                initialPerson={
+                  profileSeedPerson?.id === profileUserId ? profileSeedPerson : null
+                }
+                posts={posts}
+                selectedPortfolioId={profilePortfolioId}
+                onSelectPortfolio={(id) => {
+                  resetScroll();
+                  setProfilePortfolioId(id);
+                  navigateToProfile(navigate, profileUserId, { portfolioId: id });
+                }}
+                onClearPortfolio={() => {
+                  backScroll();
+                  navigateBack(navigate, location, profileBackFallback());
+                }}
+                onBack={() => {
+                  backScroll();
+                  navigateBack(navigate, location, tabPath(profileReturnTab || 'feed'));
+                }}
+                onOpenPublicPreview={() => {
+                  if (guestMode) {
+                    void requireSignIn();
+                    return;
+                  }
+                  setProfileUserId(currentUserId);
+                  setProfileMode('public');
+                }}
+                onExitPublicPreview={() => {
+                  if (guestMode) {
+                    void requireSignIn();
+                    return;
+                  }
+                  setProfileUserId(currentUserId);
+                  setProfileMode('own');
+                }}
+                onOpenProfile={openProfile}
+                onOpenPost={openPost}
+                onOpenStock={openStock}
+                onGraphChange={() => setGraphTick((n) => n + 1)}
+                onMobileHeaderActionsChange={setMobileHeaderActions}
+                onRegisterPortfolioBackHandler={(handler) => {
+                  portfolioBackRef.current = handler;
+                }}
+                onFollowListModeChange={setProfileFollowListMode}
+                onRegisterFollowListBackHandler={(handler) => {
+                  followListBackRef.current = handler;
+                }}
+                onOpenSourcePortfolio={openProfilePortfolio}
+                onRequireSignIn={guestMode ? requireSignIn : undefined}
+              />
+            </RouteSuspense>
+          ))}
+        {tab === 'settings' &&
+          (guestMode ? (
+            <GuestSignInCta action="open settings" />
+          ) : (
+            <RouteSuspense>
+              <SettingsPage onLogout={handleLogout} />
+            </RouteSuspense>
+          ))}
       </Shell>
 
-      <ComposeModal
-        open={composeOpen}
-        portfolioShare={composePortfolioShare}
-        onClose={() => {
-          setComposeOpen(false);
-          setComposePortfolioShare(null);
-        }}
-        onPost={handlePost}
-      />
+      {!guestMode ? (
+        <ComposeModal
+          open={composeOpen}
+          portfolioShare={composePortfolioShare}
+          onClose={() => {
+            setComposeOpen(false);
+            setComposePortfolioShare(null);
+          }}
+          onPost={handlePost}
+        />
+      ) : null}
     </>
   );
 }

@@ -96,6 +96,8 @@ export default function Shell({
   onSettings,
   onGoHome,
   onCompose,
+  guestMode = false,
+  onRequireSignIn,
   mobileActions = null,
   children,
 }) {
@@ -257,6 +259,10 @@ export default function Shell({
   }, [routeKey, scrollAction, onScrollActionConsumed]);
 
   const selectFeedMode = (mode) => {
+    if (guestMode && mode === 'following') {
+      onRequireSignIn?.();
+      return;
+    }
     onFeedModeChange?.(mode);
     setMobileMenuOpen(false);
     setDesktopMenuOpen(false);
@@ -264,15 +270,44 @@ export default function Shell({
 
   const goTab = (id) => {
     prefetchTab(id);
+    if (guestMode && (id === 'ideas' || id === 'activity' || id === 'portfolio' || id === 'profile')) {
+      onRequireSignIn?.();
+      return;
+    }
     if (id === 'profile') onProfile?.();
     else if (id === 'menu') setAppMenuOpen((open) => !open);
-    else if (id === 'settings') onSettings?.();
-    else onTabChange(id);
+    else if (id === 'settings') {
+      if (guestMode) {
+        onRequireSignIn?.();
+        return;
+      }
+      onSettings?.();
+    } else onTabChange(id);
   };
 
   const openSettingsFromMenu = () => {
     setAppMenuOpen(false);
+    if (guestMode) {
+      onRequireSignIn?.();
+      return;
+    }
     onSettings?.();
+  };
+
+  const handleComposeOrSignIn = () => {
+    if (guestMode) {
+      onRequireSignIn?.();
+      return;
+    }
+    onCompose?.();
+  };
+
+  const handleProfileOrSignIn = () => {
+    if (guestMode) {
+      onRequireSignIn?.();
+      return;
+    }
+    onProfile?.();
   };
 
   const currentUser = getAppCurrentUser();
@@ -323,6 +358,7 @@ export default function Shell({
                     >
                       <AppMenuLinks
                         compact
+                        guestMode={guestMode}
                         onNavigate={() => setAppMenuOpen(false)}
                         onSettings={openSettingsFromMenu}
                       />
@@ -361,35 +397,45 @@ export default function Shell({
 
           <button
             type="button"
-            onClick={onCompose}
+            onClick={handleComposeOrSignIn}
             className="mt-2 flex min-h-12 w-full items-center justify-center rounded-full bg-pe-accent px-4 text-center text-[20px] font-bold text-white transition hover:bg-pe-accent-pressed active:scale-[0.99]"
           >
-            Post
+            {guestMode ? 'Sign in' : 'Post'}
           </button>
         </nav>
 
         <div className="p-2">
-          <button
-            type="button"
-            onClick={onProfile}
-            className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
-              tab === 'profile'
-                ? 'font-semibold text-pe-accent'
-                : 'font-medium text-pe-text-secondary'
-            }`}
-          >
-            <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
-              <Avatar person={currentUser} size="sm" />
-            </span>
-            <span className="min-w-0 flex-1 pr-2">
-              <span className="block truncate text-[20px] font-medium leading-6 text-pe-text">
-                {currentUser.name}
+          {guestMode ? (
+            <button
+              type="button"
+              onClick={handleProfileOrSignIn}
+              className="flex min-h-12 w-full items-center justify-center rounded-md border border-pe-border px-3 text-[15px] font-semibold text-pe-text transition hover:bg-pe-surface"
+            >
+              Sign in to your account
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleProfileOrSignIn}
+              className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
+                tab === 'profile'
+                  ? 'font-semibold text-pe-accent'
+                  : 'font-medium text-pe-text-secondary'
+              }`}
+            >
+              <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
+                <Avatar person={currentUser} size="sm" />
               </span>
-              <span className="block truncate text-[12px] text-pe-text-muted">
-                @{currentUser.handle}
+              <span className="min-w-0 flex-1 pr-2">
+                <span className="block truncate text-[20px] font-medium leading-6 text-pe-text">
+                  {currentUser.name}
+                </span>
+                <span className="block truncate text-[12px] text-pe-text-muted">
+                  @{currentUser.handle}
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
+          )}
         </div>
       </aside>
 
@@ -533,9 +579,9 @@ export default function Shell({
       {showFeedSelector && (
         <button
           type="button"
-          onClick={onCompose}
+          onClick={handleComposeOrSignIn}
           className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white transition hover:bg-pe-accent-pressed active:scale-95 md:hidden"
-          aria-label="Compose post"
+          aria-label={guestMode ? 'Sign in' : 'Compose post'}
         >
           <Pencil className="h-5 w-5" />
         </button>
@@ -597,6 +643,7 @@ export default function Shell({
         </div>
         <nav className="flex flex-col gap-1 p-3" aria-label="App menu">
           <AppMenuLinks
+            guestMode={guestMode}
             onNavigate={() => setAppMenuOpen(false)}
             onSettings={openSettingsFromMenu}
           />
@@ -606,7 +653,7 @@ export default function Shell({
   );
 }
 
-function AppMenuLinks({ onNavigate, onSettings, compact = false }) {
+function AppMenuLinks({ onNavigate, onSettings, guestMode = false, compact = false }) {
   const itemClass = compact
     ? 'flex w-full items-center rounded-md px-2.5 py-2 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface'
     : 'flex w-full items-center rounded-lg px-3 py-3.5 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface';
@@ -631,7 +678,7 @@ function AppMenuLinks({ onNavigate, onSettings, compact = false }) {
         className={`${itemClass} gap-2`}
       >
         <Settings className="h-4 w-4 shrink-0 text-pe-text-muted" />
-        Settings
+        {guestMode ? 'Sign in' : 'Settings'}
       </button>
     </>
   );
