@@ -8,6 +8,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
 import { getActivityFeed } from '../lib/activityFeed';
 import { isActivityRead, markActivityRead } from '../lib/activityStore';
@@ -24,11 +25,12 @@ const TYPE_ICONS = {
 
 export default function ActivityPage({
   items,
+  guestMode = false,
   onOpenProfile,
   onOpenPost,
   onOpenStock,
 }) {
-  const feed = items ?? getActivityFeed();
+  const feed = guestMode ? [] : (items ?? getActivityFeed());
 
   const { followers, following, holdings } = useMemo(() => {
     const followerItems = feed.filter((item) => item.category === 'followers');
@@ -49,9 +51,21 @@ export default function ActivityPage({
         </h1>
       </PageHeader>
 
+      {guestMode ? (
+        <GuestSignInCta
+          title="Your activity lives here"
+          action="see followers, updates from people you follow, and moves on your holdings"
+          showExploreHint={false}
+        />
+      ) : null}
+
       <ActivitySection
         title="New followers"
-        empty="When someone follows you, they’ll show up here."
+        empty={
+          guestMode
+            ? 'Sign in to see who follows you.'
+            : 'When someone follows you, they’ll show up here.'
+        }
         items={followers}
         onOpenProfile={onOpenProfile}
         onOpenPost={onOpenPost}
@@ -60,7 +74,11 @@ export default function ActivityPage({
 
       <ActivitySection
         title="From people you follow"
-        empty="Posts, trades, and portfolio changes from people you follow will show up here."
+        empty={
+          guestMode
+            ? 'Sign in to follow investors and get their updates here.'
+            : 'Posts, trades, and portfolio changes from people you follow will show up here.'
+        }
         items={following}
         onOpenProfile={onOpenProfile}
         onOpenPost={onOpenPost}
@@ -69,7 +87,11 @@ export default function ActivityPage({
 
       <ActivitySection
         title="From your holdings"
-        empty="Significant community posts and trades on stocks in your portfolio appear here."
+        empty={
+          guestMode
+            ? 'Sign in to track community activity on stocks you hold.'
+            : 'Significant community posts and trades on stocks in your portfolio appear here.'
+        }
         items={holdings}
         onOpenProfile={onOpenProfile}
         onOpenPost={onOpenPost}

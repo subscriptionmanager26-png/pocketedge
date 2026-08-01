@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
+import GuestSignInCta from '../components/GuestSignInCta';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
 import {
@@ -40,6 +41,7 @@ function useBackend() {
 }
 
 export default function PortfolioPage({
+  guestMode = false,
   onSelectStock,
   onSelectFund,
   onOpenProfile,
@@ -72,6 +74,7 @@ export default function PortfolioPage({
   useEffect(() => subscribeWatchlists(() => setWatchlistTick((n) => n + 1)), []);
 
   useEffect(() => {
+    if (guestMode) return undefined;
     let cancelled = false;
 
     if (useBackend()) {
@@ -107,9 +110,9 @@ export default function PortfolioPage({
     return () => {
       cancelled = true;
     };
-  }, [ownerId, portfolioTick]);
+  }, [guestMode, ownerId, portfolioTick]);
 
-  const watchlists = useMemo(() => getWatchlists(), [watchlistTick]);
+  const watchlists = useMemo(() => (guestMode ? [] : getWatchlists()), [guestMode, watchlistTick]);
 
   const lists = useMemo(() => {
     if (useBackend()) {
@@ -498,6 +501,42 @@ export default function PortfolioPage({
       posts: useBackend() || !isDevMockMode() ? portfolioPosts : base.posts,
     };
   }, [tickers, portfolioNews, portfolioPosts]);
+
+  if (guestMode) {
+    return (
+      <div>
+        <PageHeader>
+          <h1 className="text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
+            Portfolio
+          </h1>
+        </PageHeader>
+        <div className="px-4 pt-4">
+          <p className="text-sm text-pe-text-secondary">
+            Track holdings, day&apos;s PnL, news, and discussions in one place.
+          </p>
+        </div>
+        <GuestSignInCta
+          title="Your portfolio is private"
+          action="add holdings and track performance"
+          showExploreHint={false}
+        />
+        <div className="mx-4 mb-8 overflow-hidden rounded-xl border border-dashed border-pe-border">
+          <div className="border-b border-pe-border bg-pe-surface/50 px-4 py-3">
+            <div className="h-3 w-28 rounded bg-pe-border" />
+          </div>
+          <div className="space-y-3 px-4 py-4">
+            <div className="h-3 w-2/3 rounded bg-pe-border/80" />
+            <div className="h-3 w-1/2 rounded bg-pe-border/50" />
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="h-14 rounded-lg bg-pe-surface" />
+              <div className="h-14 rounded-lg bg-pe-surface" />
+              <div className="h-14 rounded-lg bg-pe-surface" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (useBackend() && portfoliosLoading) {
     return (

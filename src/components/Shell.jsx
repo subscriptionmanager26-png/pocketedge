@@ -270,7 +270,7 @@ export default function Shell({
 
   const goTab = (id) => {
     prefetchTab(id);
-    if (guestMode && (id === 'ideas' || id === 'activity' || id === 'portfolio' || id === 'profile')) {
+    if (guestMode && id === 'profile') {
       onRequireSignIn?.();
       return;
     }

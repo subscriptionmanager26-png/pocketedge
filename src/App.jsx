@@ -792,14 +792,7 @@ export default function App() {
   };
 
   const handleTabChange = (next) => {
-    if (
-      authView === 'landing' &&
-      (next === 'ideas' ||
-        next === 'activity' ||
-        next === 'portfolio' ||
-        next === 'profile' ||
-        next === 'settings')
-    ) {
+    if (authView === 'landing' && (next === 'profile' || next === 'settings')) {
       void requireSignIn();
       return;
     }
@@ -1110,53 +1103,47 @@ export default function App() {
             />
           </RouteSuspense>
         )}
-        {tab === 'ideas' &&
-          (guestMode ? (
-            <GuestSignInCta action="browse portfolio ideas" />
-          ) : (
-            <RouteSuspense>
-              <IdeasPage
-                onOpenProfile={openProfile}
-                onOpenPortfolio={openProfilePortfolio}
-              />
-            </RouteSuspense>
-          ))}
-        {tab === 'activity' &&
-          (guestMode ? (
-            <GuestSignInCta action="see your activity" />
-          ) : (
-            <RouteSuspense>
-              <ActivityPage
-                items={activityItems}
-                onOpenProfile={openProfile}
-                onOpenPost={(postId) => {
-                  markActivityRead(
-                    activityItems.find((item) => item.meta?.postId === postId)?.id ?? ''
-                  );
-                  openPost(postId);
-                }}
-                onOpenStock={(ticker) => {
-                  const item = activityItems.find((i) => i.ticker === ticker);
-                  if (item) markActivityRead(item.id);
-                  openStock(ticker);
-                }}
-              />
-            </RouteSuspense>
-          ))}
-        {tab === 'portfolio' &&
-          (guestMode ? (
-            <GuestSignInCta action="manage your portfolio" />
-          ) : (
-            <RouteSuspense>
-              <PortfolioPage
-                onSelectStock={openStock}
-                onSelectFund={openFund}
-                onOpenProfile={openProfile}
-                onOpenPost={openPost}
-                onOpenSourcePortfolio={openProfilePortfolio}
-              />
-            </RouteSuspense>
-          ))}
+        {tab === 'ideas' && (
+          <RouteSuspense>
+            <IdeasPage
+              guestMode={guestMode}
+              onOpenProfile={openProfile}
+              onOpenPortfolio={openProfilePortfolio}
+            />
+          </RouteSuspense>
+        )}
+        {tab === 'activity' && (
+          <RouteSuspense>
+            <ActivityPage
+              guestMode={guestMode}
+              items={activityItems}
+              onOpenProfile={openProfile}
+              onOpenPost={(postId) => {
+                markActivityRead(
+                  activityItems.find((item) => item.meta?.postId === postId)?.id ?? ''
+                );
+                openPost(postId);
+              }}
+              onOpenStock={(ticker) => {
+                const item = activityItems.find((i) => i.ticker === ticker);
+                if (item) markActivityRead(item.id);
+                openStock(ticker);
+              }}
+            />
+          </RouteSuspense>
+        )}
+        {tab === 'portfolio' && (
+          <RouteSuspense>
+            <PortfolioPage
+              guestMode={guestMode}
+              onSelectStock={openStock}
+              onSelectFund={openFund}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+              onOpenSourcePortfolio={openProfilePortfolio}
+            />
+          </RouteSuspense>
+        )}
         {tab === 'markets' &&
           (selectedCommodityId ? (
             <RouteSuspense>
