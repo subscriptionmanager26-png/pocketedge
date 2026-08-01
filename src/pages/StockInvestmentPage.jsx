@@ -2,28 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
-import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
-import UnderlineTabs from '../components/UnderlineTabs';
-import NewsList from '../components/NewsList';
-import {
-  DiscussionsList,
-  HoldersList,
-  INVESTMENT_TABS,
-  STOCK_INVESTMENT_TABS,
-} from '../components/InvestmentSections';
+import AssetDetailSections from '../components/AssetDetailSections';
 import { getStock, getStockNews } from '../data/stockData';
 import { getCompanyBrief } from '../data/companyBriefs';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchAssetHolders } from '../lib/assetHoldersApi';
-import {
-  fetchStockNews,
-  fetchStockExplanations,
-  fetchCorporateActions,
-  isStockNewsConfigured,
-} from '../lib/stockNewsApi';
-import CorporateActionsList from '../components/CorporateActionsList';
-import { getStockDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
+import { getStockDiscussions } from '../lib/assetDiscussions';
 import { getStockAssetType } from '../lib/assetTypes';
 import {
   findCachedMarketItem,
@@ -77,7 +61,6 @@ export default function StockInvestmentPage({
         changePct: seedStock.changePct,
       });
     }
-    // Paint immediately from URL while market metadata resolves.
     return marketStockToDetail({
       symbol: ticker,
       name: formatTicker(ticker),
@@ -86,7 +69,6 @@ export default function StockInvestmentPage({
     });
   }, [marketStock, seedStock, ticker]);
   const displayStock = stock;
-  const [tab, setTab] = useState('insights');
   const symbolKey = formatTicker(ticker);
   const excerpt = briefExcerpt(brief);
 
@@ -164,125 +146,7 @@ export default function StockInvestmentPage({
     deps: [ticker, marketLoading, isEtf],
   });
 
-  const [discussions, setDiscussions] = useState(() =>
-    isDevMockMode() ? getStockDiscussions(ticker) : []
-  );
-  const [holders, setHolders] = useState([]);
-  const [holdersLoading, setHoldersLoading] = useState(false);
-  const [news, setNews] = useState(() => (isDevMockMode() ? getStockNews(ticker) : []));
-  const [newsLoading, setNewsLoading] = useState(false);
-  const [insights, setInsights] = useState([]);
-  const [insightsLoading, setInsightsLoading] = useState(false);
-  const [corporateActions, setCorporateActions] = useState([]);
-  const [corpActionsLoading, setCorpActionsLoading] = useState(false);
-
-  useEffect(() => {
-    if (tab !== 'insights') return undefined;
-    if (!isStockNewsConfigured()) {
-      setInsights([]);
-      return undefined;
-    }
-    let cancelled = false;
-    setInsightsLoading(true);
-    fetchStockExplanations(ticker, { limit: 14 })
-      .then((items) => {
-        if (!cancelled) setInsights(items);
-      })
-      .finally(() => {
-        if (!cancelled) setInsightsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [ticker, tab]);
-
-  useEffect(() => {
-    if (tab !== 'holders') return undefined;
-    let cancelled = false;
-    setHoldersLoading(true);
-    fetchAssetHolders(ticker, { kind: 'stock' })
-      .then((rows) => {
-        if (!cancelled) setHolders(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setHolders([]);
-      })
-      .finally(() => {
-        if (!cancelled) setHoldersLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [ticker, tab]);
-
-  useEffect(() => {
-    if (tab !== 'discussions') return undefined;
-    let cancelled = false;
-    if (isDevMockMode()) {
-      setDiscussions(getStockDiscussions(ticker));
-      return undefined;
-    }
-    loadPostsMentioning([ticker])
-      .then((posts) => {
-        if (!cancelled) setDiscussions(posts);
-      })
-      .catch(() => {
-        if (!cancelled) setDiscussions([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [ticker, tab]);
-
-  useEffect(() => {
-    if (tab !== 'news') return undefined;
-
-    if (isStockNewsConfigured()) {
-      let cancelled = false;
-      setNewsLoading(true);
-      fetchStockNews(ticker)
-        .then((items) => {
-          if (!cancelled) setNews(items);
-        })
-        .finally(() => {
-          if (!cancelled) setNewsLoading(false);
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (isDevMockMode()) {
-      setNews(getStockNews(ticker));
-      return undefined;
-    }
-
-    setNews([]);
-    return undefined;
-  }, [ticker, tab]);
-
-  useEffect(() => {
-    if (tab !== 'corporate_actions') return undefined;
-    if (!isStockNewsConfigured() || isEtf) {
-      setCorporateActions([]);
-      return undefined;
-    }
-
-    let cancelled = false;
-    setCorpActionsLoading(true);
-    fetchCorporateActions(ticker)
-      .then((items) => {
-        if (!cancelled) setCorporateActions(items);
-      })
-      .finally(() => {
-        if (!cancelled) setCorpActionsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ticker, isEtf, tab]);
+  const [detailPanel, setDetailPanel] = useState(null);
 
   if (!marketLoading && !marketStock && !seedStock) {
     return (
@@ -292,132 +156,73 @@ export default function StockInvestmentPage({
 
   return (
     <div>
-      <PageHeader desktopOnly>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-      </PageHeader>
+      {!detailPanel ? (
+        <>
+          <PageHeader desktopOnly>
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          </PageHeader>
 
-      <AssetProductHeader
-        name={displayStock.name}
-        ticker={formatTicker(displayStock.ticker ?? ticker)}
-        type={getStockAssetType(ticker, displayStock)}
-        logoIconUrl={displayStock.logoIconUrl}
-        assetType={displayStock.assetType ?? (isEtf ? 'etf' : 'stock')}
-        assetKey={displayStock.id ?? displayStock.symbol ?? ticker}
-        price={
-          marketLoading && displayStock.price == null
-            ? '…'
-            : displayStock.price
-        }
-        changePct={displayStock.changePct}
-        previousClose={displayStock.previousClose}
-        change={displayStock.change}
-        priceSource={displayStock.priceSource}
-      />
-
-      {excerpt ? (
-        <div className="border-b border-pe-border px-4 py-4">
-          <p className="text-sm leading-relaxed text-pe-text-secondary">{excerpt}</p>
-          <Link
-            to={businessModelBriefPath(ticker)}
-            className="mt-2 inline-block text-sm font-semibold text-pe-accent hover:underline"
-          >
-            Full business model →
-          </Link>
-        </div>
-      ) : !isEtf ? (
-        <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
-          Live quotes, AI insights, and news for {formatTicker(ticker)} on PocketEdge.
-        </p>
-      ) : (
-        <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
-          ETF price, discussions, and holders for {formatTicker(ticker)} on PocketEdge.
-        </p>
-      )}
-
-      <UnderlineTabs
-        tabs={isEtf ? INVESTMENT_TABS : STOCK_INVESTMENT_TABS}
-        active={tab}
-        onChange={setTab}
-      />
-
-      {tab === 'insights' && (
-        insightsLoading ? (
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-            Loading insights…
-          </p>
-        ) : insights.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-            No insights yet - daily AI summaries for {formatTicker(ticker)} will appear here.
-          </p>
-        ) : (
-          <NewsList items={insights} />
-        )
-      )}
-
-      {tab === 'discussions' && (
-        guestMode ? (
-          <GuestSignInCta action="join discussions" />
-        ) : (
-          <DiscussionsList
-            posts={discussions}
-            onOpenProfile={onOpenProfile}
-            emptyMessage="No posts yet - posts mentioning this stock will show up here."
+          <AssetProductHeader
+            name={displayStock.name}
+            ticker={formatTicker(displayStock.ticker ?? ticker)}
+            type={getStockAssetType(ticker, displayStock)}
+            logoIconUrl={displayStock.logoIconUrl}
+            assetType={displayStock.assetType ?? (isEtf ? 'etf' : 'stock')}
+            assetKey={displayStock.id ?? displayStock.symbol ?? ticker}
+            price={
+              marketLoading && displayStock.price == null
+                ? '…'
+                : displayStock.price
+            }
+            changePct={displayStock.changePct}
+            previousClose={displayStock.previousClose}
+            change={displayStock.change}
+            priceSource={displayStock.priceSource}
           />
-        )
-      )}
 
-      {tab === 'holders' && (
-        guestMode ? (
-          <>
-            <HoldersList
-              holders={holders}
-              loading={holdersLoading}
-              onOpenProfile={undefined}
-              onOpenPortfolio={undefined}
-              emptyMessage="No disclosed holders yet."
-            />
-            <GuestSignInCta action="follow holders and open portfolios" />
-          </>
-        ) : (
-          <HoldersList
-            holders={holders}
-            loading={holdersLoading}
-            onOpenProfile={onOpenProfile}
-            onOpenPortfolio={onOpenPortfolio}
-            emptyMessage="No disclosed holders yet."
-          />
-        )
-      )}
-
-      {tab === 'news' && (
-        <div>
-          {newsLoading ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading news…</p>
-          ) : news.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+          {excerpt ? (
+            <div className="border-b border-pe-border px-4 py-4">
+              <p className="text-sm leading-relaxed text-pe-text-secondary">{excerpt}</p>
+              <Link
+                to={businessModelBriefPath(ticker)}
+                className="mt-2 inline-block text-sm font-semibold text-pe-accent hover:underline"
+              >
+                Full business model →
+              </Link>
+            </div>
+          ) : !isEtf ? (
+            <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
+              Live quotes, AI insights, and news for {formatTicker(ticker)} on PocketEdge.
+            </p>
           ) : (
-            <NewsList items={news} />
+            <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
+              ETF price, discussions, and holders for {formatTicker(ticker)} on PocketEdge.
+            </p>
           )}
-        </div>
-      )}
+        </>
+      ) : null}
 
-      {tab === 'corporate_actions' && (
-        corpActionsLoading ? (
-          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-            Loading corporate actions…
-          </p>
-        ) : (
-          <CorporateActionsList items={corporateActions} />
-        )
-      )}
-
+      <AssetDetailSections
+        kind={isEtf ? 'etf' : 'stock'}
+        assetKey={ticker}
+        mentionKeys={[ticker]}
+        assetLabel={displayStock.name || symbolKey}
+        guestMode={guestMode}
+        showCorporateActions={!isEtf}
+        holdersKind="stock"
+        mockDiscussions={isDevMockMode() ? getStockDiscussions(ticker) : null}
+        mockNews={isDevMockMode() ? getStockNews(ticker) : null}
+        onOpenProfile={onOpenProfile}
+        onOpenPortfolio={onOpenPortfolio}
+        onPanelChange={setDetailPanel}
+      />
     </div>
   );
 }

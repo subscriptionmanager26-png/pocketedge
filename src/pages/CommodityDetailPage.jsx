@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
-import GuestSignInCta from '../components/GuestSignInCta';
 import PageHeader from '../components/PageHeader';
-import UnderlineTabs from '../components/UnderlineTabs';
-import {
-  DiscussionsList,
-  INVESTMENT_TABS,
-} from '../components/InvestmentSections';
-import { getCommodityDiscussions, loadPostsMentioning } from '../lib/assetDiscussions';
+import AssetDetailSections from '../components/AssetDetailSections';
+import { getCommodityDiscussions } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
 import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMarketCommodity } from '../lib/marketDataApi';
 import { commodityPath } from '../lib/routes';
@@ -34,7 +29,7 @@ export default function CommodityDetailPage({
     };
   });
   const [loading, setLoading] = useState(() => !findCachedMarketItem('commodity', commodityId));
-  const [tab, setTab] = useState('insights');
+  const [detailPanel, setDetailPanel] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,29 +105,6 @@ export default function CommodityDetailPage({
       : null
   );
 
-  const [discussions, setDiscussions] = useState(() =>
-    isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : []
-  );
-
-  useEffect(() => {
-    if (tab !== 'discussions') return undefined;
-    let cancelled = false;
-    if (isDevMockMode()) {
-      setDiscussions(getCommodityDiscussions(commodityId, commodity?.name));
-      return undefined;
-    }
-    loadPostsMentioning([commodityId, commodity?.name].filter(Boolean))
-      .then((posts) => {
-        if (!cancelled) setDiscussions(posts);
-      })
-      .catch(() => {
-        if (!cancelled) setDiscussions([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [commodityId, commodity?.name, tab]);
-
   if (!loading && !commodity) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">
@@ -153,66 +125,56 @@ export default function CommodityDetailPage({
 
   return (
     <div>
-      <PageHeader desktopOnly>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-      </PageHeader>
+      {!detailPanel ? (
+        <>
+          <PageHeader desktopOnly>
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          </PageHeader>
 
-      <AssetProductHeader
-        name={commodity.name}
-        ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
-        subtitle={subtitle}
-        type="Commodity"
-        logoIconUrl={commodity.logoIconUrl}
-        assetType="commodity"
-        assetKey={commodity.id}
-        price={
-          loading && commodity.spotPrice == null
-            ? '…'
-            : commodity.spotPrice != null
-              ? commodity.spotPrice
-              : '-'
-        }
-        changePct={commodity.changePct}
-        previousClose={commodity.previousClose}
-        change={commodity.change}
-      />
-
-      <UnderlineTabs tabs={INVESTMENT_TABS} active={tab} onChange={setTab} />
-
-      {tab === 'insights' && (
-        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-          No insights yet - daily AI summaries will appear here.
-        </p>
-      )}
-
-      {tab === 'discussions' && (
-        guestMode ? (
-          <GuestSignInCta action="join commodity discussions" />
-        ) : (
-          <DiscussionsList
-            posts={discussions}
-            onOpenProfile={onOpenProfile}
-            emptyMessage={`No posts yet - posts mentioning ${commodity.name} will show up here.`}
+          <AssetProductHeader
+            name={commodity.name}
+            ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
+            subtitle={subtitle}
+            type="Commodity"
+            logoIconUrl={commodity.logoIconUrl}
+            assetType="commodity"
+            assetKey={commodity.id}
+            price={
+              loading && commodity.spotPrice == null
+                ? '…'
+                : commodity.spotPrice != null
+                  ? commodity.spotPrice
+                  : '-'
+            }
+            changePct={commodity.changePct}
+            previousClose={commodity.previousClose}
+            change={commodity.change}
           />
-        )
-      )}
+        </>
+      ) : null}
 
-      {tab === 'holders' && (
-        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-          No disclosed holders yet.
-        </p>
-      )}
-
-      {tab === 'news' && (
-        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
-      )}
+      <AssetDetailSections
+        kind="commodity"
+        assetKey={commodityId}
+        mentionKeys={[commodityId, commodity?.name].filter(Boolean)}
+        assetLabel={commodity.name || commodityId}
+        guestMode={guestMode}
+        supportsHolders={false}
+        supportsNews={false}
+        supportsInsights
+        mockDiscussions={
+          isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : null
+        }
+        onOpenProfile={onOpenProfile}
+        onPanelChange={setDetailPanel}
+      />
     </div>
   );
 }
