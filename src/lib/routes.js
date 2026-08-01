@@ -65,6 +65,18 @@ export function tabPath(tab) {
   return `/${tab}`;
 }
 
+/** Ideas hub or theme deep-link, e.g. /ideas/small-cap */
+export function ideasPath(themeId) {
+  const id = String(themeId ?? '').trim();
+  if (!id) return '/ideas';
+  return `/ideas/${encodeSegment(id)}`;
+}
+
+export function parseIdeasThemeId(themeId) {
+  const id = String(themeId ?? '').trim().toLowerCase();
+  return id || null;
+}
+
 export const MARKET_SECTIONS = new Set([
   'stocks',
   'mutual_funds',
@@ -266,6 +278,15 @@ export function parseAppPath(pathname) {
     };
   }
 
+  const ideasThemeMatch = pathname.match(/^\/ideas\/([^/]+)\/?$/);
+  if (ideasThemeMatch) {
+    const themeId = parseIdeasThemeId(decodeSegment(ideasThemeMatch[1]));
+    if (themeId) {
+      return { kind: 'ideas-theme', themeId };
+    }
+    return { kind: 'tab', tab: 'ideas' };
+  }
+
   const tab = pathname.replace(/^\//, '').split('/')[0] || 'feed';
   if (!KNOWN_TABS.has(tab)) {
     return { kind: 'tab', tab: 'feed' };
@@ -306,6 +327,7 @@ export function pathFromAppState({
   selectedIndexId,
   selectedCommodityId,
   marketsSectionTab,
+  ideasThemeId = null,
   getHandleForUserId,
 }) {
   if (selectedPostId) return postPath(selectedPostId);
@@ -325,6 +347,9 @@ export function pathFromAppState({
   }
   if (tab === 'markets') {
     return marketsPath(marketsSectionTab || 'stocks');
+  }
+  if (tab === 'ideas') {
+    return ideasPath(ideasThemeId);
   }
   return tabPath(tab);
 }

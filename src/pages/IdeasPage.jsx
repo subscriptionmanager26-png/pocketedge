@@ -5,12 +5,9 @@ import IdeaCard from '../components/IdeaCard';
 import GuestSignInCta from '../components/GuestSignInCta';
 import { PortfoliosListSkeleton } from '../components/PortfolioSkeletons';
 import { rememberPerson } from '../lib/socialIdentity';
-import { fetchDiscoverPortfolios } from '../lib/socialPortfolioApi';
-import { getPortfolioEngagementSync } from '../lib/portfolioEngagementApi';
-import { getPortfolioDayReturnPct } from '../lib/ideaReturns';
+import { fetchPublicIdeaCards } from '../lib/ideaApi';
 import {
   IDEA_THEMES,
-  countThemesForRows,
   getIdeaTheme,
   portfolioMatchesTheme,
   rankMostWatchedIdeas,
@@ -73,7 +70,7 @@ function IdeaRail({ rows, blurReturns, onOpenPortfolio, onOpenProfile, onUnlock 
           <IdeaCard
             portfolio={row.portfolio}
             owner={row.owner}
-            compact
+            dayReturnPct={row.dayReturn}
             blurReturns={blurReturns}
             onOpen={onOpenPortfolio}
             onOpenProfile={onOpenProfile}
@@ -87,6 +84,9 @@ function IdeaRail({ rows, blurReturns, onOpenPortfolio, onOpenProfile, onUnlock 
 
 export default function IdeasPage({
   guestMode = false,
+  themeId = null,
+  onOpenTheme,
+  onClearTheme,
   onOpenPortfolio,
   onOpenProfile,
 }) {
@@ -94,7 +94,6 @@ export default function IdeasPage({
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeThemeId, setActiveThemeId] = useState(null);
   const [gatePulse, setGatePulse] = useState(false);
   const gateRef = useRef(null);
   const debouncedQuery = useDebouncedValue(query.trim());
@@ -110,10 +109,7 @@ export default function IdeasPage({
     setLoading(true);
     setError(null);
 
-    fetchDiscoverPortfolios({
-      query: guestMode ? '' : debouncedQuery,
-      limit: 50,
-    })
+    fetchPublicIdeaCards({ limit: 50 })
       .then((next) => {
         if (cancelled) return;
         for (const row of next) {
@@ -121,22 +117,15 @@ export default function IdeasPage({
             rememberPerson({
               id: row.owner.id,
               name: row.owner.name,
-              handle: row.owner.handle,
-              avatarUrl: row.owner.avatarUrl,
-              bio: row.owner.bio,
+              handle: row.owner.handle || undefined,
             });
           }
         }
-        setRows(
-          next.map((row) => ({
-            ...row,
-            social: getPortfolioEngagementSync(row.portfolio.id),
-            dayReturn: getPortfolioDayReturnPct(row.portfolio),
-          }))
-        );
+        setRows(next);
       })
       .catch((err) => {
         if (cancelled) return;
+        console.error('fetchPublicIdeaCards failed', err);
         setError(err.message || 'Could not load ideas');
         setRows([]);
       })
@@ -147,32 +136,30 @@ export default function IdeasPage({
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery, guestMode]);
+  }, []);
 
-  const themeCounts = useMemo(() => countThemesForRows(rows), [rows]);
-  const trending = useMemo(() => {
-    const ranked = rankTrendingIdeas(rows, 8);
-    // Prefer ideas that actually have a 1D print when ranking ties are soft.
-    return [...ranked].sort((a, b) => {
-      const ad = a.dayReturn == null ? -999 : Math.abs(a.dayReturn);
-      const bd = b.dayReturn == null ? -999 : Math.abs(b.dayReturn);
-      return bd - ad;
-    }).slice(0, 6);
-  }, [rows]);
-  const mostWatched = useMemo(() => rankMostWatchedIdeas(rows, 6), [rows]);
-  const activeTheme = activeThemeId ? getIdeaTheme(activeThemeId) : null;
+  const filteredRows = useMemo(() => {
+    const needle = debouncedQuery.toLowerCase();
+    if (!needle || guestMode) return rows;
+    return rows.filter((row) => {
+      const hay = [row.portfolio?.name, row.portfolio?.thesis, row.owner?.name]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [rows, debouncedQuery, guestMode]);
+
+  const trending = useMemo(() => rankTrendingIdeas(filteredRows, 6), [filteredRows]);
+  const mostWatched = useMemo(() => rankMostWatchedIdeas(filteredRows, 6), [filteredRows]);
+  const activeTheme = themeId ? getIdeaTheme(themeId) : null;
   const themeRows = useMemo(() => {
-    if (!activeThemeId) return [];
-    return rows.filter((row) => portfolioMatchesTheme(row.portfolio, activeThemeId));
-  }, [rows, activeThemeId]);
+    if (!themeId) return [];
+    return filteredRows.filter((row) => portfolioMatchesTheme(row.portfolio, themeId));
+  }, [filteredRows, themeId]);
 
-  const openTheme = (themeId) => {
-    if (guestMode) {
-      nudgeSignIn();
-      return;
-    }
-    setActiveThemeId(themeId);
-    setQuery('');
+  const openTheme = (nextThemeId) => {
+    onOpenTheme?.(nextThemeId);
   };
 
   const handleSearchChange = (e) => {
@@ -187,13 +174,13 @@ export default function IdeasPage({
     if (guestMode) nudgeSignIn();
   };
 
-  if (activeTheme && !guestMode) {
+  if (activeTheme) {
     return (
       <div>
-        <PageHeader>
+        <PageHeader className="hidden md:block" desktopOnly>
           <button
             type="button"
-            onClick={() => setActiveThemeId(null)}
+            onClick={() => onClearTheme?.()}
             className="inline-flex items-center gap-1.5 text-pe-text-secondary transition hover:text-pe-text"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -201,33 +188,50 @@ export default function IdeasPage({
           </button>
         </PageHeader>
 
-        <div className="px-4 pt-4 pb-3">
-          <p className="text-sm text-pe-text-secondary">{activeTheme.blurb}</p>
-          {typeof themeCounts[activeTheme.id] === 'number' ? (
-            <p className="mt-1 text-[12px] text-pe-text-muted">
-              {themeCounts[activeTheme.id]} matching ideas
-            </p>
-          ) : null}
-        </div>
-
-        {loading ? (
-          <PortfoliosListSkeleton count={3} />
-        ) : !themeRows.length ? (
-          <p className="px-4 py-14 text-center text-sm text-pe-text-secondary">
-            No public ideas in this theme yet.
-          </p>
-        ) : (
-          <div className="space-y-3 px-4 pb-8">
-            {themeRows.map((row) => (
-              <IdeaCard
-                key={row.portfolio.id}
-                portfolio={row.portfolio}
-                owner={row.owner}
-                onOpen={onOpenPortfolio}
-                onOpenProfile={onOpenProfile}
+        {guestMode ? (
+          <>
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-sm text-pe-text-secondary">{activeTheme.blurb}</p>
+            </div>
+            <div
+              ref={gateRef}
+              className={`transition ${
+                gatePulse ? 'ring-2 ring-pe-accent ring-offset-2 ring-offset-pe-canvas' : ''
+              }`}
+            >
+              <GuestSignInCta
+                title={activeTheme.label}
+                action="open this theme and see unblurred 1D returns"
+                showExploreHint={false}
               />
-            ))}
-          </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="px-4 pt-4 pb-3 md:pt-2">
+              <p className="text-sm text-pe-text-secondary">{activeTheme.blurb}</p>
+            </div>
+            {loading ? (
+              <PortfoliosListSkeleton count={3} />
+            ) : !themeRows.length ? (
+              <p className="px-4 py-14 text-center text-sm text-pe-text-secondary">
+                No public ideas in this theme yet.
+              </p>
+            ) : (
+              <div className="space-y-3 px-4 pb-8">
+                {themeRows.map((row) => (
+                  <IdeaCard
+                    key={row.portfolio.id}
+                    portfolio={row.portfolio}
+                    owner={row.owner}
+                    dayReturnPct={row.dayReturn}
+                    onOpen={onOpenPortfolio}
+                    onOpenProfile={onOpenProfile}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -241,7 +245,7 @@ export default function IdeasPage({
           onChange={handleSearchChange}
           onFocus={handleSearchFocus}
           readOnly={guestMode}
-          placeholder={guestMode ? 'Sign in to search ideas…' : 'Search ideas by narrative…'}
+          placeholder={guestMode ? 'Sign in to search ideas…' : 'Search ideas by thesis…'}
           autoFocus={!guestMode}
         />
       </PageHeader>
@@ -249,13 +253,13 @@ export default function IdeasPage({
       {guestMode ? (
         <div
           ref={gateRef}
-          className={`mx-0 transition ${
+          className={`transition ${
             gatePulse ? 'ring-2 ring-pe-accent ring-offset-2 ring-offset-pe-canvas' : ''
           }`}
         >
           <GuestSignInCta
             title="Unlock full Ideas"
-            action="open themes and see unblurred returns"
+            action="open themes and see unblurred 1D returns"
             showExploreHint={false}
           />
         </div>
@@ -266,13 +270,15 @@ export default function IdeasPage({
           <SectionHeading
             icon={Flame}
             title="Trending"
-            subtitle="Ideas with strong narratives and live 1D moves"
+            subtitle="Ideas with strong theses and live 1D moves"
           />
         </div>
         {loading ? (
           <div className="px-4">
             <PortfoliosListSkeleton count={2} />
           </div>
+        ) : error ? (
+          <p className="px-4 text-sm text-pe-negative">{error}</p>
         ) : (
           <IdeaRail
             rows={trending}
@@ -296,6 +302,8 @@ export default function IdeasPage({
           <div className="px-4">
             <PortfoliosListSkeleton count={2} />
           </div>
+        ) : error ? (
+          <p className="px-4 text-sm text-pe-negative">{error}</p>
         ) : (
           <IdeaRail
             rows={mostWatched}
@@ -310,7 +318,7 @@ export default function IdeasPage({
       <section className="border-t border-pe-border px-4 pb-8 pt-5">
         <SectionHeading
           title="Browse by theme"
-          subtitle="Each theme is a narrative bucket — open one to see returns and stories"
+          subtitle="Each theme is a narrative bucket"
         />
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {IDEA_THEMES.map((theme) => (
@@ -324,11 +332,7 @@ export default function IdeasPage({
         </div>
       </section>
 
-      {!guestMode && error ? (
-        <p className="px-4 pb-8 text-center text-sm text-pe-negative">{error}</p>
-      ) : null}
-
-      {!guestMode && !loading && !error && debouncedQuery && !rows.length ? (
+      {!guestMode && !loading && !error && debouncedQuery && !filteredRows.length ? (
         <p className="px-4 pb-8 text-center text-sm text-pe-text-secondary">
           No matching ideas.
         </p>

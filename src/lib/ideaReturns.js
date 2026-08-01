@@ -15,31 +15,23 @@ export function getPortfolioDayReturnPct(portfolio) {
   }
 
   if (weightSum <= 0) {
-    const fallback = Number(portfolio?.todayPnlPct ?? portfolio?.dayReturnPct ?? portfolio?.day_return_pct);
+    const fallback = Number(
+      portfolio?.todayPnlPct ?? portfolio?.dayReturnPct ?? portfolio?.day_return_pct
+    );
     return Number.isFinite(fallback) ? fallback : null;
   }
 
   return weighted / weightSum;
 }
 
-/** Idea narrative prefers thesis, then objective. */
+/** Ideas surface uses thesis only — no objective / AMFI fallbacks. */
+export function getIdeaThesis(portfolio) {
+  return String(portfolio?.thesis ?? '').trim();
+}
+
+/** @deprecated Use getIdeaThesis for Ideas cards. */
 export function getIdeaNarrative(portfolio) {
-  const thesis = String(portfolio?.thesis ?? '').trim();
-  const objective = String(portfolio?.objective ?? '').trim();
-  const looksLikeCode =
-    /AMFI\s*\d+/i.test(objective) || /^INF[A-Z0-9]+$/i.test(objective);
-
-  if (thesis && !/^Open Ended Schemes/i.test(thesis)) return thesis;
-  if (objective && !looksLikeCode) return objective;
-
-  const schemeMatch = thesis.match(/Equity Scheme\s*-\s*([^)·]+)/i);
-  if (schemeMatch) return `${schemeMatch[1].trim()} idea`;
-
-  const thematic = thesis.match(/\(([^)]+)\)/);
-  if (thematic && !/open ended/i.test(thematic[1])) return thematic[1].trim();
-
-  if (thesis) return thesis.split('·')[0].trim();
-  return '';
+  return getIdeaThesis(portfolio);
 }
 
 export function formatIdeaReturn(pct) {

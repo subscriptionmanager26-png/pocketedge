@@ -133,21 +133,22 @@ function engagementScore(row) {
   const likes = Number(social.likes) || 0;
   const copies = Number(social.copies) || 0;
   const shares = Number(social.shares) || 0;
+  const day = Number(row.dayReturn);
+  const dayBoost = Number.isFinite(day) ? Math.abs(day) * 2 : 0;
   const updated = new Date(row.portfolio?.updatedAt ?? 0).getTime() || 0;
-  // Recency in days (newer → higher), plus soft engagement signal.
   const daysAgo = Math.max(0, (Date.now() - updated) / 86_400_000);
   const recency = Math.max(0, 30 - daysAgo);
-  return likes * 4 + copies * 6 + shares * 2 + recency;
+  return likes * 4 + copies * 6 + shares * 2 + dayBoost + recency;
 }
 
-/** Trending: engagement + recency. */
+/** Trending: |1D| + recency (+ soft engagement when present). */
 export function rankTrendingIdeas(rows, limit = 6) {
   return [...(rows ?? [])]
     .sort((a, b) => engagementScore(b) - engagementScore(a))
     .slice(0, limit);
 }
 
-/** Most watched: likes / copies first, then recency. */
+/** Most watched: likes/copies when present, else recency. */
 export function rankMostWatchedIdeas(rows, limit = 6) {
   return [...(rows ?? [])]
     .sort((a, b) => {
