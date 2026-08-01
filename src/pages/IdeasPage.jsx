@@ -66,7 +66,7 @@ function IdeaRail({ rows, blurReturns, onOpenPortfolio, onOpenProfile, onUnlock 
   return (
     <div className="flex gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {rows.map((row) => (
-        <div key={row.portfolio.id} className="w-[260px] shrink-0">
+        <div key={row.portfolio.id} className="w-[min(300px,85vw)] min-w-[300px] shrink-0">
           <IdeaCard
             portfolio={row.portfolio}
             owner={row.owner}
