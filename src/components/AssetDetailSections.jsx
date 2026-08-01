@@ -54,7 +54,7 @@ function SectionBlock({ title, actionLabel, onAction, children }) {
           </button>
         ) : null}
       </div>
-      <div className="bg-pe-surface py-3">{children}</div>
+      {children}
     </section>
   );
 }
