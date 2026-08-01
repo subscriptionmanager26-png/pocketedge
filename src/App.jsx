@@ -51,7 +51,7 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, ideasPath, marketsPath, parseMarketSection, postPath, profilePath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, marketsPath, parseMarketSection, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
   navigateToProfile,
@@ -59,7 +59,6 @@ import {
   useProfileRouting,
 } from './lib/useProfileRouting';
 import GuestSignInCta from './components/GuestSignInCta';
-import { getIdeaTheme } from './lib/ideaThemes';
 
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const OnboardingFlow = lazy(() => import('./pages/onboarding/OnboardingFlow'));
@@ -152,7 +151,6 @@ export default function App() {
   const [marketsSectionTab, setMarketsSectionTab] = useState(
     () => parseMarketSection(typeof window !== 'undefined' ? window.location.search : '') || 'stocks'
   );
-  const [ideasThemeId, setIdeasThemeId] = useState(null);
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const portfolioBackRef = useRef(null);
@@ -205,7 +203,6 @@ export default function App() {
       return `profile:${profileUserId}:public`;
     }
     if (tab === 'profile') return `profile:${profileUserId}`;
-    if (tab === 'ideas' && ideasThemeId) return `ideas:${ideasThemeId}`;
     return tab;
   }, [
     tab,
@@ -218,7 +215,6 @@ export default function App() {
     profileMode,
     profileUserId,
     currentUserId,
-    ideasThemeId,
   ]);
 
   useProfileRouting({
@@ -234,7 +230,6 @@ export default function App() {
     selectedIndexId,
     selectedCommodityId,
     marketsSectionTab,
-    ideasThemeId,
     setTab,
     setProfileUserId,
     setProfilePortfolioId,
@@ -245,7 +240,6 @@ export default function App() {
     setSelectedFundId,
     setSelectedIndexId,
     setSelectedCommodityId,
-    setIdeasThemeId,
     onProfileResolved: setProfileSeedPerson,
   });
 
@@ -806,7 +800,6 @@ export default function App() {
     setTab(next);
     setSelectedPostId(null);
     setProfilePortfolioId(null);
-    setIdeasThemeId(null);
     if (next === 'markets') {
       const section = parseMarketSection(location.search) || 'stocks';
       setMarketsSectionTab(section);
@@ -841,7 +834,6 @@ export default function App() {
     setAuthUser(null);
     setAuthView('landing');
     setTab('feed');
-    setIdeasThemeId(null);
     setPosts([]);
     setPostsLoading(false);
   };
@@ -856,8 +848,6 @@ export default function App() {
         ? 'Post'
         : inShell && tab === 'activity'
           ? 'Activity'
-          : inShell && tab === 'ideas' && ideasThemeId && getIdeaTheme(ideasThemeId)
-            ? getIdeaTheme(ideasThemeId).label
           : inShell && tab === 'profile' && profileMode === 'public'
             ? getPerson(profileUserId)?.name
           : inShell && tab === 'markets' && selectedCommodityId
@@ -886,17 +876,6 @@ export default function App() {
     }
     if (tab === 'markets' && selectedTicker) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
-    }
-    if (tab === 'ideas' && ideasThemeId) {
-      const theme = getIdeaTheme(ideasThemeId);
-      return {
-        label: theme?.label ?? 'Ideas',
-        onBack: () => {
-          backScroll();
-          setIdeasThemeId(null);
-          navigate(ideasPath(), { replace: false });
-        },
-      };
     }
     if (tab === 'profile' && profileFollowListMode) {
       return {
@@ -960,7 +939,6 @@ export default function App() {
     profilePortfolioId,
     profileFollowListMode,
     settingsReturnTab,
-    ideasThemeId,
     backScroll,
     closePost,
     navigate,
@@ -970,13 +948,6 @@ export default function App() {
     getMarketBackLabel,
     currentUserId,
   ]);
-
-  useEffect(() => {
-    if (!ideasThemeId) return;
-    if (getIdeaTheme(ideasThemeId)) return;
-    setIdeasThemeId(null);
-    navigate(ideasPath(), { replace: true });
-  }, [ideasThemeId, navigate]);
 
   useEffect(() => {
     if (tab !== 'profile') {
@@ -1135,20 +1106,10 @@ export default function App() {
         {tab === 'ideas' && (
           <RouteSuspense>
             <IdeasPage
-              guestMode={guestMode}
-              themeId={ideasThemeId && getIdeaTheme(ideasThemeId) ? ideasThemeId : null}
-              onOpenTheme={(themeId) => {
-                resetScroll();
-                setIdeasThemeId(themeId);
-                navigate(ideasPath(themeId));
-              }}
-              onClearTheme={() => {
-                backScroll();
-                setIdeasThemeId(null);
-                navigate(ideasPath());
-              }}
-              onOpenProfile={openProfile}
-              onOpenPortfolio={openProfilePortfolio}
+              onSelectStock={openStock}
+              onSelectFund={openFund}
+              onSelectIndex={openIndex}
+              onSelectCommodity={openCommodity}
             />
           </RouteSuspense>
         )}

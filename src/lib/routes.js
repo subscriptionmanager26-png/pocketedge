@@ -65,16 +65,9 @@ export function tabPath(tab) {
   return `/${tab}`;
 }
 
-/** Ideas hub or theme deep-link, e.g. /ideas/small-cap */
-export function ideasPath(themeId) {
-  const id = String(themeId ?? '').trim();
-  if (!id) return '/ideas';
-  return `/ideas/${encodeSegment(id)}`;
-}
-
-export function parseIdeasThemeId(themeId) {
-  const id = String(themeId ?? '').trim().toLowerCase();
-  return id || null;
+/** Ideas hub, e.g. /ideas */
+export function ideasPath() {
+  return '/ideas';
 }
 
 export const MARKET_SECTIONS = new Set([
@@ -278,12 +271,8 @@ export function parseAppPath(pathname) {
     };
   }
 
-  const ideasThemeMatch = pathname.match(/^\/ideas\/([^/]+)\/?$/);
-  if (ideasThemeMatch) {
-    const themeId = parseIdeasThemeId(decodeSegment(ideasThemeMatch[1]));
-    if (themeId) {
-      return { kind: 'ideas-theme', themeId };
-    }
+  // Legacy theme URLs (/ideas/ai, etc.) collapse to the Ideas hub.
+  if (pathname.match(/^\/ideas\/[^/]+\/?$/)) {
     return { kind: 'tab', tab: 'ideas' };
   }
 
@@ -327,7 +316,6 @@ export function pathFromAppState({
   selectedIndexId,
   selectedCommodityId,
   marketsSectionTab,
-  ideasThemeId = null,
   getHandleForUserId,
 }) {
   if (selectedPostId) return postPath(selectedPostId);
@@ -349,7 +337,7 @@ export function pathFromAppState({
     return marketsPath(marketsSectionTab || 'stocks');
   }
   if (tab === 'ideas') {
-    return ideasPath(ideasThemeId);
+    return ideasPath();
   }
   return tabPath(tab);
 }

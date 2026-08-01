@@ -14,7 +14,7 @@ function clearMarketSelection(setters) {
 function isDeepLinkPath(pathname) {
   const kind = parseAppPath(pathname).kind;
   return kind === 'profile' || kind === 'post' || kind === 'stock' || kind === 'etf'
-    || kind === 'fund' || kind === 'index' || kind === 'commodity' || kind === 'ideas-theme';
+    || kind === 'fund' || kind === 'index' || kind === 'commodity';
 }
 
 /**
@@ -33,7 +33,6 @@ export function useProfileRouting({
   selectedIndexId,
   selectedCommodityId,
   marketsSectionTab = 'stocks',
-  ideasThemeId = null,
   setTab,
   setProfileUserId,
   setProfilePortfolioId,
@@ -44,7 +43,6 @@ export function useProfileRouting({
   setSelectedFundId,
   setSelectedIndexId,
   setSelectedCommodityId,
-  setIdeasThemeId,
   onProfileResolved,
 }) {
   const location = useLocation();
@@ -188,17 +186,7 @@ export function useProfileRouting({
           setSelectedFundId(null);
           setSelectedIndexId(null);
           setSelectedCommodityId(parsed.commodityId);
-          setIdeasThemeId?.(null);
           setTab('markets');
-          return;
-        }
-
-        if (parsed.kind === 'ideas-theme') {
-          clearMarketSelection(setters);
-          setSelectedPostId(null);
-          setProfilePortfolioId(null);
-          setIdeasThemeId?.(parsed.themeId);
-          setTab('ideas');
           return;
         }
 
@@ -208,11 +196,6 @@ export function useProfileRouting({
           setTab(parsed.tab);
           if (parsed.tab !== 'profile') {
             setProfilePortfolioId(null);
-          }
-          if (parsed.tab === 'ideas') {
-            setIdeasThemeId?.(null);
-          } else {
-            setIdeasThemeId?.(null);
           }
         }
       } catch (err) {
@@ -242,7 +225,6 @@ export function useProfileRouting({
     setSelectedTicker,
     setSelectedTickerKind,
     setTab,
-    setIdeasThemeId,
   ]);
 
   // state -> URL
@@ -261,7 +243,6 @@ export function useProfileRouting({
       selectedIndexId,
       selectedCommodityId,
       marketsSectionTab,
-      ideasThemeId,
       getHandleForUserId: getHandleForUserIdSync,
     });
 
@@ -286,7 +267,6 @@ export function useProfileRouting({
     selectedIndexId,
     selectedCommodityId,
     marketsSectionTab,
-    ideasThemeId,
     location.pathname,
     location.search,
     navigate,

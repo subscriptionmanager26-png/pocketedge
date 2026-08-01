@@ -1,18 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Eye, Flame, Lock } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Eye, Flame } from 'lucide-react';
 import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
-import IdeaCard from '../components/IdeaCard';
-import GuestSignInCta from '../components/GuestSignInCta';
-import { PortfoliosListSkeleton } from '../components/PortfolioSkeletons';
-import { rememberPerson } from '../lib/socialIdentity';
-import { fetchPublicIdeaCards } from '../lib/ideaApi';
+import SecurityIdeaCard from '../components/SecurityIdeaCard';
+import { MarketsListSkeleton } from '../components/PageSkeletons';
+import AssetLogo from '../components/AssetLogo';
 import {
-  IDEA_THEMES,
-  getIdeaTheme,
-  portfolioMatchesTheme,
-  rankMostWatchedIdeas,
-  rankTrendingIdeas,
-} from '../lib/ideaThemes';
+  MARKET_MIN_SEARCH_CHARS,
+  fetchMarketPreview,
+  listSgbMarketQuotes,
+  searchAllMarkets,
+  searchMarketTab,
+} from '../lib/marketDataApi';
+import {
+  IDEA_ASSET_TYPES,
+  IDEA_MARKET_TABS,
+  ideaAssetTypeLabel,
+  ideaSecurityKey,
+  openIdeaSecurity,
+  rankMostWatchedSecurities,
+  rankTrendingSecurities,
+  toIdeaSecurity,
+} from '../lib/ideaSecurities';
+import { formatPct, formatPrice, pnlClass } from '../lib/format';
 
 function useDebouncedValue(value, delayMs = 300) {
   const [debounced, setDebounced] = useState(value);
@@ -41,93 +50,162 @@ function SectionHeading({ icon: Icon, title, subtitle }) {
   );
 }
 
-function ThemeTile({ theme, locked, onOpen }) {
+function TypeChip({ active, label, onClick }) {
   return (
     <button
       type="button"
-      onClick={onOpen}
-      className="flex min-h-[5.25rem] flex-col justify-between rounded-xl border border-pe-border bg-pe-canvas px-3.5 py-3 text-left transition hover:border-pe-border-strong hover:bg-pe-surface"
+      onClick={onClick}
+      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition ${
+        active
+          ? 'border-pe-text bg-pe-text text-pe-canvas'
+          : 'border-pe-border bg-pe-canvas text-pe-text-secondary hover:border-pe-border-strong hover:text-pe-text'
+      }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-[15px] font-semibold leading-snug text-pe-text">{theme.label}</span>
-        {locked ? <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-pe-text-muted" /> : null}
-      </div>
-      <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-pe-text-secondary">
-        {theme.blurb}
-      </p>
+      {label}
     </button>
   );
 }
 
-function IdeaRail({ rows, blurReturns, onOpenPortfolio, onOpenProfile, onUnlock }) {
-  if (!rows.length) {
+function SecurityRail({ items, onOpen }) {
+  if (!items.length) {
     return <p className="px-4 text-[12px] text-pe-text-secondary">Nothing here yet.</p>;
   }
   return (
     <div className="flex gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {rows.map((row) => (
-        <div key={row.portfolio.id} className="w-[min(300px,85vw)] min-w-[300px] shrink-0">
-          <IdeaCard
-            portfolio={row.portfolio}
-            owner={row.owner}
-            dayReturnPct={row.dayReturn}
-            blurReturns={blurReturns}
-            onOpen={onOpenPortfolio}
-            onOpenProfile={onOpenProfile}
-            onUnlock={onUnlock}
-          />
+      {items.map((item) => (
+        <div key={ideaSecurityKey(item)} className="h-[148px] w-[min(240px,78vw)] min-w-[240px] shrink-0">
+          <SecurityIdeaCard item={item} onOpen={onOpen} />
         </div>
       ))}
     </div>
   );
 }
 
+function SecurityListRow({ item, onOpen }) {
+  const type = item.assetType || item._ideaType;
+  const title = item.name || item.symbol || 'Security';
+  const subtitle =
+    type === 'fund'
+      ? `${ideaAssetTypeLabel(type)}${item.schemeCode ? ` · ${item.schemeCode}` : ''}`
+      : `${ideaAssetTypeLabel(type)}${item.symbol ? ` · ${item.symbol}` : ''}`;
+  const changePct = item.changePct;
+  const hasPct = changePct != null && Number.isFinite(Number(changePct));
+  const assetKey = String(
+    item.symbol ?? item.id ?? item.schemeCode ?? item.assetKey ?? ''
+  ).trim();
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen?.(item)}
+      className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <AssetLogo
+          logoIconUrl={item.logoIconUrl}
+          assetType={type}
+          assetKey={assetKey}
+          name={title}
+          size="sm"
+        />
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold text-pe-text">{title}</p>
+          <p className="truncate text-[12px] text-pe-text-muted">{subtitle}</p>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="text-[15px] font-semibold tabular-nums text-pe-text">
+          {item.price != null ? formatPrice(item.price) : '—'}
+        </p>
+        {hasPct ? (
+          <p className={`text-[12px] font-semibold tabular-nums ${pnlClass(changePct)}`}>
+            {formatPct(changePct)}
+          </p>
+        ) : null}
+      </div>
+    </button>
+  );
+}
+
+async function loadBondIdeas() {
+  try {
+    const { items } = await listSgbMarketQuotes();
+    return (items ?? [])
+      .filter((row) => row.assetType === 'bond')
+      .map((row) => toIdeaSecurity(row, 'bond'))
+      .filter(Boolean);
+  } catch (err) {
+    console.warn('listSgbMarketQuotes failed for Ideas', err);
+    return [];
+  }
+}
+
 export default function IdeasPage({
-  guestMode = false,
-  themeId = null,
-  onOpenTheme,
-  onClearTheme,
-  onOpenPortfolio,
-  onOpenProfile,
+  onSelectStock,
+  onSelectFund,
+  onSelectCommodity,
+  onSelectIndex,
 }) {
   const [query, setQuery] = useState('');
-  const [rows, setRows] = useState([]);
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [byTab, setByTab] = useState({});
+  const [bonds, setBonds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [gatePulse, setGatePulse] = useState(false);
-  const gateRef = useRef(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   const debouncedQuery = useDebouncedValue(query.trim());
 
-  const nudgeSignIn = () => {
-    setGatePulse(true);
-    gateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    window.setTimeout(() => setGatePulse(false), 1200);
-  };
+  const handlers = useMemo(
+    () => ({ onSelectStock, onSelectFund, onSelectCommodity, onSelectIndex }),
+    [onSelectStock, onSelectFund, onSelectCommodity, onSelectIndex]
+  );
+
+  const handleOpen = (item) => openIdeaSecurity(item, handlers);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetchPublicIdeaCards({ limit: 50 })
-      .then((next) => {
+    Promise.all([
+      ...IDEA_MARKET_TABS.map(async (tab) => {
+        const payload = await fetchMarketPreview(tab);
+        const assetType =
+          tab === 'stocks'
+            ? 'stock'
+            : tab === 'mutual_funds'
+              ? 'fund'
+              : tab === 'etf'
+                ? 'etf'
+                : 'commodity';
+        return [
+          tab,
+          (payload.items ?? []).map((row) => toIdeaSecurity(row, assetType)).filter(Boolean),
+        ];
+      }),
+      loadBondIdeas().then((items) => ['bonds', items]),
+    ])
+      .then((entries) => {
         if (cancelled) return;
-        for (const row of next) {
-          if (row.owner) {
-            rememberPerson({
-              id: row.owner.id,
-              name: row.owner.name,
-              handle: row.owner.handle || undefined,
-            });
+        const next = {};
+        let bondItems = [];
+        for (const [key, items] of entries) {
+          if (key === 'bonds') {
+            bondItems = items;
+            continue;
           }
+          next[key] = items;
         }
-        setRows(next);
+        setByTab(next);
+        setBonds(bondItems);
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('fetchPublicIdeaCards failed', err);
+        console.error('Ideas securities load failed', err);
         setError(err.message || 'Could not load ideas');
-        setRows([]);
+        setByTab({});
+        setBonds([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -138,204 +216,276 @@ export default function IdeasPage({
     };
   }, []);
 
-  const filteredRows = useMemo(() => {
-    const needle = debouncedQuery.toLowerCase();
-    if (!needle || guestMode) return rows;
-    return rows.filter((row) => {
-      const hay = [row.portfolio?.name, row.portfolio?.thesis, row.owner?.name]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(needle);
-    });
-  }, [rows, debouncedQuery, guestMode]);
-
-  const trending = useMemo(() => rankTrendingIdeas(filteredRows, 6), [filteredRows]);
-  const mostWatched = useMemo(() => rankMostWatchedIdeas(filteredRows, 6), [filteredRows]);
-  const activeTheme = themeId ? getIdeaTheme(themeId) : null;
-  const themeRows = useMemo(() => {
-    if (!themeId) return [];
-    return filteredRows.filter((row) => portfolioMatchesTheme(row.portfolio, themeId));
-  }, [filteredRows, themeId]);
-
-  const openTheme = (nextThemeId) => {
-    onOpenTheme?.(nextThemeId);
-  };
-
-  const handleSearchChange = (e) => {
-    if (guestMode) {
-      nudgeSignIn();
-      return;
+  useEffect(() => {
+    let cancelled = false;
+    const q = debouncedQuery;
+    if (q.length < MARKET_MIN_SEARCH_CHARS) {
+      setSearchResults([]);
+      setSearching(false);
+      return undefined;
     }
-    setQuery(e.target.value);
-  };
 
-  const handleSearchFocus = () => {
-    if (guestMode) nudgeSignIn();
-  };
+    setSearching(true);
+    const run = async () => {
+      try {
+        if (typeFilter === 'bond') {
+          const needle = q.toLowerCase();
+          const hits = bonds.filter((item) => {
+            const hay = [item.name, item.symbol, item.isin].filter(Boolean).join(' ').toLowerCase();
+            return hay.includes(needle);
+          });
+          if (!cancelled) setSearchResults(hits.slice(0, 40));
+          return;
+        }
 
-  if (activeTheme) {
-    return (
-      <div>
-        <PageHeader className="hidden md:block" desktopOnly>
-          <button
-            type="button"
-            onClick={() => onClearTheme?.()}
-            className="inline-flex items-center gap-1.5 text-pe-text-secondary transition hover:text-pe-text"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="text-[15px] font-semibold text-pe-text">{activeTheme.label}</span>
-          </button>
-        </PageHeader>
+        if (typeFilter === 'all') {
+          const byType = await searchAllMarkets(q, 10);
+          const mixed = [
+            ...(byType.stocks ?? []).map((row) => toIdeaSecurity(row, 'stock')),
+            ...(byType.etf ?? []).map((row) => toIdeaSecurity(row, 'etf')),
+            ...(byType.mutual_funds ?? []).map((row) => toIdeaSecurity(row, 'fund')),
+            ...(byType.commodity ?? []).map((row) => toIdeaSecurity(row, 'commodity')),
+            ...bonds.filter((item) => {
+              const hay = [item.name, item.symbol, item.isin]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+              return hay.includes(q.toLowerCase());
+            }),
+          ].filter(Boolean);
+          if (!cancelled) setSearchResults(mixed.slice(0, 40));
+          return;
+        }
 
-        {guestMode ? (
-          <>
-            <div className="px-4 pt-4 pb-2">
-              <p className="text-sm text-pe-text-secondary">{activeTheme.blurb}</p>
-            </div>
-            <div
-              ref={gateRef}
-              className={`transition ${
-                gatePulse ? 'ring-2 ring-pe-accent ring-offset-2 ring-offset-pe-canvas' : ''
-              }`}
-            >
-              <GuestSignInCta
-                title={activeTheme.label}
-                action="open this theme and see unblurred 1D returns"
-                showExploreHint={false}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="px-4 pt-4 pb-3 md:pt-2">
-              <p className="text-sm text-pe-text-secondary">{activeTheme.blurb}</p>
-            </div>
-            {loading ? (
-              <PortfoliosListSkeleton count={3} />
-            ) : !themeRows.length ? (
-              <p className="px-4 py-14 text-center text-sm text-pe-text-secondary">
-                No public ideas in this theme yet.
-              </p>
-            ) : (
-              <div className="space-y-3 px-4 pb-8">
-                {themeRows.map((row) => (
-                  <IdeaCard
-                    key={row.portfolio.id}
-                    portfolio={row.portfolio}
-                    owner={row.owner}
-                    dayReturnPct={row.dayReturn}
-                    onOpen={onOpenPortfolio}
-                    onOpenProfile={onOpenProfile}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    );
-  }
+        const meta = IDEA_ASSET_TYPES.find((t) => t.id === typeFilter);
+        if (!meta?.tab) {
+          if (!cancelled) setSearchResults([]);
+          return;
+        }
+        const { items } = await searchMarketTab(meta.tab, q, 40);
+        if (!cancelled) {
+          setSearchResults(
+            (items ?? []).map((row) => toIdeaSecurity(row, typeFilter)).filter(Boolean)
+          );
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Ideas search failed', err);
+        setSearchResults([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, typeFilter, bonds]);
+
+  const allSecurities = useMemo(() => {
+    return [
+      ...(byTab.stocks ?? []),
+      ...(byTab.etf ?? []),
+      ...(byTab.mutual_funds ?? []),
+      ...(byTab.commodity ?? []),
+      ...bonds,
+    ];
+  }, [byTab, bonds]);
+
+  const filteredPool = useMemo(() => {
+    if (typeFilter === 'all') return allSecurities;
+    if (typeFilter === 'bond') return bonds;
+    if (typeFilter === 'stock') return byTab.stocks ?? [];
+    if (typeFilter === 'fund') return byTab.mutual_funds ?? [];
+    if (typeFilter === 'etf') return byTab.etf ?? [];
+    if (typeFilter === 'commodity') return byTab.commodity ?? [];
+    return allSecurities;
+  }, [typeFilter, allSecurities, bonds, byTab]);
+
+  const trending = useMemo(
+    () => rankTrendingSecurities(filteredPool, 10),
+    [filteredPool]
+  );
+  const mostWatched = useMemo(
+    () => rankMostWatchedSecurities(filteredPool, 10),
+    [filteredPool]
+  );
+
+  const isSearching = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
+  const showTypedList = !isSearching && typeFilter !== 'all';
 
   return (
     <div>
       <PageHeader>
         <PageHeaderSearch
-          value={guestMode ? '' : query}
-          onChange={handleSearchChange}
-          onFocus={handleSearchFocus}
-          readOnly={guestMode}
-          placeholder={guestMode ? 'Sign in to search ideas…' : 'Search ideas by thesis…'}
-          autoFocus={!guestMode}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search stocks, funds, ETFs…"
+          autoFocus
         />
       </PageHeader>
 
-      {guestMode ? (
-        <div
-          ref={gateRef}
-          className={`transition ${
-            gatePulse ? 'ring-2 ring-pe-accent ring-offset-2 ring-offset-pe-canvas' : ''
-          }`}
-        >
-          <GuestSignInCta
-            title="Unlock full Ideas"
-            action="open themes and see unblurred 1D returns"
-            showExploreHint={false}
+      <div className="flex gap-2 overflow-x-auto px-4 pb-1 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {IDEA_ASSET_TYPES.map((type) => (
+          <TypeChip
+            key={type.id}
+            label={type.label}
+            active={typeFilter === type.id}
+            onClick={() => setTypeFilter(type.id)}
           />
+        ))}
+      </div>
+
+      {error ? <p className="px-4 pt-4 text-sm text-pe-negative">{error}</p> : null}
+
+      {isSearching ? (
+        <section className="pt-4 pb-8">
+          <div className="px-4">
+            <SectionHeading
+              title="Results"
+              subtitle={
+                searching
+                  ? 'Searching…'
+                  : `${searchResults.length} securit${searchResults.length === 1 ? 'y' : 'ies'}`
+              }
+            />
+          </div>
+          {searching ? (
+            <div className="px-4">
+              <MarketsListSkeleton rows={6} />
+            </div>
+          ) : !searchResults.length ? (
+            <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
+              No matching securities.
+            </p>
+          ) : (
+            <div className="divide-y divide-pe-border">
+              {searchResults.map((item) => (
+                <SecurityListRow
+                  key={ideaSecurityKey(item)}
+                  item={item}
+                  onOpen={handleOpen}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {!isSearching && loading ? (
+        <div className="space-y-6 px-4 pt-4 pb-8">
+          <MarketsListSkeleton rows={4} />
+          <MarketsListSkeleton rows={4} />
         </div>
       ) : null}
 
-      <section className="pb-5 pt-4">
-        <div className="px-4">
-          <SectionHeading
-            icon={Flame}
-            title="Trending"
-            subtitle="Ideas with strong theses and live 1D moves"
-          />
-        </div>
-        {loading ? (
+      {!isSearching && !loading && showTypedList ? (
+        <section className="pt-4 pb-8">
           <div className="px-4">
-            <PortfoliosListSkeleton count={2} />
-          </div>
-        ) : error ? (
-          <p className="px-4 text-sm text-pe-negative">{error}</p>
-        ) : (
-          <IdeaRail
-            rows={trending}
-            blurReturns={guestMode}
-            onOpenPortfolio={onOpenPortfolio}
-            onOpenProfile={onOpenProfile}
-            onUnlock={nudgeSignIn}
-          />
-        )}
-      </section>
-
-      <section className="border-t border-pe-border pb-5 pt-5">
-        <div className="px-4">
-          <SectionHeading
-            icon={Eye}
-            title="Most watched"
-            subtitle="Stories people are paying attention to"
-          />
-        </div>
-        {loading ? (
-          <div className="px-4">
-            <PortfoliosListSkeleton count={2} />
-          </div>
-        ) : error ? (
-          <p className="px-4 text-sm text-pe-negative">{error}</p>
-        ) : (
-          <IdeaRail
-            rows={mostWatched}
-            blurReturns={guestMode}
-            onOpenPortfolio={onOpenPortfolio}
-            onOpenProfile={onOpenProfile}
-            onUnlock={nudgeSignIn}
-          />
-        )}
-      </section>
-
-      <section className="border-t border-pe-border px-4 pb-8 pt-5">
-        <SectionHeading
-          title="Browse by theme"
-          subtitle="Each theme is a narrative bucket"
-        />
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          {IDEA_THEMES.map((theme) => (
-            <ThemeTile
-              key={theme.id}
-              theme={theme}
-              locked={guestMode}
-              onOpen={() => openTheme(theme.id)}
+            <SectionHeading
+              title={IDEA_ASSET_TYPES.find((t) => t.id === typeFilter)?.label ?? 'Securities'}
+              subtitle="Tap a name to open it"
             />
-          ))}
-        </div>
-      </section>
+          </div>
+          {!filteredPool.length ? (
+            <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
+              Nothing in this category yet.
+            </p>
+          ) : (
+            <div className="divide-y divide-pe-border">
+              {filteredPool.slice(0, 40).map((item) => (
+                <SecurityListRow
+                  key={ideaSecurityKey(item)}
+                  item={item}
+                  onOpen={handleOpen}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
-      {!guestMode && !loading && !error && debouncedQuery && !filteredRows.length ? (
-        <p className="px-4 pb-8 text-center text-sm text-pe-text-secondary">
-          No matching ideas.
-        </p>
+      {!isSearching && !loading && typeFilter === 'all' ? (
+        <>
+          <section className="pb-5 pt-4">
+            <div className="px-4">
+              <SectionHeading
+                icon={Flame}
+                title="Trending"
+                subtitle="Securities with the biggest 1D moves"
+              />
+            </div>
+            <SecurityRail items={trending} onOpen={handleOpen} />
+          </section>
+
+          <section className="border-t border-pe-border pb-5 pt-5">
+            <div className="px-4">
+              <SectionHeading
+                icon={Eye}
+                title="Most watched"
+                subtitle="Names drawing the most attention today"
+              />
+            </div>
+            <SecurityRail items={mostWatched} onOpen={handleOpen} />
+          </section>
+
+          {(byTab.stocks ?? []).length ? (
+            <section className="border-t border-pe-border pb-5 pt-5">
+              <div className="px-4">
+                <SectionHeading title="Stocks" subtitle="Equity movers" />
+              </div>
+              <SecurityRail
+                items={rankTrendingSecurities(byTab.stocks ?? [], 8)}
+                onOpen={handleOpen}
+              />
+            </section>
+          ) : null}
+
+          {(byTab.etf ?? []).length ? (
+            <section className="border-t border-pe-border pb-5 pt-5">
+              <div className="px-4">
+                <SectionHeading title="ETFs" subtitle="Exchange-traded funds" />
+              </div>
+              <SecurityRail
+                items={rankTrendingSecurities(byTab.etf ?? [], 8)}
+                onOpen={handleOpen}
+              />
+            </section>
+          ) : null}
+
+          {(byTab.mutual_funds ?? []).length ? (
+            <section className="border-t border-pe-border pb-5 pt-5">
+              <div className="px-4">
+                <SectionHeading title="Mutual funds" subtitle="Popular schemes" />
+              </div>
+              <SecurityRail items={(byTab.mutual_funds ?? []).slice(0, 8)} onOpen={handleOpen} />
+            </section>
+          ) : null}
+
+          {(byTab.commodity ?? []).length ? (
+            <section className="border-t border-pe-border pb-5 pt-5">
+              <div className="px-4">
+                <SectionHeading title="Commodities" subtitle="Metals and more" />
+              </div>
+              <SecurityRail
+                items={rankTrendingSecurities(byTab.commodity ?? [], 8)}
+                onOpen={handleOpen}
+              />
+            </section>
+          ) : null}
+
+          {bonds.length ? (
+            <section className="border-t border-pe-border pb-8 pt-5">
+              <div className="px-4">
+                <SectionHeading title="Bonds" subtitle="Sovereign gold bonds" />
+              </div>
+              <SecurityRail items={bonds.slice(0, 8)} onOpen={handleOpen} />
+            </section>
+          ) : (
+            <div className="pb-8" />
+          )}
+        </>
       ) : null}
     </div>
   );
