@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
 import PageHeader from '../components/PageHeader';
@@ -8,14 +7,14 @@ import { getStock, getStockNews } from '../data/stockData';
 import { getCompanyBrief } from '../data/companyBriefs';
 import { isDevMockMode } from '../lib/appMode';
 import { getStockDiscussions } from '../lib/assetDiscussions';
-import { getStockAssetType } from '../lib/assetTypes';
 import {
   findCachedMarketItem,
   marketStockToDetail,
   resolveMarketStock,
 } from '../lib/marketDataApi';
-import { businessModelBriefPath, etfPath, stockPath } from '../lib/routes';
+import { etfPath, stockPath } from '../lib/routes';
 import { formatTicker } from '../lib/tickers';
+import { truncateSummary } from '../lib/assetDetailHelpers';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 import { useSeoMeta } from '../hooks/useSeoMeta';
 
@@ -27,10 +26,7 @@ function peekCachedStockDetail(ticker) {
 
 function briefExcerpt(brief) {
   const prose = brief?.sections?.executiveSummary?.prose || brief?.tagline || '';
-  const text = String(prose).trim();
-  if (!text) return null;
-  if (text.length <= 280) return text;
-  return `${text.slice(0, 277).trim()}…`;
+  return truncateSummary(prose, 140) || null;
 }
 
 export default function StockInvestmentPage({
@@ -38,6 +34,7 @@ export default function StockInvestmentPage({
   onBack,
   onOpenProfile,
   onOpenPortfolio,
+  onRegisterAssetPanelBack,
   guestMode = false,
 }) {
   const seedStock = getStock(ticker);
@@ -148,6 +145,22 @@ export default function StockInvestmentPage({
 
   const [detailPanel, setDetailPanel] = useState(null);
 
+  useEffect(() => {
+    return () => onRegisterAssetPanelBack?.(null);
+  }, [onRegisterAssetPanelBack]);
+
+  const handlePanelChange = useCallback(
+    (panel, meta) => {
+      setDetailPanel(panel);
+      if (panel && meta?.close) {
+        onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
+      } else {
+        onRegisterAssetPanelBack?.(null);
+      }
+    },
+    [onRegisterAssetPanelBack]
+  );
+
   if (!marketLoading && !marketStock && !seedStock) {
     return (
       <div className="px-4 py-16 text-center text-sm text-pe-text-secondary">Stock not found.</div>
@@ -172,7 +185,6 @@ export default function StockInvestmentPage({
           <AssetProductHeader
             name={displayStock.name}
             ticker={formatTicker(displayStock.ticker ?? ticker)}
-            type={getStockAssetType(ticker, displayStock)}
             logoIconUrl={displayStock.logoIconUrl}
             assetType={displayStock.assetType ?? (isEtf ? 'etf' : 'stock')}
             assetKey={displayStock.id ?? displayStock.symbol ?? ticker}
@@ -188,24 +200,10 @@ export default function StockInvestmentPage({
           />
 
           {excerpt ? (
-            <div className="border-b border-pe-border px-4 py-4">
-              <p className="text-sm leading-relaxed text-pe-text-secondary">{excerpt}</p>
-              <Link
-                to={businessModelBriefPath(ticker)}
-                className="mt-2 inline-block text-sm font-semibold text-pe-accent hover:underline"
-              >
-                Full business model →
-              </Link>
-            </div>
-          ) : !isEtf ? (
-            <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
-              Live quotes, AI insights, and news for {formatTicker(ticker)} on PocketEdge.
+            <p className="border-b border-pe-border px-4 py-3 text-[15px] leading-relaxed text-pe-text-secondary">
+              {excerpt}
             </p>
-          ) : (
-            <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
-              ETF price, discussions, and holders for {formatTicker(ticker)} on PocketEdge.
-            </p>
-          )}
+          ) : null}
         </>
       ) : null}
 
@@ -221,7 +219,8 @@ export default function StockInvestmentPage({
         mockNews={isDevMockMode() ? getStockNews(ticker) : null}
         onOpenProfile={onOpenProfile}
         onOpenPortfolio={onOpenPortfolio}
-        onPanelChange={setDetailPanel}
+        onPanelChange={handlePanelChange}
+        shellOwnsMobileBack={Boolean(onRegisterAssetPanelBack)}
       />
     </div>
   );

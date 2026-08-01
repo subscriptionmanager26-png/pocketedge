@@ -153,6 +153,7 @@ export default function App() {
   );
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
+  const [assetPanelBack, setAssetPanelBack] = useState(null);
   const portfolioBackRef = useRef(null);
   const followListBackRef = useRef(null);
   const marketReturnContextRef = useRef(null);
@@ -643,6 +644,7 @@ export default function App() {
 
   const closeMarketDetail = useCallback(() => {
     backScroll();
+    setAssetPanelBack(null);
     const ctx = marketReturnContextRef.current;
     marketReturnContextRef.current = null;
     clearMarketSelection();
@@ -865,6 +867,13 @@ export default function App() {
     if (selectedPostId && tab === 'feed') {
       return { label: 'Back', onBack: closePost };
     }
+    if (
+      tab === 'markets' &&
+      assetPanelBack &&
+      (selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId)
+    ) {
+      return assetPanelBack;
+    }
     if (tab === 'markets' && selectedCommodityId) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
@@ -933,6 +942,7 @@ export default function App() {
     selectedFundId,
     selectedIndexId,
     selectedCommodityId,
+    assetPanelBack,
     profileMode,
     profileUserId,
     profileReturnTab,
@@ -1152,6 +1162,7 @@ export default function App() {
                 commodityId={selectedCommodityId}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
+                onRegisterAssetPanelBack={setAssetPanelBack}
               />
             </RouteSuspense>
           ) : selectedIndexId ? (
@@ -1160,6 +1171,7 @@ export default function App() {
                 indexId={selectedIndexId}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
+                onRegisterAssetPanelBack={setAssetPanelBack}
               />
             </RouteSuspense>
           ) : selectedFundId ? (
@@ -1169,6 +1181,7 @@ export default function App() {
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onOpenPortfolio={openProfilePortfolio}
+                onRegisterAssetPanelBack={setAssetPanelBack}
               />
             </RouteSuspense>
           ) : selectedTicker ? (
@@ -1178,6 +1191,7 @@ export default function App() {
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onOpenPortfolio={openProfilePortfolio}
+                onRegisterAssetPanelBack={setAssetPanelBack}
               />
             </RouteSuspense>
           ) : (

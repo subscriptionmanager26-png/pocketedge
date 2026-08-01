@@ -23,11 +23,14 @@ export function isInsightForToday(insight) {
   return raw === ymd;
 }
 
-export function insightCardLabel(insight) {
-  if (!insight) return 'Insights';
-  if (isInsightForToday(insight)) return "Today's insight";
-  const date = formatNewsDate(insight.asOfDate || insight.publishedAt);
-  return date ? `Latest · ${date}` : 'Latest insight';
+/** Plain-text blurb capped at maxChars (default 140). */
+export function truncateSummary(text, maxChars = 140) {
+  const raw = String(text ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!raw) return '';
+  if (raw.length <= maxChars) return raw;
+  return `${raw.slice(0, maxChars - 1).trimEnd()}…`;
 }
 
 /**

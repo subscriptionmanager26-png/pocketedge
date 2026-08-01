@@ -15,6 +15,7 @@ export default function IndexDetailPage({
   indexId,
   onBack,
   onOpenProfile,
+  onRegisterAssetPanelBack,
   guestMode = false,
 }) {
   const [index, setIndex] = useState(() => {
@@ -30,6 +31,22 @@ export default function IndexDetailPage({
   });
   const [loading, setLoading] = useState(() => !findCachedMarketItem('indices', indexId));
   const [detailPanel, setDetailPanel] = useState(null);
+
+  useEffect(() => {
+    return () => onRegisterAssetPanelBack?.(null);
+  }, [onRegisterAssetPanelBack]);
+
+  const handlePanelChange = useCallback(
+    (panel, meta) => {
+      setDetailPanel(panel);
+      if (panel && meta?.close) {
+        onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
+      } else {
+        onRegisterAssetPanelBack?.(null);
+      }
+    },
+    [onRegisterAssetPanelBack]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -135,7 +152,6 @@ export default function IndexDetailPage({
             name={displayIndex.name}
             ticker={displayIndex.symbol !== displayIndex.name ? displayIndex.symbol : null}
             subtitle={formatIndexGroup(displayIndex.group)}
-            type="Index"
             logoIconUrl={displayIndex.logoIconUrl}
             assetType="index"
             assetKey={displayIndex.id}
@@ -165,7 +181,8 @@ export default function IndexDetailPage({
           isDevMockMode() ? getIndexDiscussions(indexId, displayIndex?.name) : null
         }
         onOpenProfile={onOpenProfile}
-        onPanelChange={setDetailPanel}
+        onPanelChange={handlePanelChange}
+        shellOwnsMobileBack={Boolean(onRegisterAssetPanelBack)}
       />
     </div>
   );

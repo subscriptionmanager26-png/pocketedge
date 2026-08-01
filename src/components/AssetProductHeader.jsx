@@ -106,7 +106,7 @@ export default function AssetProductHeader({
   name,
   ticker,
   subtitle,
-  type,
+  type: _type,
   logoIconUrl,
   assetType,
   assetKey,
@@ -118,15 +118,9 @@ export default function AssetProductHeader({
   metaValue,
   priceSource,
 }) {
+  void _type;
   return (
     <section className="border-b border-pe-border px-4 py-5">
-      {type ? (
-        <p className="mb-2">
-          <span className="inline-flex rounded-full bg-pe-accent-wash px-2.5 py-1 text-xs font-semibold text-pe-accent">
-            {type}
-          </span>
-        </p>
-      ) : null}
       <div className="flex items-start gap-3">
         <AssetLogo
           logoIconUrl={logoIconUrl}

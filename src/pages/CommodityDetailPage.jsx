@@ -14,6 +14,7 @@ export default function CommodityDetailPage({
   commodityId,
   onBack,
   onOpenProfile,
+  onRegisterAssetPanelBack,
   guestMode = false,
 }) {
   const [commodity, setCommodity] = useState(() => {
@@ -30,6 +31,22 @@ export default function CommodityDetailPage({
   });
   const [loading, setLoading] = useState(() => !findCachedMarketItem('commodity', commodityId));
   const [detailPanel, setDetailPanel] = useState(null);
+
+  useEffect(() => {
+    return () => onRegisterAssetPanelBack?.(null);
+  }, [onRegisterAssetPanelBack]);
+
+  const handlePanelChange = useCallback(
+    (panel, meta) => {
+      setDetailPanel(panel);
+      if (panel && meta?.close) {
+        onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
+      } else {
+        onRegisterAssetPanelBack?.(null);
+      }
+    },
+    [onRegisterAssetPanelBack]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -142,7 +159,6 @@ export default function CommodityDetailPage({
             name={commodity.name}
             ticker={commodity.symbol !== commodity.name ? commodity.symbol : null}
             subtitle={subtitle}
-            type="Commodity"
             logoIconUrl={commodity.logoIconUrl}
             assetType="commodity"
             assetKey={commodity.id}
@@ -173,7 +189,8 @@ export default function CommodityDetailPage({
           isDevMockMode() ? getCommodityDiscussions(commodityId, commodity?.name) : null
         }
         onOpenProfile={onOpenProfile}
-        onPanelChange={setDetailPanel}
+        onPanelChange={handlePanelChange}
+        shellOwnsMobileBack={Boolean(onRegisterAssetPanelBack)}
       />
     </div>
   );

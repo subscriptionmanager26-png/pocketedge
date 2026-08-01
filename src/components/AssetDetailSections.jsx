@@ -5,11 +5,11 @@ import Avatar from './Avatar';
 import NewsList from './NewsList';
 import CorporateActionsList from './CorporateActionsList';
 import GuestSignInCta from './GuestSignInCta';
+import { DiscussionsList, HoldersList } from './InvestmentSections';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import { formatNewsDate } from '../lib/format';
 import {
   formatInsightChange,
-  insightCardLabel,
   isInsightForToday,
   pickLatestInsight,
   splitCorporateActions,
@@ -26,11 +26,13 @@ import { isDevMockMode } from '../lib/appMode';
 
 const NewsSummaryMarkdown = lazy(() => import('./NewsSummaryMarkdown'));
 
+const PREVIEW_COUNT = 4;
+
 const RAIL_CARD =
-  'flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-xl border border-pe-border-strong bg-pe-surface p-3.5 text-left transition hover:bg-white';
+  'flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-xl border border-pe-border bg-white p-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]';
 
 const RAIL_SCROLL =
-  'flex gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+  'flex gap-3 overflow-x-auto px-4 pb-3 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 function MarkdownFallback() {
   return <p className="text-sm text-pe-text-muted">Loading…</p>;
@@ -52,7 +54,7 @@ function SectionBlock({ title, actionLabel, onAction, children }) {
           </button>
         ) : null}
       </div>
-      {children}
+      <div className="bg-pe-surface py-3">{children}</div>
     </section>
   );
 }
@@ -65,9 +67,25 @@ function LoadingRail() {
   return <p className="px-4 text-[13px] text-pe-text-secondary">Loading…</p>;
 }
 
+function PanelBackHeader({ assetLabel, onBack, desktopOnly = false }) {
+  return (
+    <PageHeader desktopOnly={desktopOnly}>
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {assetLabel || 'Back'}
+      </button>
+    </PageHeader>
+  );
+}
+
 function InsightRailCard({ insight, onOpen }) {
   if (!insight) return null;
   const change = formatInsightChange(insight);
+  const dateLabel = formatNewsDate(insight.asOfDate || insight.publishedAt) || '';
   const preview = String(insight.summary ?? '')
     .replace(/[#*_`]/g, '')
     .replace(/\s+/g, ' ')
@@ -75,9 +93,11 @@ function InsightRailCard({ insight, onOpen }) {
 
   return (
     <button type="button" onClick={() => onOpen?.(insight)} className={RAIL_CARD}>
-      <p className="text-[12px] font-semibold text-pe-accent">{insightCardLabel(insight)}</p>
+      {dateLabel ? (
+        <p className="text-[12px] font-medium text-pe-text-muted">{dateLabel}</p>
+      ) : null}
       <p className="mt-1.5 line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
-        {insight.title || formatNewsDate(insight.asOfDate) || 'Insight'}
+        {insight.title || dateLabel || 'Insight'}
       </p>
       {preview ? (
         <p className="mt-2 line-clamp-3 flex-1 text-[12px] leading-relaxed text-pe-text-secondary">
@@ -90,9 +110,7 @@ function InsightRailCard({ insight, onOpen }) {
         <p className={`mt-3 text-[13px] font-semibold tabular-nums ${change.className}`}>
           {change.text}
         </p>
-      ) : (
-        <p className="mt-3 text-[12px] text-pe-text-muted">Read full insight</p>
-      )}
+      ) : null}
     </button>
   );
 }
@@ -186,10 +204,7 @@ function CorporateActionRailCard({ item, onOpen }) {
   const title = item.details?.trim() || item.eventType;
   return (
     <button type="button" onClick={() => onOpen?.(item)} className={RAIL_CARD}>
-      <p className="text-[12px] font-semibold text-pe-accent">Next up</p>
-      <p className="mt-1.5 line-clamp-3 text-[15px] font-semibold leading-snug text-pe-text">
-        {title}
-      </p>
+      <p className="line-clamp-3 text-[15px] font-semibold leading-snug text-pe-text">{title}</p>
       {item.displayDate ? (
         <p className="mt-auto pt-3 text-[12px] text-pe-text-muted">
           {item.dateLabel ? `${item.dateLabel}: ` : ''}
@@ -205,15 +220,13 @@ function CorporateActionRailCard({ item, onOpen }) {
   );
 }
 
-/**
- * Full-page insights view: Today + Archives toggle at top.
- */
 export function AssetInsightsView({
   assetLabel,
   insights,
   loading,
   onBack,
   initialMode = 'today',
+  panelBackDesktopOnly = false,
 }) {
   const latest = pickLatestInsight(insights);
   const [mode, setMode] = useState(() =>
@@ -223,24 +236,19 @@ export function AssetInsightsView({
   const archives = useMemo(() => {
     if (!insights?.length) return [];
     if (!latest) return insights;
-    // Archives = everything except the featured "today/latest" card when viewing today.
     return insights.filter((item) => item.id !== latest.id);
   }, [insights, latest]);
 
   const showToday = mode === 'today' && latest;
+  const change = latest ? formatInsightChange(latest) : null;
 
   return (
     <div>
-      <PageHeader>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {assetLabel || 'Back'}
-        </button>
-      </PageHeader>
+      <PanelBackHeader
+        assetLabel={assetLabel}
+        onBack={onBack}
+        desktopOnly={panelBackDesktopOnly}
+      />
 
       <div className="border-b border-pe-border px-4 pb-3 pt-2">
         <h1 className="text-[20px] font-semibold tracking-tight text-pe-text">Insights</h1>
@@ -279,13 +287,9 @@ export function AssetInsightsView({
             <p className="text-[15px] font-semibold text-pe-text">
               {formatNewsDate(latest.asOfDate || latest.publishedAt) || latest.title}
             </p>
-            {formatInsightChange(latest) ? (
-              <p
-                className={`shrink-0 text-[15px] font-semibold tabular-nums ${
-                  formatInsightChange(latest).className
-                }`}
-              >
-                {formatInsightChange(latest).text}
+            {change ? (
+              <p className={`shrink-0 text-[15px] font-semibold tabular-nums ${change.className}`}>
+                {change.text}
               </p>
             ) : null}
           </div>
@@ -303,9 +307,6 @@ export function AssetInsightsView({
         <div className="pb-8">
           {!archives.length && latest ? (
             <div className="px-4 py-5">
-              <p className="mb-3 text-[13px] text-pe-text-secondary">
-                Only one insight so far — showing it here.
-              </p>
               <NewsList items={[latest]} />
             </div>
           ) : (
@@ -317,9 +318,6 @@ export function AssetInsightsView({
   );
 }
 
-/**
- * Full-page corporate actions list (upcoming + previous).
- */
 export function AssetCorporateActionsView({
   assetLabel,
   upcoming,
@@ -327,6 +325,7 @@ export function AssetCorporateActionsView({
   loading,
   onBack,
   preferPast = false,
+  panelBackDesktopOnly = false,
 }) {
   const [mode, setMode] = useState(() =>
     preferPast || !upcoming.length ? 'previous' : 'upcoming'
@@ -334,16 +333,11 @@ export function AssetCorporateActionsView({
 
   return (
     <div>
-      <PageHeader>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {assetLabel || 'Back'}
-        </button>
-      </PageHeader>
+      <PanelBackHeader
+        assetLabel={assetLabel}
+        onBack={onBack}
+        desktopOnly={panelBackDesktopOnly}
+      />
 
       <div className="border-b border-pe-border px-4 pb-3 pt-2">
         <h1 className="text-[20px] font-semibold tracking-tight text-pe-text">
@@ -383,18 +377,9 @@ export function AssetCorporateActionsView({
         upcoming.length ? (
           <CorporateActionsList items={upcoming} />
         ) : (
-          <div className="px-4 py-12 text-center">
-            <p className="text-sm text-pe-text-secondary">No upcoming corporate actions.</p>
-            {past.length ? (
-              <button
-                type="button"
-                onClick={() => setMode('previous')}
-                className="mt-3 text-sm font-semibold text-pe-accent hover:underline"
-              >
-                See previous events
-              </button>
-            ) : null}
-          </div>
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+            No upcoming corporate actions.
+          </p>
         )
       ) : past.length ? (
         <CorporateActionsList items={past} />
@@ -403,6 +388,22 @@ export function AssetCorporateActionsView({
           No previous corporate actions.
         </p>
       )}
+    </div>
+  );
+}
+
+function AssetListPanel({ title, assetLabel, onBack, panelBackDesktopOnly = false, children }) {
+  return (
+    <div>
+      <PanelBackHeader
+        assetLabel={assetLabel}
+        onBack={onBack}
+        desktopOnly={panelBackDesktopOnly}
+      />
+      <div className="border-b border-pe-border px-4 pb-3 pt-2">
+        <h1 className="text-[20px] font-semibold tracking-tight text-pe-text">{title}</h1>
+      </div>
+      <div className="pb-8">{children}</div>
     </div>
   );
 }
@@ -426,8 +427,9 @@ export default function AssetDetailSections({
   onOpenProfile,
   onOpenPortfolio,
   onPanelChange,
+  shellOwnsMobileBack = false,
 }) {
-  const [panel, setPanel] = useState(null); // null | 'insights' | 'corporate_actions'
+  const [panel, setPanel] = useState(null);
   const [corpPreferPast, setCorpPreferPast] = useState(false);
   const [insightsInitialMode, setInsightsInitialMode] = useState('today');
 
@@ -435,8 +437,17 @@ export default function AssetDetailSections({
     if (next === 'insights' && options.insightsMode) {
       setInsightsInitialMode(options.insightsMode);
     }
+    if (next === 'corporate_actions' && options.preferPast != null) {
+      setCorpPreferPast(Boolean(options.preferPast));
+    }
     setPanel(next);
-    onPanelChange?.(next);
+    onPanelChange?.(next, {
+      close: () => {
+        setCorpPreferPast(false);
+        setPanel(null);
+        onPanelChange?.(null, { close: null });
+      },
+    });
   };
 
   const [insights, setInsights] = useState([]);
@@ -472,7 +483,6 @@ export default function AssetDetailSections({
       setInsightsLoading(false);
       return undefined;
     }
-    // Stock/ETF explanations use ticker; index/commodity may not have rows yet.
     if (kind !== 'stock' && kind !== 'etf') {
       setInsights([]);
       setInsightsLoading(false);
@@ -612,9 +622,13 @@ export default function AssetDetailSections({
     [corporateActions]
   );
 
-  const previewPosts = posts.slice(0, 6);
-  const previewHolders = holders.slice(0, 8);
-  const previewNews = news.slice(0, 6);
+  const previewPosts = posts.slice(0, PREVIEW_COUNT);
+  const previewHolders = holders.slice(0, PREVIEW_COUNT);
+  const previewNews = news.slice(0, PREVIEW_COUNT);
+
+  const corpActionLabel = nextCorp ? 'See more' : past.length ? 'See previous' : null;
+  // When the app shell owns mobile back, hide in-panel back on small screens.
+  const panelBackDesktopOnly = Boolean(shellOwnsMobileBack);
 
   if (panel === 'insights') {
     return (
@@ -623,6 +637,7 @@ export default function AssetDetailSections({
         insights={insights}
         loading={insightsLoading}
         initialMode={insightsInitialMode}
+        panelBackDesktopOnly={panelBackDesktopOnly}
         onBack={() => setActivePanel(null)}
       />
     );
@@ -636,6 +651,7 @@ export default function AssetDetailSections({
         past={past}
         loading={corpLoading}
         preferPast={corpPreferPast}
+        panelBackDesktopOnly={panelBackDesktopOnly}
         onBack={() => {
           setCorpPreferPast(false);
           setActivePanel(null);
@@ -644,11 +660,71 @@ export default function AssetDetailSections({
     );
   }
 
+  if (panel === 'posts') {
+    return (
+      <AssetListPanel
+        title="Posts"
+        assetLabel={assetLabel}
+        panelBackDesktopOnly={panelBackDesktopOnly}
+        onBack={() => setActivePanel(null)}
+      >
+        {guestMode ? (
+          <GuestSignInCta action="join discussions" showExploreHint={false} />
+        ) : (
+          <DiscussionsList
+            posts={posts}
+            onOpenProfile={onOpenProfile}
+            emptyMessage="No posts yet — mentions of this security will show up here."
+          />
+        )}
+      </AssetListPanel>
+    );
+  }
+
+  if (panel === 'holders') {
+    return (
+      <AssetListPanel
+        title="Holders"
+        assetLabel={assetLabel}
+        panelBackDesktopOnly={panelBackDesktopOnly}
+        onBack={() => setActivePanel(null)}
+      >
+        <HoldersList
+          holders={holders}
+          loading={holdersLoading}
+          onOpenProfile={guestMode ? undefined : onOpenProfile}
+          onOpenPortfolio={guestMode ? undefined : onOpenPortfolio}
+          emptyMessage="No disclosed holders yet."
+        />
+        {guestMode ? (
+          <GuestSignInCta action="follow holders and open portfolios" showExploreHint={false} />
+        ) : null}
+      </AssetListPanel>
+    );
+  }
+
+  if (panel === 'news') {
+    return (
+      <AssetListPanel
+        title="News"
+        assetLabel={assetLabel}
+        panelBackDesktopOnly={panelBackDesktopOnly}
+        onBack={() => setActivePanel(null)}
+      >
+        {news.length ? (
+          <NewsList items={news} />
+        ) : (
+          <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">No recent news.</p>
+        )}
+      </AssetListPanel>
+    );
+  }
+
   return (
     <div className="pb-6">
       <SectionBlock
         title="Insights"
-        actionLabel={insights.length > 1 ? 'Archives' : latestInsight ? 'Open' : null}
+        actionLabel={insights.length > 1 ? 'Archives' : latestInsight ? 'See more' : null}
         onAction={
           latestInsight
             ? () =>
@@ -674,7 +750,15 @@ export default function AssetDetailSections({
         )}
       </SectionBlock>
 
-      <SectionBlock title="Posts">
+      <SectionBlock
+        title="Posts"
+        actionLabel={!guestMode && posts.length > PREVIEW_COUNT ? 'See more' : null}
+        onAction={
+          !guestMode && posts.length > PREVIEW_COUNT
+            ? () => setActivePanel('posts')
+            : undefined
+        }
+      >
         {guestMode ? (
           <div className="px-4">
             <GuestSignInCta action="join discussions" showExploreHint={false} />
@@ -698,7 +782,17 @@ export default function AssetDetailSections({
         )}
       </SectionBlock>
 
-      <SectionBlock title="Holders">
+      <SectionBlock
+        title="Holders"
+        actionLabel={
+          supportsHolders && holders.length > PREVIEW_COUNT ? 'See more' : null
+        }
+        onAction={
+          supportsHolders && holders.length > PREVIEW_COUNT
+            ? () => setActivePanel('holders')
+            : undefined
+        }
+      >
         {!supportsHolders ? (
           <EmptyRail message="No disclosed holders yet." />
         ) : holdersLoading ? (
@@ -733,7 +827,15 @@ export default function AssetDetailSections({
         )}
       </SectionBlock>
 
-      <SectionBlock title="News">
+      <SectionBlock
+        title="News"
+        actionLabel={supportsNews && news.length > PREVIEW_COUNT ? 'See more' : null}
+        onAction={
+          supportsNews && news.length > PREVIEW_COUNT
+            ? () => setActivePanel('news')
+            : undefined
+        }
+      >
         {!supportsNews ? (
           <EmptyRail message="No recent news." />
         ) : newsLoading ? (
@@ -754,13 +856,13 @@ export default function AssetDetailSections({
       {showCorporateActions ? (
         <SectionBlock
           title="Corporate actions"
-          actionLabel={corporateActions.length ? 'See more' : null}
+          actionLabel={corpActionLabel}
           onAction={
-            corporateActions.length
-              ? () => {
-                  setCorpPreferPast(!nextCorp);
-                  setActivePanel('corporate_actions');
-                }
+            corpActionLabel
+              ? () =>
+                  setActivePanel('corporate_actions', {
+                    preferPast: !nextCorp,
+                  })
               : undefined
           }
         >
@@ -768,7 +870,7 @@ export default function AssetDetailSections({
             <LoadingRail />
           ) : nextCorp ? (
             <div className={RAIL_SCROLL}>
-              <div className="h-[160px]">
+              <div className="h-[148px]">
                 <CorporateActionRailCard
                   item={nextCorp}
                   onOpen={() => {
@@ -776,30 +878,13 @@ export default function AssetDetailSections({
                       window.open(nextCorp.documentUrl, '_blank', 'noopener,noreferrer');
                       return;
                     }
-                    setCorpPreferPast(false);
-                    setActivePanel('corporate_actions');
+                    setActivePanel('corporate_actions', { preferPast: false });
                   }}
                 />
               </div>
             </div>
           ) : (
-            <div className="px-4">
-              <p className="text-[13px] leading-relaxed text-pe-text-secondary">
-                No upcoming corporate actions.
-              </p>
-              {past.length ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCorpPreferPast(true);
-                    setActivePanel('corporate_actions');
-                  }}
-                  className="mt-2 text-[13px] font-semibold text-pe-accent hover:underline"
-                >
-                  See previous events
-                </button>
-              ) : null}
-            </div>
+            <EmptyRail message="No upcoming corporate actions." />
           )}
         </SectionBlock>
       ) : null}

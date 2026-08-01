@@ -8,7 +8,6 @@ import {
   getFundNews,
 } from '../data/fundData';
 import { getFundDiscussions } from '../lib/assetDiscussions';
-import { getFundAssetType } from '../lib/assetTypes';
 import {
   findCachedMarketItem,
   marketFundToDetail,
@@ -33,6 +32,7 @@ export default function InvestmentPage({
   onBack,
   onOpenProfile,
   onOpenPortfolio,
+  onRegisterAssetPanelBack,
   guestMode = false,
 }) {
   const seedFund = getFund(fundId);
@@ -108,6 +108,22 @@ export default function InvestmentPage({
     deps: [fundId, marketLoading, seedFund],
   });
 
+  useEffect(() => {
+    return () => onRegisterAssetPanelBack?.(null);
+  }, [onRegisterAssetPanelBack]);
+
+  const handlePanelChange = useCallback(
+    (panel, meta) => {
+      setDetailPanel(panel);
+      if (panel && meta?.close) {
+        onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
+      } else {
+        onRegisterAssetPanelBack?.(null);
+      }
+    },
+    [onRegisterAssetPanelBack]
+  );
+
   const hasResolvedFund = Boolean(seedFund || marketFund);
 
   if (!marketLoading && !hasResolvedFund) {
@@ -133,7 +149,6 @@ export default function InvestmentPage({
 
           <AssetProductHeader
             name={fund.name}
-            type={getFundAssetType()}
             logoIconUrl={fund.logoIconUrl}
             assetType="fund"
             assetKey={fund.id ?? fundId}
@@ -143,12 +158,6 @@ export default function InvestmentPage({
             change={fund.change}
             subtitle={categoryLine || undefined}
           />
-
-          <p className="border-b border-pe-border px-4 py-3 text-sm text-pe-text-secondary">
-            {categoryLine
-              ? `${fund.name} is a ${categoryLine} scheme. View NAV, community posts, and holders on PocketEdge.`
-              : `${fund.name} mutual fund details on PocketEdge.`}
-          </p>
         </>
       ) : null}
 
@@ -166,7 +175,8 @@ export default function InvestmentPage({
         mockNews={getFundNews(fundId)}
         onOpenProfile={onOpenProfile}
         onOpenPortfolio={onOpenPortfolio}
-        onPanelChange={setDetailPanel}
+        onPanelChange={handlePanelChange}
+        shellOwnsMobileBack={Boolean(onRegisterAssetPanelBack)}
       />
     </div>
   );
