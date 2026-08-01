@@ -6,9 +6,18 @@ import {
   ideaReturnClass,
 } from '../lib/ideaReturns';
 
+const THESIS_MAX_CHARS = 140;
+
+function displayThesis(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return '';
+  if (text.length <= THESIS_MAX_CHARS) return text;
+  return `${text.slice(0, THESIS_MAX_CHARS - 1).trimEnd()}…`;
+}
+
 /**
- * Ideas card: name, thesis, made-by display name, 1D only.
- * Readable hierarchy — no fixed crush height, no nested buttons.
+ * Ideas card — fixed height, maker-first hierarchy:
+ * maker → portfolio name → thesis (~140 chars) → 1D
  */
 export default function IdeaCard({
   portfolio,
@@ -19,12 +28,13 @@ export default function IdeaCard({
   onOpenProfile,
   onUnlock,
 }) {
-  const thesis = getIdeaThesis(portfolio);
+  const thesis = displayThesis(getIdeaThesis(portfolio));
   const dayReturn =
     dayReturnPct != null && Number.isFinite(Number(dayReturnPct))
       ? Number(dayReturnPct)
       : getPortfolioDayReturnPct(portfolio);
   const makerName = String(owner?.name ?? '').trim() || 'Investor';
+  const portfolioName = String(portfolio?.name ?? '').trim() || 'Untitled idea';
 
   const openCard = () => {
     if (blurReturns) {
@@ -54,18 +64,9 @@ export default function IdeaCard({
           openCard();
         }
       }}
-      className="flex min-h-[168px] w-full cursor-pointer flex-col rounded-xl border border-pe-border-strong bg-pe-surface p-4 text-left transition hover:bg-white"
+      className="flex h-[204px] w-full cursor-pointer flex-col overflow-hidden rounded-xl border border-pe-border-strong bg-pe-surface p-4 text-left transition hover:bg-white"
     >
-      <p className="line-clamp-2 text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
-        {portfolio?.name || 'Untitled idea'}
-      </p>
-
-      <p className="mt-2 line-clamp-2 text-[15px] leading-6 text-pe-text-secondary">
-        {thesis || <span className="italic text-pe-text-muted">No thesis yet</span>}
-      </p>
-
-      <p className="mt-3 truncate text-[12px] leading-4 text-pe-text-muted">
-        Made by{' '}
+      <p className="min-w-0 truncate text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
         <span
           role="link"
           tabIndex={0}
@@ -76,10 +77,18 @@ export default function IdeaCard({
               openMaker(event);
             }
           }}
-          className="font-medium text-pe-text-secondary underline-offset-2 hover:text-pe-accent hover:underline"
+          className="hover:text-pe-accent"
         >
           {makerName}
         </span>
+      </p>
+
+      <p className="mt-0.5 min-w-0 truncate text-[12px] leading-4 text-pe-text-muted">
+        {portfolioName}
+      </p>
+
+      <p className="mt-3 line-clamp-3 min-h-[4.5rem] text-[15px] leading-6 text-pe-text-secondary">
+        {thesis || <span className="italic text-pe-text-muted">No thesis yet</span>}
       </p>
 
       <div className="mt-auto flex items-end gap-2 border-t border-pe-border pt-3">
