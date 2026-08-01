@@ -505,19 +505,9 @@ export default function PortfolioPage({
   if (guestMode) {
     return (
       <div>
-        <PageHeader>
-          <h1 className="text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
-            Portfolio
-          </h1>
-        </PageHeader>
-        <div className="px-4 pt-4">
-          <p className="text-sm text-pe-text-secondary">
-            Track holdings, day&apos;s PnL, news, and discussions in one place.
-          </p>
-        </div>
         <GuestSignInCta
-          title="Your portfolio is private"
-          action="add holdings and track performance"
+          title="Your portfolio"
+          action="see your portfolio or create one"
           showExploreHint={false}
         />
         <div className="mx-4 mb-8 overflow-hidden rounded-xl border border-dashed border-pe-border">
