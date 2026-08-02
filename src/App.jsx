@@ -1122,10 +1122,14 @@ export default function App() {
         {tab === 'ideas' && (
           <RouteSuspense>
             <IdeasPage
+              guestMode={guestMode}
               onSelectStock={openStock}
               onSelectFund={openFund}
               onSelectIndex={openIndex}
               onSelectCommodity={openCommodity}
+              onOpenProfile={openProfile}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
+              onRequireSignIn={requireSignIn}
             />
           </RouteSuspense>
         )}

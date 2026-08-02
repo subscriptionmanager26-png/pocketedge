@@ -4,6 +4,7 @@ import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import SecurityIdeaCard from '../components/SecurityIdeaCard';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import AssetLogo from '../components/AssetLogo';
+import Avatar from '../components/Avatar';
 import {
   MARKET_MIN_SEARCH_CHARS,
   fetchMarketPreview,
@@ -21,7 +22,14 @@ import {
   rankTrendingSecurities,
   toIdeaSecurity,
 } from '../lib/ideaSecurities';
-import { formatPct, formatPrice, pnlClass } from '../lib/format';
+import { formatCount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import { PEOPLE, TOPICS } from '../data/mockData';
+import { isDevMockMode } from '../lib/appMode';
+import { profileToPerson, rememberPerson } from '../lib/socialIdentity';
+import { searchSocialProfiles } from '../lib/socialProfileApi';
+import { isTopicFollowed, toggleTopicFollow } from '../lib/socialGraphStore';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { skipAuthForDev } from '../lib/sessionStore';
 
 function useDebouncedValue(value, delayMs = 300) {
   const [debounced, setDebounced] = useState(value);
@@ -127,6 +135,49 @@ function SecurityListRow({ item, onOpen }) {
   );
 }
 
+function PersonRow({ person, onOpenProfile }) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        rememberPerson(person);
+        onOpenProfile?.(person.id);
+      }}
+      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface"
+    >
+      <Avatar person={person} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-semibold text-pe-text">{person.name}</p>
+        <p className="text-sm text-pe-text-muted">@{person.handle}</p>
+      </div>
+    </button>
+  );
+}
+
+function TopicRow({ topic, following, onToggle }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-4">
+      <div className="min-w-0">
+        <p className="truncate text-[15px] font-semibold text-pe-text">#{topic.name}</p>
+        <p className="mt-0.5 text-sm text-pe-text-secondary">
+          {topic.postsThisWeek} posts · {formatCount(topic.followers)} followers
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`shrink-0 rounded-md px-3.5 py-1.5 text-sm font-bold transition ${
+          following
+            ? 'border border-pe-border-strong bg-pe-canvas text-pe-text hover:bg-pe-surface'
+            : 'bg-pe-accent text-white hover:bg-pe-accent-pressed'
+        }`}
+      >
+        {following ? 'Following' : 'Follow'}
+      </button>
+    </div>
+  );
+}
+
 async function loadBondIdeas() {
   try {
     const { items } = await listSgbMarketQuotes();
@@ -140,11 +191,41 @@ async function loadBondIdeas() {
   }
 }
 
+async function fetchSuggestedPeople(limit = 12) {
+  if (isDevMockMode() || !isSupabaseConfigured() || skipAuthForDev()) {
+    return [...PEOPLE]
+      .sort((a, b) => b.xirr - a.xirr)
+      .slice(0, limit)
+      .map((p) => ({
+        user_id: p.id,
+        username: p.handle,
+        display_name: p.name,
+        bio: p.bio,
+        avatar_url: null,
+        location: p.location,
+        focus: p.focus,
+      }));
+  }
+
+  const { data, error } = await supabase
+    .from('social_profiles')
+    .select('user_id, username, display_name, bio, avatar_url, location, focus')
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 export default function IdeasPage({
+  guestMode = false,
   onSelectStock,
   onSelectFund,
   onSelectCommodity,
   onSelectIndex,
+  onOpenProfile,
+  onGraphChange,
+  onRequireSignIn,
 }) {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -154,7 +235,11 @@ export default function IdeasPage({
   const [error, setError] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [peopleResults, setPeopleResults] = useState([]);
+  const [peopleLoading, setPeopleLoading] = useState(false);
+  const [graphTick, setGraphTick] = useState(0);
   const debouncedQuery = useDebouncedValue(query.trim());
+  const q = debouncedQuery.toLowerCase();
 
   const handlers = useMemo(
     () => ({ onSelectStock, onSelectFund, onSelectCommodity, onSelectIndex }),
@@ -162,6 +247,20 @@ export default function IdeasPage({
   );
 
   const handleOpen = (item) => openIdeaSecurity(item, handlers);
+
+  const bumpGraph = () => {
+    setGraphTick((n) => n + 1);
+    onGraphChange?.();
+  };
+
+  const handleTopicFollow = (slug) => {
+    if (guestMode) {
+      onRequireSignIn?.();
+      return;
+    }
+    toggleTopicFollow(slug);
+    bumpGraph();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -216,10 +315,74 @@ export default function IdeasPage({
     };
   }, []);
 
+  // People: suggested list or search (People pill, or All while typing).
+  useEffect(() => {
+    const wantsPeople = typeFilter === 'people' || (typeFilter === 'all' && q.length > 0);
+    if (!wantsPeople) {
+      setPeopleResults([]);
+      setPeopleLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setPeopleLoading(true);
+
+    const run = async () => {
+      try {
+        if (q) {
+          if (isDevMockMode()) {
+            const ranked = [...PEOPLE].sort((a, b) => b.xirr - a.xirr);
+            const filtered = ranked.filter(
+              (p) =>
+                p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)
+            );
+            for (const person of filtered) rememberPerson(person);
+            if (!cancelled) setPeopleResults(filtered);
+            return;
+          }
+          const rows = await searchSocialProfiles(q);
+          const people = rows.map(profileToPerson);
+          for (const person of people) rememberPerson(person);
+          if (!cancelled) setPeopleResults(people);
+          return;
+        }
+
+        const rows = await fetchSuggestedPeople(12);
+        const people = rows.map(profileToPerson);
+        for (const person of people) rememberPerson(person);
+        if (!cancelled) setPeopleResults(people);
+      } catch {
+        if (!cancelled) setPeopleResults([]);
+      } finally {
+        if (!cancelled) setPeopleLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [q, typeFilter]);
+
+  const topicResults = useMemo(() => {
+    void graphTick;
+    if (!isDevMockMode()) return [];
+    if (!q) return TOPICS;
+    return TOPICS.filter((t) => t.name.toLowerCase().includes(q));
+  }, [q, graphTick]);
+
+  // Securities search (All / Stocks / Funds / …)
   useEffect(() => {
     let cancelled = false;
-    const q = debouncedQuery;
-    if (q.length < MARKET_MIN_SEARCH_CHARS) {
+    const wantsSecurities =
+      typeFilter === 'all' ||
+      typeFilter === 'stock' ||
+      typeFilter === 'fund' ||
+      typeFilter === 'etf' ||
+      typeFilter === 'commodity' ||
+      typeFilter === 'bond';
+
+    if (!wantsSecurities || debouncedQuery.length < MARKET_MIN_SEARCH_CHARS) {
       setSearchResults([]);
       setSearching(false);
       return undefined;
@@ -229,7 +392,7 @@ export default function IdeasPage({
     const run = async () => {
       try {
         if (typeFilter === 'bond') {
-          const needle = q.toLowerCase();
+          const needle = debouncedQuery.toLowerCase();
           const hits = bonds.filter((item) => {
             const hay = [item.name, item.symbol, item.isin].filter(Boolean).join(' ').toLowerCase();
             return hay.includes(needle);
@@ -239,7 +402,7 @@ export default function IdeasPage({
         }
 
         if (typeFilter === 'all') {
-          const byType = await searchAllMarkets(q, 10);
+          const byType = await searchAllMarkets(debouncedQuery, 10);
           const mixed = [
             ...(byType.stocks ?? []).map((row) => toIdeaSecurity(row, 'stock')),
             ...(byType.etf ?? []).map((row) => toIdeaSecurity(row, 'etf')),
@@ -250,7 +413,7 @@ export default function IdeasPage({
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase();
-              return hay.includes(q.toLowerCase());
+              return hay.includes(debouncedQuery.toLowerCase());
             }),
           ].filter(Boolean);
           if (!cancelled) setSearchResults(mixed.slice(0, 40));
@@ -262,7 +425,7 @@ export default function IdeasPage({
           if (!cancelled) setSearchResults([]);
           return;
         }
-        const { items } = await searchMarketTab(meta.tab, q, 40);
+        const { items } = await searchMarketTab(meta.tab, debouncedQuery, 40);
         if (!cancelled) {
           setSearchResults(
             (items ?? []).map((row) => toIdeaSecurity(row, typeFilter)).filter(Boolean)
@@ -312,8 +475,20 @@ export default function IdeasPage({
     [filteredPool]
   );
 
-  const isSearching = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
-  const showTypedList = !isSearching && typeFilter !== 'all';
+  const isPeopleFilter = typeFilter === 'people';
+  const isTopicsFilter = typeFilter === 'topics';
+  const isSecurityFilter =
+    typeFilter === 'stock' ||
+    typeFilter === 'fund' ||
+    typeFilter === 'etf' ||
+    typeFilter === 'commodity' ||
+    typeFilter === 'bond';
+  const securitySearchActive = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;
+  const peopleSearchActive = Boolean(q);
+  const showAllSearch =
+    typeFilter === 'all' && (peopleSearchActive || securitySearchActive);
+  const showTypedSecurityList = !securitySearchActive && isSecurityFilter;
+  const showBrowseRails = typeFilter === 'all' && !peopleSearchActive && !securitySearchActive;
 
   return (
     <div>
@@ -321,7 +496,7 @@ export default function IdeasPage({
         <PageHeaderSearch
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search stocks, funds, ETFs…"
+          placeholder="Search people, topics, stocks…"
           autoFocus
         />
       </PageHeader>
@@ -339,7 +514,158 @@ export default function IdeasPage({
 
       {error ? <p className="px-4 pt-4 text-sm text-pe-negative">{error}</p> : null}
 
-      {isSearching ? (
+      {/* People pill */}
+      {isPeopleFilter ? (
+        <section className="pt-4 pb-8">
+          <div className="px-4">
+            <SectionHeading
+              title={q ? 'People' : 'Suggested people'}
+              subtitle={
+                peopleLoading
+                  ? 'Loading…'
+                  : q
+                    ? `${peopleResults.length} result${peopleResults.length === 1 ? '' : 's'}`
+                    : 'Investors to follow'
+              }
+            />
+          </div>
+          {peopleLoading ? (
+            <div className="px-4">
+              <MarketsListSkeleton rows={6} />
+            </div>
+          ) : peopleResults.length ? (
+            <div className="divide-y divide-pe-border">
+              {peopleResults.map((p) => (
+                <PersonRow key={p.id} person={p} onOpenProfile={onOpenProfile} />
+              ))}
+            </div>
+          ) : (
+            <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
+              {q ? 'No matching people.' : 'Search by name or @username.'}
+            </p>
+          )}
+        </section>
+      ) : null}
+
+      {/* Topics pill */}
+      {isTopicsFilter ? (
+        <section className="pt-4 pb-8">
+          <div className="px-4">
+            <SectionHeading
+              title="Topics"
+              subtitle={q ? 'Matching topics' : 'Themes to follow'}
+            />
+          </div>
+          {topicResults.length ? (
+            <div className="divide-y divide-pe-border">
+              {topicResults.map((t) => (
+                <TopicRow
+                  key={t.id}
+                  topic={t}
+                  following={isTopicFollowed(t.slug)}
+                  onToggle={() => handleTopicFollow(t.slug)}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
+              {q ? 'No matching topics.' : 'Topics coming soon.'}
+            </p>
+          )}
+        </section>
+      ) : null}
+
+      {/* All: mixed search */}
+      {showAllSearch ? (
+        <div className="pb-8 pt-4">
+          {(peopleSearchActive || typeFilter === 'all') && (
+            <section className="pb-5">
+              <div className="px-4">
+                <SectionHeading
+                  title="People"
+                  subtitle={peopleLoading ? 'Searching…' : undefined}
+                />
+              </div>
+              {peopleLoading ? (
+                <div className="px-4">
+                  <MarketsListSkeleton rows={3} />
+                </div>
+              ) : peopleResults.length ? (
+                <div className="divide-y divide-pe-border">
+                  {peopleResults.slice(0, 8).map((p) => (
+                    <PersonRow key={p.id} person={p} onOpenProfile={onOpenProfile} />
+                  ))}
+                </div>
+              ) : peopleSearchActive ? (
+                <p className="px-4 py-6 text-sm text-pe-text-secondary">No matching people.</p>
+              ) : null}
+            </section>
+          )}
+
+          {peopleSearchActive ? (
+            <section className="border-t border-pe-border pb-5 pt-5">
+              <div className="px-4">
+                <SectionHeading title="Topics" />
+              </div>
+              {topicResults.length ? (
+                <div className="divide-y divide-pe-border">
+                  {topicResults.map((t) => (
+                    <TopicRow
+                      key={t.id}
+                      topic={t}
+                      following={isTopicFollowed(t.slug)}
+                      onToggle={() => handleTopicFollow(t.slug)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="px-4 py-6 text-sm text-pe-text-secondary">
+                  {isDevMockMode() ? 'No matching topics.' : 'Topics coming soon.'}
+                </p>
+              )}
+            </section>
+          ) : null}
+
+          {securitySearchActive ? (
+            <section className="border-t border-pe-border pt-5">
+              <div className="px-4">
+                <SectionHeading
+                  title="Securities"
+                  subtitle={
+                    searching
+                      ? 'Searching…'
+                      : `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}`
+                  }
+                />
+              </div>
+              {searching ? (
+                <div className="px-4">
+                  <MarketsListSkeleton rows={6} />
+                </div>
+              ) : searchResults.length ? (
+                <div className="divide-y divide-pe-border">
+                  {searchResults.map((item) => (
+                    <SecurityListRow
+                      key={ideaSecurityKey(item)}
+                      item={item}
+                      onOpen={handleOpen}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="px-4 py-6 text-sm text-pe-text-secondary">No matching securities.</p>
+              )}
+            </section>
+          ) : peopleSearchActive && debouncedQuery.length < MARKET_MIN_SEARCH_CHARS ? (
+            <p className="border-t border-pe-border px-4 py-6 text-sm text-pe-text-secondary">
+              Type at least {MARKET_MIN_SEARCH_CHARS} characters to search securities.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Security-type search */}
+      {isSecurityFilter && securitySearchActive ? (
         <section className="pt-4 pb-8">
           <div className="px-4">
             <SectionHeading
@@ -373,14 +699,14 @@ export default function IdeasPage({
         </section>
       ) : null}
 
-      {!isSearching && loading ? (
+      {showBrowseRails && loading ? (
         <div className="space-y-6 px-4 pt-4 pb-8">
           <MarketsListSkeleton rows={4} />
           <MarketsListSkeleton rows={4} />
         </div>
       ) : null}
 
-      {!isSearching && !loading && showTypedList ? (
+      {showTypedSecurityList && !loading ? (
         <section className="pt-4 pb-8">
           <div className="px-4">
             <SectionHeading
@@ -406,7 +732,7 @@ export default function IdeasPage({
         </section>
       ) : null}
 
-      {!isSearching && !loading && typeFilter === 'all' ? (
+      {showBrowseRails && !loading ? (
         <>
           <section className="pb-5 pt-4">
             <div className="px-4">

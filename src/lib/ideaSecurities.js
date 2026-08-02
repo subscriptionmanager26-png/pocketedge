@@ -1,18 +1,24 @@
 /**
- * Ideas hub helpers — individual securities (stocks, funds, ETFs, commodities, bonds).
+ * Ideas hub helpers — securities plus people/topics discovery.
  */
 
 export const IDEA_ASSET_TYPES = [
-  { id: 'all', label: 'All', tab: null },
-  { id: 'stock', label: 'Stocks', tab: 'stocks' },
-  { id: 'fund', label: 'Funds', tab: 'mutual_funds' },
-  { id: 'etf', label: 'ETF', tab: 'etf' },
-  { id: 'commodity', label: 'Commodity', tab: 'commodity' },
-  { id: 'bond', label: 'Bonds', tab: null },
+  { id: 'all', label: 'All', tab: null, kind: 'all' },
+  { id: 'people', label: 'People', tab: null, kind: 'people' },
+  { id: 'topics', label: 'Topics', tab: null, kind: 'topics' },
+  { id: 'stock', label: 'Stocks', tab: 'stocks', kind: 'security' },
+  { id: 'fund', label: 'Funds', tab: 'mutual_funds', kind: 'security' },
+  { id: 'etf', label: 'ETF', tab: 'etf', kind: 'security' },
+  { id: 'commodity', label: 'Commodity', tab: 'commodity', kind: 'security' },
+  { id: 'bond', label: 'Bonds', tab: null, kind: 'security' },
 ];
 
 export const IDEA_MARKET_TABS = ['stocks', 'mutual_funds', 'etf', 'commodity'];
 
+export function isIdeaSecurityFilter(typeId) {
+  const meta = IDEA_ASSET_TYPES.find((t) => t.id === typeId);
+  return meta?.kind === 'security' || meta?.kind === 'all';
+}
 const TYPE_LABEL = {
   stock: 'Stock',
   fund: 'Fund',
