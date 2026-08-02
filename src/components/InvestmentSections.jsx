@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Avatar from './Avatar';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
+import { holderDisplayLabel } from '../lib/assetHoldersApi';
 
 export const INVESTMENT_TABS = [
   { id: 'insights', label: 'Insights' },
@@ -84,6 +85,24 @@ export function DiscussionsList({ posts, onOpenProfile, emptyMessage }) {
 
 /** Holders tab — list of users who disclose owning this asset. */
 export function HoldersList({ holders, loading, onOpenProfile, onOpenPortfolio, emptyMessage }) {
+  const [enrichTick, setEnrichTick] = useState(0);
+
+  useEffect(() => {
+    const ids = [
+      ...new Set((holders ?? []).map((h) => h?.userId ?? h).filter(Boolean).map(String)),
+    ];
+    if (!ids.length) return undefined;
+    let cancelled = false;
+    resolvePeople(ids)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setEnrichTick((n) => n + 1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [holders]);
+
   if (loading) {
     return (
       <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">Loading holders…</p>
@@ -98,6 +117,8 @@ export function HoldersList({ holders, loading, onOpenProfile, onOpenPortfolio, 
     );
   }
 
+  void enrichTick;
+
   return (
     <div className="divide-y divide-pe-border">
       {holders.map((holder) => {
@@ -107,14 +128,9 @@ export function HoldersList({ holders, loading, onOpenProfile, onOpenPortfolio, 
           name: holder.displayName || holder.firstName || 'Member',
           handle: 'member',
           avatarUrl: holder.avatarUrl ?? null,
-          avatar: (holder.firstName || holder.displayName || 'M').charAt(0).toUpperCase(),
+          avatar: (holder.displayName || holder.firstName || 'M').charAt(0).toUpperCase(),
         };
-        const firstName =
-          holder.firstName ||
-          String(person.name || 'Member')
-            .trim()
-            .split(/\s+/)[0] ||
-          'Member';
+        const label = holderDisplayLabel(holder, person);
         const portfolioName = holder.portfolioName?.trim() || 'Portfolio';
         const extra = Number(holder.extraPortfolios) || 0;
         const subtitle = extra > 0 ? `${portfolioName} +${extra}` : portfolioName;
@@ -133,9 +149,9 @@ export function HoldersList({ holders, loading, onOpenProfile, onOpenPortfolio, 
             }}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-pe-surface/50"
           >
-            <Avatar person={{ ...person, name: firstName, avatarUrl }} />
+            <Avatar person={{ ...person, name: label, avatarUrl }} />
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-pe-text">{firstName}</p>
+              <p className="truncate text-[15px] font-semibold text-pe-text">{label}</p>
               <p className="truncate text-sm text-pe-text-muted">{subtitle}</p>
             </div>
           </button>

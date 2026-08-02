@@ -14,7 +14,7 @@ import {
   pickLatestInsight,
   splitCorporateActions,
 } from '../lib/assetDetailHelpers';
-import { fetchAssetHolders } from '../lib/assetHoldersApi';
+import { fetchAssetHolders, holderDisplayLabel } from '../lib/assetHoldersApi';
 import { loadPostsMentioning } from '../lib/assetDiscussions';
 import {
   fetchCorporateActions,
@@ -149,21 +149,17 @@ function PostRailCard({ post, onOpenProfile, enrichmentTick = 0 }) {
   );
 }
 
-function HolderRailCard({ holder, onOpenProfile, onOpenPortfolio }) {
+function HolderRailCard({ holder, onOpenProfile, onOpenPortfolio, enrichmentTick = 0 }) {
+  void enrichmentTick;
   const userId = holder.userId ?? holder;
   const person = getPersonSync(userId) ?? {
     id: userId,
     name: holder.displayName || holder.firstName || 'Member',
     handle: 'member',
     avatarUrl: holder.avatarUrl ?? null,
-    avatar: (holder.firstName || holder.displayName || 'M').charAt(0).toUpperCase(),
+    avatar: (holder.displayName || holder.firstName || 'M').charAt(0).toUpperCase(),
   };
-  const firstName =
-    holder.firstName ||
-    String(person.name || 'Member')
-      .trim()
-      .split(/\s+/)[0] ||
-    'Member';
+  const label = holderDisplayLabel(holder, person);
   const portfolioName = holder.portfolioName?.trim() || 'Portfolio';
   const extra = Number(holder.extraPortfolios) || 0;
   const subtitle = extra > 0 ? `${portfolioName} +${extra}` : portfolioName;
@@ -180,8 +176,8 @@ function HolderRailCard({ holder, onOpenProfile, onOpenPortfolio }) {
       }}
       className={`${RAIL_CARD} justify-center`}
     >
-      <Avatar person={{ ...person, name: firstName, avatarUrl: holder.avatarUrl ?? person.avatarUrl }} />
-      <p className="mt-3 truncate text-[15px] font-semibold text-pe-text">{firstName}</p>
+      <Avatar person={{ ...person, name: label, avatarUrl: holder.avatarUrl ?? person.avatarUrl }} />
+      <p className="mt-3 truncate text-[15px] font-semibold text-pe-text">{label}</p>
       <p className="mt-1 truncate text-[12px] text-pe-text-muted">{subtitle}</p>
     </button>
   );
@@ -465,6 +461,7 @@ export default function AssetDetailSections({
   const [corporateActions, setCorporateActions] = useState([]);
   const [corpLoading, setCorpLoading] = useState(Boolean(showCorporateActions));
   const [postEnrichTick, setPostEnrichTick] = useState(0);
+  const [holderEnrichTick, setHolderEnrichTick] = useState(0);
   const [newsSheetItem, setNewsSheetItem] = useState(null);
 
   const keys = useMemo(() => {
@@ -615,6 +612,22 @@ export default function AssetDetailSections({
       cancelled = true;
     };
   }, [posts]);
+
+  useEffect(() => {
+    const ids = [
+      ...new Set((holders ?? []).map((h) => h?.userId ?? h).filter(Boolean).map(String)),
+    ];
+    if (!ids.length) return undefined;
+    let cancelled = false;
+    resolvePeople(ids)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setHolderEnrichTick((n) => n + 1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [holders]);
 
   const latestInsight = pickLatestInsight(insights);
   const { upcoming, past, next: nextCorp } = useMemo(
@@ -807,6 +820,7 @@ export default function AssetDetailSections({
                 >
                   <HolderRailCard
                     holder={holder}
+                    enrichmentTick={holderEnrichTick}
                     onOpenProfile={guestMode ? undefined : onOpenProfile}
                     onOpenPortfolio={guestMode ? undefined : onOpenPortfolio}
                   />

@@ -1,10 +1,29 @@
 import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import { isInFundNavPublishWindow } from '../lib/fundDayPnl';
+import { isInMcxSession, isInNseSession } from '../lib/marketRefreshPolicy';
 import AssetLogo from './AssetLogo';
 
 function formatSignedPlain(n) {
   if (n == null || Number.isNaN(n)) return '-';
   const sign = n > 0 ? '+' : n < 0 ? '−' : '';
   return `${sign}${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+function isLiveSessionForAsset(assetType, date = new Date()) {
+  const type = String(assetType ?? '').toLowerCase();
+  if (!type) return true;
+  if (type === 'fund') return isInFundNavPublishWindow(date);
+  if (type === 'commodity') return isInMcxSession(date);
+  // stock / etf / bond / index share NSE hours
+  return isInNseSession(date);
+}
+
+function hasMeaningfulMove(amount, pctValue) {
+  const absAmount = amount != null && Number.isFinite(amount) ? Math.abs(amount) : null;
+  const absPct = pctValue != null && Number.isFinite(pctValue) ? Math.abs(pctValue) : null;
+  if (absAmount != null && absAmount >= 0.005) return true;
+  if (absPct != null && absPct >= 0.005) return true;
+  return false;
 }
 
 /**
@@ -21,6 +40,7 @@ export function QuoteChangeBlock({
   formatAsCurrency = true,
   size = 'row',
   className = '',
+  assetType = null,
 }) {
   const numericPrice =
     typeof price === 'number'
@@ -49,7 +69,12 @@ export function QuoteChangeBlock({
         : null;
   const pctValue = hasPct ? Number(changePct) : derivedPct;
   const showPct = pctValue != null && Number.isFinite(pctValue);
-  const hasChange = amount != null || showPct;
+  const meaningful = hasMeaningfulMove(amount, showPct ? pctValue : null);
+  const sessionLive = isLiveSessionForAsset(assetType);
+  // Flat moves never show. On the security detail header, also hide when the
+  // market session is closed — LTP is not moving, so "Today's Change" is noise.
+  const hasChange =
+    meaningful && (size !== 'detail' || !assetType || sessionLive);
   const tone = amount != null ? amount : showPct ? pctValue : 0;
   const formatValue = (n) => (formatAsCurrency ? formatPrice(n) : formatSignedPlain(n));
   const priceDisplay =
@@ -151,6 +176,7 @@ export default function AssetProductHeader({
         <QuoteChangeBlock
           className="mt-3"
           size="detail"
+          assetType={assetType}
           price={price}
           changePct={changePct}
           previousClose={previousClose}

@@ -17,6 +17,16 @@ export function holderFirstName(displayName, fallback = 'Member') {
 }
 
 /**
+ * Same label in rail cards and holders list: prefer full display name, then profile name.
+ */
+export function holderDisplayLabel(holder, person) {
+  const full = String(
+    holder?.displayName || person?.name || holder?.firstName || ''
+  ).trim();
+  return full || 'Member';
+}
+
+/**
  * Users who disclose a holding of `assetKey` in a published portfolio/watchlist.
  * Each row points at the portfolio where the asset has the highest weight.
  *
