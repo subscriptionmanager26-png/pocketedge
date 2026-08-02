@@ -288,10 +288,6 @@ export default function Shell({
 
   const goTab = (id) => {
     prefetchTab(id);
-    if (guestMode && id === 'profile') {
-      onRequireSignIn?.();
-      return;
-    }
     if (id === 'profile') onProfile?.();
     else if (id === 'menu') setAppMenuOpen((open) => !open);
     else if (id === 'settings') {
@@ -321,10 +317,7 @@ export default function Shell({
   };
 
   const handleProfileOrSignIn = () => {
-    if (guestMode) {
-      onRequireSignIn?.();
-      return;
-    }
+    // Soft gate: navigate to Profile and show in-page CTA (do not OAuth immediately).
     onProfile?.();
   };
 

@@ -53,9 +53,16 @@ export default function ActivityPage({
 
       {guestMode ? (
         <GuestSignInCta
-          title="Your activity lives here"
-          action="see followers, updates from people you follow, and moves on your holdings"
+          variant="hero"
+          title="Never miss a move"
+          description="Sign in for followers, updates from people you follow, and chatter on your holdings."
+          action="see your activity"
           showExploreHint={false}
+          benefits={[
+            'New followers in real time',
+            'Updates from your network',
+            'Buzz on stocks you hold',
+          ]}
         />
       ) : null}
 

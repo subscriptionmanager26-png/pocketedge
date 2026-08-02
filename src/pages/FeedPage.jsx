@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { isDevMockMode } from '../lib/appMode';
 import PostCard from '../components/PostCard';
+import GuestFeedPreview from '../components/GuestFeedPreview';
 import { FeedSkeleton } from '../components/PageSkeletons';
 import { getFollowedTopicSlugs, getFollowingIds } from '../lib/socialGraphStore';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
@@ -10,6 +11,7 @@ export default function FeedPage({
   feedMode = 'forYou',
   graphTick,
   loading = false,
+  guestMode = false,
   onOpenProfile,
   onOpenPost,
   onOpenStock,
@@ -20,7 +22,7 @@ export default function FeedPage({
   const [mockPosts, setMockPosts] = useState(null);
 
   useEffect(() => {
-    if (!isDevMockMode() || posts != null) return undefined;
+    if (guestMode || !isDevMockMode() || posts != null) return undefined;
     let cancelled = false;
     import('../data/mockData')
       .then((mod) => {
@@ -32,9 +34,10 @@ export default function FeedPage({
     return () => {
       cancelled = true;
     };
-  }, [posts]);
+  }, [posts, guestMode]);
 
   const feedPosts = useMemo(() => {
+    if (guestMode) return [];
     const list = posts ?? mockPosts ?? [];
     if (feedMode === 'following') {
       return list.filter(
@@ -44,10 +47,14 @@ export default function FeedPage({
       );
     }
     return list;
-  }, [feedMode, posts, mockPosts, followingIds, followedTopics]);
+  }, [feedMode, posts, mockPosts, followingIds, followedTopics, guestMode]);
 
   const enrichmentTick = usePostEnrichment(feedPosts);
-  const awaitingMock = isDevMockMode() && posts == null && mockPosts == null;
+  const awaitingMock = !guestMode && isDevMockMode() && posts == null && mockPosts == null;
+
+  if (guestMode) {
+    return <GuestFeedPreview />;
+  }
 
   if ((loading || awaitingMock) && feedPosts.length === 0) {
     return <FeedSkeleton />;

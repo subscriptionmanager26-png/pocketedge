@@ -807,7 +807,7 @@ export default function App() {
   };
 
   const handleTabChange = (next) => {
-    if (authView === 'landing' && (next === 'profile' || next === 'settings')) {
+    if (authView === 'landing' && next === 'settings') {
       void requireSignIn();
       return;
     }
@@ -1046,10 +1046,6 @@ export default function App() {
         onTabChange={handleTabChange}
         onFeedModeChange={setFeedModeAndStay}
         onProfile={() => {
-          if (guestMode) {
-            void requireSignIn();
-            return;
-          }
           resetScroll();
           setSelectedPostId(null);
           setProfileMode('own');
@@ -1086,37 +1082,24 @@ export default function App() {
               />
             </RouteSuspense>
           ) : (
-            <>
-              {guestMode ? (
-                <div className="border-b border-pe-border px-4 py-2.5 text-center text-[12px] text-pe-text-secondary">
-                  Browsing as a guest.{' '}
-                  <button
-                    type="button"
-                    onClick={() => void requireSignIn()}
-                    className="font-semibold text-pe-accent hover:underline"
-                  >
-                    Sign in
-                  </button>{' '}
-                  to post, follow, and manage your portfolio.
-                </div>
-              ) : null}
-              <FeedPage
-                posts={posts}
-                feedMode={feedMode}
-                graphTick={graphTick}
-                loading={postsLoading}
-                onGraphChange={() => setGraphTick((n) => n + 1)}
-                onOpenProfile={openProfile}
-                onOpenPost={openPost}
-                onOpenStock={openStock}
-                onToggleLike={handleTogglePostLike}
-              />
-            </>
+            <FeedPage
+              posts={posts}
+              feedMode={feedMode}
+              graphTick={graphTick}
+              loading={postsLoading}
+              guestMode={guestMode}
+              onGraphChange={() => setGraphTick((n) => n + 1)}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+              onOpenStock={openStock}
+              onToggleLike={handleTogglePostLike}
+            />
           )
         )}
         {tab === 'explore' && (
           <RouteSuspense>
             <ExplorePage
+              guestMode={guestMode}
               onOpenProfile={openProfile}
               onSelectStock={openStock}
               onSelectFund={openFund}
@@ -1173,6 +1156,7 @@ export default function App() {
             <RouteSuspense>
               <CommodityDetailPage
                 commodityId={selectedCommodityId}
+                guestMode={guestMode}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onRegisterAssetPanelBack={setAssetPanelBack}
@@ -1183,6 +1167,7 @@ export default function App() {
             <RouteSuspense>
               <IndexDetailPage
                 indexId={selectedIndexId}
+                guestMode={guestMode}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onRegisterAssetPanelBack={setAssetPanelBack}
@@ -1193,6 +1178,7 @@ export default function App() {
             <RouteSuspense>
               <InvestmentPage
                 fundId={selectedFundId}
+                guestMode={guestMode}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onOpenPortfolio={openProfilePortfolio}
@@ -1204,6 +1190,7 @@ export default function App() {
             <RouteSuspense>
               <StockInvestmentPage
                 ticker={selectedTicker}
+                guestMode={guestMode}
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onOpenPortfolio={openProfilePortfolio}
@@ -1214,6 +1201,7 @@ export default function App() {
           ) : (
             <RouteSuspense>
               <MarketsPage
+                guestMode={guestMode}
                 sectionTab={marketsSectionTab}
                 onSectionTabChange={handleMarketsSectionTabChange}
                 onSelectStock={openStock}
@@ -1225,7 +1213,18 @@ export default function App() {
           ))}
         {tab === 'profile' &&
           (guestMode && profileMode === 'own' ? (
-            <GuestSignInCta action="view your profile" />
+            <GuestSignInCta
+              variant="hero"
+              title="Your investing identity"
+              description="Sign in to claim your profile, publish theses, and let others follow your edge."
+              action="claim your profile"
+              showExploreHint={false}
+              benefits={[
+                'Public profile with your best ideas',
+                'Share portfolios you are proud of',
+                'Build followers who trust your takes',
+              ]}
+            />
           ) : (
             <RouteSuspense>
               <ProfilePage
@@ -1284,7 +1283,13 @@ export default function App() {
           ))}
         {tab === 'settings' &&
           (guestMode ? (
-            <GuestSignInCta action="open settings" />
+            <GuestSignInCta
+              variant="hero"
+              title="Your preferences, saved"
+              description="Sign in to sync settings, notifications, and privacy controls across devices."
+              action="open settings"
+              showExploreHint={false}
+            />
           ) : (
             <RouteSuspense>
               <SettingsPage onLogout={handleLogout} />

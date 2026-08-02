@@ -5,6 +5,7 @@ import Avatar from './Avatar';
 import NewsList from './NewsList';
 import CorporateActionsList from './CorporateActionsList';
 import GuestSignInCta from './GuestSignInCta';
+import GuestBlurredRail from './GuestBlurredRail';
 import { DiscussionsList, HoldersList } from './InvestmentSections';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import { formatNewsDate } from '../lib/format';
@@ -470,7 +471,7 @@ export default function AssetDetailSections({
   }, [mentionKeys, assetKey]);
 
   useEffect(() => {
-    if (!supportsInsights) {
+    if (!supportsInsights || guestMode) {
       setInsights([]);
       setInsightsLoading(false);
       return undefined;
@@ -498,9 +499,14 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [assetKey, kind, supportsInsights]);
+  }, [assetKey, kind, supportsInsights, guestMode]);
 
   useEffect(() => {
+    if (guestMode) {
+      setPosts([]);
+      setPostsLoading(false);
+      return undefined;
+    }
     let cancelled = false;
     if (isDevMockMode() && Array.isArray(mockDiscussions)) {
       setPosts(mockDiscussions);
@@ -520,10 +526,10 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [keys, mockDiscussions]);
+  }, [keys, mockDiscussions, guestMode]);
 
   useEffect(() => {
-    if (!supportsHolders) {
+    if (!supportsHolders || guestMode) {
       setHolders([]);
       setHoldersLoading(false);
       return undefined;
@@ -543,10 +549,10 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [assetKey, holdersKind, supportsHolders]);
+  }, [assetKey, holdersKind, supportsHolders, guestMode]);
 
   useEffect(() => {
-    if (!supportsNews) {
+    if (!supportsNews || guestMode) {
       setNews([]);
       setNewsLoading(false);
       return undefined;
@@ -572,10 +578,10 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [assetKey, kind, mockNews, supportsNews]);
+  }, [assetKey, kind, mockNews, supportsNews, guestMode]);
 
   useEffect(() => {
-    if (!showCorporateActions) {
+    if (!showCorporateActions || guestMode) {
       setCorporateActions([]);
       setCorpLoading(false);
       return undefined;
@@ -597,7 +603,7 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [assetKey, showCorporateActions]);
+  }, [assetKey, showCorporateActions, guestMode]);
 
   useEffect(() => {
     const ids = [...new Set((posts ?? []).map((p) => p?.authorId).filter(Boolean).map(String))];
@@ -735,33 +741,45 @@ export default function AssetDetailSections({
 
   return (
     <div className="pb-6">
-      <SectionBlock
-        title="Insights"
-        actionLabel={insights.length > 1 ? 'Archives' : latestInsight ? 'See more' : null}
-        onAction={
-          latestInsight
-            ? () =>
-                setActivePanel('insights', {
-                  insightsMode: insights.length > 1 ? 'archives' : 'today',
-                })
-            : undefined
-        }
-      >
-        {insightsLoading ? (
-          <LoadingRail />
-        ) : latestInsight ? (
-          <div className={RAIL_SCROLL}>
-            <div className="h-[168px]">
-              <InsightRailCard
-                insight={latestInsight}
-                onOpen={() => setActivePanel('insights', { insightsMode: 'today' })}
-              />
+      {supportsInsights ? (
+        <SectionBlock
+          title="Insights"
+          actionLabel={
+            !guestMode
+              ? insights.length > 1
+                ? 'Archives'
+                : latestInsight
+                  ? 'See more'
+                  : null
+              : null
+          }
+          onAction={
+            !guestMode && latestInsight
+              ? () =>
+                  setActivePanel('insights', {
+                    insightsMode: insights.length > 1 ? 'archives' : 'today',
+                  })
+              : undefined
+          }
+        >
+          {guestMode ? (
+            <GuestBlurredRail kind="insights" height={168} lockLabel="Sign in for insights" />
+          ) : insightsLoading ? (
+            <LoadingRail />
+          ) : latestInsight ? (
+            <div className={RAIL_SCROLL}>
+              <div className="h-[168px]">
+                <InsightRailCard
+                  insight={latestInsight}
+                  onOpen={() => setActivePanel('insights', { insightsMode: 'today' })}
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          <EmptyRail message={`No insights yet for ${assetLabel || 'this security'}.`} />
-        )}
-      </SectionBlock>
+          ) : (
+            <EmptyRail message={`No insights yet for ${assetLabel || 'this security'}.`} />
+          )}
+        </SectionBlock>
+      ) : null}
 
       <SectionBlock
         title="Posts"
@@ -773,9 +791,7 @@ export default function AssetDetailSections({
         }
       >
         {guestMode ? (
-          <div className="px-4">
-            <GuestSignInCta action="join discussions" showExploreHint={false} />
-          </div>
+          <GuestBlurredRail kind="posts" height={188} lockLabel="Sign in to read posts" />
         ) : postsLoading ? (
           <LoadingRail />
         ) : previewPosts.length ? (
@@ -795,23 +811,21 @@ export default function AssetDetailSections({
         )}
       </SectionBlock>
 
-      <SectionBlock
-        title="Holders"
-        actionLabel={
-          supportsHolders && holders.length > PREVIEW_COUNT ? 'See more' : null
-        }
-        onAction={
-          supportsHolders && holders.length > PREVIEW_COUNT
-            ? () => setActivePanel('holders')
-            : undefined
-        }
-      >
-        {!supportsHolders ? (
-          <EmptyRail message="No disclosed holders yet." />
-        ) : holdersLoading ? (
-          <LoadingRail />
-        ) : previewHolders.length ? (
-          <>
+      {supportsHolders ? (
+        <SectionBlock
+          title="Holders"
+          actionLabel={!guestMode && holders.length > PREVIEW_COUNT ? 'See more' : null}
+          onAction={
+            !guestMode && holders.length > PREVIEW_COUNT
+              ? () => setActivePanel('holders')
+              : undefined
+          }
+        >
+          {guestMode ? (
+            <GuestBlurredRail kind="holders" height={148} lockLabel="Sign in to see holders" />
+          ) : holdersLoading ? (
+            <LoadingRail />
+          ) : previewHolders.length ? (
             <div className={RAIL_SCROLL}>
               {previewHolders.map((holder) => (
                 <div
@@ -821,58 +835,60 @@ export default function AssetDetailSections({
                   <HolderRailCard
                     holder={holder}
                     enrichmentTick={holderEnrichTick}
-                    onOpenProfile={guestMode ? undefined : onOpenProfile}
-                    onOpenPortfolio={guestMode ? undefined : onOpenPortfolio}
+                    onOpenProfile={onOpenProfile}
+                    onOpenPortfolio={onOpenPortfolio}
                   />
                 </div>
               ))}
             </div>
-            {guestMode ? (
-              <div className="mt-3 px-4">
-                <GuestSignInCta
-                  action="follow holders and open portfolios"
-                  showExploreHint={false}
-                />
-              </div>
-            ) : null}
-          </>
-        ) : (
+          ) : (
+            <EmptyRail message="No disclosed holders yet." />
+          )}
+        </SectionBlock>
+      ) : (
+        <SectionBlock title="Holders">
           <EmptyRail message="No disclosed holders yet." />
-        )}
-      </SectionBlock>
+        </SectionBlock>
+      )}
 
-      <SectionBlock
-        title="News"
-        actionLabel={supportsNews && news.length > PREVIEW_COUNT ? 'See more' : null}
-        onAction={
-          supportsNews && news.length > PREVIEW_COUNT
-            ? () => setActivePanel('news')
-            : undefined
-        }
-      >
-        {!supportsNews ? (
+      {supportsNews ? (
+        <SectionBlock
+          title="News"
+          actionLabel={!guestMode && news.length > PREVIEW_COUNT ? 'See more' : null}
+          onAction={
+            !guestMode && news.length > PREVIEW_COUNT
+              ? () => setActivePanel('news')
+              : undefined
+          }
+        >
+          {guestMode ? (
+            <GuestBlurredRail kind="news" height={140} lockLabel="Sign in for news" />
+          ) : newsLoading ? (
+            <LoadingRail />
+          ) : previewNews.length ? (
+            <div className={RAIL_SCROLL}>
+              {previewNews.map((item) => (
+                <div key={item.id} className="h-[140px]">
+                  <NewsRailCard item={item} onOpen={setNewsSheetItem} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyRail message="No recent news." />
+          )}
+        </SectionBlock>
+      ) : (
+        <SectionBlock title="News">
           <EmptyRail message="No recent news." />
-        ) : newsLoading ? (
-          <LoadingRail />
-        ) : previewNews.length ? (
-          <div className={RAIL_SCROLL}>
-            {previewNews.map((item) => (
-              <div key={item.id} className="h-[140px]">
-                <NewsRailCard item={item} onOpen={setNewsSheetItem} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyRail message="No recent news." />
-        )}
-      </SectionBlock>
+        </SectionBlock>
+      )}
 
       {showCorporateActions ? (
         <SectionBlock
           title="Corporate actions"
-          actionLabel={corpActionLabel}
+          actionLabel={!guestMode ? corpActionLabel : null}
           onAction={
-            corpActionLabel
+            !guestMode && corpActionLabel
               ? () =>
                   setActivePanel('corporate_actions', {
                     preferPast: !nextCorp,
@@ -880,7 +896,9 @@ export default function AssetDetailSections({
               : undefined
           }
         >
-          {corpLoading ? (
+          {guestMode ? (
+            <GuestBlurredRail kind="corporate" height={148} lockLabel="Sign in for actions" />
+          ) : corpLoading ? (
             <LoadingRail />
           ) : nextCorp ? (
             <div className={RAIL_SCROLL}>
@@ -901,6 +919,21 @@ export default function AssetDetailSections({
             <EmptyRail message="No upcoming corporate actions." />
           )}
         </SectionBlock>
+      ) : null}
+
+      {guestMode ? (
+        <GuestSignInCta
+          variant="hero"
+          title="Go deeper on this name"
+          description="Sign in for AI insights, holder portfolios, discussions, and corporate actions — free on PocketEdge."
+          action="unlock security details"
+          showExploreHint={false}
+          benefits={[
+            'Daily AI insights & archives',
+            'See who holds it publicly',
+            'News and corporate actions',
+          ]}
+        />
       ) : null}
 
       {newsSheetItem ? (

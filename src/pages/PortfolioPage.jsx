@@ -505,25 +505,105 @@ export default function PortfolioPage({
   if (guestMode) {
     return (
       <div>
-        <GuestSignInCta
-          title="Your portfolio"
-          action="see your portfolio or create one"
-          showExploreHint={false}
-        />
-        <div className="mx-4 mb-8 overflow-hidden rounded-xl border border-dashed border-pe-border">
-          <div className="border-b border-pe-border bg-pe-surface/50 px-4 py-3">
-            <div className="h-3 w-28 rounded bg-pe-border" />
-          </div>
-          <div className="space-y-3 px-4 py-4">
-            <div className="h-3 w-2/3 rounded bg-pe-border/80" />
-            <div className="h-3 w-1/2 rounded bg-pe-border/50" />
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="h-14 rounded-lg bg-pe-surface" />
-              <div className="h-14 rounded-lg bg-pe-surface" />
-              <div className="h-14 rounded-lg bg-pe-surface" />
+        <PageHeader>
+          <UnderlineTabs
+            embedded
+            tabs={[{ id: 'demo', label: 'My Portfolio' }]}
+            active="demo"
+            onChange={() => {}}
+          />
+        </PageHeader>
+
+        <section className="border-b border-pe-border px-4 py-5">
+          <div className="relative overflow-hidden">
+            <div className="pointer-events-none select-none blur-[4px]" aria-hidden>
+              <div className="grid grid-cols-2 gap-x-4">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
+                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                    ₹12,48,320
+                  </p>
+                </div>
+                <div className="min-w-0 text-right">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">Initial Investment</p>
+                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                    ₹10,00,000
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 rounded-[12px] border border-pe-border bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between text-[12px] font-semibold">
+                    <span className="text-pe-text-muted">Total PnL</span>
+                    <span className={pnlClass(1)}>+₹2,48,320 · 24.83%</span>
+                  </div>
+                  <div className="flex justify-between text-[12px] font-semibold">
+                    <span className="text-pe-text-muted">Day&apos;s PnL</span>
+                    <span className={pnlClass(1)}>+₹8,420 · 0.68%</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+
+          <div className="mt-5 rounded-[12px] border border-pe-border bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
+            <p className="text-[15px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
+              Signals
+            </p>
+            <div className="pointer-events-none mt-2.5 grid grid-cols-3 items-stretch gap-2 select-none blur-[3px]" aria-hidden>
+              {FORM_METRIC_ORDER.map((formId) => {
+                const meta = FORM_META[formId];
+                return (
+                  <div
+                    key={formId}
+                    className="flex h-full min-w-0 flex-col rounded-[12px] border border-transparent bg-white px-2.5 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_8px_rgba(0,0,0,0.06)]"
+                  >
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
+                      <p className="text-[15px] font-bold tabular-nums leading-none text-pe-text">
+                        {formId === 'in_form' ? 5 : formId === 'unsure' ? 2 : 1}
+                      </p>
+                    </div>
+                    <p className="mt-1.5 min-w-0 text-[12px] font-semibold uppercase leading-snug tracking-[0.04em] text-pe-text-muted">
+                      {meta.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
+
+        <GuestSignInCta
+          variant="hero"
+          title={
+            contentTab === 'performance'
+              ? 'See your real performance'
+              : contentTab === 'news'
+                ? 'News on your holdings'
+                : contentTab === 'corporate_actions'
+                  ? 'Never miss a corporate action'
+                  : 'Posts about your book'
+          }
+          description={
+            contentTab === 'performance'
+              ? 'Sign in to track live PnL, holdings, and form signals across every list you follow.'
+              : contentTab === 'news'
+                ? 'Get curated headlines for the tickers you actually own — not the whole market noise.'
+                : contentTab === 'corporate_actions'
+                  ? 'Dividends, splits, and board events for your holdings, in one place.'
+                  : 'Read theses and discussions tagged to names in your portfolio.'
+          }
+          action="unlock your portfolio"
+          showExploreHint={false}
+          benefits={[
+            'Live value, PnL, and day moves',
+            'Signals on what is in or out of form',
+            'News & actions for your holdings only',
+          ]}
+        />
       </div>
     );
   }
