@@ -15,6 +15,7 @@ export default function CommodityDetailPage({
   onBack,
   onOpenProfile,
   onRegisterAssetPanelBack,
+  onAssetDetailPanelChange,
   guestMode = false,
 }) {
   const [commodity, setCommodity] = useState(() => {
@@ -33,19 +34,23 @@ export default function CommodityDetailPage({
   const [detailPanel, setDetailPanel] = useState(null);
 
   useEffect(() => {
-    return () => onRegisterAssetPanelBack?.(null);
-  }, [onRegisterAssetPanelBack]);
+    return () => {
+      onRegisterAssetPanelBack?.(null);
+      onAssetDetailPanelChange?.(null);
+    };
+  }, [onRegisterAssetPanelBack, onAssetDetailPanelChange]);
 
   const handlePanelChange = useCallback(
     (panel, meta) => {
       setDetailPanel(panel);
+      onAssetDetailPanelChange?.(panel || null);
       if (panel && meta?.close) {
         onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
       } else {
         onRegisterAssetPanelBack?.(null);
       }
     },
-    [onRegisterAssetPanelBack]
+    [onRegisterAssetPanelBack, onAssetDetailPanelChange]
   );
 
   useEffect(() => {

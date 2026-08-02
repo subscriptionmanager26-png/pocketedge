@@ -33,6 +33,7 @@ export default function InvestmentPage({
   onOpenProfile,
   onOpenPortfolio,
   onRegisterAssetPanelBack,
+  onAssetDetailPanelChange,
   guestMode = false,
 }) {
   const seedFund = getFund(fundId);
@@ -109,19 +110,23 @@ export default function InvestmentPage({
   });
 
   useEffect(() => {
-    return () => onRegisterAssetPanelBack?.(null);
-  }, [onRegisterAssetPanelBack]);
+    return () => {
+      onRegisterAssetPanelBack?.(null);
+      onAssetDetailPanelChange?.(null);
+    };
+  }, [onRegisterAssetPanelBack, onAssetDetailPanelChange]);
 
   const handlePanelChange = useCallback(
     (panel, meta) => {
       setDetailPanel(panel);
+      onAssetDetailPanelChange?.(panel || null);
       if (panel && meta?.close) {
         onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
       } else {
         onRegisterAssetPanelBack?.(null);
       }
     },
-    [onRegisterAssetPanelBack]
+    [onRegisterAssetPanelBack, onAssetDetailPanelChange]
   );
 
   const hasResolvedFund = Boolean(seedFund || marketFund);

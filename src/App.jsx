@@ -154,6 +154,7 @@ export default function App() {
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const [assetPanelBack, setAssetPanelBack] = useState(null);
+  const [assetDetailPanel, setAssetDetailPanel] = useState(null);
   const portfolioBackRef = useRef(null);
   const followListBackRef = useRef(null);
   const marketReturnContextRef = useRef(null);
@@ -193,10 +194,19 @@ export default function App() {
   const routeKey = useMemo(() => {
     if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
     if (tab === 'feed') return 'feed';
-    if (tab === 'markets' && selectedCommodityId) return `commodity:${selectedCommodityId}`;
-    if (tab === 'markets' && selectedIndexId) return `index:${selectedIndexId}`;
-    if (tab === 'markets' && selectedFundId) return `fund:${selectedFundId}`;
-    if (tab === 'markets' && selectedTicker) return `stock:${selectedTicker}`;
+    const panelSuffix = assetDetailPanel ? `:${assetDetailPanel}` : '';
+    if (tab === 'markets' && selectedCommodityId) {
+      return `commodity:${selectedCommodityId}${panelSuffix}`;
+    }
+    if (tab === 'markets' && selectedIndexId) {
+      return `index:${selectedIndexId}${panelSuffix}`;
+    }
+    if (tab === 'markets' && selectedFundId) {
+      return `fund:${selectedFundId}${panelSuffix}`;
+    }
+    if (tab === 'markets' && selectedTicker) {
+      return `stock:${selectedTicker}${panelSuffix}`;
+    }
     if (tab === 'profile' && profilePortfolioId) {
       return `profile:${profileUserId}:portfolio:${profilePortfolioId}`;
     }
@@ -212,6 +222,7 @@ export default function App() {
     selectedIndexId,
     selectedCommodityId,
     selectedTicker,
+    assetDetailPanel,
     profilePortfolioId,
     profileMode,
     profileUserId,
@@ -593,6 +604,8 @@ export default function App() {
     setSelectedFundId(null);
     setSelectedIndexId(null);
     setSelectedCommodityId(null);
+    setAssetDetailPanel(null);
+    setAssetPanelBack(null);
   };
 
   const MARKET_RETURN_LABELS = {
@@ -1163,6 +1176,7 @@ export default function App() {
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
               />
             </RouteSuspense>
           ) : selectedIndexId ? (
@@ -1172,6 +1186,7 @@ export default function App() {
                 onBack={closeMarketDetail}
                 onOpenProfile={openProfile}
                 onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
               />
             </RouteSuspense>
           ) : selectedFundId ? (
@@ -1182,6 +1197,7 @@ export default function App() {
                 onOpenProfile={openProfile}
                 onOpenPortfolio={openProfilePortfolio}
                 onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
               />
             </RouteSuspense>
           ) : selectedTicker ? (
@@ -1192,6 +1208,7 @@ export default function App() {
                 onOpenProfile={openProfile}
                 onOpenPortfolio={openProfilePortfolio}
                 onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
               />
             </RouteSuspense>
           ) : (

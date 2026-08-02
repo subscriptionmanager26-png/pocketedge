@@ -35,6 +35,7 @@ export default function StockInvestmentPage({
   onOpenProfile,
   onOpenPortfolio,
   onRegisterAssetPanelBack,
+  onAssetDetailPanelChange,
   guestMode = false,
 }) {
   const seedStock = getStock(ticker);
@@ -146,19 +147,23 @@ export default function StockInvestmentPage({
   const [detailPanel, setDetailPanel] = useState(null);
 
   useEffect(() => {
-    return () => onRegisterAssetPanelBack?.(null);
-  }, [onRegisterAssetPanelBack]);
+    return () => {
+      onRegisterAssetPanelBack?.(null);
+      onAssetDetailPanelChange?.(null);
+    };
+  }, [onRegisterAssetPanelBack, onAssetDetailPanelChange]);
 
   const handlePanelChange = useCallback(
     (panel, meta) => {
       setDetailPanel(panel);
+      onAssetDetailPanelChange?.(panel || null);
       if (panel && meta?.close) {
         onRegisterAssetPanelBack?.({ label: 'Back', onBack: meta.close });
       } else {
         onRegisterAssetPanelBack?.(null);
       }
     },
-    [onRegisterAssetPanelBack]
+    [onRegisterAssetPanelBack, onAssetDetailPanelChange]
   );
 
   if (!marketLoading && !marketStock && !seedStock) {

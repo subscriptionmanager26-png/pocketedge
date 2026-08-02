@@ -36,8 +36,16 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
   if (!prevKey || !nextKey) return false;
   if (nextKey === 'feed' && String(prevKey).startsWith('post:')) return true;
   if (
-    (nextKey === 'markets' || nextKey === 'explore') &&
+    (nextKey === 'markets' || nextKey === 'explore' || nextKey === 'ideas') &&
     /^(stock|etf|fund|index|commodity):/.test(String(prevKey))
+  ) {
+    return true;
+  }
+  // Closing an asset sub-panel (insights/posts/…) → restore the security page scroll.
+  if (
+    /^(stock|etf|fund|index|commodity):[^:]+:.+/.test(String(prevKey)) &&
+    /^(stock|etf|fund|index|commodity):[^:]+$/.test(String(nextKey)) &&
+    String(prevKey).startsWith(`${String(nextKey)}:`)
   ) {
     return true;
   }
@@ -220,7 +228,8 @@ export default function Shell({
 
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = restore > 0 ? 24 : 1;
+    // Retry tops too — new content can mount after the first paint and leave a mid-page offset.
+    const maxAttempts = restore > 0 ? 24 : 12;
 
     const finish = () => {
       restoringRef.current = false;
@@ -234,8 +243,17 @@ export default function Shell({
       if (cancelled) return;
       writeScrollTop(container, restore);
       attempts += 1;
-      if (restore <= 0 || attempts >= maxAttempts) {
+      if (attempts >= maxAttempts) {
         finish();
+        return;
+      }
+      if (restore <= 0) {
+        const current = readScrollTop(container);
+        if (current <= 1) {
+          finish();
+          return;
+        }
+        window.setTimeout(apply, attempts < 8 ? 16 : 50);
         return;
       }
       const current = readScrollTop(container);
