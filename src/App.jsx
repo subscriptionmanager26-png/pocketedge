@@ -856,6 +856,16 @@ export default function App() {
   const inShell = authView === 'app' || authView === 'landing';
   const guestMode = authView === 'landing';
 
+  // Guests have no Activity / Profile chrome — bounce deep links to Feed.
+  useEffect(() => {
+    if (!guestMode) return;
+    if (tab !== 'activity' && tab !== 'profile') return;
+    setTab('feed');
+    setSelectedPostId(null);
+    setProfilePortfolioId(null);
+    navigateToTab(navigate, 'feed');
+  }, [guestMode, tab, navigate]);
+
   const pageTitleOverride =
     inShell && tab === 'settings'
       ? 'Settings'

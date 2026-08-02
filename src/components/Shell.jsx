@@ -9,17 +9,16 @@ import {
   Lightbulb,
   Menu,
   Pencil,
-  Search,
   Settings,
   User,
   Wallet,
   X,
 } from 'lucide-react';
 import Avatar from './Avatar';
-import { MARKETING_NAV_ITEMS } from './AuthLayoutHeader';
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
 import { getAppCurrentUser } from '../lib/socialIdentity';
+import { disclosuresPath, insightsPath, resourcesPath } from '../lib/routes';
 import { prefetchTab } from '../lib/tabPrefetch';
 import {
   getScrollPosition,
@@ -61,7 +60,8 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
 
 const DESKTOP_TABS = [
   { id: 'feed', label: 'Feed', icon: Home },
-  { id: 'explore', label: 'Explore', icon: Search },
+  // Explore kept in routing/code but hidden from shell UI — Ideas covers discovery for now.
+  // { id: 'explore', label: 'Explore', icon: Search },
   { id: 'ideas', label: 'Ideas', icon: Lightbulb },
   { id: 'activity', label: 'Activity', icon: Bell },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
@@ -72,6 +72,23 @@ const DESKTOP_TABS = [
 const MOBILE_TABS = DESKTOP_TABS.filter((t) => t.id !== 'menu' && t.id !== 'activity').concat([
   { id: 'profile', label: 'Profile', icon: User },
 ]);
+
+/** Slim in-app menu — tools + settings only (full marketing nav stays on auth/marketing). */
+const APP_MENU_ITEMS = [
+  { label: 'Insights', href: insightsPath() },
+  { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
+  { label: 'SGB Tracker', href: resourcesPath('sgb') },
+  { label: 'MF Screener', href: resourcesPath('mf-screener') },
+  { label: 'Disclosures', href: disclosuresPath() },
+];
+
+function visibleDesktopTabs(guestMode) {
+  return DESKTOP_TABS.filter((t) => !(guestMode && t.id === 'activity'));
+}
+
+function visibleMobileTabs(guestMode) {
+  return MOBILE_TABS.filter((t) => !(guestMode && (t.id === 'activity' || t.id === 'profile')));
+}
 
 const FEED_OPTIONS = [
   { id: 'forYou', label: 'For You' },
@@ -339,7 +356,7 @@ export default function Shell({
         </div>
 
         <nav className="flex flex-1 flex-col gap-2 p-2">
-          {DESKTOP_TABS.map(({ id, label, icon: Icon }) => {
+          {visibleDesktopTabs(guestMode).map(({ id, label, icon: Icon }) => {
             const active = id === 'menu' ? menuActive : tab === id;
             if (id === 'menu') {
               return (
@@ -419,7 +436,7 @@ export default function Shell({
           {guestMode ? (
             <button
               type="button"
-              onClick={handleProfileOrSignIn}
+              onClick={handleComposeOrSignIn}
               className="flex min-h-12 w-full items-center justify-center rounded-md border border-pe-border px-3 text-[15px] font-semibold text-pe-text transition hover:bg-pe-surface"
             >
               Sign in to your account
@@ -512,25 +529,26 @@ export default function Shell({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {mobileActions ?? (
-                      <button
-                        type="button"
-                        onClick={() => goTab('activity')}
-                        className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
-                        aria-label={
-                          activityUnread > 0
-                            ? `${activityUnread} unread activity items`
-                            : 'Activity'
-                        }
-                      >
-                        <Bell className="h-5 w-5" />
-                        {activityUnread > 0 && (
-                          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[12px] font-bold text-white">
-                            {activityUnread > 9 ? '9+' : activityUnread}
-                          </span>
-                        )}
-                      </button>
-                    )}
+                    {mobileActions ??
+                      (!guestMode ? (
+                        <button
+                          type="button"
+                          onClick={() => goTab('activity')}
+                          className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
+                          aria-label={
+                            activityUnread > 0
+                              ? `${activityUnread} unread activity items`
+                              : 'Activity'
+                          }
+                        >
+                          <Bell className="h-5 w-5" />
+                          {activityUnread > 0 && (
+                            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[12px] font-bold text-white">
+                              {activityUnread > 9 ? '9+' : activityUnread}
+                            </span>
+                          )}
+                        </button>
+                      ) : null)}
                     <button
                       type="button"
                       onClick={() => setAppMenuOpen((open) => !open)}
@@ -600,7 +618,7 @@ export default function Shell({
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-pe-border bg-pe-canvas pb-[env(safe-area-inset-bottom,0px)] md:hidden">
         <div className="mx-auto flex h-14 max-w-feed items-center justify-around px-1">
-          {MOBILE_TABS.map(({ id, label, icon: Icon }) => {
+          {visibleMobileTabs(guestMode).map(({ id, label, icon: Icon }) => {
             const active = tab === id;
             return (
               <button
@@ -671,7 +689,7 @@ function AppMenuLinks({ onNavigate, onSettings, guestMode = false, compact = fal
 
   return (
     <>
-      {MARKETING_NAV_ITEMS.map((item) => (
+      {APP_MENU_ITEMS.map((item) => (
         <Link
           key={item.href}
           to={item.href}

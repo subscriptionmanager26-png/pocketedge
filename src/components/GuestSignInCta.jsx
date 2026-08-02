@@ -110,8 +110,8 @@ export default function GuestSignInCta({
         {showExploreHint ? (
           <p className="mt-3 text-[12px] text-pe-text-muted">
             Or keep browsing{' '}
-            <Link to="/explore" className="font-semibold text-pe-accent hover:underline">
-              Explore
+            <Link to="/ideas" className="font-semibold text-pe-accent hover:underline">
+              Ideas
             </Link>
           </p>
         ) : (
