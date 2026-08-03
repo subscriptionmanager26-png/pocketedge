@@ -1,7 +1,11 @@
 /**
  * Mutual-fund Day's PnL is NAV-date based, not intraday.
- * AMFI NAVs typically land ~9:30–10:10 PM IST; until today's NAV is in the DB,
- * fund contributions to Day's PnL are treated as 0.
+ *
+ * AMFI NAVs for calendar day D mostly land night D / morning D+1.
+ * Portfolio Day's PnL on calendar day D therefore uses the fund move for
+ * as_of_date = D-1 (yesterday IST). Stocks/ETFs/bonds stay same-day.
+ *
+ * Backend fetch slots (IST): 23:00, 23:30, 00:30, 10:00, 10:30.
  */
 
 /** Calendar date in Asia/Kolkata as YYYY-MM-DD. */
@@ -14,6 +18,23 @@ export function istDateString(date = new Date()) {
   }).format(date);
 }
 
+/** Yesterday's calendar date in Asia/Kolkata as YYYY-MM-DD. */
+export function istYesterdayString(date = new Date()) {
+  // Walk back ~26h then format in IST so DST-less Asia/Kolkata stays correct.
+  const probe = new Date(date.getTime() - 26 * 60 * 60 * 1000);
+  const today = istDateString(date);
+  for (let i = 0; i < 48; i += 1) {
+    const candidate = new Date(probe.getTime() + i * 60 * 60 * 1000);
+    const label = istDateString(candidate);
+    if (label < today) return label;
+  }
+  // Fallback: UTC-day arithmetic (sufficient for IST which has no DST).
+  const [y, m, d] = today.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  utc.setUTCDate(utc.getUTCDate() - 1);
+  return utc.toISOString().slice(0, 10);
+}
+
 function isFundHolding(holding) {
   const type = String(holding?.assetType ?? holding?.kind ?? '').toLowerCase();
   if (type === 'fund') return true;
@@ -22,8 +43,8 @@ function isFundHolding(holding) {
 }
 
 /**
- * True when this fund quote's NAV date is today's IST calendar date —
- * i.e. today's NAV has been published and ingested.
+ * True when this fund quote's NAV date is today's IST calendar date.
+ * @deprecated Prefer isFundNavForPnlDay for Day's PnL; kept for callers checking publish status.
  */
 export function isFundNavForToday(asOfDate, date = new Date()) {
   if (asOfDate == null || asOfDate === '') return false;
@@ -31,8 +52,17 @@ export function isFundNavForToday(asOfDate, date = new Date()) {
 }
 
 /**
+ * True when this fund NAV date should count toward Day's PnL on `date`
+ * (as_of_date === yesterday IST).
+ */
+export function isFundNavForPnlDay(asOfDate, date = new Date()) {
+  if (asOfDate == null || asOfDate === '') return false;
+  return String(asOfDate).slice(0, 10) === istYesterdayString(date);
+}
+
+/**
  * Day-change % to use for portfolio Day's PnL.
- * Stocks/ETFs/etc. keep their live changePct; funds only count after today's NAV.
+ * Stocks/ETFs/bonds keep live changePct; funds use yesterday's NAV date move.
  */
 export function dayChangePctForPnl(holding, date = new Date()) {
   const raw = Number(holding?.changePct ?? holding?.dayChangePct);
@@ -41,10 +71,13 @@ export function dayChangePctForPnl(holding, date = new Date()) {
 
   const asOf =
     holding?.asOfDate ?? holding?.navDate ?? holding?.as_of_date ?? holding?.nav_date ?? null;
-  return isFundNavForToday(asOf, date) ? changePct : 0;
+  return isFundNavForPnlDay(asOf, date) ? changePct : 0;
 }
 
-/** Evening window when AMFI NAVs are expected (IST). */
+/**
+ * Windows around backend AMFI fetch slots (IST), with a few minutes of slack
+ * so the UI treats quotes as "live" near each poll.
+ */
 export function isInFundNavPublishWindow(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Kolkata',
@@ -56,7 +89,16 @@ export function isInFundNavPublishWindow(date = new Date()) {
   const minute = Number(parts.find((p) => p.type === 'minute')?.value);
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) return false;
   const mins = hour * 60 + minute;
-  // Poll through the evening NAV window (incl. post-midnight catch-up) so the UI
-  // picks up fresh NAVs. Backend fetches 21:30–00:30 IST.
-  return mins >= 21 * 60 + 15 || mins <= 30;
+  const inBand = (center, radius = 20) => Math.abs(mins - center) <= radius
+    || Math.abs(mins + 24 * 60 - center) <= radius
+    || Math.abs(mins - (center + 24 * 60)) <= radius;
+
+  // Slots: 23:00, 23:30, 00:30, 10:00, 10:30
+  return (
+    inBand(23 * 60) ||
+    inBand(23 * 60 + 30) ||
+    inBand(30) ||
+    inBand(10 * 60) ||
+    inBand(10 * 60 + 30)
+  );
 }

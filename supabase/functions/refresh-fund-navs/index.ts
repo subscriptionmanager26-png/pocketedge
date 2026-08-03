@@ -1,7 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
 
 /**
- * AMFI NAVAll mutual-fund NAV writer (evening poll window).
+ * AMFI NAVAll mutual-fund NAV writer.
+ * Cron slots (IST): 23:00, 23:30, 00:30, 10:00, 10:30.
  */
 
 const AMFI_NAV_ALL = 'https://portal.amfiindia.com/spages/NAVAll.txt';
@@ -11,6 +12,9 @@ const LOCK_NAME = 'refresh-fund-navs';
 const BATCH_SIZE = 500;
 const SCHEME_ROW = /^\s*(\d+)\s*;/;
 const ISIN_PATTERN = /^[A-Z0-9]{12}$/;
+/** Allowed IST minute-of-day centers for scheduled polls (±8 min slack). */
+const FUND_NAV_SLOT_MINS = [23 * 60, 23 * 60 + 30, 30, 10 * 60, 10 * 60 + 30];
+const FUND_NAV_SLOT_RADIUS_MINS = 8;
 
 type ExistingQuote = {
   price: number | null;
@@ -36,7 +40,7 @@ function dateInIst(now = new Date()): string {
   }).format(now);
 }
 
-/** Evening NAV window: 21:30–00:30 IST (wraps midnight). */
+/** True near discrete cron slots (IST). */
 function isFundNavWindow(now = new Date()): boolean {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Kolkata',
@@ -48,7 +52,14 @@ function isFundNavWindow(now = new Date()): boolean {
   const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '99');
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) return false;
   const mins = hour * 60 + minute;
-  return mins >= 21 * 60 + 30 || mins <= 30;
+  return FUND_NAV_SLOT_MINS.some((center) => {
+    const delta = Math.min(
+      Math.abs(mins - center),
+      Math.abs(mins + 24 * 60 - center),
+      Math.abs(mins - (center + 24 * 60)),
+    );
+    return delta <= FUND_NAV_SLOT_RADIUS_MINS;
+  });
 }
 
 function parseNavDate(value: string | undefined): string | null {
