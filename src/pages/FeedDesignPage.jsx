@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import FeedFilters from '../components/feed-v1/FeedFilters';
 import ThesisComposer from '../components/feed-v1/ThesisComposer';
 import FeedPostCard from '../components/feed-v1/FeedPostCard';
 import GuestSignInCta from '../components/GuestSignInCta';
-import { FEED_DESIGN_POSTS } from '../data/feedDesignMock';
+import PostCard from '../components/PostCard';
+import { FeedSkeleton } from '../components/PageSkeletons';
 import { GUEST_FEED_HOOK_POSTS } from '../data/guestFeedHooks';
-import { rememberPerson } from '../lib/socialIdentity';
+import { isDevMockMode } from '../lib/appMode';
+import { getFollowedTopicSlugs, getFollowingIds } from '../lib/socialGraphStore';
+import { getAppCurrentUser, rememberPerson } from '../lib/socialIdentity';
 import { timeAgo } from '../lib/format';
-
-/** Authors already followed in the prototype seed. */
-const INITIAL_FOLLOWING = new Set(['u_neeraj', 'u_ananya']);
+import { usePostEnrichment } from '../lib/usePostEnrichment';
 
 function guestHookToFeedPost(hook) {
   return {
@@ -44,20 +44,46 @@ const GUEST_FEED_POSTS = GUEST_FEED_HOOK_POSTS.map((hook) => {
 });
 
 /**
- * Feed — Design Language v1.
- * Top bar + right rail live in Shell. Guest mode shows blurred teasers + CTA.
+ * Feed — Design Language v1 chrome with production posts.
+ * Top bar lives in Shell. Guest mode shows blurred teasers + CTA only.
  */
 export default function FeedDesignPage({
+  posts: postsProp,
   feedMode = 'forYou',
   onFeedModeChange,
+  graphTick = 0,
+  loading = false,
   guestMode = false,
+  onOpenProfile,
+  onOpenPost,
+  onOpenStock,
+  onToggleLike,
+  onCompose,
 }) {
   const [filter, setFilter] = useState(feedMode);
-  const [followingIds, setFollowingIds] = useState(() => new Set(INITIAL_FOLLOWING));
+  const [mockPosts, setMockPosts] = useState(null);
+  const followingIds = useMemo(() => getFollowingIds(), [graphTick]);
+  const followedTopics = useMemo(() => getFollowedTopicSlugs(), [graphTick]);
+  const currentUser = getAppCurrentUser();
 
   useEffect(() => {
     setFilter(feedMode);
   }, [feedMode]);
+
+  useEffect(() => {
+    if (guestMode || !isDevMockMode() || postsProp != null) return undefined;
+    let cancelled = false;
+    import('../data/mockData')
+      .then((mod) => {
+        if (!cancelled) setMockPosts(mod.POSTS);
+      })
+      .catch(() => {
+        if (!cancelled) setMockPosts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [postsProp, guestMode]);
 
   const handleFilterChange = useCallback(
     (id) => {
@@ -69,23 +95,30 @@ export default function FeedDesignPage({
     [onFeedModeChange]
   );
 
-  const handleFollow = useCallback((userId) => {
-    if (!userId) return;
-    setFollowingIds((prev) => {
-      const next = new Set(prev);
-      next.add(userId);
-      return next;
-    });
-  }, []);
-
-  const posts = useMemo(() => {
-    if (filter === 'following') {
-      return FEED_DESIGN_POSTS.filter(
-        (p) => p.kind !== 'news' && followingIds.has(p.author?.id)
+  const feedPosts = useMemo(() => {
+    if (guestMode) return [];
+    const list = postsProp ?? mockPosts ?? [];
+    if (filter === 'following' || feedMode === 'following') {
+      return list.filter(
+        (p) =>
+          followingIds.has(p.authorId) ||
+          p.topics?.some((t) => followedTopics.has(t))
       );
     }
-    return FEED_DESIGN_POSTS;
-  }, [filter, followingIds]);
+    return list;
+  }, [
+    filter,
+    feedMode,
+    postsProp,
+    mockPosts,
+    followingIds,
+    followedTopics,
+    guestMode,
+  ]);
+
+  const enrichmentTick = usePostEnrichment(feedPosts);
+  const awaitingMock =
+    !guestMode && isDevMockMode() && postsProp == null && mockPosts == null;
 
   if (guestMode) {
     return (
@@ -120,37 +153,46 @@ export default function FeedDesignPage({
     );
   }
 
+  if ((loading || awaitingMock) && feedPosts.length === 0) {
+    return (
+      <div className="min-h-full bg-white">
+        <FeedFilters active={filter} onChange={handleFilterChange} />
+        <ThesisComposer onCompose={onCompose} currentUser={currentUser} />
+        <FeedSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full bg-white">
       <div className="pb-10">
         <FeedFilters active={filter} onChange={handleFilterChange} />
-        <ThesisComposer />
+        <ThesisComposer onCompose={onCompose} currentUser={currentUser} />
 
         <div className="mt-0 flex flex-col gap-0 md:mt-5 md:gap-5">
-          {posts.map((post) => (
-            <FeedPostCard
-              key={post.id}
-              post={post}
-              followingIds={followingIds}
-              onFollow={handleFollow}
-            />
-          ))}
-          {!posts.length ? (
-            <p className="px-4 py-12 text-center text-sm text-[var(--fv-text-secondary)]">
-              No posts in Following yet — follow investors to fill this feed.
-            </p>
-          ) : null}
-        </div>
-
-        <div className="mx-3 mt-6 flex flex-col items-center gap-2 px-4 py-6 text-center md:mx-6 md:mt-8 md:py-8">
-          <Loader2
-            className="h-5 w-5 animate-spin text-[var(--fv-accent)] md:h-6 md:w-6"
-            strokeWidth={2}
-            aria-hidden
-          />
-          <p className="fv-meta max-w-sm text-[13px] leading-relaxed md:text-[14px]">
-            You&apos;re all caught up. Check back later for more updates from the community.
-          </p>
+          {feedPosts.length === 0 ? (
+            <div className="px-4 py-20 text-center">
+              <p className="text-xl font-bold text-pe-text">Nothing here yet</p>
+              <p className="mt-2 text-sm leading-relaxed text-pe-text-secondary">
+                {filter === 'following' || feedMode === 'following'
+                  ? 'Follow people or topics to fill your Following feed.'
+                  : 'Posts from the community will show up here.'}
+              </p>
+            </div>
+          ) : (
+            feedPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                variant="feed"
+                enrichmentTick={enrichmentTick}
+                onOpenProfile={onOpenProfile}
+                onOpenPost={onOpenPost}
+                onOpenStock={onOpenStock}
+                onToggleLike={onToggleLike}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

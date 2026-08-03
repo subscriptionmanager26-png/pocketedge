@@ -10,14 +10,7 @@ import {
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
 import FeedTopBar from './feed-v1/FeedTopBar';
-import FeedRightRail from './feed-v1/FeedRightRail';
 import GlobalSearchPanel from './GlobalSearchPanel';
-import {
-  MARKET_PULSE,
-  SUGGESTED_INVESTORS,
-  TOP_DISCUSSIONS,
-  TRENDING_STOCKS,
-} from '../data/feedDesignMock';
 import { getAppCurrentUser } from '../lib/socialIdentity';
 import { disclosuresPath, insightsPath, resourcesPath } from '../lib/routes';
 import { prefetchTab } from '../lib/tabPrefetch';
@@ -372,7 +365,7 @@ export default function Shell({
         className="flex min-h-dvh min-w-0 flex-1 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain"
       >
         <div className="flex min-h-0 min-w-0 flex-1 md:px-5">
-          <div className="flex min-h-0 min-w-0 flex-1 justify-center md:mr-[420px]">
+          <div className="flex min-h-0 min-w-0 flex-1 justify-center">
             <div className="flex min-h-0 w-full min-w-0 max-w-feed flex-col md:pt-[72px]">
               <FeedTopBar
                 feedMode={feedMode}
@@ -448,15 +441,6 @@ export default function Shell({
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="hidden md:contents">
-        <FeedRightRail
-          market={MARKET_PULSE}
-          trending={TRENDING_STOCKS}
-          discussions={TOP_DISCUSSIONS}
-          people={SUGGESTED_INVESTORS}
-        />
       </div>
 
       {showFeedSelector && (

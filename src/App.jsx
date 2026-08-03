@@ -1099,9 +1099,17 @@ export default function App() {
             </RouteSuspense>
           ) : (
             <FeedDesignPage
+              posts={posts}
               feedMode={feedMode}
               onFeedModeChange={setFeedModeAndStay}
+              graphTick={graphTick}
+              loading={postsLoading}
               guestMode={guestMode}
+              onOpenProfile={openProfile}
+              onOpenPost={openPost}
+              onOpenStock={openStock}
+              onToggleLike={handleTogglePostLike}
+              onCompose={openCompose}
             />
           )
         )}
