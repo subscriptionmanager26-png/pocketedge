@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useLocation, useNavigate } from 'react-router-dom';
 import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
-import FeedPage from './pages/FeedPage';
+import FeedDesignPage from './pages/FeedDesignPage';
 import HomePage from './pages/HomePage';
 import { RouteFallbackSkeleton } from './components/PageSkeletons';
 import { getActivityFeed } from './lib/activityFeed';
@@ -1070,6 +1070,12 @@ export default function App() {
         guestMode={guestMode}
         onRequireSignIn={requireSignIn}
         mobileActions={mobileHeaderActions}
+        onSelectStock={openStock}
+        onSelectFund={openFund}
+        onSelectCommodity={openCommodity}
+        onSelectIndex={openIndex}
+        onOpenProfileFromSearch={openProfile}
+        onGraphChange={() => setGraphTick((n) => n + 1)}
       >
         {tab === 'feed' && (
           selectedPostId ? (
@@ -1092,17 +1098,10 @@ export default function App() {
               />
             </RouteSuspense>
           ) : (
-            <FeedPage
-              posts={posts}
+            <FeedDesignPage
               feedMode={feedMode}
-              graphTick={graphTick}
-              loading={postsLoading}
+              onFeedModeChange={setFeedModeAndStay}
               guestMode={guestMode}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-              onOpenProfile={openProfile}
-              onOpenPost={openPost}
-              onOpenStock={openStock}
-              onToggleLike={handleTogglePostLike}
             />
           )
         )}
@@ -1122,14 +1121,10 @@ export default function App() {
         {tab === 'ideas' && (
           <RouteSuspense>
             <IdeasPage
-              guestMode={guestMode}
               onSelectStock={openStock}
               onSelectFund={openFund}
               onSelectIndex={openIndex}
               onSelectCommodity={openCommodity}
-              onOpenProfile={openProfile}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-              onRequireSignIn={requireSignIn}
             />
           </RouteSuspense>
         )}

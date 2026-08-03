@@ -56,13 +56,13 @@ export default function ProfileHero({
   };
 
   return (
-    <section className="border-b border-pe-border px-4 py-5">
+    <section className="border-b border-[var(--fv-border,#ececec)] px-4 py-5 md:px-6">
       <div className="flex gap-4">
         <Avatar person={person} size="xl" className="mt-0.5" />
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <h1 className="min-w-0 truncate text-[20px] font-bold leading-tight text-pe-text md:text-2xl">
+            <h1 className="min-w-0 truncate text-[22px] font-bold leading-tight tracking-tight text-pe-text md:text-[28px]">
               {displayName}
             </h1>
 
@@ -70,9 +70,9 @@ export default function ProfileHero({
               <button
                 type="button"
                 onClick={onToggleFollow}
-                className={`shrink-0 rounded-md px-4 py-2 text-sm font-bold transition ${
+                className={`shrink-0 rounded-[14px] px-4 py-2 text-[13px] font-semibold transition duration-150 ${
                   following
-                    ? 'border border-pe-border-strong bg-pe-canvas text-pe-text hover:bg-pe-surface'
+                    ? 'text-pe-accent hover:bg-black/[0.04]'
                     : 'bg-pe-accent text-white hover:bg-pe-accent-pressed'
                 }`}
               >
@@ -80,7 +80,7 @@ export default function ProfileHero({
               </button>
             )}
           </div>
-          <p className="mt-0.5 truncate text-[15px] text-pe-text-muted">@{person.handle}</p>
+          <p className="mt-0.5 truncate text-[13px] font-medium text-pe-text-muted">@{person.handle}</p>
 
           <dl className="mt-4 flex gap-6">
             <Stat
@@ -102,9 +102,9 @@ export default function ProfileHero({
                 <button
                   type="button"
                   onClick={() => setEditingBio(true)}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-pe-text-secondary hover:bg-black/[0.04] hover:text-pe-accent"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                   Edit
                 </button>
               </div>
@@ -115,18 +115,18 @@ export default function ProfileHero({
                   type="button"
                   onClick={cancelBio}
                   disabled={savingBio}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-pe-text-secondary hover:bg-black/[0.04]"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" strokeWidth={2} />
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={saveBio}
                   disabled={savingBio}
-                  className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2 py-1 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-[14px] bg-pe-accent px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
                 >
-                  {savedFlash ? <Check className="h-3.5 w-3.5" /> : null}
+                  {savedFlash ? <Check className="h-3.5 w-3.5" strokeWidth={2} /> : null}
                   {savingBio ? 'Saving…' : savedFlash ? 'Saved' : 'Save'}
                 </button>
               </div>
@@ -138,7 +138,7 @@ export default function ProfileHero({
                 onChange={(e) => setBioDraft(e.target.value)}
                 rows={3}
                 placeholder="Add a short bio"
-                className="w-full rounded-lg border border-pe-border-strong bg-pe-canvas px-3 py-2 text-[15px] leading-6 text-pe-ink outline-none focus:border-pe-accent"
+                className="w-full rounded-[14px] border border-[var(--fv-border,#ececec)] bg-white px-3 py-2 text-[15px] leading-6 text-pe-ink outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent"
               />
             ) : bioDraft ? (
               <p className="text-[15px] leading-6 text-pe-ink">{bioDraft}</p>

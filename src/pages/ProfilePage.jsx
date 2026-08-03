@@ -459,16 +459,16 @@ export default function ProfilePage({
   return (
     <div>
       {!isOwn && !isMePublic && (
-        <PageHeader desktopOnly>
+        <div className="hidden items-center px-4 py-3 md:flex md:px-6">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-pe-text-secondary transition hover:text-pe-text"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
             Back
           </button>
-        </PageHeader>
+        </div>
       )}
 
       <ProfileHero
@@ -495,17 +495,19 @@ export default function ProfilePage({
         showFollowButton={!isOwn && !isMePublic}
       />
 
-      <PageHeader>
-        <UnderlineTabs
-          embedded
-          tabs={tabs}
-          active={tab}
-          onChange={handleTabChange}
-        />
-      </PageHeader>
+      <div className="sticky top-14 z-20 border-b border-[var(--fv-border,#ececec)] bg-white/95 backdrop-blur-md md:top-0">
+        <div className="flex h-12 items-center px-4 md:h-14 md:px-6">
+          <UnderlineTabs
+            embedded
+            tabs={tabs}
+            active={tab}
+            onChange={handleTabChange}
+          />
+        </div>
+      </div>
 
       {tab === 'posts' && (
-        <div>
+        <div className="md:pt-2">
           {authorPosts.length === 0 ? (
             <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
               {isOwn
@@ -588,13 +590,13 @@ function PortfoliosListPanel({
       )}
 
       {canEdit ? (
-        <div className="px-4 pb-5">
+        <div className="px-4 pb-5 md:px-6">
           <button
             type="button"
             onClick={onAddPortfolio}
-            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-pe-border-strong px-4 py-3.5 text-sm font-semibold text-pe-text-secondary transition hover:border-pe-accent hover:text-pe-accent"
+            className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-dashed border-[var(--fv-border,#ececec)] bg-white px-4 py-3.5 text-[13px] font-semibold text-pe-text-secondary shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition hover:border-pe-accent hover:text-pe-accent"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" strokeWidth={2} />
             Add portfolio
           </button>
         </div>

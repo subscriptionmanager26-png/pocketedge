@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Avatar from '../components/Avatar';
-import PageHeader, { PageHeaderSearch } from '../components/PageHeader';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { PEOPLE, TOPICS } from '../data/mockData';
 import { isDevMockMode } from '../lib/appMode';
@@ -197,26 +196,26 @@ export default function ExplorePage({
 
   return (
     <div>
-      <PageHeader>
-        <PageHeaderSearch
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={
-            guestMode
-              ? 'Search stocks, funds, ETFs…'
-              : 'Search people, topics, stocks, funds…'
-          }
-          autoFocus
-        />
-      </PageHeader>
+      <div className="px-4 py-4 md:px-6 md:pt-2">
+        <h1 className="text-[18px] font-semibold tracking-tight text-pe-text">Explore</h1>
+        <p className="mt-0.5 text-[13px] text-pe-text-secondary">
+          Use the search bar above to find people, topics, and securities.
+          {q ? (
+            <>
+              {' '}
+              Showing results for <span className="font-semibold text-pe-text">“{q}”</span>.
+            </>
+          ) : null}
+        </p>
+      </div>
 
-      <div className="flex overflow-x-auto border-b border-pe-border">
+      <div className="flex overflow-x-auto border-b border-[var(--fv-border,#ececec)]">
         {searchTabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setResultTab(t.id)}
-            className={`relative shrink-0 px-4 py-3.5 text-sm font-semibold ${
+            className={`relative shrink-0 px-4 py-3.5 text-[13px] font-semibold ${
               resultTab === t.id ? 'text-pe-text' : 'text-pe-text-muted hover:text-pe-text'
             }`}
           >
@@ -248,7 +247,7 @@ export default function ExplorePage({
             ))
           ) : (
             <p className="py-14 text-center text-sm text-pe-text-secondary">
-              Search by name or @username to find people.
+              Search by name or @username in the top bar to find people.
             </p>
           )
         ) : null}

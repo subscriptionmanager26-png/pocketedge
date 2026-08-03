@@ -150,7 +150,7 @@ export default function PostCard({
   const closeTicker = () => setTickerPopup(null);
 
   return (
-    <article className="border-b border-pe-border px-4 py-5 md:py-6">
+    <article className="border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-5 md:mx-6 md:mb-5 md:rounded-[20px] md:border-0 md:px-6 md:py-6 md:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]">
       {post.via && post.via.kind !== 'person' && (
         <p className="mb-2 text-[12px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>
@@ -230,7 +230,7 @@ export default function PostCard({
                         stopBubble(event);
                         openPost();
                       }}
-                      className="inline font-semibold text-pe-link hover:underline"
+                      className="inline font-semibold text-pe-accent hover:underline"
                     >
                       {SEE_MORE_LABEL}
                     </button>
@@ -279,7 +279,7 @@ export default function PostCard({
           )}
 
           <div
-            className="mt-4 flex items-center gap-6 text-pe-text-secondary"
+            className="mt-4 flex items-center gap-1 border-t border-[var(--fv-border,#ececec)]/80 pt-3 text-pe-text-secondary"
             onClick={stopBubble}
             onKeyDown={stopBubble}
             role="presentation"
@@ -294,9 +294,9 @@ export default function PostCard({
                 setLiked((v) => !v);
                 setLikes((n) => Math.max(0, n + (liked ? -1 : 1)));
               }}
-              className={`inline-flex items-center gap-1.5 text-sm transition hover:text-pe-accent ${liked ? 'text-pe-accent' : ''}`}
+              className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${liked ? 'text-pe-accent' : ''}`}
             >
-              <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
+              <Heart className={`h-[18px] w-[18px] ${liked ? 'fill-current' : ''}`} strokeWidth={2} />
               {formatCount(likes)}
             </button>
             <button
@@ -305,27 +305,28 @@ export default function PostCard({
                 stopBubble(event);
                 if (!isDetail) openPost();
               }}
-              className={`inline-flex items-center gap-1.5 text-sm transition ${
-                isDetail ? 'text-pe-text' : 'hover:text-pe-text'
+              className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${
+                isDetail ? 'text-pe-text' : ''
               }`}
               aria-label={isDetail ? `${commentCount} comments` : 'Open post to view comments'}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
               {commentCount}
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-sm transition hover:text-pe-text"
+              aria-label="Share"
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04]"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
             </button>
           </div>
         </div>
       </div>
 
       {isDetail && (
-        <div className="mt-5 border-t border-pe-border pt-1">
-          <p className="py-3 text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+        <div className="mt-5 border-t border-[var(--fv-border,#ececec)] pt-1">
+          <p className="py-3 text-[13px] font-semibold tracking-wide text-pe-text-muted">
             Comments · {commentCount}
           </p>
           {!(post.comments?.length) ? (

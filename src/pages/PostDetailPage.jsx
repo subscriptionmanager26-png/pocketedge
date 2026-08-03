@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import CommentComposer from '../components/CommentComposer';
 import { PostDetailSkeleton } from '../components/PageSkeletons';
@@ -107,16 +106,16 @@ export default function PostDetailPage({
 
   return (
     <div>
-      <PageHeader desktopOnly>
+      <div className="hidden items-center px-4 py-3 md:flex md:px-6">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-pe-text-secondary transition hover:text-pe-text"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
           Back
         </button>
-      </PageHeader>
+      </div>
 
       <PostCard
         post={post}

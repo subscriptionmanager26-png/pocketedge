@@ -88,7 +88,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
             key={item.id}
             type="button"
             onClick={() => onOpenPost?.(postId)}
-            className="flex w-full gap-3 px-4 py-4 text-left transition hover:bg-pe-surface"
+            className="flex w-full gap-3 px-4 py-4 text-left transition hover:bg-black/[0.03]"
           >
             <Avatar
               person={person}
@@ -164,8 +164,8 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 
   return (
     <div>
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-pe-border px-4 py-2.5 sm:gap-x-3.5 sm:px-5">
-        <p className="col-span-2 inline-flex w-fit items-center rounded-full border border-pe-border bg-pe-surface px-2 py-0.5 text-left text-[12px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
+      <div className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-[var(--fv-border,#ececec)] px-4 py-2.5 sm:gap-x-3.5 sm:px-5">
+        <p className="col-span-2 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted">
           Security
         </p>
         <div className="inline-flex items-center justify-end gap-2">
@@ -173,7 +173,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             <button
               type="button"
               onClick={() => setSortOpen((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-full border border-pe-border bg-pe-surface px-2 py-0.5 text-[12px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted transition hover:text-pe-text"
+              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text"
               aria-haspopup="menu"
               aria-expanded={sortOpen}
               aria-label={`Sort holdings. Current: ${sortLabel}`}
@@ -189,16 +189,16 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             {sortOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-pe-border bg-pe-surface p-1 shadow-md"
+                className="absolute right-0 z-20 mt-1 w-44 rounded-[14px] bg-white p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]"
               >
                 <div className="mb-1 grid grid-cols-2 gap-1">
                   <button
                     type="button"
                     onClick={() => setSortOrder('asc')}
-                    className={`rounded px-2 py-1 text-[12px] font-semibold leading-5 ${
+                    className={`rounded-lg px-2 py-1 text-[12px] font-semibold leading-5 ${
                       sortOrder === 'asc'
-                        ? 'bg-pe-border/70 text-pe-text'
-                        : 'text-pe-text-muted hover:bg-pe-border/50 hover:text-pe-text'
+                        ? 'bg-black/[0.06] text-pe-text'
+                        : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
                     }`}
                   >
                     Asc
@@ -206,10 +206,10 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                   <button
                     type="button"
                     onClick={() => setSortOrder('desc')}
-                    className={`rounded px-2 py-1 text-[12px] font-semibold leading-5 ${
+                    className={`rounded-lg px-2 py-1 text-[12px] font-semibold leading-5 ${
                       sortOrder === 'desc'
-                        ? 'bg-pe-border/70 text-pe-text'
-                        : 'text-pe-text-muted hover:bg-pe-border/50 hover:text-pe-text'
+                        ? 'bg-black/[0.06] text-pe-text'
+                        : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
                     }`}
                   >
                     Desc
@@ -225,10 +225,10 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                       setSortBy(opt.id);
                       setSortOpen(false);
                     }}
-                    className={`block w-full rounded px-2 py-1.5 text-left text-[12px] font-semibold leading-5 ${
+                    className={`block w-full rounded-lg px-2 py-1.5 text-left text-[12px] font-semibold leading-5 ${
                       sortBy === opt.id
-                        ? 'bg-pe-border/70 text-pe-text'
-                        : 'text-pe-text-muted hover:bg-pe-border/50 hover:text-pe-text'
+                        ? 'bg-black/[0.06] text-pe-text'
+                        : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
                     }`}
                   >
                     {opt.label}
@@ -241,7 +241,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
           <button
             type="button"
             onClick={cycleMetric}
-            className="inline-flex items-center justify-end gap-1 rounded-full border border-pe-border bg-pe-surface px-2 py-0.5 text-[12px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted transition hover:text-pe-text"
+            className="inline-flex items-center justify-end gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text"
             aria-label={`Metric column: ${metricLabel}. Click to change.`}
             title="Tap to switch metric"
           >
@@ -251,7 +251,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
         </div>
       </div>
 
-      <div className="divide-y divide-pe-border">
+      <div className="divide-y divide-[var(--fv-border,#ececec)]">
         {sortedHoldings.map((h) => {
             const stock = STOCKS[h.ticker];
             const computedForm = formByTicker[h.ticker];
@@ -360,7 +360,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                     assetType: h.assetType,
                   });
                 }}
-                className="flex w-full items-start gap-x-3 px-4 py-4 text-left transition hover:bg-pe-surface sm:gap-x-3.5 sm:px-5 sm:py-5"
+                className="flex w-full items-start gap-x-3 px-4 py-4 text-left transition hover:bg-black/[0.03] sm:gap-x-3.5 sm:px-5 sm:py-5"
               >
                 {/*
                   Center logo in a fixed band:

@@ -9,6 +9,7 @@ import GuestBlurredRail from './GuestBlurredRail';
 import { DiscussionsList, HoldersList } from './InvestmentSections';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import { formatNewsDate } from '../lib/format';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import {
   formatInsightChange,
   isInsightForToday,
@@ -929,12 +930,25 @@ export default function AssetDetailSections({
 }
 
 function NewsSummarySheet({ item, onClose }) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const date = formatNewsDate(item.publishedAt) || item.time || '';
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-50 flex justify-center bg-black/30 ${
+        isDesktop ? 'items-center p-4' : 'items-end'
+      }`}
+      onClick={onClose}
+    >
       <div
-        className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border border-pe-border bg-pe-canvas"
+        className={`w-full overflow-y-auto border border-pe-border bg-pe-canvas shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] ${
+          isDesktop
+            ? 'max-h-[min(85vh,720px)] max-w-lg rounded-2xl'
+            : 'max-h-[85vh] rounded-t-2xl'
+        }`}
         onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={item.title}
       >
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-pe-border bg-pe-canvas px-4 py-3.5">
           <div className="min-w-0">

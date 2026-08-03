@@ -514,64 +514,34 @@ export default function PortfolioPage({
           />
         </PageHeader>
 
-        <section className="border-b border-pe-border px-4 py-5">
+        <section className="border-b border-[var(--fv-border,#ececec)] px-4 py-5 md:px-6">
           <div className="relative overflow-hidden">
             <div className="pointer-events-none select-none blur-[4px]" aria-hidden>
               <div className="grid grid-cols-2 gap-x-4">
                 <div className="min-w-0">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">Invested Value</p>
+                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                    ₹10,00,000
+                  </p>
+                </div>
+                <div className="min-w-0 text-right">
                   <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
                   <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
                     ₹12,48,320
                   </p>
                 </div>
-                <div className="min-w-0 text-right">
-                  <p className="text-[12px] font-semibold text-pe-text-muted">Initial Investment</p>
-                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
-                    ₹10,00,000
-                  </p>
-                </div>
               </div>
-              <div className="mt-3 rounded-[12px] border border-pe-border bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-[12px] font-semibold">
-                    <span className="text-pe-text-muted">Total PnL</span>
-                    <span className={pnlClass(1)}>+₹2,48,320 · 24.83%</span>
-                  </div>
-                  <div className="flex justify-between text-[12px] font-semibold">
-                    <span className="text-pe-text-muted">Day&apos;s PnL</span>
-                    <span className={pnlClass(1)}>+₹8,420 · 0.68%</span>
-                  </div>
-                </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <PortfolioPnlCard label="Total PnL" amount={248320} pct={24.83} />
+                <PortfolioPnlCard label="1D PnL" amount={8420} pct={0.68} />
               </div>
             </div>
           </div>
 
-          <div className="mt-5 rounded-[12px] border border-pe-border bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
-            <p className="text-[15px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
-              Signals
-            </p>
-            <div className="pointer-events-none mt-2.5 grid grid-cols-3 items-stretch gap-2 select-none blur-[3px]" aria-hidden>
-              {FORM_METRIC_ORDER.map((formId) => {
-                const meta = FORM_META[formId];
-                return (
-                  <div
-                    key={formId}
-                    className="flex h-full min-w-0 flex-col rounded-[12px] border border-transparent bg-white px-2.5 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_8px_rgba(0,0,0,0.06)]"
-                  >
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
-                      <p className="text-[15px] font-bold tabular-nums leading-none text-pe-text">
-                        {formId === 'in_form' ? 5 : formId === 'unsure' ? 2 : 1}
-                      </p>
-                    </div>
-                    <p className="mt-1.5 min-w-0 text-[12px] font-semibold uppercase leading-snug tracking-[0.04em] text-pe-text-muted">
-                      {meta.label}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <PortfolioSignalsSection
+            counts={{ out_of_form: 1, unsure: 2, in_form: 5 }}
+            decorative
+          />
         </section>
 
         <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
@@ -665,82 +635,52 @@ export default function PortfolioPage({
         />
       </PageHeader>
 
-      <section className="border-b border-pe-border px-4 py-5">
+      <section className="border-b border-[var(--fv-border,#ececec)] px-4 py-5 md:px-6">
         {metrics?.kind === 'portfolio' ? (
           <>
             <div>
               <div className="grid grid-cols-2 gap-x-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
+                    <p className="text-[12px] font-semibold text-pe-text-muted">Invested Value</p>
                     <PortfolioKindMetaTags portfolio={activeList} />
                   </div>
-                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
-                    {formatInr(metrics.totalValue)}
-                  </p>
-                </div>
-                <div className="min-w-0 text-right">
-                  <p className="text-[12px] font-semibold text-pe-text-muted">Initial Investment</p>
                   <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
                     {formatInr(metrics.invested)}
                   </p>
                 </div>
-              </div>
-              <div className="mt-3 rounded-[12px] border border-pe-border bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
-                <div className="flex flex-col gap-1.5">
-                  <PortfolioDeltaLine
-                    label="Total PnL"
-                    amount={metrics.totalPnl}
-                    pct={metrics.totalPnlPct}
-                  />
-                  <PortfolioDeltaLine
-                    label="Day's PnL"
-                    amount={metrics.todayPnl}
-                    pct={metrics.todayPnlPct}
-                  />
+                <div className="min-w-0 text-right">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
+                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                    {formatInr(metrics.totalValue)}
+                  </p>
                 </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <PortfolioPnlCard
+                  label="Total PnL"
+                  amount={metrics.totalPnl}
+                  pct={metrics.totalPnlPct}
+                />
+                <PortfolioPnlCard
+                  label="1D PnL"
+                  amount={metrics.todayPnl}
+                  pct={metrics.todayPnlPct}
+                />
               </div>
             </div>
           </>
         ) : null}
 
-        <div className="mt-5 rounded-[12px] border border-pe-border bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
-          <p className="text-[15px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
-            Signals
-          </p>
-          <div className="mt-2.5 grid grid-cols-3 items-stretch gap-2">
-            {FORM_METRIC_ORDER.map((formId) => {
-              const meta = FORM_META[formId];
-              const count = formBuckets[formId]?.length ?? 0;
-              return (
-                <button
-                  key={formId}
-                  type="button"
-                  onClick={() => setFormSheet(formId)}
-                  className="flex h-full min-w-0 flex-col rounded-[12px] border border-transparent bg-white px-2.5 py-2.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_8px_rgba(0,0,0,0.06)] transition hover:shadow-[0_1px_3px_rgba(0,0,0,0.07),0_4px_12px_rgba(0,0,0,0.08)]"
-                >
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <FormStatusIcon form={formId} className="h-3.5 w-3.5 shrink-0" />
-                    <p className="text-[15px] font-bold tabular-nums leading-none text-pe-text">
-                      {count}
-                    </p>
-                  </div>
-                  <p
-                    className="mt-1.5 min-w-0 text-[12px] font-semibold uppercase leading-snug tracking-[0.04em] text-pe-text-muted"
-                    title={meta.label}
-                  >
-                    {meta.label}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-          {formSheet && FORM_META[formSheet]?.description ? (
-            <p className="mt-2.5 text-[12px] leading-snug text-pe-text-secondary">
-              {FORM_META[formSheet].description}
-            </p>
-          ) : null}
-        </div>
+        <PortfolioSignalsSection
+          counts={{
+            out_of_form: formBuckets.out_of_form?.length ?? 0,
+            unsure: formBuckets.unsure?.length ?? 0,
+            in_form: formBuckets.in_form?.length ?? 0,
+          }}
+          activeFormId={formSheet}
+          onSelect={setFormSheet}
+        />
       </section>
 
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
@@ -818,6 +758,9 @@ const CONTENT_TABS = [
   { id: 'posts', label: 'Posts' },
 ];
 
+const CARD_SHADOW = 'shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]';
+const CARD_SHADOW_HOVER = 'hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]';
+
 function formatSignedInr(amount) {
   if (amount == null || Number.isNaN(Number(amount))) return '—';
   const value = Number(amount);
@@ -825,21 +768,86 @@ function formatSignedInr(amount) {
   return `${sign}${formatInr(Math.abs(value), { compact: true })}`;
 }
 
-function PortfolioDeltaLine({ label, amount, pct }) {
+function PortfolioPnlCard({ label, amount, pct }) {
   const tone = amount ?? pct ?? 0;
   const amountText = formatSignedInr(amount);
   const pctText =
     pct != null && Number.isFinite(Number(pct))
-      ? `${Math.abs(Number(pct)).toFixed(2)}%`
+      ? `${Number(pct) > 0 ? '+' : Number(pct) < 0 ? '-' : ''}${Math.abs(Number(pct)).toFixed(2)}%`
       : null;
 
   return (
-    <div className="flex w-full items-baseline justify-between gap-3 text-[12px] font-semibold">
-      <p className="shrink-0 text-pe-text-muted">{label}</p>
-      <p className={`min-w-0 text-right tabular-nums ${pnlClass(tone)}`}>
-        {amountText}
-        {pctText ? ` (${pctText})` : ''}
-      </p>
+    <div
+      className={`flex min-w-0 items-center justify-between gap-3 rounded-[20px] bg-white px-3.5 py-3.5 ${CARD_SHADOW}`}
+    >
+      <p className="shrink-0 text-[12px] font-medium text-pe-text-muted">{label}</p>
+      <div className={`min-w-0 text-right tabular-nums ${pnlClass(tone)}`}>
+        {pctText ? (
+          <p className="text-[12px] font-semibold leading-none">{pctText}</p>
+        ) : null}
+        <p className={`text-[15px] font-bold tracking-tight leading-none ${pctText ? 'mt-1.5' : ''}`}>
+          {amountText}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PortfolioSignalsSection({ counts, activeFormId = null, onSelect = null, decorative = false }) {
+  return (
+    <div className="mt-5">
+      <p className="text-[13px] font-semibold tracking-wide text-pe-text-muted">Signals</p>
+      <div
+        className={`mt-3 flex items-stretch gap-2${decorative ? ' pointer-events-none select-none blur-[3px]' : ''}`}
+        aria-hidden={decorative || undefined}
+      >
+        {FORM_METRIC_ORDER.map((formId) => {
+          const meta = FORM_META[formId];
+          const count = counts?.[formId] ?? 0;
+          const className = [
+            // Grow equally across all widths; never shrink below label+icon (keeps "Out of Form" one line).
+            'flex min-w-max flex-1 items-center gap-1.5 rounded-[16px] bg-white p-2 text-left',
+            CARD_SHADOW,
+            onSelect ? `transition ${CARD_SHADOW_HOVER}` : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          const body = (
+            <>
+              <FormStatusIcon form={formId} className="h-8 w-8 shrink-0" />
+              <div>
+                <p className="text-[15px] font-bold tabular-nums leading-none text-pe-text">{count}</p>
+                <p
+                  className="mt-1.5 whitespace-nowrap text-[12px] font-medium leading-snug text-pe-text-muted"
+                  title={meta.label}
+                >
+                  {meta.label}
+                </p>
+              </div>
+            </>
+          );
+
+          if (onSelect) {
+            return (
+              <button key={formId} type="button" onClick={() => onSelect(formId)} className={className}>
+                {body}
+              </button>
+            );
+          }
+
+          return (
+            <div key={formId} className={className}>
+              {body}
+            </div>
+          );
+        })}
+      </div>
+      {!decorative && activeFormId && FORM_META[activeFormId]?.description ? (
+        <p className="mt-3 text-[12px] leading-snug text-pe-text-secondary">
+          {FORM_META[activeFormId].description}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -852,10 +860,10 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-pe-border bg-pe-canvas sm:rounded-2xl"
+        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-[20px] bg-white shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] sm:rounded-[20px]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 border-b border-pe-border bg-pe-canvas px-4 py-3.5">
+        <div className="sticky top-0 border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-3.5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <FormStatusIcon form={formId} className="h-5 w-5 shrink-0" />
@@ -864,10 +872,10 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface"
+              className="rounded-lg p-1 text-pe-text-secondary hover:bg-black/[0.04]"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" strokeWidth={2} />
             </button>
           </div>
           {meta.description ? (
@@ -885,7 +893,7 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
             No securities in this category yet.
           </p>
         ) : (
-          <div className={`divide-y divide-pe-border ${bodyAlign} pr-4`}>
+          <div className={`divide-y divide-[var(--fv-border,#ececec)] ${bodyAlign} pr-4`}>
             {items.map((item) => {
               const isFund =
                 item.assetType === 'fund' || /^\d{6,}$/.test(String(item.ticker ?? '').trim());
@@ -901,7 +909,7 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
                     }
                     onSelectStock?.(item.ticker, { assetType: item.assetType });
                   }}
-                  className="flex w-full items-center justify-between gap-3 py-3.5 pl-0 pr-0 text-left transition hover:bg-pe-surface"
+                  className="flex w-full items-center justify-between gap-3 py-3.5 pl-0 pr-0 text-left transition hover:bg-black/[0.03]"
                 >
                   <p className="truncate text-[15px] font-semibold text-pe-text">
                     {item.name || holdingDisplayLabel(item)}

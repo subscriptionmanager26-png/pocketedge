@@ -17,21 +17,21 @@ export default function CommentEngagementButton({
   const inner = (
     <>
       <span className="relative inline-flex shrink-0">
-        <MessageCircle className="h-4 w-4" />
+        <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
         <UnreadBadge count={unreadCount} />
       </span>
       {!hasUnread ? formatCount(count) : null}
     </>
   );
 
-  const baseClass = `inline-flex items-center gap-1.5 text-sm transition ${className}`;
+  const baseClass = `inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${className}`;
 
   if (as === 'span') {
     return <span className={baseClass}>{inner}</span>;
   }
 
   return (
-    <button type="button" onClick={onClick} className={`${baseClass} hover:text-pe-text`}>
+    <button type="button" onClick={onClick} className={baseClass}>
       {inner}
     </button>
   );

@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import PageHeader, { PageHeaderRow, PageHeaderSearch } from '../components/PageHeader';
+import PageHeader from '../components/PageHeader';
 import UnderlineTabs from '../components/UnderlineTabs';
 import AssetLogo from '../components/AssetLogo';
 import { MarketsListSkeleton } from '../components/PageSkeletons';
 import { useMarketTabData } from '../hooks/useMarketTabData';
 import { useSeoMeta } from '../hooks/useSeoMeta';
-import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
 import { markTabPaint } from '../lib/perfMarks';
 import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
 import {
@@ -26,14 +25,6 @@ const MARKET_TABS = [
   { id: 'indices', label: 'Indices' },
   { id: 'commodity', label: 'Commodity' },
 ];
-
-const SEARCH_PLACEHOLDERS = {
-  stocks: 'Search stocks',
-  mutual_funds: 'Search mutual funds',
-  etf: 'Search ETFs',
-  indices: 'Search indices',
-  commodity: 'Search commodities',
-};
 
 function formatIndexGroup(group) {
   if (!group) return null;
@@ -56,16 +47,15 @@ export default function MarketsPage({
   onSelectCommodity,
   guestMode = false,
 }) {
-  const [query, setQuery] = useState('');
   const tab = sectionTab;
-  const { items, loading, error } = useMarketTabData(tab, query);
+  const { items, loading, error } = useMarketTabData(tab, '');
 
   useSeoMeta(
     guestMode
       ? {
           title: 'Markets',
           description:
-            'Search Indian stocks, mutual funds, ETFs, indices, and commodities on PocketEdge.',
+            'Browse Indian stocks, mutual funds, ETFs, indices, and commodities on PocketEdge.',
           path: tabPath('markets'),
         }
       : null
@@ -77,27 +67,11 @@ export default function MarketsPage({
 
   const handleTabChange = (next) => {
     onSectionTabChange?.(next);
-    setQuery('');
   };
-
-  const searchHint =
-    query.trim().length > 0 && query.trim().length < MARKET_MIN_SEARCH_CHARS
-      ? `Type at least ${MARKET_MIN_SEARCH_CHARS} characters to search`
-      : null;
 
   return (
     <div>
-      <PageHeader
-        footer={
-          <PageHeaderRow>
-            <PageHeaderSearch
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={SEARCH_PLACEHOLDERS[tab]}
-            />
-          </PageHeaderRow>
-        }
-      >
+      <PageHeader>
         <UnderlineTabs embedded tabs={MARKET_TABS} active={tab} onChange={handleTabChange} />
       </PageHeader>
 
@@ -106,13 +80,10 @@ export default function MarketsPage({
           <div className="mb-5">
             <h1 className="text-xl font-bold tracking-tight text-pe-text">Markets</h1>
             <p className="mt-1 text-sm text-pe-text-secondary">
-              Search Indian stocks, mutual funds, ETFs, indices, and commodities.
+              Browse Indian stocks, mutual funds, ETFs, indices, and commodities. Use the top search
+              to find a specific name.
             </p>
           </div>
-        ) : null}
-
-        {searchHint ? (
-          <p className="mb-4 text-xs text-pe-text-muted">{searchHint}</p>
         ) : null}
 
         {loading ? (

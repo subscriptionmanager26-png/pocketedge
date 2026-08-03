@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import GuestSignInCta from '../components/GuestSignInCta';
-import PageHeader from '../components/PageHeader';
 import { getActivityFeed } from '../lib/activityFeed';
 import { isActivityRead, markActivityRead } from '../lib/activityStore';
 import { formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
@@ -45,11 +44,12 @@ export default function ActivityPage({
 
   return (
     <div>
-      <PageHeader>
-        <h1 className="text-[15px] font-semibold leading-6 tracking-tight text-pe-text">
-          Activity
-        </h1>
-      </PageHeader>
+      <div className="px-4 py-4 md:px-6 md:pt-2">
+        <h1 className="text-[18px] font-semibold tracking-tight text-pe-text">Activity</h1>
+        <p className="mt-0.5 text-[13px] text-pe-text-secondary">
+          Followers, network updates, and chatter on your holdings.
+        </p>
+      </div>
 
       {guestMode ? (
         <GuestSignInCta
@@ -117,17 +117,15 @@ function ActivitySection({
   onOpenStock,
 }) {
   return (
-    <section className="border-b border-pe-border">
-      <div className="px-4 py-3">
-        <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-          {title}
-        </p>
+    <section className="border-b border-[var(--fv-border,#ececec)]">
+      <div className="px-4 py-3 md:px-6">
+        <p className="text-[13px] font-semibold tracking-wide text-pe-text-muted">{title}</p>
       </div>
 
       {!items.length ? (
-        <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">{empty}</p>
+        <p className="px-4 py-10 text-center text-sm text-pe-text-secondary md:px-6">{empty}</p>
       ) : (
-        <div className="divide-y divide-pe-border">
+        <div className="divide-y divide-[var(--fv-border,#ececec)]">
           {items.map((item) => (
             <ActivityRow
               key={item.id}
@@ -171,8 +169,8 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
     <button
       type="button"
       onClick={handleClick}
-      className={`flex w-full gap-3 px-4 py-4 text-left transition hover:bg-pe-surface ${
-        unread ? 'bg-pe-accent-wash/40' : ''
+      className={`flex w-full gap-3 px-4 py-4 text-left transition hover:bg-black/[0.03] md:px-6 ${
+        unread ? 'bg-pe-accent-wash/30' : ''
       }`}
     >
       {person ? (
@@ -185,31 +183,33 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
           }}
         />
       ) : (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pe-surface text-pe-text-muted">
-          <Icon className="h-4 w-4" />
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.04] text-pe-text-muted">
+          <Icon className="h-4 w-4" strokeWidth={2} />
         </span>
       )}
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p className="text-[15px] font-semibold leading-5 text-pe-text">{title}</p>
-          <span className="shrink-0 text-xs text-pe-text-muted">{timeAgo(item.createdAt)}</span>
+          <span className="shrink-0 text-[12px] font-medium text-pe-text-muted">
+            {timeAgo(item.createdAt)}
+          </span>
         </div>
 
         {person?.handle && isNewFollower ? (
-          <p className="mt-1 text-sm leading-5 text-pe-text-secondary">@{person.handle}</p>
+          <p className="mt-1 text-[13px] leading-5 text-pe-text-secondary">@{person.handle}</p>
         ) : null}
 
         {!isNewFollower && item.body ? (
-          <p className="mt-1 text-sm leading-5 text-pe-text-secondary">{item.body}</p>
+          <p className="mt-1 text-[13px] leading-5 text-pe-text-secondary">{item.body}</p>
         ) : null}
 
         {trade && item.type === 'trade' && trade.action && (
-          <p className="mt-2 inline-flex items-center gap-1.5 text-sm">
+          <p className="mt-2 inline-flex items-center gap-1.5 text-[13px]">
             {trade.action === 'buy' ? (
-              <ArrowUpRight className="h-4 w-4 text-pe-positive" />
+              <ArrowUpRight className="h-4 w-4 text-pe-positive" strokeWidth={2} />
             ) : (
-              <ArrowDownRight className="h-4 w-4 text-pe-negative" />
+              <ArrowDownRight className="h-4 w-4 text-pe-negative" strokeWidth={2} />
             )}
             <span className="font-semibold text-pe-text">{formatTicker(item.ticker)}</span>
             {trade.qty != null && trade.price != null && (
@@ -226,7 +226,7 @@ function ActivityRow({ item, onOpenProfile, onOpenPost, onOpenStock }) {
         )}
 
         {item.ticker && item.category === 'portfolio_stock' && (
-          <p className="mt-2 text-xs font-semibold text-pe-text-secondary">
+          <p className="mt-2 text-[12px] font-medium text-pe-text-muted">
             {formatTicker(item.ticker)} in your portfolio
           </p>
         )}

@@ -2,8 +2,14 @@ import AssetLogo from './AssetLogo';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
 import { ideaAssetTypeLabel, ideaSecurityKey } from '../lib/ideaSecurities';
 
+const CARD_SHADOW =
+  'shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]';
+const CARD_SHADOW_HOVER =
+  'hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]';
+
 /**
- * Ideas card for an individual security — logo, name, type, 1D.
+ * Ideas card for an individual security — Design Language v1:
+ * white surface, shadow lift (no grey fill / heavy border).
  */
 export default function SecurityIdeaCard({ item, onOpen }) {
   if (!item) return null;
@@ -23,7 +29,7 @@ export default function SecurityIdeaCard({ item, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen?.(item)}
-      className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-pe-border-strong bg-pe-surface p-4 text-left transition hover:bg-white"
+      className={`flex h-full w-full flex-col overflow-hidden rounded-[20px] bg-white p-4 text-left transition duration-150 hover:-translate-y-px ${CARD_SHADOW} ${CARD_SHADOW_HOVER}`}
       data-security-key={ideaSecurityKey(item)}
     >
       <div className="flex items-start gap-3">
@@ -44,16 +50,16 @@ export default function SecurityIdeaCard({ item, onOpen }) {
         </div>
       </div>
 
-      <div className="mt-auto border-t border-pe-border pt-3">
+      <div className="mt-auto pt-3">
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[12px] leading-4 text-pe-text-muted">Price</p>
+            <p className="text-[12px] font-medium leading-4 text-pe-text-muted">Price</p>
             <p className="mt-0.5 truncate text-[15px] font-semibold tabular-nums text-pe-text">
               {item.price != null ? formatPrice(item.price) : '—'}
             </p>
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-[12px] leading-4 text-pe-text-muted">1D</p>
+            <p className="text-[12px] font-medium leading-4 text-pe-text-muted">1D</p>
             <p
               className={`mt-0.5 text-[15px] font-semibold tabular-nums ${
                 hasPct ? pnlClass(changePct) : 'text-pe-text-secondary'

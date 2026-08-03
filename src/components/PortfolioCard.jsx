@@ -133,10 +133,10 @@ export default function PortfolioCard({
   };
 
   return (
-    <article className="border-b border-pe-border px-4 py-5 transition hover:bg-pe-surface/40 md:py-6">
+    <article className="border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-5 transition hover:bg-black/[0.02] md:mx-6 md:mb-5 md:rounded-[20px] md:border-0 md:px-6 md:py-6 md:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] md:hover:bg-white md:hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]">
       <button type="button" onClick={() => onOpen?.(portfolio.id)} className="w-full text-left">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-xl font-bold text-pe-text">{portfolio.name}</h3>
+          <h3 className="text-[18px] font-semibold tracking-tight text-pe-text">{portfolio.name}</h3>
           <PortfolioKindMetaTags portfolio={portfolio} />
         </div>
       </button>
@@ -147,8 +147,8 @@ export default function PortfolioCard({
           onClick={() => onOpen?.(portfolio.id)}
           className="mt-4 block w-full text-left"
         >
-          <div className="rounded-[12px] border border-pe-border bg-white px-3.5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.06)]">
-            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+          <div className="rounded-[20px] bg-white px-3.5 py-3.5 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]">
+            <p className="text-[12px] font-medium text-pe-text-muted">
               Top {TOP_N} holdings
             </p>
             <div className="mt-3 space-y-2">
@@ -174,16 +174,16 @@ export default function PortfolioCard({
         </button>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-5 text-pe-text-secondary">
+      <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[var(--fv-border,#ececec)]/80 pt-3 text-pe-text-secondary">
         <button
           type="button"
           onClick={handleLike}
           aria-pressed={liked}
-          className={`inline-flex items-center gap-1.5 text-sm transition ${
-            liked ? 'text-pe-accent' : 'hover:text-pe-accent'
+          className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${
+            liked ? 'text-pe-accent' : ''
           }`}
         >
-          <Heart className={`h-4 w-4 ${liked ? 'fill-current text-pe-accent' : ''}`} />
+          <Heart className={`h-[18px] w-[18px] ${liked ? 'fill-current text-pe-accent' : ''}`} strokeWidth={2} />
           {formatCount(likes)}
         </button>
 
@@ -196,9 +196,9 @@ export default function PortfolioCard({
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex items-center gap-1.5 text-sm transition hover:text-pe-text"
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04]"
         >
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
           {formatCount(shares)}
         </button>
 
@@ -207,20 +207,20 @@ export default function PortfolioCard({
             type="button"
             onClick={handleCopy}
             aria-pressed={copied}
-            className={`inline-flex items-center gap-1.5 text-sm transition ${
-              copied ? 'text-pe-accent' : 'hover:text-pe-text'
+            className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${
+              copied ? 'text-pe-accent' : ''
             }`}
           >
             {copied ? (
-              <ClipboardCheck className="h-4 w-4 text-pe-accent" />
+              <ClipboardCheck className="h-[18px] w-[18px] text-pe-accent" strokeWidth={2} />
             ) : (
-              <Copy className="h-4 w-4 text-pe-text-secondary" />
+              <Copy className="h-[18px] w-[18px]" strokeWidth={2} />
             )}
             {formatCount(copies)}
           </button>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-sm text-pe-text-muted">
-            <Copy className="h-4 w-4 opacity-40" />
+          <span className="inline-flex h-10 items-center gap-1.5 px-2.5 text-[13px] font-medium text-pe-text-muted">
+            <Copy className="h-[18px] w-[18px] opacity-40" strokeWidth={2} />
             {formatCount(copies)}
           </span>
         )}

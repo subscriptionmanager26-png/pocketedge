@@ -1,22 +1,23 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
-  Bell,
   Check,
   ChevronDown,
   Home,
   Lightbulb,
-  Menu,
   Pencil,
-  Settings,
-  User,
   Wallet,
-  X,
 } from 'lucide-react';
-import Avatar from './Avatar';
 import LogoMark from './LogoMark';
 import PageHeader from './PageHeader';
+import FeedTopBar from './feed-v1/FeedTopBar';
+import FeedRightRail from './feed-v1/FeedRightRail';
+import GlobalSearchPanel from './GlobalSearchPanel';
+import {
+  MARKET_PULSE,
+  SUGGESTED_INVESTORS,
+  TOP_DISCUSSIONS,
+  TRENDING_STOCKS,
+} from '../data/feedDesignMock';
 import { getAppCurrentUser } from '../lib/socialIdentity';
 import { disclosuresPath, insightsPath, resourcesPath } from '../lib/routes';
 import { prefetchTab } from '../lib/tabPrefetch';
@@ -63,17 +64,13 @@ const DESKTOP_TABS = [
   // Explore kept in routing/code but hidden from shell UI — Ideas covers discovery for now.
   // { id: 'explore', label: 'Explore', icon: Search },
   { id: 'ideas', label: 'Ideas', icon: Lightbulb },
-  { id: 'activity', label: 'Activity', icon: Bell },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
-  { id: 'menu', label: 'Menu', icon: Menu },
 ];
 
-/** Activity + Menu live in the top header on mobile — not in the bottom nav. */
-const MOBILE_TABS = DESKTOP_TABS.filter((t) => t.id !== 'menu' && t.id !== 'activity').concat([
-  { id: 'profile', label: 'Profile', icon: User },
-]);
+/** Primary destinations only — Activity, Profile, and Menu live in the top bar. */
+const MOBILE_TABS = DESKTOP_TABS;
 
-/** Slim in-app menu — tools + settings only (full marketing nav stays on auth/marketing). */
+/** Slim in-app menu — tools + settings only (opened from the profile control). */
 const APP_MENU_ITEMS = [
   { label: 'Insights', href: insightsPath() },
   { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
@@ -81,14 +78,6 @@ const APP_MENU_ITEMS = [
   { label: 'MF Screener', href: resourcesPath('mf-screener') },
   { label: 'Disclosures', href: disclosuresPath() },
 ];
-
-function visibleDesktopTabs(guestMode) {
-  return DESKTOP_TABS.filter((t) => !(guestMode && t.id === 'activity'));
-}
-
-function visibleMobileTabs(guestMode) {
-  return MOBILE_TABS.filter((t) => !(guestMode && (t.id === 'activity' || t.id === 'profile')));
-}
 
 const FEED_OPTIONS = [
   { id: 'forYou', label: 'For You' },
@@ -124,17 +113,24 @@ export default function Shell({
   guestMode = false,
   onRequireSignIn,
   mobileActions = null,
+  onSelectStock,
+  onSelectFund,
+  onSelectCommodity,
+  onSelectIndex,
+  onOpenProfileFromSearch,
+  onGraphChange,
   children,
 }) {
   const feedTitle = FEED_LABELS[feedMode] ?? 'For You';
-  const showFeedSelector = tab === 'feed' && !pageTitleOverride;
+  // Feed mode tabs live in FeedDesignPage; mobile logo menu only on home feed.
+  const showFeedSelector = false;
+  const showFeedMenu = tab === 'feed' && !pageTitleOverride && !mobileBack;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
-  const [appMenuOpen, setAppMenuOpen] = useState(false);
-  const mobileMenuRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const desktopMenuRef = useRef(null);
-  const desktopAppMenuRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
   const routeKeyRef = useRef(routeKey);
@@ -172,23 +168,11 @@ export default function Shell({
   }, []);
 
   useEffect(() => {
-    if (!mobileMenuOpen && !desktopMenuOpen && !appMenuOpen) return undefined;
+    if (!mobileMenuOpen && !desktopMenuOpen) return undefined;
 
     const onPointerDown = (event) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
-        setMobileMenuOpen(false);
-      }
       if (desktopMenuRef.current && !desktopMenuRef.current.contains(event.target)) {
         setDesktopMenuOpen(false);
-      }
-      // Desktop Menu popover only — mobile drawer uses its own overlay.
-      if (
-        appMenuOpen &&
-        desktopAppMenuRef.current &&
-        !desktopAppMenuRef.current.contains(event.target) &&
-        window.matchMedia('(min-width: 768px)').matches
-      ) {
-        setAppMenuOpen(false);
       }
     };
 
@@ -196,7 +180,6 @@ export default function Shell({
       if (event.key === 'Escape') {
         setMobileMenuOpen(false);
         setDesktopMenuOpen(false);
-        setAppMenuOpen(false);
       }
     };
 
@@ -206,23 +189,19 @@ export default function Shell({
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [mobileMenuOpen, desktopMenuOpen, appMenuOpen]);
-
-  useEffect(() => {
-    if (!appMenuOpen) return undefined;
-    if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [appMenuOpen]);
+  }, [mobileMenuOpen, desktopMenuOpen]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
     setDesktopMenuOpen(false);
-    setAppMenuOpen(false);
+    setSearchOpen(false);
+    setSearchQuery('');
   }, [tab]);
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery('');
+  };
 
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
@@ -305,19 +284,10 @@ export default function Shell({
 
   const goTab = (id) => {
     prefetchTab(id);
-    if (id === 'profile') onProfile?.();
-    else if (id === 'menu') setAppMenuOpen((open) => !open);
-    else if (id === 'settings') {
-      if (guestMode) {
-        onRequireSignIn?.();
-        return;
-      }
-      onSettings?.();
-    } else onTabChange(id);
+    onTabChange(id);
   };
 
   const openSettingsFromMenu = () => {
-    setAppMenuOpen(false);
     if (guestMode) {
       onRequireSignIn?.();
       return;
@@ -339,10 +309,18 @@ export default function Shell({
   };
 
   const currentUser = getAppCurrentUser();
-  const menuActive = appMenuOpen || tab === 'settings';
+  const avatarInitial = (currentUser?.name || currentUser?.handle || 'P').trim().charAt(0).toUpperCase();
+
+  const handleActivity = () => {
+    if (guestMode) {
+      onRequireSignIn?.();
+      return;
+    }
+    goTab('activity');
+  };
 
   return (
-    <div className="min-h-dvh bg-pe-canvas text-pe-text md:flex md:h-dvh md:overflow-hidden">
+    <div className="pe-feed-v1 min-h-dvh bg-white text-pe-text md:flex md:h-dvh md:overflow-hidden">
       <aside className="hidden md:flex md:h-full md:w-[232px] md:shrink-0 md:flex-col md:overflow-y-auto md:overscroll-y-contain md:border-r md:border-pe-border md:p-2">
         <div className="flex h-16 items-start p-2">
           <button
@@ -356,45 +334,8 @@ export default function Shell({
         </div>
 
         <nav className="flex flex-1 flex-col gap-2 p-2">
-          {visibleDesktopTabs(guestMode).map(({ id, label, icon: Icon }) => {
-            const active = id === 'menu' ? menuActive : tab === id;
-            if (id === 'menu') {
-              return (
-                <div key={id} className="flex flex-col gap-1" ref={desktopAppMenuRef}>
-                  <button
-                    type="button"
-                    onClick={() => goTab(id)}
-                    className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
-                      active
-                        ? 'font-semibold text-pe-accent'
-                        : 'font-medium text-pe-text-secondary'
-                    }`}
-                    aria-haspopup="menu"
-                    aria-expanded={appMenuOpen}
-                    aria-controls="shell-desktop-app-menu"
-                  >
-                    <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
-                      <Icon className="h-6 w-6" strokeWidth={2} />
-                    </span>
-                    <span className="flex-1 pr-2">{label}</span>
-                  </button>
-                  {appMenuOpen ? (
-                    <div
-                      id="shell-desktop-app-menu"
-                      role="menu"
-                      className="mb-1 ml-3 flex flex-col gap-0.5 border-l border-pe-border pl-2"
-                    >
-                      <AppMenuLinks
-                        compact
-                        guestMode={guestMode}
-                        onNavigate={() => setAppMenuOpen(false)}
-                        onSettings={openSettingsFromMenu}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            }
+          {DESKTOP_TABS.map(({ id, label, icon: Icon }) => {
+            const active = tab === id;
             return (
               <button
                 key={id}
@@ -409,14 +350,7 @@ export default function Shell({
                 }`}
               >
                 <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
-                  <span className="relative">
-                    <Icon className="h-6 w-6" strokeWidth={2} />
-                    {id === 'activity' && activityUnread > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[8px] font-bold text-white">
-                        {activityUnread > 9 ? '9+' : activityUnread}
-                      </span>
-                    )}
-                  </span>
+                  <Icon className="h-6 w-6" strokeWidth={2} />
                 </span>
                 <span className="flex-1 pr-2">{label}</span>
               </button>
@@ -431,40 +365,6 @@ export default function Shell({
             {guestMode ? 'Sign in' : 'Post'}
           </button>
         </nav>
-
-        <div className="p-2">
-          {guestMode ? (
-            <button
-              type="button"
-              onClick={handleComposeOrSignIn}
-              className="flex min-h-12 w-full items-center justify-center rounded-md border border-pe-border px-3 text-[15px] font-semibold text-pe-text transition hover:bg-pe-surface"
-            >
-              Sign in to your account
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleProfileOrSignIn}
-              className={`flex min-h-12 w-full items-center gap-1 rounded-md text-left text-[20px] leading-6 transition hover:bg-pe-surface ${
-                tab === 'profile'
-                  ? 'font-semibold text-pe-accent'
-                  : 'font-medium text-pe-text-secondary'
-              }`}
-            >
-              <span className="flex h-12 min-w-12 shrink-0 items-center justify-center">
-                <Avatar person={currentUser} size="sm" />
-              </span>
-              <span className="min-w-0 flex-1 pr-2">
-                <span className="block truncate text-[20px] font-medium leading-6 text-pe-text">
-                  {currentUser.name}
-                </span>
-                <span className="block truncate text-[12px] text-pe-text-muted">
-                  @{currentUser.handle}
-                </span>
-              </span>
-            </button>
-          )}
-        </div>
       </aside>
 
       <div
@@ -473,99 +373,27 @@ export default function Shell({
       >
         <div className="flex min-h-0 min-w-0 flex-1 md:px-5">
           <div className="flex min-h-0 min-w-0 flex-1 justify-center md:mr-[420px]">
-            <div className="flex min-h-0 w-full min-w-0 max-w-feed flex-col">
-              {/* Mobile chrome only — logo / feed menu + avatar */}
-              <header className="sticky top-0 z-40 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md md:hidden">
-                <div className="flex h-[56px] items-center justify-between px-4">
-                  <div className="min-w-0" ref={mobileMenuRef}>
-                    {showFeedSelector ? (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setMobileMenuOpen((open) => !open)}
-                          className="inline-flex h-12 items-center gap-0.5"
-                          aria-haspopup="listbox"
-                          aria-expanded={mobileMenuOpen}
-                          aria-label={`Feed menu. Currently ${feedTitle}`}
-                        >
-                          <span className="flex h-12 w-12 items-center justify-center">
-                            <LogoMark />
-                          </span>
-                          <ChevronDown
-                            className={`h-4 w-4 text-pe-text-secondary transition ${
-                              mobileMenuOpen ? 'rotate-180' : ''
-                            }`}
-                          />
-                        </button>
-                        {mobileMenuOpen && (
-                          <FeedModeMenu
-                            feedMode={feedMode}
-                            onSelect={selectFeedMode}
-                            className="left-0 top-full mt-1"
-                          />
-                        )}
-                      </div>
-                    ) : mobileBack ? (
-                      <button
-                        type="button"
-                        onClick={mobileBack.onBack}
-                        className="inline-flex h-12 max-w-[calc(100vw-5rem)] items-center gap-1.5 text-pe-text-secondary"
-                      >
-                        <ArrowLeft className="h-5 w-5 shrink-0" />
-                        <span className="truncate text-[15px] font-semibold text-pe-text">
-                          {mobileBack.label}
-                        </span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={onGoHome}
-                        className="flex h-12 w-12 items-center justify-center rounded-md transition hover:bg-pe-surface"
-                        aria-label="Go to home feed"
-                      >
-                        <LogoMark />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {mobileActions ??
-                      (!guestMode ? (
-                        <button
-                          type="button"
-                          onClick={() => goTab('activity')}
-                          className="relative flex h-10 w-10 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-pe-surface hover:text-pe-text"
-                          aria-label={
-                            activityUnread > 0
-                              ? `${activityUnread} unread activity items`
-                              : 'Activity'
-                          }
-                        >
-                          <Bell className="h-5 w-5" />
-                          {activityUnread > 0 && (
-                            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pe-accent px-1 text-[12px] font-bold text-white">
-                              {activityUnread > 9 ? '9+' : activityUnread}
-                            </span>
-                          )}
-                        </button>
-                      ) : null)}
-                    <button
-                      type="button"
-                      onClick={() => setAppMenuOpen((open) => !open)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-pe-surface ${
-                        menuActive
-                          ? 'text-pe-accent'
-                          : 'text-pe-text-secondary hover:text-pe-text'
-                      }`}
-                      aria-label={appMenuOpen ? 'Close menu' : 'Open menu'}
-                      aria-expanded={appMenuOpen}
-                      aria-controls="shell-app-menu-drawer"
-                    >
-                      {appMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                    </button>
-                  </div>
-                </div>
-              </header>
+            <div className="flex min-h-0 w-full min-w-0 max-w-feed flex-col md:pt-[72px]">
+              <FeedTopBar
+                feedMode={feedMode}
+                onFeedModeChange={selectFeedMode}
+                showFeedMenu={showFeedMenu}
+                mobileBack={mobileBack}
+                onGoHome={onGoHome}
+                onActivity={handleActivity}
+                onProfile={handleProfileOrSignIn}
+                onSettings={openSettingsFromMenu}
+                menuItems={APP_MENU_ITEMS}
+                activityUnread={activityUnread}
+                avatarInitial={avatarInitial}
+                guestMode={guestMode}
+                searchQuery={searchQuery}
+                onSearchChange={(value) => {
+                  setSearchQuery(value);
+                  setSearchOpen(true);
+                }}
+                onSearchFocus={() => setSearchOpen(true)}
+              />
 
               {/* Desktop: only the feed-type control on home — never a redundant page title */}
               {showFeedSelector && (
@@ -599,10 +427,36 @@ export default function Shell({
                 </PageHeader>
               )}
 
-              <main className="flex-1 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-10">{children}</main>
+              <main className="flex min-h-0 flex-1 flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-10">
+                {searchOpen ? (
+                  <GlobalSearchPanel
+                    query={searchQuery}
+                    onClose={closeSearch}
+                    guestMode={guestMode}
+                    onRequireSignIn={onRequireSignIn}
+                    onSelectStock={onSelectStock}
+                    onSelectFund={onSelectFund}
+                    onSelectCommodity={onSelectCommodity}
+                    onSelectIndex={onSelectIndex}
+                    onOpenProfile={onOpenProfileFromSearch}
+                    onGraphChange={onGraphChange}
+                  />
+                ) : (
+                  children
+                )}
+              </main>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="hidden md:contents">
+        <FeedRightRail
+          market={MARKET_PULSE}
+          trending={TRENDING_STOCKS}
+          discussions={TOP_DISCUSSIONS}
+          people={SUGGESTED_INVESTORS}
+        />
       </div>
 
       {showFeedSelector && (
@@ -618,7 +472,7 @@ export default function Shell({
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-pe-border bg-pe-canvas pb-[env(safe-area-inset-bottom,0px)] md:hidden">
         <div className="mx-auto flex h-14 max-w-feed items-center justify-around px-1">
-          {visibleMobileTabs(guestMode).map(({ id, label, icon: Icon }) => {
+          {MOBILE_TABS.map(({ id, label, icon: Icon }) => {
             const active = tab === id;
             return (
               <button
@@ -641,75 +495,7 @@ export default function Shell({
           })}
         </div>
       </nav>
-
-      {/* Mobile app menu drawer — marketing pages + Settings */}
-      <button
-        type="button"
-        className={`fixed inset-0 z-50 bg-black/40 transition md:hidden ${
-          appMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
-        }`}
-        aria-hidden={!appMenuOpen}
-        aria-label="Close menu"
-        onClick={() => setAppMenuOpen(false)}
-      />
-      <aside
-        id="shell-app-menu-drawer"
-        className={`fixed right-0 top-0 z-[60] flex h-full w-[min(300px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 md:hidden ${
-          appMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-hidden={!appMenuOpen}
-      >
-        <div className="flex items-center justify-between border-b border-pe-border px-4 py-4">
-          <span className="text-[15px] font-semibold text-pe-text">Menu</span>
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-pe-surface"
-            aria-label="Close menu"
-            onClick={() => setAppMenuOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <nav className="flex flex-col gap-1 p-3" aria-label="App menu">
-          <AppMenuLinks
-            guestMode={guestMode}
-            onNavigate={() => setAppMenuOpen(false)}
-            onSettings={openSettingsFromMenu}
-          />
-        </nav>
-      </aside>
     </div>
-  );
-}
-
-function AppMenuLinks({ onNavigate, onSettings, guestMode = false, compact = false }) {
-  const itemClass = compact
-    ? 'flex w-full items-center rounded-md px-2.5 py-2 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface'
-    : 'flex w-full items-center rounded-lg px-3 py-3.5 text-left text-[15px] font-medium text-pe-text transition hover:bg-pe-surface';
-
-  return (
-    <>
-      {APP_MENU_ITEMS.map((item) => (
-        <Link
-          key={item.href}
-          to={item.href}
-          role="menuitem"
-          onClick={onNavigate}
-          className={itemClass}
-        >
-          {item.label}
-        </Link>
-      ))}
-      <button
-        type="button"
-        role="menuitem"
-        onClick={onSettings}
-        className={`${itemClass} gap-2`}
-      >
-        <Settings className="h-4 w-4 shrink-0 text-pe-text-muted" />
-        {guestMode ? 'Sign in' : 'Settings'}
-      </button>
-    </>
   );
 }
 
