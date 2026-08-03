@@ -4,8 +4,7 @@ import { formatTicker, sameTicker, statusStyles } from '../lib/tickers';
 import TickerMiniCard from './TickerMiniCard';
 
 /**
- * Soft position tags for securities — wash pills, no heavy borders.
- * Renders inline so they can sit on the same flow as post body text.
+ * Position disclosure tags under a post (holds / watchlist / etc.).
  */
 export default function DisclosureStrip({
   tickers,
@@ -14,7 +13,6 @@ export default function DisclosureStrip({
   activeSource,
   onOpenTicker,
   onCloseTicker,
-  className = '',
 }) {
   const [localActive, setLocalActive] = useState(null);
   const uncontrolled = activeTicker === undefined;
@@ -24,7 +22,7 @@ export default function DisclosureStrip({
   if (!tickers?.length) return null;
 
   return (
-    <span className={`inline-flex flex-wrap items-center gap-1.5 align-middle ${className}`}>
+    <div className="flex flex-wrap gap-1.5">
       {tickers.map((ticker) => {
         const position = getPosition(authorId, ticker);
         const styles = statusStyles(position?.status);
@@ -32,7 +30,7 @@ export default function DisclosureStrip({
         const showCard = isSelected && source === 'strip';
 
         return (
-          <span key={ticker} className="relative inline-flex shrink-0">
+          <span key={ticker} className="relative shrink-0">
             <button
               type="button"
               onClick={(event) => {
@@ -44,11 +42,11 @@ export default function DisclosureStrip({
                 if (isSelected && source === 'strip') onCloseTicker?.();
                 else onOpenTicker?.(ticker, 'strip');
               }}
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums transition hover:opacity-90 ${styles.chip}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold tabular-nums transition hover:opacity-90 ${styles.chip}`}
             >
               <span>${formatTicker(ticker)}</span>
               {styles.shortLabel ? (
-                <span className="font-medium opacity-70">{styles.shortLabel}</span>
+                <span className="font-medium opacity-70">· {styles.shortLabel}</span>
               ) : null}
             </button>
             {showCard ? (
@@ -64,6 +62,6 @@ export default function DisclosureStrip({
           </span>
         );
       })}
-    </span>
+    </div>
   );
 }

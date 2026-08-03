@@ -75,9 +75,9 @@ export default function TickerText({
                     toggle(event);
                   }
                 }}
-                className={`inline cursor-pointer break-words text-left font-semibold underline decoration-dotted decoration-2 underline-offset-[5px] transition hover:opacity-80 ${styles.underline}`}
+                className={`inline-flex cursor-pointer items-baseline rounded-[6px] px-1 py-px text-left text-[inherit] font-semibold leading-[inherit] transition hover:opacity-90 ${styles.chip}`}
               >
-                @{label}
+                ${label}
               </span>
               {showCard ? (
                 <TickerMiniCard

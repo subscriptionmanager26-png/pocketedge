@@ -199,7 +199,7 @@ export default function FeedTopBar({
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--fv-border)]/60 bg-white/95 px-3 py-2.5 backdrop-blur-md md:fixed md:left-[232px] md:right-[min(420px,32vw)] md:border-b-0 md:bg-white md:px-5 md:py-4">
+    <header className="sticky top-0 z-40 border-b border-[var(--fv-border)]/60 bg-white/95 px-3 py-2.5 backdrop-blur-md md:fixed md:left-[232px] md:right-0 md:border-b-0 md:bg-white md:px-5 md:py-4">
       {/* Mobile row */}
       <div className="flex items-center gap-2 md:hidden">
         <div className="relative shrink-0" ref={feedMenuRef}>
@@ -275,15 +275,18 @@ export default function FeedTopBar({
         {accountActions}
       </div>
 
-      {/* Desktop: feed-width search centered above column; actions pinned right */}
+      {/*
+        Desktop: mirror Shell feed centering (justify-center + mr rail),
+        pin bell/profile to the true right edge of the page.
+      */}
       <div className="relative hidden w-full items-center md:flex">
-        <div className="mx-auto flex w-full max-w-feed items-center gap-3 px-0">
-          {mobileBack ? backButton : null}
-          {searchField}
-          {/* Reserve space so search doesn't sit under absolute actions */}
-          <div className="w-[6.25rem] shrink-0" aria-hidden />
+        <div className="flex min-w-0 flex-1 justify-center md:mr-[420px]">
+          <div className="flex w-full max-w-feed items-center gap-3">
+            {mobileBack ? backButton : null}
+            {searchField}
+          </div>
         </div>
-        <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2">
+        <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2 md:right-5">
           {accountActions}
         </div>
       </div>

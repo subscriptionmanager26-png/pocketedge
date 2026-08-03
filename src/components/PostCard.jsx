@@ -221,40 +221,21 @@ export default function PostCard({
               boldContentLine={isNewsPost ? 1 : null}
               onOpenStock={onOpenStock}
               trailing={
-                <>
-                  {!isDetail && clampedBody.truncated ? (
-                    <>
-                      {`${ELLIPSIS} `}
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          stopBubble(event);
-                          openPost();
-                        }}
-                        className="inline font-semibold text-pe-accent hover:underline"
-                      >
-                        {SEE_MORE_LABEL}
-                      </button>
-                    </>
-                  ) : null}
-                  {tickers.length > 0 ? (
-                    <span
-                      onClick={stopBubble}
-                      onKeyDown={stopBubble}
-                      role="presentation"
-                      className="ml-1.5 inline"
+                !isDetail && clampedBody.truncated ? (
+                  <>
+                    {`${ELLIPSIS} `}
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        stopBubble(event);
+                        openPost();
+                      }}
+                      className="inline font-semibold text-pe-accent hover:underline"
                     >
-                      <DisclosureStrip
-                        tickers={tickers}
-                        authorId={post.authorId}
-                        activeTicker={tickerPopup?.ticker ?? null}
-                        activeSource={tickerPopup?.source}
-                        onOpenTicker={openTicker}
-                        onCloseTicker={closeTicker}
-                      />
-                    </span>
-                  ) : null}
-                </>
+                      {SEE_MORE_LABEL}
+                    </button>
+                  </>
+                ) : null
               }
             />
           </div>
@@ -282,6 +263,24 @@ export default function PostCard({
               isDetail={isDetail}
               onOpenPost={openPost}
             />
+          )}
+
+          {tickers.length > 0 && (
+            <div
+              className="mt-3"
+              onClick={stopBubble}
+              onKeyDown={stopBubble}
+              role="presentation"
+            >
+              <DisclosureStrip
+                tickers={tickers}
+                authorId={post.authorId}
+                activeTicker={tickerPopup?.ticker ?? null}
+                activeSource={tickerPopup?.source}
+                onOpenTicker={openTicker}
+                onCloseTicker={closeTicker}
+              />
+            </div>
           )}
 
           <div
