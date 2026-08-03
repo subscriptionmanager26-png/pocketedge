@@ -103,29 +103,33 @@ export function statusStyles(status) {
     case 'holds':
       return {
         underline: 'decoration-pe-positive text-pe-positive',
-        chip: 'border-pe-positive/25 bg-pe-positive/8 text-pe-positive',
+        chip: 'bg-pe-positive/12 text-pe-positive',
         label: 'Holds',
+        shortLabel: 'Holds',
         dot: 'bg-pe-positive',
       };
     case 'exited':
       return {
         underline: 'decoration-pe-negative text-pe-negative',
-        chip: 'border-pe-negative/25 bg-pe-negative/8 text-pe-negative',
+        chip: 'bg-pe-negative/10 text-pe-negative',
         label: 'Exited',
+        shortLabel: 'Exited',
         dot: 'bg-pe-negative',
       };
     case 'watchlist':
       return {
         underline: 'decoration-pe-warning text-pe-warning',
-        chip: 'border-pe-warning/25 bg-pe-warning/8 text-pe-warning',
+        chip: 'bg-pe-warning/12 text-pe-warning',
         label: 'Watchlist',
+        shortLabel: 'Watch',
         dot: 'bg-pe-warning',
       };
     default:
       return {
         underline: 'decoration-pe-accent text-pe-accent',
-        chip: 'border-pe-accent/25 bg-pe-accent/8 text-pe-accent',
+        chip: 'bg-black/[0.04] text-pe-text-secondary',
         label: 'No position',
+        shortLabel: null,
         dot: 'bg-pe-accent',
       };
   }

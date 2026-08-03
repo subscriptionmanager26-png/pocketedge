@@ -150,7 +150,7 @@ export default function PostCard({
   const closeTicker = () => setTickerPopup(null);
 
   return (
-    <article className="border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-5 md:mx-6 md:mb-5 md:rounded-[20px] md:border-0 md:px-6 md:py-6 md:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]">
+    <article className="mx-3 mb-4 rounded-[20px] bg-white px-4 py-5 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] md:mx-6 md:mb-5 md:px-6 md:py-6 md:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] md:transition md:duration-150 md:hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]">
       {post.via && post.via.kind !== 'person' && (
         <p className="mb-2 text-[12px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>
@@ -221,21 +221,40 @@ export default function PostCard({
               boldContentLine={isNewsPost ? 1 : null}
               onOpenStock={onOpenStock}
               trailing={
-                !isDetail && clampedBody.truncated ? (
-                  <>
-                    {`${ELLIPSIS} `}
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        stopBubble(event);
-                        openPost();
-                      }}
-                      className="inline font-semibold text-pe-accent hover:underline"
+                <>
+                  {!isDetail && clampedBody.truncated ? (
+                    <>
+                      {`${ELLIPSIS} `}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          stopBubble(event);
+                          openPost();
+                        }}
+                        className="inline font-semibold text-pe-accent hover:underline"
+                      >
+                        {SEE_MORE_LABEL}
+                      </button>
+                    </>
+                  ) : null}
+                  {tickers.length > 0 ? (
+                    <span
+                      onClick={stopBubble}
+                      onKeyDown={stopBubble}
+                      role="presentation"
+                      className="ml-1.5 inline"
                     >
-                      {SEE_MORE_LABEL}
-                    </button>
-                  </>
-                ) : null
+                      <DisclosureStrip
+                        tickers={tickers}
+                        authorId={post.authorId}
+                        activeTicker={tickerPopup?.ticker ?? null}
+                        activeSource={tickerPopup?.source}
+                        onOpenTicker={openTicker}
+                        onCloseTicker={closeTicker}
+                      />
+                    </span>
+                  ) : null}
+                </>
               }
             />
           </div>
@@ -263,19 +282,6 @@ export default function PostCard({
               isDetail={isDetail}
               onOpenPost={openPost}
             />
-          )}
-
-          {tickers.length > 0 && (
-            <div onClick={stopBubble} onKeyDown={stopBubble} role="presentation">
-              <DisclosureStrip
-                tickers={tickers}
-                authorId={post.authorId}
-                activeTicker={tickerPopup?.ticker ?? null}
-                activeSource={tickerPopup?.source}
-                onOpenTicker={openTicker}
-                onCloseTicker={closeTicker}
-              />
-            </div>
           )}
 
           <div

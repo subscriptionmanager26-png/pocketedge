@@ -279,22 +279,6 @@ textarea {
 }
 
 @media (max-width: 767px) {
-  .pe-feed-v1 .fv-card:hover {
-    box-shadow: none;
-    transform: none;
-  }
-
-  .pe-feed-v1 .fv-post-card {
-    background: #fff;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .pe-feed-v1 .fv-post-card:hover {
-    box-shadow: none;
-    transform: none;
-  }
-
   .pe-feed-v1 .fv-stock-pill {
     padding: 4px 10px;
     font-size: 12px;
@@ -416,7 +400,7 @@ textarea {
   border-radius: var(--fv-radius-search);
   background: var(--fv-card);
   box-shadow: var(--fv-shadow);
-  padding: 0 16px 0 44px;
+  padding: 0 40px 0 44px;
   font-size: 15px;
   color: var(--fv-text);
   outline: none;
@@ -429,4 +413,11 @@ textarea {
 
 .pe-feed-v1 .fv-search:focus {
   box-shadow: var(--fv-shadow-hover);
+}
+
+@media (min-width: 768px) {
+  .pe-feed-v1 .fv-search {
+    height: 44px;
+    font-size: 15px;
+  }
 }

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft,
   Check,
   ChevronRight,
   ClipboardCheck,
@@ -458,19 +457,6 @@ export default function ProfilePage({
 
   return (
     <div>
-      {!isOwn && !isMePublic && (
-        <div className="hidden items-center px-4 py-3 md:flex md:px-6">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-pe-text-secondary transition hover:text-pe-text"
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-            Back
-          </button>
-        </div>
-      )}
-
       <ProfileHero
         person={person}
         name={canEdit ? person.name : undefined}
@@ -1154,20 +1140,11 @@ function PortfolioDetailView({
 
   return (
     <div>
-      <PageHeader desktopOnly>
-        <div className="flex w-full items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => requestBack(onBack)}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Portfolios
-          </button>
-
-          {canEdit ? (
-            editing ? (
-              <div className="flex items-center gap-2">
+      {canEdit ? (
+        <PageHeader desktopOnly>
+          <div className="flex w-full items-center justify-end gap-2">
+            {editing ? (
+              <>
                 <button
                   type="button"
                   onClick={cancelEdits}
@@ -1186,7 +1163,7 @@ function PortfolioDetailView({
                   {saved && !saving ? <Check className="h-3.5 w-3.5" /> : null}
                   {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
                 </button>
-              </div>
+              </>
             ) : (
               <button
                 type="button"
@@ -1196,10 +1173,10 @@ function PortfolioDetailView({
                 <Pencil className="h-3.5 w-3.5" />
                 Edit
               </button>
-            )
-          ) : null}
-        </div>
-      </PageHeader>
+            )}
+          </div>
+        </PageHeader>
+      ) : null}
 
       <div className="border-b border-pe-border px-4 py-5">
         {!editing ? (

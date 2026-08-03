@@ -133,7 +133,7 @@ export default function PortfolioCard({
   };
 
   return (
-    <article className="border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-5 transition hover:bg-black/[0.02] md:mx-6 md:mb-5 md:rounded-[20px] md:border-0 md:px-6 md:py-6 md:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] md:hover:bg-white md:hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]">
+    <article className="mx-3 mb-4 rounded-[20px] bg-white px-4 py-5 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] transition hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] md:mx-6 md:mb-5 md:px-6 md:py-6">
       <button type="button" onClick={() => onOpen?.(portfolio.id)} className="w-full text-left">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[18px] font-semibold tracking-tight text-pe-text">{portfolio.name}</h3>

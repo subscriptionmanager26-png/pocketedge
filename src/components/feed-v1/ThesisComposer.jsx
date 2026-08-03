@@ -8,8 +8,8 @@ export default function ThesisComposer({ onCompose, currentUser }) {
   const open = () => onCompose?.();
 
   return (
-    <div className="fv-card mx-0 mt-0 rounded-none border-b border-[var(--fv-border)] p-0 shadow-none md:mx-6 md:mt-4 md:rounded-[20px] md:border-0 md:p-6 md:shadow-[var(--fv-shadow)]">
-      <div className="flex items-center gap-2.5 px-4 py-3 md:items-start md:gap-3 md:px-0 md:py-0">
+    <div className="fv-card mx-3 mt-3 rounded-[20px] p-4 shadow-[var(--fv-shadow)] md:mx-6 md:mt-4 md:p-6">
+      <div className="flex items-center gap-2.5 md:items-start md:gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--fv-accent)] text-[12px] font-semibold text-white md:h-11 md:w-11 md:text-[15px]">
           {initial}
         </span>

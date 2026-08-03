@@ -53,9 +53,9 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
   const extraTickers = Math.max(0, tickers.length - 2);
 
   return (
-    <article className="fv-card fv-post-card mx-0 rounded-none shadow-none md:mx-6 md:rounded-[20px] md:p-6 md:shadow-[var(--fv-shadow)]">
+    <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] p-4 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:p-6">
       {/* Identity — single visual row on mobile */}
-      <header className="flex items-center gap-2.5 px-4 pt-3.5 md:gap-3 md:px-0 md:pt-0">
+      <header className="flex items-center gap-2.5 md:gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--fv-accent)]/12 text-[12px] font-semibold text-[var(--fv-accent)] md:h-11 md:w-11 md:text-[15px]">
           {author?.avatar || (author?.name || '?').slice(0, 1)}
         </span>
@@ -97,7 +97,7 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
       </header>
 
       {/* Body — full width under header, tight to identity */}
-      <div className="mt-2.5 px-4 md:mt-3.5 md:px-0">
+      <div className="mt-2.5 md:mt-3.5">
         {post.title ? (
           <h2 className="mb-1 text-[15px] font-semibold leading-snug tracking-tight text-[var(--fv-text)] md:mb-1.5 md:text-[18px]">
             {post.title}
@@ -149,7 +149,7 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
 
       {/* Index strip — compact on mobile, no sparklines */}
       {post.marketCards?.length ? (
-        <div className="mt-2.5 flex gap-2 overflow-x-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] md:mt-4 md:grid md:grid-cols-3 md:gap-2 md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
+        <div className="mt-2.5 flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:mt-4 md:grid md:grid-cols-3 md:gap-2 md:overflow-visible [&::-webkit-scrollbar]:hidden">
           {post.marketCards.map((card) => {
             const up = Number(card.changePct) >= 0;
             return (
@@ -179,7 +179,7 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
 
       {/* Tickers — max 2 on mobile */}
       {visibleTickers.length ? (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 px-4 md:mt-4 md:gap-2 md:px-0">
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 md:mt-4 md:gap-2">
           {visibleTickers.map((chip) => (
             <StockPill key={`${post.id}-${chip.symbol}`} chip={chip} />
           ))}
@@ -192,7 +192,7 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
       ) : null}
 
       {/* Actions — quiet, equal weight, no divider line on mobile */}
-      <div className="mt-1 flex items-center px-2 pb-2 md:mt-4 md:gap-1 md:border-t md:border-[var(--fv-border)]/80 md:px-0 md:pb-0 md:pt-3">
+      <div className="mt-3 flex items-center gap-1 border-t border-[var(--fv-border)]/80 pt-3">
         <button
           type="button"
           className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04] md:flex-none md:justify-start md:px-2.5"

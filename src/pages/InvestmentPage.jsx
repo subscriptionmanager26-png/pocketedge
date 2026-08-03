@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import AssetProductHeader from '../components/AssetProductHeader';
-import PageHeader from '../components/PageHeader';
 import AssetDetailSections from '../components/AssetDetailSections';
 import {
   getFund,
@@ -141,17 +139,6 @@ export default function InvestmentPage({
     <div>
       {!detailPanel ? (
         <>
-          <PageHeader desktopOnly>
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button>
-          </PageHeader>
-
           <AssetProductHeader
             name={fund.name}
             logoIconUrl={fund.logoIconUrl}

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X } from 'lucide-react';
 import AssetLogo from './AssetLogo';
 import Avatar from './Avatar';
 import { MarketsListSkeleton } from './PageSkeletons';
@@ -356,18 +355,6 @@ export default function GlobalSearchPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--fv-border,#ececec)] px-4 py-3">
-        <p className="text-[13px] font-semibold text-pe-text-muted">Search</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-text"
-          aria-label="Close search"
-        >
-          <X className="h-4 w-4" strokeWidth={2} />
-        </button>
-      </div>
-
       {/* Pills appear once the user starts searching */}
       {hasQuery ? (
         <div className="flex gap-2 overflow-x-auto px-4 pb-1 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
