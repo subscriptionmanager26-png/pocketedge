@@ -739,22 +739,38 @@ export default function AssetDetailSections({
     );
   }
 
+  if (guestMode) {
+    return (
+      <div className="pb-6">
+        <SectionBlock title="Insights">
+          <GuestBlurredRail kind="insights" height={168} />
+        </SectionBlock>
+        <GuestSignInCta
+          variant="hero"
+          title="Go deeper on this name"
+          description="Sign in for AI insights, holder portfolios, discussions, and corporate actions — free on PocketEdge."
+          action="unlock security details"
+          showExploreHint={false}
+          benefits={[
+            'Daily AI insights & archives',
+            'See who holds it publicly',
+            'News and corporate actions',
+          ]}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-6">
       {supportsInsights ? (
         <SectionBlock
           title="Insights"
           actionLabel={
-            !guestMode
-              ? insights.length > 1
-                ? 'Archives'
-                : latestInsight
-                  ? 'See more'
-                  : null
-              : null
+            insights.length > 1 ? 'Archives' : latestInsight ? 'See more' : null
           }
           onAction={
-            !guestMode && latestInsight
+            latestInsight
               ? () =>
                   setActivePanel('insights', {
                     insightsMode: insights.length > 1 ? 'archives' : 'today',
@@ -762,9 +778,7 @@ export default function AssetDetailSections({
               : undefined
           }
         >
-          {guestMode ? (
-            <GuestBlurredRail kind="insights" height={168} lockLabel="Sign in for insights" />
-          ) : insightsLoading ? (
+          {insightsLoading ? (
             <LoadingRail />
           ) : latestInsight ? (
             <div className={RAIL_SCROLL}>
@@ -783,16 +797,12 @@ export default function AssetDetailSections({
 
       <SectionBlock
         title="Posts"
-        actionLabel={!guestMode && posts.length > PREVIEW_COUNT ? 'See more' : null}
+        actionLabel={posts.length > PREVIEW_COUNT ? 'See more' : null}
         onAction={
-          !guestMode && posts.length > PREVIEW_COUNT
-            ? () => setActivePanel('posts')
-            : undefined
+          posts.length > PREVIEW_COUNT ? () => setActivePanel('posts') : undefined
         }
       >
-        {guestMode ? (
-          <GuestBlurredRail kind="posts" height={188} lockLabel="Sign in to read posts" />
-        ) : postsLoading ? (
+        {postsLoading ? (
           <LoadingRail />
         ) : previewPosts.length ? (
           <div className={RAIL_SCROLL}>
@@ -814,16 +824,12 @@ export default function AssetDetailSections({
       {supportsHolders ? (
         <SectionBlock
           title="Holders"
-          actionLabel={!guestMode && holders.length > PREVIEW_COUNT ? 'See more' : null}
+          actionLabel={holders.length > PREVIEW_COUNT ? 'See more' : null}
           onAction={
-            !guestMode && holders.length > PREVIEW_COUNT
-              ? () => setActivePanel('holders')
-              : undefined
+            holders.length > PREVIEW_COUNT ? () => setActivePanel('holders') : undefined
           }
         >
-          {guestMode ? (
-            <GuestBlurredRail kind="holders" height={148} lockLabel="Sign in to see holders" />
-          ) : holdersLoading ? (
+          {holdersLoading ? (
             <LoadingRail />
           ) : previewHolders.length ? (
             <div className={RAIL_SCROLL}>
@@ -854,16 +860,12 @@ export default function AssetDetailSections({
       {supportsNews ? (
         <SectionBlock
           title="News"
-          actionLabel={!guestMode && news.length > PREVIEW_COUNT ? 'See more' : null}
+          actionLabel={news.length > PREVIEW_COUNT ? 'See more' : null}
           onAction={
-            !guestMode && news.length > PREVIEW_COUNT
-              ? () => setActivePanel('news')
-              : undefined
+            news.length > PREVIEW_COUNT ? () => setActivePanel('news') : undefined
           }
         >
-          {guestMode ? (
-            <GuestBlurredRail kind="news" height={140} lockLabel="Sign in for news" />
-          ) : newsLoading ? (
+          {newsLoading ? (
             <LoadingRail />
           ) : previewNews.length ? (
             <div className={RAIL_SCROLL}>
@@ -886,9 +888,9 @@ export default function AssetDetailSections({
       {showCorporateActions ? (
         <SectionBlock
           title="Corporate actions"
-          actionLabel={!guestMode ? corpActionLabel : null}
+          actionLabel={corpActionLabel}
           onAction={
-            !guestMode && corpActionLabel
+            corpActionLabel
               ? () =>
                   setActivePanel('corporate_actions', {
                     preferPast: !nextCorp,
@@ -896,9 +898,7 @@ export default function AssetDetailSections({
               : undefined
           }
         >
-          {guestMode ? (
-            <GuestBlurredRail kind="corporate" height={148} lockLabel="Sign in for actions" />
-          ) : corpLoading ? (
+          {corpLoading ? (
             <LoadingRail />
           ) : nextCorp ? (
             <div className={RAIL_SCROLL}>
@@ -919,21 +919,6 @@ export default function AssetDetailSections({
             <EmptyRail message="No upcoming corporate actions." />
           )}
         </SectionBlock>
-      ) : null}
-
-      {guestMode ? (
-        <GuestSignInCta
-          variant="hero"
-          title="Go deeper on this name"
-          description="Sign in for AI insights, holder portfolios, discussions, and corporate actions — free on PocketEdge."
-          action="unlock security details"
-          showExploreHint={false}
-          benefits={[
-            'Daily AI insights & archives',
-            'See who holds it publicly',
-            'News and corporate actions',
-          ]}
-        />
       ) : null}
 
       {newsSheetItem ? (

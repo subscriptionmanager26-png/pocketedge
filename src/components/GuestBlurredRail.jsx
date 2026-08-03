@@ -1,5 +1,3 @@
-import { Lock } from 'lucide-react';
-
 const RAIL_CARD =
   'flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-xl border border-pe-border bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 
@@ -41,33 +39,25 @@ const PLACEHOLDER_COPY = {
  * Fixed-count blurred placeholder rail for guest security pages.
  * Every security shows the same card count regardless of real data.
  */
-export default function GuestBlurredRail({ kind = 'posts', height = 160, lockLabel = 'Sign in to unlock' }) {
+export default function GuestBlurredRail({ kind = 'posts', height = 160 }) {
   const items = PLACEHOLDER_COPY[kind] ?? PLACEHOLDER_COPY.posts;
 
   return (
-    <div className="relative">
-      <div className={`${RAIL_SCROLL} pointer-events-none select-none`} aria-hidden>
-        {items.map((item, index) => (
-          <div key={`${kind}-${index}`} style={{ height }} className="shrink-0">
-            <div className={`${RAIL_CARD} blur-[5px]`}>
-              <div className="mb-2 h-2.5 w-16 rounded bg-pe-border/80" />
-              <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
-                {item.title}
-              </p>
-              <p className="mt-2 line-clamp-3 flex-1 text-[12px] leading-relaxed text-pe-text-secondary">
-                {item.line}
-              </p>
-              <div className="mt-3 h-2.5 w-20 rounded bg-pe-border/60" />
-            </div>
+    <div className={`${RAIL_SCROLL} pointer-events-none select-none`} aria-hidden>
+      {items.map((item, index) => (
+        <div key={`${kind}-${index}`} style={{ height }} className="shrink-0">
+          <div className={`${RAIL_CARD} blur-[5px]`}>
+            <div className="mb-2 h-2.5 w-16 rounded bg-pe-border/80" />
+            <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
+              {item.title}
+            </p>
+            <p className="mt-2 line-clamp-3 flex-1 text-[12px] leading-relaxed text-pe-text-secondary">
+              {item.line}
+            </p>
+            <div className="mt-3 h-2.5 w-20 rounded bg-pe-border/60" />
           </div>
-        ))}
-      </div>
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-r from-pe-canvas/30 via-pe-canvas/50 to-pe-canvas/80">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-pe-border bg-white/95 px-3 py-1.5 text-[12px] font-semibold text-pe-text-secondary shadow-sm backdrop-blur-sm">
-          <Lock className="h-3.5 w-3.5 text-pe-accent" />
-          {lockLabel}
-        </span>
-      </div>
+        </div>
+      ))}
     </div>
   );
 }

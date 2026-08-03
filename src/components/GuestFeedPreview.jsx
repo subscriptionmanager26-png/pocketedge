@@ -1,4 +1,3 @@
-import { Lock } from 'lucide-react';
 import { GUEST_FEED_HOOK_POSTS } from '../data/guestFeedHooks';
 import GuestSignInCta from './GuestSignInCta';
 import { rememberPerson } from '../lib/socialIdentity';
@@ -25,7 +24,7 @@ export default function GuestFeedPreview({ onSignInHint }) {
       {GUEST_FEED_HOOK_POSTS.map((post) => (
         <article
           key={post.id}
-          className="relative border-b border-pe-border px-4 py-5 md:py-6"
+          className="border-b border-pe-border px-4 py-5 md:py-6"
         >
           <div className="pointer-events-none select-none blur-[5px]" aria-hidden>
             <div className="flex gap-3">
@@ -45,12 +44,6 @@ export default function GuestFeedPreview({ onSignInHint }) {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-transparent via-pe-canvas/40 to-pe-canvas/80">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-pe-border bg-white/95 px-3 py-1.5 text-[12px] font-semibold text-pe-text-secondary shadow-sm backdrop-blur-sm">
-              <Lock className="h-3.5 w-3.5 text-pe-accent" />
-              Sign in to read
-            </span>
           </div>
         </article>
       ))}
