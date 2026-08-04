@@ -13,7 +13,7 @@ import {
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve, holdingsNeedLogoResolve, enrichPortfolioHoldingsLogos } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve, holdingsNeedLogoResolve, fundKeysMissingAsOfDate, enrichPortfolioHoldingsLogos } from '../lib/portfolioAssetUniverse';
 import { lookupMarketAssetsBatch } from '../lib/marketDataApi';
 import {
   PORTFOLIO_POLL_INTERVAL_MS,
@@ -176,11 +176,13 @@ export default function PortfolioPage({
     // Logo fill is separate so missing logos never block live quote resolve.
     setAssetsByKey(assetsFromHoldings(activeList?.holdings));
     const needPrices = holdingsNeedLiveResolve(activeList?.holdings);
+    const fundAsOfKeys = needPrices ? [] : fundKeysMissingAsOfDate(activeList?.holdings);
     const needLogos = holdingsNeedLogoResolve(activeList?.holdings);
-    if (!needPrices && !needLogos) return undefined;
+    if (!needPrices && !fundAsOfKeys.length && !needLogos) return undefined;
 
-    if (needPrices) {
-      resolvePortfolioAssets(holdingKeys).then((resolved) => {
+    if (needPrices || fundAsOfKeys.length) {
+      const keys = needPrices ? holdingKeys : fundAsOfKeys;
+      resolvePortfolioAssets(keys).then((resolved) => {
         if (cancelled) return;
         setAssetsByKey((prev) => ({
           ...prev,

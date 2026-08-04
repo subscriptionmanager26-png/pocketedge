@@ -135,7 +135,18 @@ export function assetsFromHoldings(holdings) {
   return map;
 }
 
-/** True when any holding still needs a client-side market resolve. */
+function isFundHolding(holding) {
+  const assetType = String(holding?.assetType ?? '').toLowerCase();
+  return assetType === 'fund' || /^\d{6,}$/.test(String(holding?.ticker ?? '').trim());
+}
+
+function holdingHasAsOfDate(holding) {
+  return Boolean(
+    holding?.asOfDate ?? holding?.navDate ?? holding?.as_of_date ?? holding?.nav_date
+  );
+}
+
+/** True when any holding still needs a client-side market resolve for price/change. */
 export function holdingsNeedLiveResolve(holdings) {
   const list = holdings ?? [];
   if (!list.length) return false;
@@ -144,13 +155,25 @@ export function holdingsNeedLiveResolve(holdings) {
     const price = Number(holding?.price);
     const hasPrice = Number.isFinite(price) && price > 0;
     const hasChange = holding?.changePct != null;
-    const assetType = String(holding?.assetType ?? '').toLowerCase();
-    const isFund = assetType === 'fund' || /^\d{6,}$/.test(String(holding?.ticker ?? '').trim());
-    const hasAsOfDate = Boolean(
-      holding?.asOfDate ?? holding?.navDate ?? holding?.as_of_date ?? holding?.nav_date
-    );
-    return !hasPrice || !hasChange || (isFund && !hasAsOfDate);
+    return !hasPrice || !hasChange;
   });
+}
+
+/**
+ * Fund tickers that already have price/change but are missing NAV date.
+ * Resolve only these keys — do not batch the whole book.
+ */
+export function fundKeysMissingAsOfDate(holdings) {
+  const keys = [];
+  for (const holding of holdings ?? []) {
+    const ticker = String(holding?.ticker ?? '').trim();
+    if (!ticker || !isFundHolding(holding) || holdingHasAsOfDate(holding)) continue;
+    const price = Number(holding?.price);
+    const hasPrice = Number.isFinite(price) && price > 0;
+    const hasChange = holding?.changePct != null;
+    if (hasPrice && hasChange) keys.push(ticker);
+  }
+  return keys;
 }
 
 /** True when any holding is missing a logo URL for AssetLogo. */
