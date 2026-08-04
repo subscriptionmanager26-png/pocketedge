@@ -596,11 +596,16 @@ export async function lookupMarketAssetsBatch(keys, { force = false } = {}) {
   if (!missing.length) return map;
 
   if (useMarketLogoLookup()) {
+    const sortedMissing = [...missing].sort();
+    const inflightKey = `batch:${force ? 'f' : 'c'}:${sortedMissing.join('|')}`;
     try {
-      const { data, error } = await supabase.rpc('lookup_social_market_assets_batch', {
-        p_keys: missing,
+      const data = await cachedFetch('market-batch-rpc', inflightKey, force ? 0 : MARKET_ASSET_TTL_MS, async () => {
+        const { data: rows, error } = await supabase.rpc('lookup_social_market_assets_batch', {
+          p_keys: missing,
+        });
+        if (error) throw error;
+        return rows ?? [];
       });
-      if (error) throw error;
       const foundKeys = new Set();
       for (const row of data ?? []) {
         const item = marketAssetRowToItem(row);

@@ -17,7 +17,7 @@ function MarkdownFallback() {
 
 /**
  * Full-viewport news sheet via portal so the dim overlay covers Shell chrome
- * (top search + right rail) and sits above the mobile bottom nav.
+ * (top search, right rail, and mobile bottom nav).
  */
 export function NewsSummarySheet({ item, onClose }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -42,9 +42,7 @@ export function NewsSummarySheet({ item, onClose }) {
   return createPortal(
     <div
       className={`fixed inset-0 z-[80] flex justify-center bg-black/40 ${
-        isDesktop
-          ? 'items-center p-4'
-          : 'items-end pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]'
+        isDesktop ? 'items-center p-4' : 'items-end'
       }`}
       onClick={onClose}
     >
@@ -52,7 +50,7 @@ export function NewsSummarySheet({ item, onClose }) {
         className={`w-full overflow-y-auto border border-pe-border bg-pe-canvas shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] ${
           isDesktop
             ? 'max-h-[min(85vh,720px)] max-w-lg rounded-2xl'
-            : 'max-h-[min(85dvh,calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-0.5rem))] rounded-t-2xl'
+            : 'max-h-[90dvh] rounded-t-2xl'
         }`}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
@@ -73,7 +71,7 @@ export function NewsSummarySheet({ item, onClose }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
           <Suspense fallback={<MarkdownFallback />}>
             <NewsSummaryMarkdown content={item.summary} />
           </Suspense>
