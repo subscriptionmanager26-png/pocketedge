@@ -126,8 +126,6 @@ export default function Shell({
   // Feed mode tabs live in FeedDesignPage; mobile logo menu only on home feed.
   const showFeedSelector = false;
   const showFeedMenu = tab === 'feed' && !pageTitleOverride && !mobileBack;
-  const showMobileComposeFab =
-    tab === 'feed' && !guestMode && !mobileBack && !searchOpen && !pageTitleOverride;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
@@ -136,6 +134,10 @@ export default function Shell({
   const [railMarket, setRailMarket] = useState(MARKET_PULSE);
   const [railTrending, setRailTrending] = useState(TRENDING_STOCKS);
   const [railLive, setRailLive] = useState(false);
+  // Must be after searchOpen state — authenticated path evaluates !searchOpen;
+  // guestMode short-circuits earlier, which is why logout still rendered.
+  const showMobileComposeFab =
+    tab === 'feed' && !guestMode && !mobileBack && !searchOpen && !pageTitleOverride;
   const desktopMenuRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
@@ -360,6 +362,10 @@ export default function Shell({
     }
     goTab('activity');
   };
+
+  // #region agent log
+  fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'post-fix',hypothesisId:'H5',location:'Shell.jsx:render',message:'Shell render reached after searchOpen fix',data:{guestMode,tab,searchOpen,showMobileComposeFab},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 
   return (
     <div className="pe-feed-v1 min-h-dvh bg-white text-pe-text md:flex md:h-dvh md:overflow-hidden">
