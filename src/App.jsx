@@ -274,6 +274,9 @@ export default function App() {
       const syncAuth = (session) => {
         if (cancelled) return;
         const user = session?.user ?? null;
+        // #region agent log
+        fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:syncAuth',message:'syncAuth invoked',data:{hasUser:Boolean(user),authGen,nextAuthGen:authGen+1,prevAuthView:authView},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         setAuthUser(user);
         if (user) {
           identifyPostHogUser(user);
@@ -283,6 +286,9 @@ export default function App() {
           // is not cancelled mid-flight by a bootstrapping flicker.
           setAuthView((prev) => (prev === 'app' || prev === 'onboarding' ? prev : 'bootstrapping'));
           resolveAuthViewForUserAsync(user).then((view) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:resolveAuthViewForUserAsync.then',message:'resolved auth view',data:{resolvedView:view,gen,authGen,cancelled},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (cancelled || gen !== authGen) return;
             setAuthView(view);
           });
@@ -316,6 +322,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H2',location:'App.jsx:bootstrapEffect',message:'bootstrap effect gate check',data:{authView,hasAuthUser:Boolean(authUser?.id)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     if (authView === 'landing') {
       setSelfProfile(null);
       setProfileReady(true);
@@ -340,6 +349,9 @@ export default function App() {
       setPosts,
       setPostsLoading,
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H2',location:'App.jsx:startAppBootstrap',message:'startAppBootstrap called',data:{authUserId:authUser.id},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     return () => {
       cancelled = true;
@@ -976,6 +988,9 @@ export default function App() {
   }
 
   const parsedPath = parseAppPath(location.pathname);
+  // #region agent log
+  fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H3',location:'App.jsx:renderGate',message:'render gate state',data:{authView,parsedKind:parsedPath.kind,pathname:location.pathname,tab,hasAssetDetail},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   if (parsedPath.kind === 'marketing') {
     return (
       <RouteSuspense>
