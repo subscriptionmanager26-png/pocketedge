@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import MarketingShell from '../../components/MarketingShell';
 import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import { ScreenerFilters } from '../../components/mfScreener/ScreenerFilters';
 import { loadAmfiEquityDirectGrowth, uniqueSorted } from '../../lib/mfScreener/amfiSchemes';
@@ -31,7 +32,7 @@ import {
   screenerColumnKey,
   sortDescDefault,
 } from '../../lib/mfScreener/types';
-import { fundPath, resourcesPath } from '../../lib/routes';
+import { fundPath } from '../../lib/routes';
 import '../../components/mfScreener/mfScreener.css';
 
 const ALL_ID = 'all';
@@ -384,22 +385,21 @@ export default function MfScreenerPage() {
 
   if (selected) {
     return (
-      <div className="px-4 pb-8 pt-2 md:px-0">
+      <MarketingShell wide>
         <FundDetail
           row={selected}
           scheme={metrics[selected.amfiCode]}
           snapshotLoading={snapshotLoading}
           onBack={() => setSelectedCode(null)}
         />
-      </div>
+      </MarketingShell>
     );
   }
 
   return (
-    <div className="px-4 pb-8 pt-2 md:px-0">
+    <MarketingShell wide>
       <ResourcesPageHeader
         title="MF screener"
-        backTo={resourcesPath()}
         subtitle="Equity Direct Growth funds — filter by category or sector/theme, then compare rolling returns, CAGR, risk, and fundamentals."
       />
 
@@ -519,6 +519,6 @@ export default function MfScreenerPage() {
           </table>
         </div>
       </section>
-    </div>
+    </MarketingShell>
   );
 }

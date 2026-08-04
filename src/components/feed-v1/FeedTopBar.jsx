@@ -12,6 +12,9 @@ const FEED_OPTIONS = [
  * Global top chrome (all shell pages):
  * Desktop — feed-width search centered above the column; bell + profile right-aligned
  * Mobile — logo (or back / feed menu) · search · notifications · profile
+ *
+ * standalone — marketing pages without the left Shell rail: logo always visible,
+ * full-bleed sticky bar (no md:left-[232px]).
  */
 export default function FeedTopBar({
   feedMode = 'forYou',
@@ -32,6 +35,8 @@ export default function FeedTopBar({
   onSearchClear,
   /** When true, no right-rail gutter — full-width tool pages (Resources). */
   wide = false,
+  /** Marketing / public pages — no Shell sidebar offset; show logo on desktop. */
+  standalone = false,
 }) {
   const [feedMenuOpen, setFeedMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -95,8 +100,8 @@ export default function FeedTopBar({
     </button>
   ) : null;
 
-  const renderSearchField = () => (
-    <div className="relative min-w-0 flex-1">
+  const renderSearchField = (className = '') => (
+    <div className={`relative min-w-0 flex-1 ${className}`}>
       <Search
         className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[var(--fv-text-muted)] md:left-4 md:h-5 md:w-5"
         strokeWidth={2}
@@ -205,111 +210,130 @@ export default function FeedTopBar({
     </>
   );
 
+  const logoButton = (
+    <button
+      type="button"
+      onClick={onGoHome}
+      className="flex h-10 w-10 shrink-0 items-center justify-center md:h-11 md:w-11"
+      aria-label="Go to home feed"
+    >
+      <LogoMark />
+    </button>
+  );
+
+  const mobileLogoSlot = mobileBack ? (
+    backButton
+  ) : (
+    <div className="relative shrink-0" ref={feedMenuRef}>
+      {showFeedMenu ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setProfileMenuOpen(false);
+              setFeedMenuOpen((open) => !open);
+            }}
+            className="inline-flex h-10 items-center gap-0.5"
+            aria-haspopup="listbox"
+            aria-expanded={feedMenuOpen}
+            aria-label={`Feed menu. Currently ${feedTitle}`}
+          >
+            <span className="flex h-10 w-10 items-center justify-center">
+              <LogoMark />
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-[var(--fv-text-secondary)] transition ${
+                feedMenuOpen ? 'rotate-180' : ''
+              }`}
+              strokeWidth={2}
+            />
+          </button>
+          {feedMenuOpen ? (
+            <div
+              role="listbox"
+              aria-label="Feed mode"
+              className="absolute left-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
+            >
+              {FEED_OPTIONS.map((option) => {
+                const active = feedMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      onFeedModeChange?.(option.id);
+                      setFeedMenuOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium transition ${
+                      active
+                        ? 'bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]'
+                        : 'text-[var(--fv-text)] hover:bg-black/[0.03]'
+                    }`}
+                  >
+                    {option.label}
+                    {active ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </>
+      ) : (
+        logoButton
+      )}
+    </div>
+  );
+
+  const headerClass = standalone
+    ? 'sticky top-0 z-40 isolate border-b border-[var(--fv-border)]/60 bg-white px-3 py-2.5 md:px-5 md:py-4 print:hidden'
+    : 'sticky top-0 z-40 isolate border-b border-[var(--fv-border)]/60 bg-white px-3 py-2.5 md:fixed md:left-[232px] md:right-0 md:border-b-0 md:px-5 md:py-4';
+
   return (
-    <header className="sticky top-0 z-40 isolate border-b border-[var(--fv-border)]/60 bg-white px-3 py-2.5 md:fixed md:left-[232px] md:right-0 md:border-b-0 md:px-5 md:py-4">
+    <header className={headerClass}>
       {/*
         Mobile: Back replaces the logo in the left chrome slot (same row as search).
+        Standalone uses this row on all breakpoints (logo · search · account).
       */}
-      <div className="flex items-center gap-2 md:hidden">
-        {mobileBack ? (
-          backButton
-        ) : (
-          <div className="relative shrink-0" ref={feedMenuRef}>
-            {showFeedMenu ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    setFeedMenuOpen((open) => !open);
-                  }}
-                  className="inline-flex h-10 items-center gap-0.5"
-                  aria-haspopup="listbox"
-                  aria-expanded={feedMenuOpen}
-                  aria-label={`Feed menu. Currently ${feedTitle}`}
-                >
-                  <span className="flex h-10 w-10 items-center justify-center">
-                    <LogoMark />
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 text-[var(--fv-text-secondary)] transition ${
-                      feedMenuOpen ? 'rotate-180' : ''
-                    }`}
-                    strokeWidth={2}
-                  />
-                </button>
-                {feedMenuOpen ? (
-                  <div
-                    role="listbox"
-                    aria-label="Feed mode"
-                    className="absolute left-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
-                  >
-                    {FEED_OPTIONS.map((option) => {
-                      const active = feedMode === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          onClick={() => {
-                            onFeedModeChange?.(option.id);
-                            setFeedMenuOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium transition ${
-                            active
-                              ? 'bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]'
-                              : 'text-[var(--fv-text)] hover:bg-black/[0.03]'
-                          }`}
-                        >
-                          {option.label}
-                          {active ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={onGoHome}
-                className="flex h-10 w-10 items-center justify-center"
-                aria-label="Go to home feed"
-              >
-                <LogoMark />
-              </button>
-            )}
+      <div className={`flex items-center gap-2 ${standalone ? '' : 'md:hidden'}`}>
+        {mobileLogoSlot}
+        {standalone ? (
+          <div className="flex min-w-0 flex-1 justify-center">
+            {renderSearchField('max-w-feed')}
           </div>
+        ) : (
+          renderSearchField()
         )}
-        {renderSearchField()}
         {renderAccountActions(profileMenuRefMobile)}
       </div>
 
       {/*
-        Desktop: mirror Shell feed centering (justify-center + mr rail).
+        Desktop (in-Shell): mirror feed centering (justify-center + mr rail).
         Back sits in the gutter left of the search column (does not shrink search).
         Bell/profile pin to the true right edge of the page.
       */}
-      <div className="relative hidden w-full items-center md:flex">
-        <div
-          className={`flex min-w-0 flex-1 justify-center ${wide ? '' : 'md:mr-[420px]'}`}
-        >
+      {!standalone ? (
+        <div className="relative hidden w-full items-center md:flex">
           <div
-            className={`relative flex w-full items-center ${wide ? 'max-w-6xl' : 'max-w-feed'}`}
+            className={`flex min-w-0 flex-1 justify-center ${wide ? '' : 'md:mr-[420px]'}`}
           >
-            {mobileBack ? (
-              <div className="absolute right-full top-1/2 mr-3 flex -translate-y-1/2 items-center">
-                {backButton}
-              </div>
-            ) : null}
-            {renderSearchField()}
+            <div
+              className={`relative flex w-full items-center ${wide ? 'max-w-6xl' : 'max-w-feed'}`}
+            >
+              {mobileBack ? (
+                <div className="absolute right-full top-1/2 mr-3 flex -translate-y-1/2 items-center">
+                  {backButton}
+                </div>
+              ) : null}
+              {renderSearchField()}
+            </div>
+          </div>
+          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2 md:right-5">
+            {renderAccountActions(profileMenuRefDesktop)}
           </div>
         </div>
-        <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2 md:right-5">
-          {renderAccountActions(profileMenuRefDesktop)}
-        </div>
-      </div>
+      ) : null}
     </header>
   );
 }

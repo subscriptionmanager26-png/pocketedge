@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import MarketingShell from '../../components/MarketingShell';
+import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import { disclosuresPath } from '../../lib/routes';
 import { useSeoMeta } from '../../hooks/useSeoMeta';
 
@@ -110,17 +111,21 @@ function LegalDoc({ section }) {
     <article>
       <Link
         to={disclosuresPath()}
-        className="text-sm font-semibold text-pe-accent hover:underline"
+        className="inline-flex text-[13px] font-medium text-[var(--fv-text-secondary)] transition hover:text-[var(--fv-accent)]"
       >
-        ← Disclosures
+        ← All disclosures
       </Link>
-      <h1 className="mt-3 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">{doc.title}</h1>
-      <p className="mt-2 text-sm text-pe-text-muted">Last updated {doc.updated}</p>
+      <h1 className="mt-3 text-[22px] font-semibold tracking-tight text-[var(--fv-text)] md:text-[28px]">
+        {doc.title}
+      </h1>
+      <p className="fv-caption mt-1.5">Last updated {doc.updated}</p>
       <div className="mt-8 space-y-6">
         {doc.sections.map((block) => (
           <section key={block.heading}>
-            <h2 className="text-lg font-bold text-pe-text">{block.heading}</h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">{block.body}</p>
+            <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">{block.heading}</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-[var(--fv-text-secondary)]">
+              {block.body}
+            </p>
           </section>
         ))}
       </div>
@@ -146,26 +151,21 @@ export default function DisclosuresPage({ section = null }) {
         <LegalDoc section={section} />
       ) : (
         <>
-          <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-wide text-pe-accent">Disclosures</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
-              Legal & policies
-            </h1>
-            <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-              Privacy, terms, and how PocketEdge operates as an information platform — not as a broker or
-              advisor.
-            </p>
-          </div>
+          <ResourcesPageHeader
+            title="Legal & policies"
+            subtitle="Privacy, terms, and how PocketEdge operates as an information platform — not as a broker or advisor."
+            className="mb-8"
+          />
 
           <ul className="space-y-3">
             {DOCS.map((doc) => (
               <li key={doc.id}>
                 <Link
                   to={doc.href}
-                  className="block rounded-xl border border-pe-border bg-pe-canvas px-5 py-4 transition hover:border-pe-border-strong hover:bg-pe-surface"
+                  className="fv-card block rounded-[20px] px-5 py-4 shadow-[var(--fv-shadow)] transition duration-150 hover:shadow-[var(--fv-shadow-hover)]"
                 >
-                  <p className="text-[15px] font-bold text-pe-text">{doc.title}</p>
-                  <p className="mt-1 text-sm text-pe-text-secondary">{doc.body}</p>
+                  <p className="text-[15px] font-semibold text-[var(--fv-text)]">{doc.title}</p>
+                  <p className="mt-1 text-sm text-[var(--fv-text-secondary)]">{doc.body}</p>
                 </Link>
               </li>
             ))}

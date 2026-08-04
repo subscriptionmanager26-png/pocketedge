@@ -16,7 +16,7 @@ export default function UnderlineTabs({
       className={`flex items-center gap-1 overflow-x-auto scrollbar-none ${
         embedded
           ? 'h-full min-w-0 flex-1'
-          : 'border-b border-pe-border px-4'
+          : 'border-b border-[var(--fv-border,var(--pe-border))] px-4'
       } ${className}`}
     >
       {tabs.map((tab) => {
@@ -29,12 +29,14 @@ export default function UnderlineTabs({
             type="button"
             onClick={() => onChange(id)}
             className={`${tabButtonClass} ${
-              isActive ? 'text-pe-text' : 'text-pe-text-muted hover:text-pe-text'
+              isActive
+                ? 'text-[var(--fv-text,var(--pe-text))]'
+                : 'text-[var(--fv-text-muted,var(--pe-text-muted))] hover:text-[var(--fv-text,var(--pe-text))]'
             }`}
           >
             {label}
             {isActive && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-pe-accent" />
+              <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--fv-accent,var(--pe-accent))]" />
             )}
           </button>
         );

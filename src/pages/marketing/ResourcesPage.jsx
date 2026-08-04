@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BarChart3, Coins, LineChart } from 'lucide-react';
+import MarketingShell from '../../components/MarketingShell';
 import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import { resourcesPath } from '../../lib/routes';
 import { useSeoMeta } from '../../hooks/useSeoMeta';
@@ -36,7 +37,7 @@ export default function ResourcesPage() {
     path: '/resources',
   });
   return (
-    <div className="px-4 pb-8 pt-2 md:px-0">
+    <MarketingShell wide>
       <ResourcesPageHeader
         title="Market tools"
         subtitle="Lightweight utilities for everyday investing research. More trackers are on the roadmap."
@@ -98,6 +99,6 @@ export default function ResourcesPage() {
         </Link>
         .
       </p>
-    </div>
+    </MarketingShell>
   );
 }

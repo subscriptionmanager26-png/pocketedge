@@ -132,7 +132,7 @@ function ExploreSearchField({ className = '', compact = false }) {
       }}
     >
       <Search
-        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted"
+        className="pointer-events-none absolute left-3.5 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
         aria-hidden
         strokeWidth={2}
       />
@@ -140,11 +140,9 @@ function ExploreSearchField({ className = '', compact = false }) {
         type="search"
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder="Explore stocks, funds, ETFs…"
+        placeholder="Search…"
         aria-label="Explore"
-        className={`w-full rounded-full border border-pe-border bg-white text-pe-text outline-none placeholder:text-pe-text-muted transition focus:border-pe-accent focus:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] ${
-          compact ? 'h-9 py-1.5 pl-9 pr-3 text-[14px]' : 'h-10 py-2 pl-10 pr-4 text-[15px]'
-        }`}
+        className={`fv-search ${compact ? 'h-10 text-[14px]' : ''}`}
       />
     </form>
   );
@@ -269,7 +267,7 @@ export default function AuthLayoutHeader({
                     search={location.search}
                   />
                 ))}
-                <ExploreSearchField className="ml-auto w-full max-w-[16rem] xl:max-w-[18rem]" />
+                <ExploreSearchField className="ml-auto w-full max-w-[240px]" />
                 <PrimaryCta
                   isAuthenticated={isAuthenticated}
                   loading={loading}
@@ -279,7 +277,7 @@ export default function AuthLayoutHeader({
                 />
               </nav>
 
-              <ExploreSearchField className="min-w-0 flex-1 lg:hidden" compact />
+              <ExploreSearchField className="min-w-0 max-w-[240px] flex-1 lg:hidden" compact />
 
               <button
                 type="button"

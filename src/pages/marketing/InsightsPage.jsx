@@ -136,8 +136,8 @@ function matchesMovement(changePct, direction, threshold) {
 }
 
 function pnlClass(n) {
-  if (!Number.isFinite(n) || n === 0) return 'text-pe-text';
-  return n > 0 ? 'text-pe-positive' : 'text-pe-negative';
+  if (!Number.isFinite(n) || n === 0) return 'text-[var(--fv-text)]';
+  return n > 0 ? 'text-[var(--fv-positive)]' : 'text-[var(--fv-negative)]';
 }
 
 function FilterSheet({ open, onClose, children }) {
@@ -145,26 +145,26 @@ function FilterSheet({ open, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border border-pe-border bg-pe-canvas shadow-xl"
+        className="max-h-[85vh] w-full overflow-y-auto rounded-t-[20px] bg-white shadow-[var(--fv-shadow-hover)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-pe-border bg-pe-canvas px-4 py-3.5">
-          <p className="text-[15px] font-bold text-pe-text">Filters</p>
+        <div className="sticky top-0 flex items-center justify-between border-b border-[var(--fv-border)] bg-white px-4 py-3.5">
+          <p className="text-[15px] font-semibold text-[var(--fv-text)]">Filters</p>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface"
+            className="rounded-full p-1.5 text-[var(--fv-text-secondary)] transition hover:bg-black/[0.04]"
             aria-label="Close filters"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="space-y-4 px-4 py-4">{children}</div>
-        <div className="sticky bottom-0 border-t border-pe-border bg-pe-canvas px-4 py-3">
+        <div className="sticky bottom-0 border-t border-[var(--fv-border)] bg-white px-4 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-md bg-pe-accent py-3 text-[15px] font-bold text-white hover:bg-pe-accent-pressed"
+            className="w-full rounded-full bg-[var(--fv-accent)] py-3 text-[15px] font-semibold text-white transition hover:opacity-90"
           >
             Show results
           </button>
@@ -176,8 +176,8 @@ function FilterSheet({ open, onClose, children }) {
 
 function DateSelect({ options, value, onChange, compact = false }) {
   const fieldClass = compact
-    ? 'h-9 w-[110px] rounded-lg border border-pe-border bg-pe-canvas px-2.5 text-xs outline-none ring-pe-accent focus:ring-2'
-    : 'w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-[15px] outline-none ring-pe-accent focus:ring-2';
+    ? 'h-9 w-[110px] rounded-full border-0 bg-black/[0.04] px-3 text-xs font-medium text-[var(--fv-text)] outline-none transition hover:bg-black/[0.06] focus:shadow-[var(--fv-shadow)]'
+    : 'w-full rounded-full border-0 bg-black/[0.04] px-3 py-2.5 text-[15px] font-medium text-[var(--fv-text)] outline-none transition focus:shadow-[var(--fv-shadow)]';
 
   return (
     <select
@@ -238,35 +238,35 @@ function IndustryMultiSelect({ options, selected, onChange, compact = false }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex w-full items-center justify-between gap-2 rounded-lg border border-pe-border bg-pe-canvas text-left outline-none ring-pe-accent hover:border-pe-border-strong focus:ring-2 ${
-          compact ? 'h-9 px-2.5 text-xs' : 'px-3 py-2.5 text-[15px]'
-        } ${selected.length ? 'border-pe-accent/40 text-pe-text' : 'text-pe-text-secondary'}`}
+        className={`flex w-full items-center justify-between gap-2 rounded-full border-0 bg-black/[0.04] text-left outline-none transition hover:bg-black/[0.06] focus:shadow-[var(--fv-shadow)] ${
+          compact ? 'h-9 px-3 text-xs' : 'px-3 py-2.5 text-[15px]'
+        } ${selected.length ? 'text-[var(--fv-text)]' : 'text-[var(--fv-text-secondary)]'}`}
       >
         <span className="truncate font-medium">{label}</span>
         <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open ? (
-        <div className="absolute left-0 z-20 mt-1 w-[min(100vw-2rem,320px)] overflow-hidden rounded-lg border border-pe-border bg-pe-canvas shadow-lg">
-          <div className="border-b border-pe-border p-2">
+        <div className="absolute left-0 z-20 mt-1 w-[min(100vw-2rem,320px)] overflow-hidden rounded-[16px] bg-white shadow-[var(--fv-shadow-hover)]">
+          <div className="border-b border-[var(--fv-border)] p-2">
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search industries…"
               autoFocus
-              className="w-full rounded-md border border-pe-border bg-pe-surface px-2.5 py-1.5 text-sm outline-none ring-pe-accent focus:ring-2"
+              className="w-full rounded-full border-0 bg-black/[0.04] px-3 py-1.5 text-sm outline-none focus:shadow-[var(--fv-shadow)]"
             />
           </div>
-          <div className="flex items-center justify-between border-b border-pe-border px-3 py-2">
-            <span className="text-xs text-pe-text-muted">
+          <div className="flex items-center justify-between border-b border-[var(--fv-border)] px-3 py-2">
+            <span className="fv-caption">
               {selected.length ? `${selected.length} selected` : 'Select one or more'}
             </span>
             {selected.length ? (
               <button
                 type="button"
                 onClick={() => onChange([])}
-                className="text-xs font-semibold text-pe-accent hover:underline"
+                className="text-xs font-semibold text-[var(--fv-accent)] hover:underline"
               >
                 Clear
               </button>
@@ -281,24 +281,24 @@ function IndustryMultiSelect({ options, selected, onChange, compact = false }) {
                     <button
                       type="button"
                       onClick={() => toggle(name)}
-                      className="flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-pe-surface"
+                      className="flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-black/[0.03]"
                     >
                       <span
                         className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border ${
                           checked
-                            ? 'border-pe-accent bg-pe-accent text-white'
-                            : 'border-pe-border-strong bg-pe-canvas'
+                            ? 'border-[var(--fv-accent)] bg-[var(--fv-accent)] text-white'
+                            : 'border-[var(--fv-border)] bg-white'
                         }`}
                       >
                         {checked ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                       </span>
-                      <span className="text-sm leading-snug text-pe-text">{name}</span>
+                      <span className="text-sm leading-snug text-[var(--fv-text)]">{name}</span>
                     </button>
                   </li>
                 );
               })
             ) : (
-              <li className="px-3 py-3 text-sm text-pe-text-muted">No matching industries</li>
+              <li className="px-3 py-3 text-sm text-[var(--fv-text-muted)]">No matching industries</li>
             )}
           </ul>
         </div>
@@ -323,8 +323,8 @@ function StockFilterFields({
   compact = false,
 }) {
   const fieldClass = compact
-    ? 'h-9 rounded-lg border border-pe-border bg-pe-canvas px-2.5 text-xs outline-none ring-pe-accent focus:ring-2'
-    : 'w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-[15px] outline-none ring-pe-accent focus:ring-2';
+    ? 'h-9 rounded-full border-0 bg-black/[0.04] px-3 text-xs font-medium text-[var(--fv-text)] outline-none transition hover:bg-black/[0.06] focus:shadow-[var(--fv-shadow)]'
+    : 'w-full rounded-full border-0 bg-black/[0.04] px-3 py-2.5 text-[15px] font-medium text-[var(--fv-text)] outline-none transition focus:shadow-[var(--fv-shadow)]';
 
   if (compact) {
     return (
@@ -359,7 +359,7 @@ function StockFilterFields({
             aria-label="Minimum move percent"
             className={`${fieldClass} w-full pr-6`}
           />
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-pe-text-muted">
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-[var(--fv-text-muted)]">
             %
           </span>
         </div>
@@ -383,9 +383,7 @@ function StockFilterFields({
   return (
     <>
       <div className="block">
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-          Industry
-        </span>
+        <span className="mb-1.5 block fv-label">Industry</span>
         <IndustryMultiSelect
           options={industries}
           selected={selectedIndustries}
@@ -394,9 +392,7 @@ function StockFilterFields({
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-          Direction
-        </span>
+        <span className="mb-1.5 block fv-label">Direction</span>
         <select value={direction} onChange={(event) => setDirection(event.target.value)} className={fieldClass}>
           {DIRECTION_OPTIONS.map((opt) => (
             <option key={opt.id} value={opt.id}>
@@ -407,9 +403,7 @@ function StockFilterFields({
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-          Min move %
-        </span>
+        <span className="mb-1.5 block fv-label">Min move %</span>
         <div className="relative">
           <input
             type="number"
@@ -421,16 +415,14 @@ function StockFilterFields({
             placeholder="0"
             className={`${fieldClass} pr-10`}
           />
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-pe-text-muted">
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--fv-text-muted)]">
             %
           </span>
         </div>
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-          Sort
-        </span>
+        <span className="mb-1.5 block fv-label">Sort</span>
         <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className={fieldClass}>
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.id} value={opt.id}>
@@ -441,9 +433,7 @@ function StockFilterFields({
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-          Date
-        </span>
+        <span className="mb-1.5 block fv-label">Date</span>
         <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
       </label>
     </>
@@ -460,20 +450,22 @@ function InsightCard({ row, scope }) {
       : [row.name, row.industry].filter(Boolean).join(' · ');
 
   return (
-    <article className="border-b border-pe-border px-4 py-4 last:border-b-0">
+    <article className="border-b border-[var(--fv-border)] px-4 py-4 last:border-b-0 md:px-5">
       <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           {scope === 'stock' ? (
             <Link
               to={stockPath(row.ticker)}
-              className="text-[15px] font-bold text-pe-text hover:text-pe-accent"
+              className="text-[15px] font-semibold text-[var(--fv-text)] transition hover:text-[var(--fv-accent)]"
             >
               {row.ticker}
             </Link>
           ) : (
-            <p className="text-[15px] font-bold text-pe-text">{row.ticker}</p>
+            <p className="text-[15px] font-semibold text-[var(--fv-text)]">{row.ticker}</p>
           )}
-          {subtitle ? <p className="truncate text-xs text-pe-text-muted">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="fv-caption mt-0.5 truncate">{subtitle}</p>
+          ) : null}
         </div>
         {scope === 'stock' && Number.isFinite(row.changePct) ? (
           <span className={`shrink-0 text-sm font-semibold tabular-nums ${pnlClass(row.changePct)}`}>
@@ -481,7 +473,7 @@ function InsightCard({ row, scope }) {
           </span>
         ) : null}
       </div>
-      <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-pe-text-secondary">
+      <ul className="list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed text-[var(--fv-text-secondary)]">
         {bullets.map((bullet) => (
           <li key={bullet}>{bullet}</li>
         ))}
@@ -713,23 +705,29 @@ export default function InsightsPage() {
   return (
     <MarketingShell wide>
       <div className="mb-5">
-        <p className="text-sm font-semibold uppercase tracking-wide text-pe-accent">Daily market insights</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">{copy.title}</h1>
-        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">{copy.body}</p>
+        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--fv-text)] md:text-[28px]">
+          {copy.title}
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-[var(--fv-text-secondary)]">
+          {copy.body}
+        </p>
       </div>
 
       <UnderlineTabs tabs={SCOPE_TABS} active={scope} onChange={setScope} className="mb-4 px-0" />
 
       {!configured ? (
-        <div className="rounded-xl border border-pe-border bg-pe-surface px-4 py-6 text-sm text-pe-text-secondary">
+        <div className="rounded-[16px] bg-black/[0.03] px-4 py-6 text-sm text-[var(--fv-text-secondary)]">
           Insights data is not configured for this environment yet.
         </div>
       ) : (
         <>
-          {/* Desktop: compact single toolbar — Industry → Direction → Date */}
-          <div className="mb-4 hidden flex-wrap items-center gap-2 rounded-xl border border-pe-border bg-pe-surface/60 px-3 py-2 md:flex">
-            <label className="relative min-w-[200px] flex-1">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-pe-text-muted" />
+          {/* Desktop: compact single toolbar */}
+          <div className="mb-4 hidden flex-wrap items-center gap-2 md:flex">
+            <label className="relative w-full max-w-[240px] shrink-0">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
+                strokeWidth={2}
+              />
               <input
                 type="search"
                 value={query}
@@ -741,27 +739,24 @@ export default function InsightsPage() {
                       ? 'Search industries…'
                       : 'Filter by name…'
                 }
-                className="h-9 w-full rounded-lg border border-pe-border bg-pe-canvas py-0 pl-8 pr-2.5 text-sm outline-none ring-pe-accent focus:ring-2"
+                className="fv-search h-10 text-[14px]"
               />
             </label>
 
             {scope === 'stock' ? (
-              <>
-                <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
-                <StockFilterFields {...stockFilterProps} compact />
-              </>
+              <StockFilterFields {...stockFilterProps} compact />
             ) : (
-              <>
-                <div className="hidden h-6 w-px bg-pe-border sm:block" aria-hidden />
-                <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
-              </>
+              <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} compact />
             )}
           </div>
 
           {/* Mobile: search + filters button */}
           <div className="mb-3 flex items-center gap-2 md:hidden">
-            <label className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted" />
+            <label className="relative min-w-0 max-w-[240px] flex-1">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
+                strokeWidth={2}
+              />
               <input
                 type="search"
                 value={query}
@@ -773,18 +768,18 @@ export default function InsightsPage() {
                       ? 'Search industries…'
                       : 'Filter by name'
                 }
-                className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-10 pr-3 text-[15px] text-pe-text outline-none ring-pe-accent focus:ring-2"
+                className="fv-search h-10 text-[14px]"
               />
             </label>
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="relative flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-pe-border bg-pe-canvas px-3 text-sm font-semibold text-pe-text"
+              className="relative flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black/[0.04] px-3.5 text-sm font-semibold text-[var(--fv-text)] transition hover:bg-black/[0.06]"
             >
               <Filter className="h-4 w-4" />
               Filters
               {activeFilterCount ? (
-                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-pe-accent px-1 text-[12px] font-bold text-white">
+                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-[var(--fv-accent)] px-1 text-[12px] font-bold text-white">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -792,17 +787,17 @@ export default function InsightsPage() {
           </div>
 
           {searchHits.length && query.trim() ? (
-            <ul className="mb-4 overflow-hidden rounded-lg border border-pe-border bg-pe-canvas shadow-sm md:max-w-md">
+            <ul className="mb-4 max-w-[240px] overflow-hidden rounded-[16px] bg-white shadow-[var(--fv-shadow)]">
               {searchHits.map((hit) => (
                 <li key={hit.ticker}>
                   <button
                     type="button"
                     onClick={() => setQuery(hit.ticker)}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-pe-surface"
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-black/[0.03]"
                   >
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-pe-text">{hit.ticker}</span>
-                      <span className="block truncate text-xs text-pe-text-muted">{hit.name}</span>
+                      <span className="block text-sm font-semibold text-[var(--fv-text)]">{hit.ticker}</span>
+                      <span className="block truncate text-xs text-[var(--fv-text-muted)]">{hit.name}</span>
                     </span>
                     {scope === 'stock' && Number.isFinite(hit.changePct) ? (
                       <span className={`shrink-0 text-sm font-semibold tabular-nums ${pnlClass(hit.changePct)}`}>
@@ -820,29 +815,27 @@ export default function InsightsPage() {
               <StockFilterFields {...stockFilterProps} />
             ) : (
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-                  Date
-                </span>
+                <span className="mb-1.5 block fv-label">Date</span>
                 <DateSelect options={dateOptions} value={asOfDate} onChange={setAsOfDate} />
               </label>
             )}
           </FilterSheet>
 
-          {error ? <p className="mb-4 text-sm text-pe-negative">{error}</p> : null}
+          {error ? <p className="mb-4 text-sm text-[var(--fv-negative)]">{error}</p> : null}
 
           {loading ? (
-            <div className="flex items-center gap-2 py-10 text-sm text-pe-text-muted">
+            <div className="flex items-center gap-2 py-10 text-sm text-[var(--fv-text-muted)]">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading insights…
             </div>
           ) : filteredFeed.length ? (
-            <div className="overflow-hidden rounded-xl border border-pe-border bg-pe-canvas">
+            <div className="overflow-hidden rounded-[20px] bg-white shadow-[var(--fv-shadow)]">
               {filteredFeed.map((row) => (
                 <InsightCard key={row.id} row={row} scope={scope} />
               ))}
             </div>
           ) : (
-            <p className="py-10 text-sm text-pe-text-muted">
+            <p className="py-10 text-sm text-[var(--fv-text-muted)]">
               No insights for {formatChipDate(asOfDate)} with these filters.
             </p>
           )}

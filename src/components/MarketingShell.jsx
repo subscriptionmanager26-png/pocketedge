@@ -1,58 +1,98 @@
-import { useCallback, useEffect, useState } from 'react';
-import AuthLayoutHeader from './AuthLayoutHeader';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import FeedTopBar from './feed-v1/FeedTopBar';
 import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
+import { getAppCurrentUser } from '../lib/socialIdentity';
+import { ideasPath, disclosuresPath, insightsPath, resourcesPath, tabPath } from '../lib/routes';
 import { signInWithGoogle } from '../lib/supabase';
 
+const MENU_ITEMS = [
+  { label: 'Insights', href: insightsPath() },
+  { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
+  { label: 'SGB Tracker', href: resourcesPath('sgb') },
+  { label: 'MF Screener', href: resourcesPath('mf-screener') },
+  { label: 'Disclosures', href: disclosuresPath() },
+];
+
 /**
- * Shared chrome for public marketing pages (Insights, Business Model, Disclosures, Resources).
+ * Public marketing pages chrome — same FeedTopBar as the app (no asset-class dropdowns).
  */
 export default function MarketingShell({ children, wide = false }) {
+  const navigate = useNavigate();
   const isAuthenticated = useIsAuthenticated();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const guestMode = !isAuthenticated;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState('');
 
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const currentUser = getAppCurrentUser();
+  const avatarInitial = (currentUser?.name || currentUser?.handle || 'P')
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
-  const handleGetStarted = async () => {
+  const requireSignIn = useCallback(async () => {
     try {
-      setLoading(true);
+      setSigningIn(true);
       setError('');
-      closeDrawer();
       await signInWithGoogle();
     } catch (err) {
       setError(err.message || 'Could not start Google sign-in.');
-      setLoading(false);
+      setSigningIn(false);
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') closeDrawer();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [closeDrawer]);
+  const goHome = useCallback(() => {
+    navigate(isAuthenticated ? tabPath('feed') : '/');
+  }, [navigate, isAuthenticated]);
 
-  useEffect(() => {
-    document.body.classList.toggle('overflow-hidden', drawerOpen);
-    return () => document.body.classList.remove('overflow-hidden');
-  }, [drawerOpen]);
+  const goIdeas = useCallback(() => {
+    navigate(ideasPath());
+  }, [navigate]);
+
+  const goProfile = useCallback(() => {
+    if (guestMode) {
+      requireSignIn();
+      return;
+    }
+    navigate(tabPath('profile'));
+  }, [guestMode, navigate, requireSignIn]);
+
+  const goSettings = useCallback(() => {
+    if (guestMode) {
+      requireSignIn();
+      return;
+    }
+    navigate(tabPath('settings'));
+  }, [guestMode, navigate, requireSignIn]);
+
+  const goActivity = useCallback(() => {
+    if (guestMode) {
+      requireSignIn();
+      return;
+    }
+    navigate(tabPath('activity'));
+  }, [guestMode, navigate, requireSignIn]);
 
   return (
-    <div
-      className={`pe-feed-v1 flex min-h-dvh flex-col bg-white text-[var(--fv-text)]${
-        drawerOpen ? ' overflow-hidden' : ''
-      }`}
-    >
-      <AuthLayoutHeader
-        showMarketingNav
-        isAuthenticated={isAuthenticated}
-        drawerOpen={drawerOpen}
-        onToggleDrawer={() => setDrawerOpen((open) => !open)}
-        onCloseDrawer={closeDrawer}
-        onGetStarted={handleGetStarted}
-        loading={loading}
+    <div className="pe-feed-v1 flex min-h-dvh flex-col bg-white text-[var(--fv-text)]">
+      <FeedTopBar
+        standalone
+        wide={wide}
+        guestMode={guestMode}
+        avatarInitial={avatarInitial}
+        menuItems={MENU_ITEMS}
+        searchQuery={searchQuery}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          if (value.trim()) goIdeas();
+        }}
+        onSearchFocus={goIdeas}
+        onSearchClear={() => setSearchQuery('')}
+        onGoHome={goHome}
+        onActivity={goActivity}
+        onProfile={goProfile}
+        onSettings={goSettings}
       />
 
       <main
@@ -63,6 +103,9 @@ export default function MarketingShell({ children, wide = false }) {
         {children}
         {error ? (
           <p className="mt-6 text-sm text-[var(--fv-negative)]">{error}</p>
+        ) : null}
+        {signingIn ? (
+          <p className="mt-4 text-sm text-[var(--fv-text-muted)]">Redirecting to sign in…</p>
         ) : null}
       </main>
     </div>

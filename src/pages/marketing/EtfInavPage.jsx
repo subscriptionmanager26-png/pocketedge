@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownUp, Loader2, Search } from 'lucide-react';
+import MarketingShell from '../../components/MarketingShell';
 import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import {
   ETF_INAV_CATEGORIES,
@@ -19,7 +20,7 @@ import {
   mergeLiveIntoSnapshotItems,
   shouldPollEtfInav,
 } from '../../lib/etfInav/liveQuotes';
-import { etfPath, resourcesPath } from '../../lib/routes';
+import { etfPath } from '../../lib/routes';
 import { useSeoMeta } from '../../hooks/useSeoMeta';
 import '../../components/mfScreener/mfScreener.css';
 
@@ -236,12 +237,8 @@ export default function EtfInavPage() {
   );
 
   return (
-    <div className="px-4 pb-8 pt-2 md:px-0">
-      <ResourcesPageHeader
-        title="ETF iNAV tracker"
-        backTo={resourcesPath()}
-        meta={meta}
-      />
+    <MarketingShell wide>
+      <ResourcesPageHeader title="ETF iNAV tracker" meta={meta} />
 
       {error ? (
         <p className="mb-4 rounded-[16px] bg-[var(--fv-negative)]/8 px-4 py-3 text-sm text-[var(--fv-negative)]">
@@ -252,10 +249,10 @@ export default function EtfInavPage() {
       {!error || items.length ? (
         <>
           <div className="mb-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <label className="relative min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <label className="relative w-full max-w-[240px]">
                 <Search
-                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
+                  className="pointer-events-none absolute left-3.5 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
                   aria-hidden
                   strokeWidth={2}
                 />
@@ -264,7 +261,7 @@ export default function EtfInavPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search symbol or name"
-                  className="w-full rounded-full border border-[var(--fv-border)] bg-white py-2.5 pl-10 pr-3 text-sm text-[var(--fv-text)] outline-none transition focus:border-[var(--fv-accent)] focus:shadow-[var(--fv-shadow)]"
+                  className="fv-search"
                 />
               </label>
               <p className="fv-caption shrink-0 tabular-nums">{filtered.length}</p>
@@ -434,6 +431,6 @@ export default function EtfInavPage() {
           </p>
         </>
       ) : null}
-    </div>
+    </MarketingShell>
   );
 }
