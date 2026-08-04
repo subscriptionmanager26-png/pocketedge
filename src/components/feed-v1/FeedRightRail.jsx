@@ -45,6 +45,7 @@ export default function FeedRightRail({
   discussions,
   people,
   stacked = false,
+  live = false,
 }) {
   const [marketTab, setMarketTab] = useState('overview');
 
@@ -59,10 +60,12 @@ export default function FeedRightRail({
         <section className="fv-card p-5">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">Market Today</h2>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--fv-positive)]/12 px-2.5 py-1 text-[11px] font-semibold text-[var(--fv-positive)]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--fv-positive)]" />
-              Live
-            </span>
+            {live ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--fv-positive)]/12 px-2.5 py-1 text-[11px] font-semibold text-[var(--fv-positive)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--fv-positive)]" />
+                Live
+              </span>
+            ) : null}
           </div>
           <div className="mt-3 flex gap-1">
             {MARKET_TABS.map((t) => (

@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, ExternalLink } from 'lucide-react';
-import PageHeader from './PageHeader';
 import Avatar from './Avatar';
 import NewsList from './NewsList';
 import CorporateActionsList from './CorporateActionsList';
@@ -31,10 +30,10 @@ const NewsSummaryMarkdown = lazy(() => import('./NewsSummaryMarkdown'));
 const PREVIEW_COUNT = 4;
 
 const RAIL_CARD =
-  'flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-xl border border-pe-border bg-white p-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]';
+  'fv-card flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-[20px] bg-white p-4 text-left shadow-[var(--fv-shadow)] transition duration-150 hover:shadow-[var(--fv-shadow-hover)]';
 
 const RAIL_SCROLL =
-  'flex gap-3 overflow-x-auto px-4 pb-3 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+  'flex gap-3 overflow-x-auto px-4 pb-3 pt-1 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 function MarkdownFallback() {
   return <p className="text-sm text-pe-text-muted">Loading…</p>;
@@ -42,8 +41,8 @@ function MarkdownFallback() {
 
 function SectionBlock({ title, actionLabel, onAction, children }) {
   return (
-    <section className="border-b border-pe-border py-5 last:border-b-0">
-      <div className="mb-3 flex items-center justify-between gap-3 px-4">
+    <section className="py-5">
+      <div className="mb-3 flex items-center justify-between gap-3 px-4 md:px-6">
         <h2 className="text-[15px] font-semibold tracking-tight text-pe-text">{title}</h2>
         {actionLabel && onAction ? (
           <button
@@ -62,25 +61,28 @@ function SectionBlock({ title, actionLabel, onAction, children }) {
 }
 
 function EmptyRail({ message }) {
-  return <p className="px-4 text-[13px] leading-relaxed text-pe-text-secondary">{message}</p>;
+  return <p className="px-4 text-[13px] leading-relaxed text-pe-text-secondary md:px-6">{message}</p>;
 }
 
 function LoadingRail() {
-  return <p className="px-4 text-[13px] text-pe-text-secondary">Loading…</p>;
+  return <p className="px-4 text-[13px] text-pe-text-secondary md:px-6">Loading…</p>;
 }
 
+/** Inline panel back — Shell owns mobile back; avoid a second sticky header band. */
 function PanelBackHeader({ assetLabel, onBack, desktopOnly = false }) {
   return (
-    <PageHeader desktopOnly={desktopOnly}>
+    <div
+      className={`px-4 py-3 md:px-6 ${desktopOnly ? 'hidden md:block' : ''}`}
+    >
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+        className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-pe-text-secondary transition hover:text-pe-text"
       >
         <ArrowLeft className="h-4 w-4" />
         {assetLabel || 'Back'}
       </button>
-    </PageHeader>
+    </div>
   );
 }
 

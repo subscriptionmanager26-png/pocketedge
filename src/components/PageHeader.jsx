@@ -1,5 +1,3 @@
-import { Search } from 'lucide-react';
-
 /**
  * Fixed-height primary header for the middle column.
  * Desktop: 72px — matches the feed "For You / Following" row.
@@ -30,31 +28,6 @@ export function PageHeaderRow({ children, className = '' }) {
   return (
     <div className={`border-b border-pe-border ${className}`}>
       <div className="flex h-14 items-center px-4 md:h-[72px]">{children}</div>
-    </div>
-  );
-}
-
-/** Shared search field used in page headers (Search, Markets). */
-export function PageHeaderSearch({
-  value,
-  onChange,
-  onFocus,
-  placeholder,
-  autoFocus = false,
-  readOnly = false,
-}) {
-  return (
-    <div className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-lg bg-pe-surface px-3.5 focus-within:ring-2 focus-within:ring-pe-accent md:h-12">
-      <Search className="h-4 w-4 shrink-0 text-pe-text-muted" />
-      <input
-        value={value}
-        onChange={onChange}
-        onFocus={onFocus}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        readOnly={readOnly}
-        className="w-full min-w-0 bg-transparent text-base text-pe-text outline-none placeholder:text-pe-text-muted md:text-[15px]"
-      />
     </div>
   );
 }

@@ -192,7 +192,7 @@ export default function StockInvestmentPage({
           />
 
           {excerpt ? (
-            <p className="border-b border-pe-border px-4 py-3 text-[15px] leading-relaxed text-pe-text-secondary">
+            <p className="px-4 pb-4 text-[15px] leading-relaxed text-pe-text-secondary md:px-6">
               {excerpt}
             </p>
           ) : null}

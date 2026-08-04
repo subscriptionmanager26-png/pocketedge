@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
 import GuestSignInCta from '../components/GuestSignInCta';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -505,16 +504,15 @@ export default function PortfolioPage({
   if (guestMode) {
     return (
       <div>
-        <PageHeader>
+        <div className="px-4 pt-2 md:px-6">
           <UnderlineTabs
-            embedded
             tabs={[{ id: 'demo', label: 'My Portfolio' }]}
             active="demo"
             onChange={() => {}}
           />
-        </PageHeader>
+        </div>
 
-        <section className="border-b border-[var(--fv-border,#ececec)] px-4 py-5 md:px-6">
+        <section className="px-4 py-5 md:px-6">
           <div className="relative overflow-hidden">
             <div className="pointer-events-none select-none blur-[4px]" aria-hidden>
               <div className="grid grid-cols-2 gap-x-4">
@@ -581,9 +579,9 @@ export default function PortfolioPage({
   if (useBackend() && portfoliosLoading) {
     return (
       <div>
-        <PageHeader>
+        <div className="px-4 pt-2 md:px-6">
           <div className="h-10 animate-pulse rounded-md bg-pe-surface" aria-hidden="true" />
-        </PageHeader>
+        </div>
         <PortfolioPageSkeleton />
       </div>
     );
@@ -609,9 +607,8 @@ export default function PortfolioPage({
 
   return (
     <div>
-      <PageHeader>
+      <div className="px-4 pt-2 md:px-6">
         <UnderlineTabs
-          embedded
           tabs={lists.map((list) => ({ id: list.id, label: list.name }))}
           active={listId}
           onChange={(id) => {
@@ -633,9 +630,9 @@ export default function PortfolioPage({
             ) : null
           }
         />
-      </PageHeader>
+      </div>
 
-      <section className="border-b border-[var(--fv-border,#ececec)] px-4 py-5 md:px-6">
+      <section className="px-4 py-5 md:px-6">
         {metrics?.kind === 'portfolio' ? (
           <>
             <div>

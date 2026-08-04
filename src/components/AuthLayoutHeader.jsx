@@ -5,10 +5,8 @@ import LogoMark from './LogoMark';
 import {
   businessModelPath,
   disclosuresPath,
-  explorePath,
+  ideasPath,
   insightsPath,
-  marketsPath,
-  parseMarketSection,
   resourcesPath,
   tabPath,
 } from '../lib/routes';
@@ -18,9 +16,9 @@ export const MARKETING_NAV_GROUPS = [
     id: 'stocks',
     label: 'Stocks',
     items: [
-      { label: 'Browse stocks', href: marketsPath('stocks') },
-      { label: 'Browse indices', href: marketsPath('indices') },
-      { label: 'Browse commodities', href: marketsPath('commodity') },
+      { label: 'Browse stocks', href: ideasPath() },
+      { label: 'Browse indices', href: ideasPath() },
+      { label: 'Browse commodities', href: ideasPath() },
       { label: 'Insights', href: insightsPath() },
       { label: 'Business Model', href: businessModelPath() },
     ],
@@ -29,7 +27,7 @@ export const MARKETING_NAV_GROUPS = [
     id: 'etf',
     label: 'ETFs',
     items: [
-      { label: 'Browse ETFs', href: marketsPath('etf') },
+      { label: 'Browse ETFs', href: ideasPath() },
       { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
     ],
   },
@@ -42,7 +40,7 @@ export const MARKETING_NAV_GROUPS = [
     id: 'mutual_funds',
     label: 'MF',
     items: [
-      { label: 'Browse funds', href: marketsPath('mutual_funds') },
+      { label: 'Browse funds', href: ideasPath() },
       { label: 'MF screener', href: resourcesPath('mf-screener') },
     ],
   },
@@ -75,18 +73,8 @@ function hrefActive(pathname, search, href) {
   if (pathPart === '/resources') {
     return pathname === '/resources';
   }
-  if (pathPart === '/markets') {
-    const wanted = parseMarketSection(queryPart ? `?${queryPart}` : '') || 'stocks';
-    if (pathname === '/markets') {
-      const current = parseMarketSection(search) || 'stocks';
-      return current === wanted;
-    }
-    if (wanted === 'stocks') return pathname.startsWith('/stock/');
-    if (wanted === 'etf') return pathname.startsWith('/etf/');
-    if (wanted === 'mutual_funds') return pathname.startsWith('/fund/');
-    if (wanted === 'indices') return pathname.startsWith('/index/');
-    if (wanted === 'commodity') return pathname.startsWith('/commodity/');
-    return false;
+  if (pathPart === '/ideas') {
+    return pathname === '/ideas' || pathname.startsWith('/ideas/');
   }
   if (pathPart === '/business-model') {
     return (
@@ -131,8 +119,8 @@ function ExploreSearchField({ className = '', compact = false }) {
   const navigate = useNavigate();
   const [value, setValue] = useState('');
 
-  const goExplore = () => {
-    navigate(explorePath(value));
+  const goIdeas = () => {
+    navigate(ideasPath());
   };
 
   return (
@@ -140,7 +128,7 @@ function ExploreSearchField({ className = '', compact = false }) {
       className={`relative flex min-w-0 items-center ${className}`}
       onSubmit={(event) => {
         event.preventDefault();
-        goExplore();
+        goIdeas();
       }}
     >
       <Search

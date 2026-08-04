@@ -51,7 +51,7 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, marketsPath, parseMarketSection, postPath, profilePath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
   navigateToProfile,
@@ -63,7 +63,6 @@ import GuestSignInCta from './components/GuestSignInCta';
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const OnboardingFlow = lazy(() => import('./pages/onboarding/OnboardingFlow'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const MarketsPage = lazy(() => import('./pages/MarketsPage'));
 const InvestmentPage = lazy(() => import('./pages/InvestmentPage'));
 const StockInvestmentPage = lazy(() => import('./pages/StockInvestmentPage'));
 const IndexDetailPage = lazy(() => import('./pages/IndexDetailPage'));
@@ -71,8 +70,6 @@ const CommodityDetailPage = lazy(() => import('./pages/CommodityDetailPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const SearchPage = lazy(() => import('./pages/ExplorePage'));
-const ExplorePage = SearchPage;
 const IdeasPage = lazy(() => import('./pages/IdeasPage'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
 const BusinessModelPage = lazy(() => import('./pages/marketing/BusinessModelPage'));
@@ -148,9 +145,6 @@ export default function App() {
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
   const [profileSeedPerson, setProfileSeedPerson] = useState(null);
-  const [marketsSectionTab, setMarketsSectionTab] = useState(
-    () => parseMarketSection(typeof window !== 'undefined' ? window.location.search : '') || 'stocks'
-  );
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
   const [assetPanelBack, setAssetPanelBack] = useState(null);
@@ -169,42 +163,24 @@ export default function App() {
   const backScroll = useCallback(() => setScrollAction('back'), []);
   const consumeScrollAction = useCallback(() => setScrollAction('reset'), []);
 
-  useEffect(() => {
-    if (tab !== 'markets') return;
-    if (selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId) return;
-    const section = parseMarketSection(location.search) || 'stocks';
-    setMarketsSectionTab(section);
-  }, [
-    tab,
-    location.search,
-    selectedTicker,
-    selectedFundId,
-    selectedIndexId,
-    selectedCommodityId,
-  ]);
-
-  const handleMarketsSectionTabChange = useCallback(
-    (next) => {
-      setMarketsSectionTab(next);
-      navigate(marketsPath(next), { replace: true });
-    },
-    [navigate]
+  const hasAssetDetail = Boolean(
+    selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId
   );
 
   const routeKey = useMemo(() => {
     if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
-    if (tab === 'feed') return 'feed';
+    if (tab === 'feed' && !hasAssetDetail) return 'feed';
     const panelSuffix = assetDetailPanel ? `:${assetDetailPanel}` : '';
-    if (tab === 'markets' && selectedCommodityId) {
+    if (selectedCommodityId) {
       return `commodity:${selectedCommodityId}${panelSuffix}`;
     }
-    if (tab === 'markets' && selectedIndexId) {
+    if (selectedIndexId) {
       return `index:${selectedIndexId}${panelSuffix}`;
     }
-    if (tab === 'markets' && selectedFundId) {
+    if (selectedFundId) {
       return `fund:${selectedFundId}${panelSuffix}`;
     }
-    if (tab === 'markets' && selectedTicker) {
+    if (selectedTicker) {
       return `stock:${selectedTicker}${panelSuffix}`;
     }
     if (tab === 'profile' && profilePortfolioId) {
@@ -222,6 +198,7 @@ export default function App() {
     selectedIndexId,
     selectedCommodityId,
     selectedTicker,
+    hasAssetDetail,
     assetDetailPanel,
     profilePortfolioId,
     profileMode,
@@ -241,7 +218,6 @@ export default function App() {
     selectedFundId,
     selectedIndexId,
     selectedCommodityId,
-    marketsSectionTab,
     setTab,
     setProfileUserId,
     setProfilePortfolioId,
@@ -401,7 +377,7 @@ export default function App() {
 
   useEffect(() => {
     if (authView !== 'app' && authView !== 'landing') return;
-    if (tab === 'markets' || tab === 'portfolio' || tab === 'profile' || tab === 'explore') {
+    if (tab === 'portfolio' || tab === 'profile' || tab === 'ideas') {
       markTabPaint(tab);
     }
   }, [authView, tab]);
@@ -610,34 +586,35 @@ export default function App() {
 
   const MARKET_RETURN_LABELS = {
     feed: 'Feed',
-    explore: 'Explore',
     ideas: 'Ideas',
     activity: 'Activity',
     portfolio: 'Portfolio',
-    markets: 'Markets',
-    search: 'Explore',
+    profile: 'Profile',
+    settings: 'Settings',
   };
 
-  const captureMarketReturnContext = useCallback(() => {
-    const onMarketDetail =
-      tab === 'markets' &&
-      Boolean(selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId);
+  const RETIRED_RETURN_TABS = new Set(['markets', 'explore', 'search']);
 
-    marketReturnContextRef.current = onMarketDetail
-      ? { tab: 'markets' }
-      : {
-          tab,
-          profileUserId,
-          profilePortfolioId,
-          profileMode,
-          selectedPostId,
-        };
+  const captureMarketReturnContext = useCallback(() => {
+    // Already on an asset — keep prior origin (do not overwrite with a retired hub).
+    if (hasAssetDetail) {
+      if (!marketReturnContextRef.current) {
+        marketReturnContextRef.current = { tab: 'ideas' };
+      }
+      return;
+    }
+
+    const originTab = RETIRED_RETURN_TABS.has(tab) ? 'ideas' : tab;
+    marketReturnContextRef.current = {
+      tab: originTab,
+      profileUserId,
+      profilePortfolioId,
+      profileMode,
+      selectedPostId,
+    };
   }, [
+    hasAssetDetail,
     tab,
-    selectedTicker,
-    selectedFundId,
-    selectedIndexId,
-    selectedCommodityId,
     profileUserId,
     profilePortfolioId,
     profileMode,
@@ -646,8 +623,9 @@ export default function App() {
 
   const getMarketBackLabel = useCallback(() => {
     const ctx = marketReturnContextRef.current;
-    if (!ctx || ctx.tab === 'markets') return 'Explore';
-    return MARKET_RETURN_LABELS[ctx.tab] ?? 'Back';
+    const returnTab =
+      !ctx?.tab || RETIRED_RETURN_TABS.has(ctx.tab) ? 'ideas' : ctx.tab;
+    return MARKET_RETURN_LABELS[returnTab] ?? 'Ideas';
   }, []);
 
   const profileBackFallback = useCallback(() => {
@@ -662,7 +640,7 @@ export default function App() {
     marketReturnContextRef.current = null;
     clearMarketSelection();
     const fallbackTab =
-      ctx?.tab && ctx.tab !== 'markets' && ctx.tab !== 'search' ? ctx.tab : 'explore';
+      ctx?.tab && !RETIRED_RETURN_TABS.has(ctx.tab) ? ctx.tab : 'ideas';
     setTab(fallbackTab);
     navigateBack(navigate, location, tabPath(fallbackTab));
   }, [backScroll, location, navigate]);
@@ -681,7 +659,6 @@ export default function App() {
     if (seed) seedMarketAssetCache(seed, id);
     setSelectedFundId(id);
     setSelectedPostId(null);
-    setTab('markets');
     navigate(fundPath(fundId));
   };
 
@@ -700,7 +677,6 @@ export default function App() {
     setSelectedTicker(key);
     setSelectedTickerKind(resolvedKind === 'etf' ? 'etf' : 'stock');
     setSelectedPostId(null);
-    setTab('markets');
     navigate(resolvedKind === 'etf' ? etfPath(key) : stockPath(key));
   };
 
@@ -712,7 +688,6 @@ export default function App() {
     if (seed) seedMarketAssetCache(seed, id);
     setSelectedIndexId(indexId);
     setSelectedPostId(null);
-    setTab('markets');
     navigate(indexPath(indexId));
   };
 
@@ -724,7 +699,6 @@ export default function App() {
     if (seed) seedMarketAssetCache(seed, id);
     setSelectedCommodityId(commodityId);
     setSelectedPostId(null);
-    setTab('markets');
     navigate(commodityPath(commodityId));
   };
 
@@ -815,22 +789,12 @@ export default function App() {
     setTab(next);
     setSelectedPostId(null);
     setProfilePortfolioId(null);
-    if (next === 'markets') {
-      const section = parseMarketSection(location.search) || 'stocks';
-      setMarketsSectionTab(section);
-    }
-    if (next !== 'markets') {
-      clearMarketSelection();
-    }
+    clearMarketSelection();
     if (next === 'profile') {
       setProfileMode('own');
       setProfileUserId(currentUserId);
       setProfileReturnTab(next);
       navigateToProfile(navigate, currentUserId);
-      return;
-    }
-    if (next === 'markets') {
-      navigate(marketsPath(parseMarketSection(location.search) || marketsSectionTab || 'stocks'));
       return;
     }
     navigateToTab(navigate, next);
@@ -869,44 +833,40 @@ export default function App() {
   const pageTitleOverride =
     inShell && tab === 'settings'
       ? 'Settings'
-      : inShell && selectedPostId && tab === 'feed'
+      : inShell && selectedPostId && tab === 'feed' && !hasAssetDetail
         ? 'Post'
-        : inShell && tab === 'activity'
+        : inShell && tab === 'activity' && !hasAssetDetail
           ? 'Activity'
-          : inShell && tab === 'profile' && profileMode === 'public'
+          : inShell && tab === 'profile' && profileMode === 'public' && !hasAssetDetail
             ? getPerson(profileUserId)?.name
-          : inShell && tab === 'markets' && selectedCommodityId
+          : inShell && selectedCommodityId
             ? selectedCommodityId
-          : inShell && tab === 'markets' && selectedIndexId
+          : inShell && selectedIndexId
             ? selectedIndexId
-          : inShell && tab === 'markets' && selectedFundId
+          : inShell && selectedFundId
             ? getFund(selectedFundId)?.name ?? 'Fund'
-            : inShell && tab === 'markets' && selectedTicker
+            : inShell && selectedTicker
               ? STOCKS[selectedTicker]?.name ?? selectedTicker
             : undefined;
 
   const mobileBack = useMemo(() => {
     if (!inShell) return null;
-    if (selectedPostId && tab === 'feed') {
+    if (selectedPostId && tab === 'feed' && !hasAssetDetail) {
       return { label: 'Back', onBack: closePost };
     }
-    if (
-      tab === 'markets' &&
-      assetPanelBack &&
-      (selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId)
-    ) {
+    if (hasAssetDetail && assetPanelBack) {
       return assetPanelBack;
     }
-    if (tab === 'markets' && selectedCommodityId) {
+    if (selectedCommodityId) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
-    if (tab === 'markets' && selectedIndexId) {
+    if (selectedIndexId) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
-    if (tab === 'markets' && selectedFundId) {
+    if (selectedFundId) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
-    if (tab === 'markets' && selectedTicker) {
+    if (selectedTicker) {
       return { label: getMarketBackLabel(), onBack: closeMarketDetail };
     }
     if (tab === 'profile' && profileFollowListMode) {
@@ -961,6 +921,7 @@ export default function App() {
     authView,
     selectedPostId,
     tab,
+    hasAssetDetail,
     selectedTicker,
     selectedFundId,
     selectedIndexId,
@@ -1077,7 +1038,56 @@ export default function App() {
         onOpenProfileFromSearch={openProfile}
         onGraphChange={() => setGraphTick((n) => n + 1)}
       >
-        {tab === 'feed' && (
+        {hasAssetDetail ? (
+          selectedCommodityId ? (
+            <RouteSuspense>
+              <CommodityDetailPage
+                commodityId={selectedCommodityId}
+                guestMode={guestMode}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
+              />
+            </RouteSuspense>
+          ) : selectedIndexId ? (
+            <RouteSuspense>
+              <IndexDetailPage
+                indexId={selectedIndexId}
+                guestMode={guestMode}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
+              />
+            </RouteSuspense>
+          ) : selectedFundId ? (
+            <RouteSuspense>
+              <InvestmentPage
+                fundId={selectedFundId}
+                guestMode={guestMode}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onOpenPortfolio={openProfilePortfolio}
+                onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
+              />
+            </RouteSuspense>
+          ) : (
+            <RouteSuspense>
+              <StockInvestmentPage
+                ticker={selectedTicker}
+                guestMode={guestMode}
+                onBack={closeMarketDetail}
+                onOpenProfile={openProfile}
+                onOpenPortfolio={openProfilePortfolio}
+                onRegisterAssetPanelBack={setAssetPanelBack}
+                onAssetDetailPanelChange={setAssetDetailPanel}
+              />
+            </RouteSuspense>
+          )
+        ) : null}
+        {!hasAssetDetail && tab === 'feed' && (
           selectedPostId ? (
             <RouteSuspense>
               <PostDetailPage
@@ -1113,20 +1123,7 @@ export default function App() {
             />
           )
         )}
-        {tab === 'explore' && (
-          <RouteSuspense>
-            <ExplorePage
-              guestMode={guestMode}
-              onOpenProfile={openProfile}
-              onSelectStock={openStock}
-              onSelectFund={openFund}
-              onSelectIndex={openIndex}
-              onSelectCommodity={openCommodity}
-              onGraphChange={() => setGraphTick((n) => n + 1)}
-            />
-          </RouteSuspense>
-        )}
-        {tab === 'ideas' && (
+        {!hasAssetDetail && tab === 'ideas' && (
           <RouteSuspense>
             <IdeasPage
               onSelectStock={openStock}
@@ -1136,7 +1133,7 @@ export default function App() {
             />
           </RouteSuspense>
         )}
-        {tab === 'activity' && (
+        {!hasAssetDetail && tab === 'activity' && (
           <RouteSuspense>
             <ActivityPage
               guestMode={guestMode}
@@ -1156,7 +1153,7 @@ export default function App() {
             />
           </RouteSuspense>
         )}
-        {tab === 'portfolio' && (
+        {!hasAssetDetail && tab === 'portfolio' && (
           <RouteSuspense>
             <PortfolioPage
               guestMode={guestMode}
@@ -1168,67 +1165,7 @@ export default function App() {
             />
           </RouteSuspense>
         )}
-        {tab === 'markets' &&
-          (selectedCommodityId ? (
-            <RouteSuspense>
-              <CommodityDetailPage
-                commodityId={selectedCommodityId}
-                guestMode={guestMode}
-                onBack={closeMarketDetail}
-                onOpenProfile={openProfile}
-                onRegisterAssetPanelBack={setAssetPanelBack}
-                onAssetDetailPanelChange={setAssetDetailPanel}
-              />
-            </RouteSuspense>
-          ) : selectedIndexId ? (
-            <RouteSuspense>
-              <IndexDetailPage
-                indexId={selectedIndexId}
-                guestMode={guestMode}
-                onBack={closeMarketDetail}
-                onOpenProfile={openProfile}
-                onRegisterAssetPanelBack={setAssetPanelBack}
-                onAssetDetailPanelChange={setAssetDetailPanel}
-              />
-            </RouteSuspense>
-          ) : selectedFundId ? (
-            <RouteSuspense>
-              <InvestmentPage
-                fundId={selectedFundId}
-                guestMode={guestMode}
-                onBack={closeMarketDetail}
-                onOpenProfile={openProfile}
-                onOpenPortfolio={openProfilePortfolio}
-                onRegisterAssetPanelBack={setAssetPanelBack}
-                onAssetDetailPanelChange={setAssetDetailPanel}
-              />
-            </RouteSuspense>
-          ) : selectedTicker ? (
-            <RouteSuspense>
-              <StockInvestmentPage
-                ticker={selectedTicker}
-                guestMode={guestMode}
-                onBack={closeMarketDetail}
-                onOpenProfile={openProfile}
-                onOpenPortfolio={openProfilePortfolio}
-                onRegisterAssetPanelBack={setAssetPanelBack}
-                onAssetDetailPanelChange={setAssetDetailPanel}
-              />
-            </RouteSuspense>
-          ) : (
-            <RouteSuspense>
-              <MarketsPage
-                guestMode={guestMode}
-                sectionTab={marketsSectionTab}
-                onSectionTabChange={handleMarketsSectionTabChange}
-                onSelectStock={openStock}
-                onSelectFund={openFund}
-                onSelectIndex={openIndex}
-                onSelectCommodity={openCommodity}
-              />
-            </RouteSuspense>
-          ))}
-        {tab === 'profile' &&
+        {!hasAssetDetail && tab === 'profile' &&
           (guestMode && profileMode === 'own' ? (
             <GuestSignInCta
               variant="hero"
@@ -1298,7 +1235,7 @@ export default function App() {
               />
             </RouteSuspense>
           ))}
-        {tab === 'settings' &&
+        {!hasAssetDetail && tab === 'settings' &&
           (guestMode ? (
             <GuestSignInCta
               variant="hero"

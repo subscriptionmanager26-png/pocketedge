@@ -19,44 +19,39 @@ const ROWS = [
 
 export default function SettingsPage({ onLogout }) {
   return (
-    <div>
-      <div className="border-b border-pe-border px-4 py-5">
-        <h1 className="text-2xl font-bold text-pe-text">Settings</h1>
-      </div>
+    <div className="px-4 pb-10 pt-4 md:px-6">
+      <h1 className="text-[22px] font-semibold tracking-tight text-pe-text">Settings</h1>
+      <p className="mt-1 text-[14px] text-pe-text-muted">Preferences and account</p>
 
-      <div className="divide-y divide-pe-border">
-        {ROWS.map((row) =>
-          row.href ? (
-            <Link
-              key={row.id}
-              to={row.href}
-              className="flex w-full items-center justify-between px-4 py-4 text-left text-[15px] text-pe-text hover:bg-pe-surface/80"
-            >
-              {row.label}
-              <ChevronRight className="h-4 w-4 text-pe-text-muted" />
-            </Link>
-          ) : (
-            <button
-              key={row.id}
-              type="button"
-              className="flex w-full items-center justify-between px-4 py-4 text-left text-[15px] text-pe-text hover:bg-pe-surface/80"
-            >
+      <div className="fv-card mt-5 overflow-hidden rounded-[20px] shadow-[var(--fv-shadow)]">
+        {ROWS.map((row, index) => {
+          const rowClass =
+            'flex w-full items-center justify-between px-4 py-4 text-left text-[15px] text-pe-text transition hover:bg-black/[0.03]';
+          const divider = index > 0 ? 'border-t border-[var(--fv-border,#ececec)]' : '';
+          if (row.href) {
+            return (
+              <Link key={row.id} to={row.href} className={`${rowClass} ${divider}`}>
+                {row.label}
+                <ChevronRight className="h-4 w-4 text-pe-text-muted" />
+              </Link>
+            );
+          }
+          return (
+            <button key={row.id} type="button" className={`${rowClass} ${divider}`}>
               {row.label}
               <ChevronRight className="h-4 w-4 text-pe-text-muted" />
             </button>
-          )
-        )}
+          );
+        })}
       </div>
 
-      <div className="border-t border-pe-border px-4 py-8">
-        <button
-          type="button"
-          onClick={onLogout}
-          className="w-full rounded-md border border-pe-negative/30 bg-pe-negative/5 py-3 text-[15px] font-bold text-pe-negative hover:bg-pe-negative/10"
-        >
-          Log out
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="mt-6 w-full rounded-[14px] bg-pe-negative/8 py-3 text-[15px] font-semibold text-pe-negative transition hover:bg-pe-negative/12"
+      >
+        Log out
+      </button>
     </div>
   );
 }

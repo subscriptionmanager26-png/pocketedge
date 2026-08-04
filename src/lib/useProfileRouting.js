@@ -100,8 +100,8 @@ export function useProfileRouting({
 
     const apply = async () => {
       try {
-        if (parsed.redirectFrom === 'search') {
-          navigate(tabPath('explore'), { replace: true });
+        if (parsed.redirectFrom) {
+          navigate(tabPath('ideas'), { replace: true });
           finish();
           return;
         }
@@ -138,7 +138,7 @@ export function useProfileRouting({
             setSelectedIndexId(null);
             setSelectedCommodityId(null);
             setSelectedFundId(String(parsed.symbol));
-            setTab('markets');
+            setTab('ideas');
             navigate(`/fund/${encodeURIComponent(String(parsed.symbol))}`, { replace: true });
             return;
           }
@@ -150,7 +150,12 @@ export function useProfileRouting({
           setSelectedCommodityId(null);
           setSelectedTicker(parsed.symbol);
           setSelectedTickerKind(parsed.kind === 'etf' ? 'etf' : 'stock');
-          setTab('markets');
+          // Background tab for nav highlight / Back — Ideas is the discovery home.
+          setTab((prev) =>
+            prev === 'feed' || prev === 'portfolio' || prev === 'profile' || prev === 'ideas'
+              ? prev
+              : 'ideas'
+          );
           return;
         }
 
@@ -162,7 +167,11 @@ export function useProfileRouting({
           setSelectedIndexId(null);
           setSelectedCommodityId(null);
           setSelectedFundId(parsed.schemeCode);
-          setTab('markets');
+          setTab((prev) =>
+            prev === 'feed' || prev === 'portfolio' || prev === 'profile' || prev === 'ideas'
+              ? prev
+              : 'ideas'
+          );
           return;
         }
 
@@ -174,7 +183,11 @@ export function useProfileRouting({
           setSelectedFundId(null);
           setSelectedCommodityId(null);
           setSelectedIndexId(parsed.indexId);
-          setTab('markets');
+          setTab((prev) =>
+            prev === 'feed' || prev === 'portfolio' || prev === 'profile' || prev === 'ideas'
+              ? prev
+              : 'ideas'
+          );
           return;
         }
 
@@ -186,7 +199,11 @@ export function useProfileRouting({
           setSelectedFundId(null);
           setSelectedIndexId(null);
           setSelectedCommodityId(parsed.commodityId);
-          setTab('markets');
+          setTab((prev) =>
+            prev === 'feed' || prev === 'portfolio' || prev === 'profile' || prev === 'ideas'
+              ? prev
+              : 'ideas'
+          );
           return;
         }
 

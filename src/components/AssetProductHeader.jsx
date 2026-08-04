@@ -97,7 +97,7 @@ export function QuoteChangeBlock({
     size === 'detail'
       ? `text-[20px] font-semibold tabular-nums ${pnlClass(tone)}`
       : `text-sm font-semibold tabular-nums ${pnlClass(tone)}`;
-  const labelClass = 'text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted';
+  const labelClass = 'text-[12px] font-medium text-pe-text-muted';
   const changeText = `${amount != null ? formatValue(amount) : '-'}${
     showPct ? ` (${formatPct(pctValue)})` : ''
   }`;
@@ -145,7 +145,7 @@ export default function AssetProductHeader({
 }) {
   void _type;
   return (
-    <section className="border-b border-pe-border px-4 py-5">
+    <section className="px-4 py-5 md:px-6">
       <div className="flex items-start gap-3">
         <AssetLogo
           logoIconUrl={logoIconUrl}
@@ -157,24 +157,24 @@ export default function AssetProductHeader({
           className="mt-0.5"
         />
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-pe-text">{name}</h1>
+          <h1 className="text-[22px] font-semibold tracking-tight text-pe-text md:text-2xl">{name}</h1>
           {ticker ? (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-pe-text-muted">
+            <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-pe-text-muted">
               {ticker}
               {String(priceSource ?? '').toLowerCase() === 'bse' ? (
-                <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[8px] font-bold tracking-wide text-pe-accent">
+                <span className="rounded bg-pe-accent-wash px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-pe-accent">
                   BSE
                 </span>
               ) : null}
             </p>
           ) : null}
-          {subtitle ? <p className="mt-0.5 text-sm text-pe-text-secondary">{subtitle}</p> : null}
+          {subtitle ? <p className="mt-0.5 text-[13px] text-pe-text-secondary">{subtitle}</p> : null}
         </div>
       </div>
 
       {price != null || changePct != null ? (
         <QuoteChangeBlock
-          className="mt-3"
+          className="mt-4"
           size="detail"
           assetType={assetType}
           price={price}
@@ -186,7 +186,7 @@ export default function AssetProductHeader({
         />
       ) : null}
 
-      {metaValue ? <p className="mt-2 text-sm text-pe-text-muted">{metaValue}</p> : null}
+      {metaValue ? <p className="mt-2 text-[13px] text-pe-text-muted">{metaValue}</p> : null}
     </section>
   );
 }

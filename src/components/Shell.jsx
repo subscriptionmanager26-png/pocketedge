@@ -18,6 +18,7 @@ import {
   TOP_DISCUSSIONS,
   TRENDING_STOCKS,
 } from '../data/feedDesignMock';
+import { fetchMarketPreview } from '../lib/marketDataApi';
 import { getAppCurrentUser } from '../lib/socialIdentity';
 import { disclosuresPath, insightsPath, resourcesPath } from '../lib/routes';
 import { prefetchTab } from '../lib/tabPrefetch';
@@ -130,12 +131,51 @@ export default function Shell({
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [railMarket, setRailMarket] = useState(MARKET_PULSE);
+  const [railTrending, setRailTrending] = useState(TRENDING_STOCKS);
+  const [railLive, setRailLive] = useState(false);
   const desktopMenuRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
   const routeKeyRef = useRef(routeKey);
   const restoringRef = useRef(false);
   routeKeyRef.current = routeKey;
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchMarketPreview('indices').catch(() => null),
+      fetchMarketPreview('stocks').catch(() => null),
+    ]).then(([indicesPayload, stocksPayload]) => {
+      if (cancelled) return;
+      if (indicesPayload?.items?.length) {
+        setRailMarket((prev) => ({
+          ...prev,
+          indices: indicesPayload.items.slice(0, 3).map((item) => ({
+            name: item.name || item.symbol || 'Index',
+            value:
+              item.price != null
+                ? Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })
+                : '—',
+            changePct: item.changePct,
+          })),
+        }));
+        setRailLive(indicesPayload.source === 'rpc');
+      }
+      if (stocksPayload?.items?.length) {
+        setRailTrending(
+          stocksPayload.items.slice(0, 5).map((item) => ({
+            ticker: item.symbol || item.id || '—',
+            name: item.name || item.symbol || 'Stock',
+            changePct: item.changePct,
+          }))
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     disableBrowserScrollRestoration();
@@ -453,10 +493,11 @@ export default function Shell({
 
       <div className="hidden md:contents">
         <FeedRightRail
-          market={MARKET_PULSE}
-          trending={TRENDING_STOCKS}
+          market={railMarket}
+          trending={railTrending}
           discussions={TOP_DISCUSSIONS}
           people={SUGGESTED_INVESTORS}
+          live={railLive}
         />
       </div>
 

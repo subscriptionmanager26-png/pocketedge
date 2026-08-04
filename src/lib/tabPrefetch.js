@@ -10,9 +10,8 @@ function prefetchChunk(importer, key) {
   });
 }
 
-/** Warm Explore, Ideas, Portfolio, Profile chunks + default tab data after auth. */
+/** Warm Ideas, Portfolio, Profile chunks + default tab data after auth. */
 export function prefetchAppTabData(ownerId = getAppCurrentUserId()) {
-  prefetchTab('explore', ownerId);
   prefetchTab('ideas', ownerId);
   prefetchTab('portfolio', ownerId);
   prefetchTab('profile', ownerId);
@@ -20,20 +19,12 @@ export function prefetchAppTabData(ownerId = getAppCurrentUserId()) {
 
 export function prefetchTab(tab, ownerId = getAppCurrentUserId()) {
   switch (tab) {
-    case 'explore':
-    case 'markets':
-      prefetchChunk(() => import('../pages/ExplorePage'), 'explore');
-      prefetchChunk(() => import('../pages/MarketsPage'), 'markets');
+    case 'ideas':
+      prefetchChunk(() => import('../pages/IdeasPage'), 'ideas');
       prefetchChunk(() => import('../pages/StockInvestmentPage'), 'stock-detail');
       prefetchChunk(() => import('../pages/InvestmentPage'), 'fund-detail');
       prefetchChunk(() => import('../pages/IndexDetailPage'), 'index-detail');
       prefetchChunk(() => import('../pages/CommodityDetailPage'), 'commodity-detail');
-      import('../lib/marketDataApi')
-        .then((m) => m.fetchMarketPreview('stocks'))
-        .catch(() => {});
-      break;
-    case 'ideas':
-      prefetchChunk(() => import('../pages/IdeasPage'), 'ideas');
       import('../lib/socialPortfolioApi')
         .then((m) => m.fetchDiscoverPortfolios({ limit: 20 }))
         .catch(() => {});

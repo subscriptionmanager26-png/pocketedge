@@ -30,29 +30,29 @@ export function stockPath(symbol) {
   const ticker = String(symbol ?? '')
     .trim()
     .toUpperCase();
-  return ticker ? `/stock/${encodeSegment(ticker)}` : '/markets';
+  return ticker ? `/stock/${encodeSegment(ticker)}` : '/ideas';
 }
 
 export function etfPath(symbol) {
   const ticker = String(symbol ?? '')
     .trim()
     .toUpperCase();
-  return ticker ? `/etf/${encodeSegment(ticker)}` : '/markets';
+  return ticker ? `/etf/${encodeSegment(ticker)}` : '/ideas';
 }
 
 export function fundPath(schemeCode) {
   const id = String(schemeCode ?? '').trim();
-  return id ? `/fund/${encodeSegment(id)}` : '/markets';
+  return id ? `/fund/${encodeSegment(id)}` : '/ideas';
 }
 
 export function indexPath(indexId) {
   const id = String(indexId ?? '').trim();
-  return id ? `/index/${encodeSegment(id)}` : '/markets';
+  return id ? `/index/${encodeSegment(id)}` : '/ideas';
 }
 
 export function commodityPath(commodityId) {
   const id = String(commodityId ?? '').trim();
-  return id ? `/commodity/${encodeSegment(id)}` : '/markets';
+  return id ? `/commodity/${encodeSegment(id)}` : '/ideas';
 }
 
 export function postPath(postId) {
@@ -78,15 +78,12 @@ export const MARKET_SECTIONS = new Set([
   'commodity',
 ]);
 
-/** Markets hub with optional section deep-link, e.g. /markets?section=stocks */
-export function marketsPath(section) {
-  const key = String(section ?? '')
-    .trim()
-    .toLowerCase();
-  if (key && MARKET_SECTIONS.has(key)) {
-    return `/markets?section=${encodeURIComponent(key)}`;
-  }
-  return '/markets';
+/**
+ * @deprecated Markets hub retired — aliases to Ideas.
+ * Section arg ignored; discovery is Ideas + global search.
+ */
+export function marketsPath(_section) {
+  return ideasPath();
 }
 
 export function parseMarketSection(search) {
@@ -102,11 +99,12 @@ export function parseMarketSection(search) {
   return MARKET_SECTIONS.has(key) ? key : null;
 }
 
-/** Explore hub with optional query, e.g. /explore?q=reliance */
-export function explorePath(query) {
-  const q = String(query ?? '').trim();
-  if (!q) return '/explore';
-  return `/explore?q=${encodeURIComponent(q)}`;
+/**
+ * @deprecated Explore hub retired — aliases to Ideas.
+ * Query is not preserved; use global search in the shell.
+ */
+export function explorePath(_query) {
+  return ideasPath();
 }
 
 export function insightsPath() {
@@ -167,9 +165,11 @@ const KNOWN_TABS = new Set([
   'portfolio',
   'markets',
   'settings',
-  // Legacy alias — parseAppPath maps this to explore.
+  // Legacy aliases — parseAppPath redirects these to Ideas.
   'search',
 ]);
+
+const RETIRED_TABS = new Set(['explore', 'markets', 'search']);
 const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures']);
 const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
@@ -280,22 +280,16 @@ export function parseAppPath(pathname) {
   if (!KNOWN_TABS.has(tab)) {
     return { kind: 'tab', tab: 'feed' };
   }
-  // Legacy /search bookmarks → Explore.
-  if (tab === 'search') {
-    return { kind: 'tab', tab: 'explore', redirectFrom: 'search' };
+  // Retired hubs → Ideas (Explore, Markets, legacy Search).
+  if (RETIRED_TABS.has(tab)) {
+    return { kind: 'tab', tab: 'ideas', redirectFrom: tab };
   }
   return { kind: 'tab', tab };
 }
 
-/** Markets hub, Explore, and asset detail URLs that can render without auth. */
-export function isPublicMarketsPath(parsed) {
+/** Asset detail URLs that can render without auth. */
+export function isPublicAssetPath(parsed) {
   if (!parsed) return false;
-  if (
-    parsed.kind === 'tab' &&
-    (parsed.tab === 'markets' || parsed.tab === 'explore' || parsed.tab === 'search')
-  ) {
-    return true;
-  }
   return (
     parsed.kind === 'stock' ||
     parsed.kind === 'etf' ||
@@ -303,6 +297,11 @@ export function isPublicMarketsPath(parsed) {
     parsed.kind === 'index' ||
     parsed.kind === 'commodity'
   );
+}
+
+/** @deprecated Use isPublicAssetPath */
+export function isPublicMarketsPath(parsed) {
+  return isPublicAssetPath(parsed);
 }
 
 export function pathFromAppState({
@@ -333,8 +332,8 @@ export function pathFromAppState({
     // Avoid `/profile` — it is not a known tab and parseAppPath falls back to feed.
     return null;
   }
-  if (tab === 'markets') {
-    return marketsPath(marketsSectionTab || 'stocks');
+  if (tab === 'markets' || tab === 'explore' || tab === 'search') {
+    return ideasPath();
   }
   if (tab === 'ideas') {
     return ideasPath();

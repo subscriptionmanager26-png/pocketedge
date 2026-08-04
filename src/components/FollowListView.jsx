@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Avatar from './Avatar';
-import PageHeader from './PageHeader';
 import {
   getAppCurrentUserId,
   getPersonSync,
@@ -74,27 +73,27 @@ export default function FollowListView({
 
   return (
     <div>
-      <PageHeader desktopOnly>
+      <div className="hidden items-center gap-3 px-4 py-3 md:flex md:px-6">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+          className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-pe-text-secondary transition hover:text-pe-text"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
-      </PageHeader>
+      </div>
 
-      <div className="border-b border-pe-border px-4 py-4">
-        <h2 className="text-xl font-bold text-pe-text">{title}</h2>
+      <div className="px-4 py-4 md:px-6">
+        <h2 className="text-[20px] font-semibold tracking-tight text-pe-text">{title}</h2>
       </div>
 
       {people.length === 0 ? (
-        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary md:px-6">
           {mode === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}
         </p>
       ) : (
-        <div className="divide-y divide-pe-border px-4">
+        <div className="divide-y divide-[var(--fv-border,#ececec)] px-4 md:px-6">
           {people.map((person) => (
             <PersonRow
               key={person.id}

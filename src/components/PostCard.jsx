@@ -150,7 +150,7 @@ export default function PostCard({
   const closeTicker = () => setTickerPopup(null);
 
   return (
-    <article className="mx-3 mb-4 rounded-[20px] bg-white px-4 py-5 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] md:mx-6 md:mb-5 md:px-6 md:py-6 md:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] md:transition md:duration-150 md:hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]">
+    <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] bg-white px-4 py-5 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:px-6 md:py-6 md:transition md:duration-150 md:hover:shadow-[var(--fv-shadow-hover)]">
       {post.via && post.via.kind !== 'person' && (
         <p className="mb-2 text-[12px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>

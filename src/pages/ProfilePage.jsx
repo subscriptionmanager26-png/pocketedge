@@ -13,7 +13,6 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
 import FollowListView from '../components/FollowListView';
@@ -1141,41 +1140,39 @@ function PortfolioDetailView({
   return (
     <div>
       {canEdit ? (
-        <PageHeader desktopOnly>
-          <div className="flex w-full items-center justify-end gap-2">
-            {editing ? (
-              <>
-                <button
-                  type="button"
-                  onClick={cancelEdits}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface disabled:opacity-50"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={saveEdits}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-70"
-                >
-                  {saved && !saving ? <Check className="h-3.5 w-3.5" /> : null}
-                  {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
-                </button>
-              </>
-            ) : (
+        <div className="hidden items-center justify-end gap-2 px-4 py-3 md:flex md:px-6">
+          {editing ? (
+            <>
               <button
                 type="button"
-                onClick={startEditing}
-                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+                onClick={cancelEdits}
+                disabled={saving}
+                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface disabled:opacity-50"
               >
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
+                <X className="h-3.5 w-3.5" />
+                Cancel
               </button>
-            )}
-          </div>
-        </PageHeader>
+              <button
+                type="button"
+                onClick={saveEdits}
+                disabled={saving}
+                className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-70"
+              >
+                {saved && !saving ? <Check className="h-3.5 w-3.5" /> : null}
+                {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={startEditing}
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </button>
+          )}
+        </div>
       ) : null}
 
       <div className="border-b border-pe-border px-4 py-5">

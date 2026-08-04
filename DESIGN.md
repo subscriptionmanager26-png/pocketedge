@@ -80,9 +80,14 @@ Logged-out users see **blurred teasers**, not full content:
 | Path | Role |
 |------|------|
 | `src/pages/FeedDesignPage.jsx` | Feed layout (tabs, composer, posts; guest blur branch) |
-| `src/components/feed-v1/*` | Top bar, post card, modules, right rail |
+| `src/components/feed-v1/*` | Top bar, post card, right rail |
+| `src/components/PostCard.jsx` | Logged-in feed / profile / post-detail card (v1 shadow) |
+| `src/components/SecurityIdeaCard.jsx` | Ideas discovery cards |
+| `src/components/AssetProductHeader.jsx` + `AssetDetailSections.jsx` | Security detail (v1) |
 | `src/index.css` → `.pe-feed-v1` | Design Language tokens |
 | `src/components/GuestSignInCta.jsx` | Guest unlock CTA |
+
+**Retired hubs:** Explore and Markets are no longer product destinations. `/explore`, `/search`, and `/markets` redirect to **Ideas**. Discovery is Ideas + global search. Asset detail URLs (`/stock`, `/etf`, `/fund`, `/index`, `/commodity`) remain.
 
 Legacy editorial surfaces (Source Serif reading pages, old bordered grey cards) should migrate to v1 when touched — do not invent a third look.
 
@@ -159,34 +164,27 @@ All middle-column sections use **`px-4`**. Do not mix `px-5` or `px-6` in the ma
 
 ---
 
-## Page header band (critical)
+## Page chrome under the global top bar
 
-Every screen has **one primary header band** with fixed height:
+Shell owns **one** sticky top bar (`FeedTopBar`) and desktop right rail. Page bodies should **not** add a second sticky `PageHeader` band under it.
 
-| | Desktop | Mobile (below shell) |
-|---|---------|----------------------|
-| Height | `md:h-[72px]` | `h-14` (56px) |
-| Position | `sticky top-0` | `sticky top-14` |
+| Screen | In-content chrome |
+|--------|-------------------|
+| Feed | For You / Following filters in page body |
+| Ideas | Discovery rails (no local search) |
+| Portfolio | `UnderlineTabs` in content (list switcher) |
+| Asset detail | `AssetProductHeader` + section rails; Shell `mobileBack` |
+| Post detail | Shell back on mobile |
+| Settings | Title + v1 card list |
+| Profile | Hero + `UnderlineTabs` below; edit actions inline |
 
-**Always use `PageHeader`** — never ad-hoc `py-3` / `py-4` sticky divs.
-
-| Screen | Primary control in `PageHeader` |
-|--------|----------------------------------|
-| Feed | For You / Following |
-| Search | `PageHeaderSearch` |
-| Portfolio | `UnderlineTabs embedded` (Holdings, watchlists) |
-| Markets | `UnderlineTabs embedded` + search in `PageHeaderRow` footer |
-| Post detail | Back (desktop only — mobile uses shell back) |
-| Own profile | User name (desktop only) |
-| Public profile | Back (desktop only) |
-
-Secondary filter rows (e.g. Posts / About / Portfolios / Trades on profile) use standalone `UnderlineTabs` **below** the hero — not in the primary band.
+**One global search** lives in `FeedTopBar` only — people, topics, securities. Do not add per-page search fields on shell surfaces.
 
 ---
 
 ## Underline tabs
 
-Use `UnderlineTabs` for every underline tab row. Use `embedded` prop when tabs live inside `PageHeader`.
+Use `UnderlineTabs` for in-content filter rows (portfolio lists, profile sections). Prefer non-sticky placement under the global top bar.
 
 - Active: `text-pe-text` + 2px `bg-pe-accent` bottom bar.
 - Inactive: `text-pe-text-muted hover:text-pe-text`.
@@ -253,7 +251,7 @@ Shared hero above all profile tabs:
 2. Logo + feed dropdown
 3. Logo alone
 
-Pass `mobileBack` to `Shell` from `App.jsx`. **Never duplicate back** in a mobile `PageHeader` — use `PageHeader desktopOnly` for desktop back/title.
+Pass `mobileBack` to `Shell` from `App.jsx`. **Never duplicate back** on mobile for asset detail / post detail / public profile — Shell owns the mobile back control.
 
 ---
 
@@ -284,34 +282,36 @@ Implementation: `Shell.jsx` mounts `feed-v1/FeedTopBar` + `feed-v1/FeedRightRail
 
 | Path | Purpose |
 |------|---------|
-| `social/src/index.css` | CSS custom properties |
-| `social/tailwind.config.js` | Tailwind `pe-*` + `max-w-feed` |
-| `social/src/components/Shell.jsx` | App chrome, nav, mobile shell |
-| `social/src/components/PageHeader.jsx` | Fixed header band |
-| `social/src/components/UnderlineTabs.jsx` | Tab pattern |
-| `social/src/components/ProfileHero.jsx` | Profile header |
-| `social/src/pages/ProfilePage.jsx` | Profile tabs + portfolio editing |
-| `social/src/pages/ActivityPage.jsx` | Activity feed |
+| `src/index.css` | CSS custom properties + `.pe-feed-v1` tokens |
+| `tailwind.config.js` | Tailwind `pe-*` + `max-w-feed` |
+| `src/components/Shell.jsx` | App chrome, nav, top bar, right rail |
+| `src/components/feed-v1/FeedTopBar.jsx` | Global search + notifications + profile |
+| `src/components/UnderlineTabs.jsx` | In-content tab pattern |
+| `src/components/ProfileHero.jsx` | Profile header |
+| `src/pages/IdeasPage.jsx` | Discovery hub (replaces Explore/Markets) |
+| `src/pages/ProfilePage.jsx` | Profile tabs + portfolio editing |
+| `src/pages/ActivityPage.jsx` | Activity feed |
 | `.cursor/rules/pocketedge-design.mdc` | Agent-facing Design Language v1 rules |
 
 ---
 
 ## Common mistakes
 
-1. Different header heights per page (`py-3` vs `py-5` vs no fixed height).
+1. Adding a second sticky header under `FeedTopBar`.
 2. Inline tab markup instead of `UnderlineTabs`.
-3. Mobile back in page content instead of shell logo slot.
-4. Portfolio tabs styled differently from Markets tabs.
-5. Duplicate sticky headers (shell + page both showing back or title).
-6. Inconsistent `px-4` padding across pages.
-7. Hardcoded colors instead of `pe-*` tokens.
+3. Mobile back in page content instead of Shell `mobileBack`.
+4. Per-page search fields (use global search only).
+5. Linking to `/explore` or `/markets` as destinations (redirect to Ideas).
+6. Inconsistent `px-4` / `md:px-6` padding across pages.
+7. Hardcoded colors instead of `pe-*` / `--fv-*` tokens.
+8. Claiming “Live” on the right rail while still on mock data.
 
 ---
 
 ## Local preview
 
 ```bash
-cd social && npm run dev
+npm run dev
 ```
 
 Design guide (this doc as a page):
