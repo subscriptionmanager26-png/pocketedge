@@ -101,6 +101,7 @@ export function useProfileRouting({
     const apply = async () => {
       // #region agent log
       fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H4',location:'useProfileRouting.js:apply:start',message:'URL->state apply start',data:{pathname,kind:parsed.kind,redirectFrom:parsed.redirectFrom??null},timestamp:Date.now()})}).catch(()=>{});
+      fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H4',location:'useProfileRouting.js:apply:start',message:'URL->state apply start',data:{pathname,kind:parsed.kind,redirectFrom:parsed.redirectFrom??null},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
       try {
         if (parsed.redirectFrom) {
@@ -112,7 +113,13 @@ export function useProfileRouting({
         if (parsed.kind === 'profile') {
           const person = await resolvePersonByHandle(parsed.username);
           if (cancelled) return;
-          if (!person) return;
+          if (!person) {
+            // #region agent log
+            fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H4',location:'useProfileRouting.js:profile:notFound',message:'profile handle unresolved',data:{pathname,username:parsed.username},timestamp:Date.now()})}).catch(()=>{});
+            fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H4',location:'useProfileRouting.js:profile:notFound',message:'profile handle unresolved',data:{pathname,username:parsed.username},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            return;
+          }
           clearMarketSelection(setters);
           setSelectedPostId(null);
           setProfileUserId(person.id);
@@ -221,6 +228,7 @@ export function useProfileRouting({
       } catch (err) {
         // #region agent log
         fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H4',location:'useProfileRouting.js:apply:catch',message:'URL->state apply error',data:{name:err?.name??null,message:err?.message??null,kind:parsed.kind,pathname},timestamp:Date.now()})}).catch(()=>{});
+        fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H4',location:'useProfileRouting.js:apply:catch',message:'URL->state apply error',data:{name:err?.name??null,message:err?.message??null,kind:parsed.kind,pathname},timestamp:Date.now()})}).catch(()=>{});
         // #endregion
         console.error('Failed to hydrate route from URL', err);
       } finally {

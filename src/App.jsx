@@ -293,6 +293,11 @@ export default function App() {
             // #endregion
             if (cancelled || gen !== authGen) return;
             setAuthView(view);
+          }).catch((err) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:resolveAuthViewForUserAsync.catch',message:'resolve auth view rejected',data:{name:err?.name??null,message:err?.message??null,gen,authGen,cancelled},timestamp:Date.now()})}).catch(()=>{});
+            fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:resolveAuthViewForUserAsync.catch',message:'resolve auth view rejected',data:{name:err?.name??null,message:err?.message??null,gen,authGen,cancelled},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
           });
         } else {
           authGen += 1;
@@ -314,8 +319,18 @@ export default function App() {
       });
       subscription = sub;
     };
+    const bootAuthWithLog = async () => {
+      try {
+        await bootAuth();
+      } catch (err) {
+        // #region agent log
+        fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:bootAuth.catch',message:'bootAuth rejected',data:{name:err?.name??null,message:err?.message??null},timestamp:Date.now()})}).catch(()=>{});
+        fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:bootAuth.catch',message:'bootAuth rejected',data:{name:err?.name??null,message:err?.message??null},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      }
+    };
 
-    bootAuth();
+    bootAuthWithLog();
 
     return () => {
       cancelled = true;
@@ -326,6 +341,7 @@ export default function App() {
   useEffect(() => {
     // #region agent log
     fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H2',location:'App.jsx:bootstrapEffect',message:'bootstrap effect gate check',data:{authView,hasAuthUser:Boolean(authUser?.id)},timestamp:Date.now()})}).catch(()=>{});
+    fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H2',location:'App.jsx:bootstrapEffect',message:'bootstrap effect gate check',data:{authView,hasAuthUser:Boolean(authUser?.id)},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
     if (authView === 'landing') {
       setSelfProfile(null);

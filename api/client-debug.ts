@@ -1,12 +1,13 @@
-export default async function handler(request: Request) {
-  if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.status(405).end('Method Not Allowed');
+    return;
   }
   try {
-    const payload = await request.json();
-    console.log('[client-debug]', JSON.stringify(payload));
+    const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    console.log('[client-debug]', JSON.stringify(payload ?? null));
   } catch (error) {
     console.log('[client-debug] parse-error', String(error));
   }
-  return new Response(null, { status: 204 });
+  res.status(204).end();
 }
