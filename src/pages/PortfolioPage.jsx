@@ -13,7 +13,7 @@ import {
 import { FormStatusIcon } from '../components/FormStatusIcons';
 import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from '../data/mockData';
 import { formatInr, formatPct, pnlClass } from '../lib/format';
-import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedLiveResolve, holdingsNeedLogoResolve, fundKeysMissingAsOfDate, enrichPortfolioHoldingsLogos } from '../lib/portfolioAssetUniverse';
+import { holdingDisplayLabel, assetsFromHoldings, holdingsNeedLogoResolve, enrichPortfolioHoldingsLogos } from '../lib/portfolioAssetUniverse';
 import { lookupMarketAssetsBatch } from '../lib/marketDataApi';
 import {
   PORTFOLIO_POLL_INTERVAL_MS,
@@ -86,7 +86,7 @@ export default function PortfolioPage({
         setPortfoliosLoading(true);
       }
 
-      fetchUserPortfolios(ownerId)
+      fetchUserPortfolios(ownerId, { force: true })
         .then((rows) => {
           if (!cancelled) {
             setRemotePortfolios(rows.filter((p) => !p.isDraft));
@@ -164,42 +164,7 @@ export default function PortfolioPage({
       [...new Set((activeList?.holdings ?? []).map((holding) => holding?.ticker).filter(Boolean))],
     [activeList?.holdings]
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!holdingKeys.length) {
-      setAssetsByKey({});
-      return undefined;
-    }
-
-    // Paint immediately from server-enriched holdings, then refresh price gaps.
-    // Logo fill is separate so missing logos never block live quote resolve.
-    setAssetsByKey(assetsFromHoldings(activeList?.holdings));
-    const needPrices = holdingsNeedLiveResolve(activeList?.holdings);
-    const fundAsOfKeys = needPrices ? [] : fundKeysMissingAsOfDate(activeList?.holdings);
-    const needLogos = holdingsNeedLogoResolve(activeList?.holdings);
-    if (!needPrices && !fundAsOfKeys.length && !needLogos) return undefined;
-
-    if (needPrices || fundAsOfKeys.length) {
-      const keys = needPrices ? holdingKeys : fundAsOfKeys;
-      resolvePortfolioAssets(keys).then((resolved) => {
-        if (cancelled) return;
-        setAssetsByKey((prev) => ({
-          ...prev,
-          ...Object.fromEntries(resolved.entries()),
-        }));
-      });
-    } else if (needLogos) {
-      enrichPortfolioHoldingsLogos(activeList?.holdings).then((holdings) => {
-        if (cancelled) return;
-        setAssetsByKey(assetsFromHoldings(holdings));
-      });
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [holdingKeys, activeList?.holdings]);
+  const holdingKeysKey = holdingKeys.join('|');
 
   const refreshPortfolioAssets = useCallback(async () => {
     if (!holdingKeys.length) return;
@@ -229,6 +194,46 @@ export default function PortfolioPage({
   }, [holdingKeys]);
 
   useEffect(() => {
+    let cancelled = false;
+    if (!holdingKeys.length) {
+      setAssetsByKey({});
+      return undefined;
+    }
+
+    // Paint immediately from server-enriched holdings, then always force-refresh
+    // quotes from DB so ETF/stock marks are not stuck on a cached enrich snapshot.
+    setAssetsByKey(assetsFromHoldings(activeList?.holdings));
+    refreshPortfolioAssets().catch(() => {});
+
+    // Logo fill is separate so missing logos never block live quote resolve.
+    if (holdingsNeedLogoResolve(activeList?.holdings)) {
+      enrichPortfolioHoldingsLogos(activeList?.holdings).then((holdings) => {
+        if (cancelled) return;
+        setAssetsByKey((prev) => {
+          const fromLogos = assetsFromHoldings(holdings);
+          const next = { ...prev };
+          for (const [key, asset] of Object.entries(fromLogos)) {
+            if (!asset?.logoIconUrl) continue;
+            next[key] = {
+              ...(next[key] ?? asset),
+              logoIconUrl: asset.logoIconUrl,
+              item: {
+                ...(next[key]?.item ?? asset.item ?? {}),
+                logoIconUrl: asset.logoIconUrl,
+              },
+            };
+          }
+          return next;
+        });
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [holdingKeysKey, refreshPortfolioAssets]);
+
+  useEffect(() => {
     if (!holdingKeys.length || !useBackend()) return undefined;
 
     let cancelled = false;
@@ -256,7 +261,8 @@ export default function PortfolioPage({
           timer = null;
         }
       } else {
-        tick();
+        // Always refresh once when returning to the tab (incl. after hours).
+        refreshPortfolioAssets().catch(() => {});
         schedule();
       }
     };
@@ -269,7 +275,7 @@ export default function PortfolioPage({
       if (timer) window.clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [holdingKeys, refreshPortfolioAssets]);
+  }, [holdingKeysKey, holdingKeys.length, refreshPortfolioAssets]);
 
   const liveActiveList = useMemo(() => {
     if (!activeList?.holdings?.length) return activeList;
@@ -342,6 +348,7 @@ export default function PortfolioPage({
     return [...keys];
   }, [holdingsRows]);
   const tickers = useMemo(() => holdingsRows.map((h) => h.ticker), [holdingsRows]);
+  const tickersKey = useMemo(() => tickers.filter(Boolean).join('|'), [tickers]);
   const [portfolioNews, setPortfolioNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [corporateActions, setCorporateActions] = useState([]);
@@ -402,15 +409,17 @@ export default function PortfolioPage({
 
   useEffect(() => {
     if (contentTab !== 'news') return undefined;
-    if (!tickers.length) {
+    if (!tickersKey) {
       setPortfolioNews([]);
       return undefined;
     }
 
+    const symbols = tickersKey.split('|').filter(Boolean);
+
     if (isStockNewsConfigured()) {
       let cancelled = false;
       setNewsLoading(true);
-      fetchStockNewsForTickers(tickers)
+      fetchStockNewsForTickers(symbols)
         .then((items) => {
           if (!cancelled) setPortfolioNews(items);
         })
@@ -424,17 +433,17 @@ export default function PortfolioPage({
     }
 
     if (isDevMockMode()) {
-      setPortfolioNews(collectActivity(tickers).news);
+      setPortfolioNews(collectActivity(symbols).news);
       return undefined;
     }
 
     setPortfolioNews([]);
     return undefined;
-  }, [tickers, contentTab]);
+  }, [tickersKey, contentTab]);
 
   useEffect(() => {
     if (contentTab !== 'corporate_actions') return undefined;
-    if (!tickers.length) {
+    if (!tickersKey) {
       setCorporateActions([]);
       return undefined;
     }
@@ -446,7 +455,8 @@ export default function PortfolioPage({
 
     let cancelled = false;
     setCorpActionsLoading(true);
-    fetchCorporateActionsForTickers(tickers)
+    const symbols = tickersKey.split('|').filter(Boolean);
+    fetchCorporateActionsForTickers(symbols)
       .then((items) => {
         if (!cancelled) setCorporateActions(items);
       })
@@ -457,7 +467,7 @@ export default function PortfolioPage({
     return () => {
       cancelled = true;
     };
-  }, [tickers, contentTab]);
+  }, [tickersKey, contentTab]);
 
   useEffect(() => {
     if (contentTab !== 'posts') return undefined;

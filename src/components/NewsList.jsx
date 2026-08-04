@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { formatNewsDate } from '../lib/format';
@@ -14,21 +15,44 @@ function MarkdownFallback() {
   return <p className="text-sm text-pe-text-muted">Loading summary…</p>;
 }
 
-function NewsSummarySheet({ item, onClose, desktop = false }) {
+/**
+ * Full-viewport news sheet via portal so the dim overlay covers Shell chrome
+ * (top search + right rail) and sits above the mobile bottom nav.
+ */
+export function NewsSummarySheet({ item, onClose }) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const date = newsItemDate(item);
 
-  return (
+  useEffect(() => {
+    if (!item) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (event) => {
+      if (event.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [item, onClose]);
+
+  if (!item || typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex justify-center bg-black/30 ${
-        desktop ? 'items-center p-4' : 'items-end'
+      className={`fixed inset-0 z-[80] flex justify-center bg-black/40 ${
+        isDesktop
+          ? 'items-center p-4'
+          : 'items-end pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]'
       }`}
       onClick={onClose}
     >
       <div
         className={`w-full overflow-y-auto border border-pe-border bg-pe-canvas shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] ${
-          desktop
+          isDesktop
             ? 'max-h-[min(85vh,720px)] max-w-lg rounded-2xl'
-            : 'max-h-[85vh] rounded-t-2xl'
+            : 'max-h-[min(85dvh,calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-0.5rem))] rounded-t-2xl'
         }`}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
@@ -55,12 +79,12 @@ function NewsSummarySheet({ item, onClose, desktop = false }) {
           </Suspense>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 export default function NewsList({ items, showTicker = false }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
   const [openItem, setOpenItem] = useState(null);
 
   return (
@@ -87,11 +111,7 @@ export default function NewsList({ items, showTicker = false }) {
       </div>
 
       {openItem ? (
-        <NewsSummarySheet
-          item={openItem}
-          desktop={isDesktop}
-          onClose={() => setOpenItem(null)}
-        />
+        <NewsSummarySheet item={openItem} onClose={() => setOpenItem(null)} />
       ) : null}
     </>
   );

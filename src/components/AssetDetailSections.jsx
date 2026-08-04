@@ -1,15 +1,16 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import Avatar from './Avatar';
-import NewsList from './NewsList';
+import NewsList, { NewsSummarySheet } from './NewsList';
 import CorporateActionsList from './CorporateActionsList';
 import GuestSignInCta from './GuestSignInCta';
 import GuestBlurredRail from './GuestBlurredRail';
 import { DiscussionsList, HoldersList } from './InvestmentSections';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import { formatNewsDate } from '../lib/format';
-import { useMediaQuery } from '../hooks/useMediaQuery';
 import {
+  corporateActionDateLine,
+  corporateActionTitle,
   formatInsightChange,
   isInsightForToday,
   pickLatestInsight,
@@ -201,16 +202,12 @@ function NewsRailCard({ item, onOpen }) {
 
 function CorporateActionRailCard({ item, onOpen }) {
   if (!item) return null;
-  const title = item.details?.trim() || item.eventType;
+  const title = corporateActionTitle(item);
+  const dateLine = corporateActionDateLine(item);
   return (
     <button type="button" onClick={() => onOpen?.(item)} className={RAIL_CARD}>
       <p className="line-clamp-3 text-[15px] font-semibold leading-snug text-pe-text">{title}</p>
-      {item.displayDate ? (
-        <p className="mt-auto pt-3 text-[12px] text-pe-text-muted">
-          {item.dateLabel ? `${item.dateLabel}: ` : ''}
-          {item.displayDate}
-        </p>
-      ) : null}
+      {dateLine ? <p className="mt-auto pt-3 text-[12px] text-pe-text-muted">{dateLine}</p> : null}
       {item.documentUrl ? (
         <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-pe-text-secondary">
           Document <ExternalLink className="h-3 w-3" />
@@ -584,6 +581,8 @@ export default function AssetDetailSections({
   }, [assetKey, kind, mockNews, supportsNews, guestMode]);
 
   useEffect(() => {
+    // One fetch per ticker while this detail view is mounted. Opening the panel
+    // reuses that result — quote polls must not retrigger this.
     if (!showCorporateActions || guestMode) {
       setCorporateActions([]);
       setCorpLoading(false);
@@ -927,50 +926,6 @@ export default function AssetDetailSections({
       {newsSheetItem ? (
         <NewsSummarySheet item={newsSheetItem} onClose={() => setNewsSheetItem(null)} />
       ) : null}
-    </div>
-  );
-}
-
-function NewsSummarySheet({ item, onClose }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const date = formatNewsDate(item.publishedAt) || item.time || '';
-  return (
-    <div
-      className={`fixed inset-0 z-50 flex justify-center bg-black/30 ${
-        isDesktop ? 'items-center p-4' : 'items-end'
-      }`}
-      onClick={onClose}
-    >
-      <div
-        className={`w-full overflow-y-auto border border-pe-border bg-pe-canvas shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] ${
-          isDesktop
-            ? 'max-h-[min(85vh,720px)] max-w-lg rounded-2xl'
-            : 'max-h-[85vh] rounded-t-2xl'
-        }`}
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={item.title}
-      >
-        <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-pe-border bg-pe-canvas px-4 py-3.5">
-          <div className="min-w-0">
-            <p className="text-[15px] font-semibold leading-snug text-pe-text">{item.title}</p>
-            {date ? <p className="mt-1 text-sm text-pe-text-muted">{date}</p> : null}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-md px-2 py-1 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
-          >
-            Close
-          </button>
-        </div>
-        <div className="px-4 py-4">
-          <Suspense fallback={<MarkdownFallback />}>
-            <NewsSummaryMarkdown content={item.summary} />
-          </Suspense>
-        </div>
-      </div>
     </div>
   );
 }

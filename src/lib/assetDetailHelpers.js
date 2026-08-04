@@ -62,6 +62,23 @@ export function splitCorporateActions(items) {
   };
 }
 
+/** Primary line for a corporate-action card (event name, not Start date noise). */
+export function corporateActionTitle(item) {
+  const eventType = String(item?.eventType ?? '').trim() || 'Other';
+  const details = String(item?.details ?? '').trim();
+  if (/^e-?voting$/i.test(eventType)) return eventType;
+  // Details like "Start date: 2026-07-28" are metadata, not the event name.
+  if (/^start\s*date\s*:/i.test(details)) return eventType;
+  return details || eventType;
+}
+
+/** Secondary date line — prefers End Date label when present. */
+export function corporateActionDateLine(item) {
+  if (!item?.displayDate) return '';
+  const label = String(item.dateLabel ?? '').trim();
+  return label ? `${label}: ${item.displayDate}` : item.displayDate;
+}
+
 export function formatInsightChange(insight) {
   if (insight?.changePct == null || !Number.isFinite(Number(insight.changePct))) return null;
   return {

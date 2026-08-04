@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { corporateActionDateLine, corporateActionTitle } from '../lib/assetDetailHelpers';
 import { formatTicker } from '../lib/tickers';
 
 export default function CorporateActionsList({ items, showTicker = false, onSelectStock }) {
@@ -14,7 +15,8 @@ export default function CorporateActionsList({ items, showTicker = false, onSele
     <div className="divide-y divide-pe-border">
       {items.map((item) => {
         const tickerLabel = formatTicker(item.ticker);
-        const title = item.details?.trim() || item.eventType;
+        const title = corporateActionTitle(item);
+        const dateLine = corporateActionDateLine(item);
         const content = (
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -28,12 +30,7 @@ export default function CorporateActionsList({ items, showTicker = false, onSele
               >
                 {title}
               </p>
-              {item.displayDate ? (
-                <p className="mt-1 text-sm text-pe-text-muted">
-                  {item.dateLabel ? `${item.dateLabel}: ` : ''}
-                  {item.displayDate}
-                </p>
-              ) : null}
+              {dateLine ? <p className="mt-1 text-sm text-pe-text-muted">{dateLine}</p> : null}
             </div>
             {item.documentUrl ? (
               <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-pe-text-muted" aria-hidden="true" />

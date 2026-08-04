@@ -111,9 +111,13 @@ function blankDraft(ownerId) {
   });
 }
 
-export async function fetchUserPortfolios(ownerId) {
+export async function fetchUserPortfolios(ownerId, { force = false } = {}) {
   if (!useBackend()) {
     return getUserPortfolios(ownerId);
+  }
+
+  if (force) {
+    invalidateCache('user-portfolios', ownerId);
   }
 
   return cachedFetch('user-portfolios', ownerId, PORTFOLIOS_TTL_MS, async () => {
