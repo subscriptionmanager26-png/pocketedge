@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
+import AppModalOverlay from './AppModalOverlay';
 import { preparePortfolioShare, sharePreparedPortfolio } from '../lib/sharePortfolioImage';
 
 export default function PortfolioShareSheet({
@@ -122,13 +123,8 @@ export default function PortfolioShareSheet({
   const shareLabel = sharing ? 'Sharing…' : preparing ? 'Preparing…' : 'Share';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="portfolio-share-title"
-        className="w-full max-w-md rounded-2xl border border-pe-border bg-pe-canvas p-5 shadow-xl"
-      >
+    <AppModalOverlay open={open} onClose={sharing ? undefined : onClose} labelledBy="portfolio-share-title" panelClassName="max-w-md">
+      <div className="p-5">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 id="portfolio-share-title" className="text-lg font-bold text-pe-text">
@@ -184,6 +180,6 @@ export default function PortfolioShareSheet({
           </button>
         </div>
       </div>
-    </div>
+    </AppModalOverlay>
   );
 }

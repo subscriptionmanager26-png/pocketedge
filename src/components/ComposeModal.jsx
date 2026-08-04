@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
+import AppModalOverlay from './AppModalOverlay';
 import { formatPct, pnlClass } from '../lib/format';
 import { defaultPortfolioShareBody } from '../lib/portfolioShare';
 import { MARKET_MIN_SEARCH_CHARS } from '../lib/marketDataApi';
@@ -213,16 +214,17 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
 
   const canPost = Boolean(body.trim() || image || share);
 
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-0 sm:items-center sm:p-4">
-      <div className="w-full max-w-lg rounded-t-2xl border border-pe-border bg-pe-canvas sm:rounded-2xl">
+    <AppModalOverlay open={open} onClose={handleClose} label={share ? 'Share portfolio' : 'New post'}>
         <div className="flex items-center justify-between border-b border-pe-border px-4 py-3.5">
           <button
             type="button"
-            onClick={() => {
-              reset();
-              onClose();
-            }}
+            onClick={handleClose}
             className="rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface hover:text-pe-text"
           >
             <X className="h-5 w-5" />
@@ -354,8 +356,7 @@ export default function ComposeModal({ open, onClose, onPost, portfolioShare = n
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </AppModalOverlay>
   );
 }
 

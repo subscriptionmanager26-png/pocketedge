@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
+import AppModalOverlay from '../components/AppModalOverlay';
 import GuestSignInCta from '../components/GuestSignInCta';
 import UnderlineTabs from '../components/UnderlineTabs';
 import WatchlistModal from '../components/WatchlistModal';
@@ -873,68 +874,63 @@ function FormBucketSheet({ formId, items, onClose, onSelectStock, onSelectFund }
   const bodyAlign = 'pl-7';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center sm:p-4" onClick={onClose}>
-      <div
-        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-[20px] bg-white shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] sm:rounded-[20px]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="sticky top-0 border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <FormStatusIcon form={formId} className="h-5 w-5 shrink-0" />
-              <p className="truncate text-[15px] font-semibold text-pe-text">{meta.label}</p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg p-1 text-pe-text-secondary hover:bg-black/[0.04]"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" strokeWidth={2} />
-            </button>
+    <AppModalOverlay open onClose={onClose} label={meta.label} panelClassName="max-w-md">
+      <div className="sticky top-0 border-b border-[var(--fv-border,#ececec)] bg-white px-4 py-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <FormStatusIcon form={formId} className="h-5 w-5 shrink-0" />
+            <p className="truncate text-[15px] font-semibold text-pe-text">{meta.label}</p>
           </div>
-          {meta.description ? (
-            <p className={`mt-1.5 text-xs leading-snug text-pe-text-secondary ${bodyAlign}`}>
-              {meta.description}
-            </p>
-          ) : null}
-          <p className={`mt-1 text-xs text-pe-text-muted ${bodyAlign}`}>
-            {items.length} {items.length === 1 ? 'security' : 'securities'}
-          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-pe-text-secondary hover:bg-black/[0.04]"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" strokeWidth={2} />
+          </button>
         </div>
-
-        {items.length === 0 ? (
-          <p className={`px-4 py-10 text-sm text-pe-text-secondary ${bodyAlign}`}>
-            No securities in this category yet.
+        {meta.description ? (
+          <p className={`mt-1.5 text-xs leading-snug text-pe-text-secondary ${bodyAlign}`}>
+            {meta.description}
           </p>
-        ) : (
-          <div className={`divide-y divide-[var(--fv-border,#ececec)] ${bodyAlign} pr-4`}>
-            {items.map((item) => {
-              const isFund =
-                item.assetType === 'fund' || /^\d{6,}$/.test(String(item.ticker ?? '').trim());
-              return (
-                <button
-                  key={item.ticker}
-                  type="button"
-                  onClick={() => {
-                    if (isFund) {
-                      if (onSelectFund) onSelectFund(item.ticker);
-                      else onSelectStock?.(item.ticker, { assetType: 'fund' });
-                      return;
-                    }
-                    onSelectStock?.(item.ticker, { assetType: item.assetType });
-                  }}
-                  className="flex w-full items-center justify-between gap-3 py-3.5 pl-0 pr-0 text-left transition hover:bg-black/[0.03]"
-                >
-                  <p className="truncate text-[15px] font-semibold text-pe-text">
-                    {item.name || holdingDisplayLabel(item)}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        ) : null}
+        <p className={`mt-1 text-xs text-pe-text-muted ${bodyAlign}`}>
+          {items.length} {items.length === 1 ? 'security' : 'securities'}
+        </p>
       </div>
-    </div>
+
+      {items.length === 0 ? (
+        <p className={`px-4 py-10 text-sm text-pe-text-secondary ${bodyAlign}`}>
+          No securities in this category yet.
+        </p>
+      ) : (
+        <div className={`divide-y divide-[var(--fv-border,#ececec)] ${bodyAlign} pr-4`}>
+          {items.map((item) => {
+            const isFund =
+              item.assetType === 'fund' || /^\d{6,}$/.test(String(item.ticker ?? '').trim());
+            return (
+              <button
+                key={item.ticker}
+                type="button"
+                onClick={() => {
+                  if (isFund) {
+                    if (onSelectFund) onSelectFund(item.ticker);
+                    else onSelectStock?.(item.ticker, { assetType: 'fund' });
+                    return;
+                  }
+                  onSelectStock?.(item.ticker, { assetType: item.assetType });
+                }}
+                className="flex w-full items-center justify-between gap-3 py-3.5 pl-0 pr-0 text-left transition hover:bg-black/[0.03]"
+              >
+                <p className="truncate text-[15px] font-semibold text-pe-text">
+                  {item.name || holdingDisplayLabel(item)}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </AppModalOverlay>
   );
 }
