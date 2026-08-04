@@ -126,6 +126,8 @@ export default function Shell({
   // Feed mode tabs live in FeedDesignPage; mobile logo menu only on home feed.
   const showFeedSelector = false;
   const showFeedMenu = tab === 'feed' && !pageTitleOverride && !mobileBack;
+  const showMobileComposeFab =
+    tab === 'feed' && !guestMode && !mobileBack && !searchOpen && !pageTitleOverride;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
@@ -468,7 +470,13 @@ export default function Shell({
                 </PageHeader>
               )}
 
-              <main className="flex min-h-0 flex-1 flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-10">
+              <main
+                className={`flex min-h-0 flex-1 flex-col md:pb-10 ${
+                  showMobileComposeFab
+                    ? 'pb-[calc(3.5rem+4.25rem+env(safe-area-inset-bottom,0px))]'
+                    : 'pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]'
+                }`}
+              >
                 {searchOpen ? (
                   <GlobalSearchPanel
                     query={searchQuery}
@@ -501,16 +509,16 @@ export default function Shell({
         />
       </div>
 
-      {showFeedSelector && (
+      {showMobileComposeFab ? (
         <button
           type="button"
           onClick={handleComposeOrSignIn}
-          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white transition hover:bg-pe-accent-pressed active:scale-95 md:hidden"
-          aria-label={guestMode ? 'Sign in' : 'Compose post'}
+          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-pe-accent text-white shadow-[0_6px_24px_rgba(0,0,0,0.18)] transition hover:bg-pe-accent-pressed active:scale-95 md:hidden"
+          aria-label="Compose post"
         >
           <Pencil className="h-5 w-5" />
         </button>
-      )}
+      ) : null}
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-pe-border bg-pe-canvas pb-[env(safe-area-inset-bottom,0px)] md:hidden">
         <div className="mx-auto flex h-14 max-w-feed items-center justify-around px-1">

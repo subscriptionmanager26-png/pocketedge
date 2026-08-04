@@ -1,8 +1,8 @@
 const RAIL_CARD =
-  'fv-card flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-[20px] bg-white p-4 shadow-[var(--fv-shadow)]';
+  'relative z-0 flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-[20px] bg-white p-4 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]';
 
 const RAIL_SCROLL =
-  'flex gap-3 overflow-x-auto px-4 pb-3 pt-1 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+  'flex gap-3 overflow-x-auto px-4 py-3 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 const PLACEHOLDER_COPY = {
   insights: [

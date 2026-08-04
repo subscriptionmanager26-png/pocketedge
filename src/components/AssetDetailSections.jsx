@@ -30,10 +30,11 @@ const NewsSummaryMarkdown = lazy(() => import('./NewsSummaryMarkdown'));
 const PREVIEW_COUNT = 4;
 
 const RAIL_CARD =
-  'fv-card flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-[20px] bg-white p-4 text-left shadow-[var(--fv-shadow)] transition duration-150 hover:shadow-[var(--fv-shadow-hover)]';
+  'relative z-0 flex h-full w-[min(260px,78vw)] min-w-[min(260px,78vw)] shrink-0 flex-col overflow-hidden rounded-[20px] bg-white p-4 text-left shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] transition duration-150 hover:z-10 hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]';
 
+/** Extra vertical padding so each card’s shadow isn’t clipped by overflow-x. */
 const RAIL_SCROLL =
-  'flex gap-3 overflow-x-auto px-4 pb-3 pt-1 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+  'flex gap-3 overflow-x-auto px-4 py-3 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 function MarkdownFallback() {
   return <p className="text-sm text-pe-text-muted">Loading…</p>;

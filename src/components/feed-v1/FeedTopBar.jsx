@@ -78,13 +78,15 @@ export default function FeedTopBar({
     <button
       type="button"
       onClick={mobileBack.onBack}
-      className="inline-flex h-10 max-w-[9rem] shrink-0 items-center gap-1 text-[var(--fv-text-secondary)] transition hover:text-[var(--fv-text)] md:h-11 md:max-w-none"
-      aria-label={`Back to ${mobileBack.label}`}
+      className="inline-flex h-10 shrink-0 items-center gap-1 text-[var(--fv-text-secondary)] transition hover:text-[var(--fv-text)] md:h-11"
+      aria-label={
+        mobileBack.label && mobileBack.label !== 'Back'
+          ? `Back to ${mobileBack.label}`
+          : 'Back'
+      }
     >
       <ArrowLeft className="h-5 w-5 shrink-0" strokeWidth={2} />
-      <span className="truncate text-[14px] font-semibold text-[var(--fv-text)]">
-        {mobileBack.label}
-      </span>
+      <span className="text-[14px] font-semibold text-[var(--fv-text)]">Back</span>
     </button>
   ) : null;
 
@@ -276,13 +278,18 @@ export default function FeedTopBar({
       </div>
 
       {/*
-        Desktop: mirror Shell feed centering (justify-center + mr rail),
-        pin bell/profile to the true right edge of the page.
+        Desktop: mirror Shell feed centering (justify-center + mr rail).
+        Back sits in the gutter left of the search column (does not shrink search).
+        Bell/profile pin to the true right edge of the page.
       */}
       <div className="relative hidden w-full items-center md:flex">
         <div className="flex min-w-0 flex-1 justify-center md:mr-[420px]">
-          <div className="flex w-full max-w-feed items-center gap-3">
-            {mobileBack ? backButton : null}
+          <div className="relative flex w-full max-w-feed items-center">
+            {mobileBack ? (
+              <div className="absolute right-full top-1/2 mr-3 flex -translate-y-1/2 items-center">
+                {backButton}
+              </div>
+            ) : null}
             {searchField}
           </div>
         </div>

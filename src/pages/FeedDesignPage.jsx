@@ -169,7 +169,7 @@ export default function FeedDesignPage({
         <FeedFilters active={filter} onChange={handleFilterChange} />
         <ThesisComposer onCompose={onCompose} currentUser={currentUser} />
 
-        <div className="mt-0 flex flex-col gap-0 md:mt-5 md:gap-5">
+        <div className="mt-1 flex flex-col gap-0 md:mt-5 md:gap-5">
           {feedPosts.length === 0 ? (
             <div className="px-4 py-20 text-center">
               <p className="text-xl font-bold text-pe-text">Nothing here yet</p>
