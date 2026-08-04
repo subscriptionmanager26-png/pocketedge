@@ -59,6 +59,12 @@ function SecurityListRow({ item, onOpen }) {
   const assetKey = String(
     item.symbol ?? item.id ?? item.schemeCode ?? item.assetKey ?? ''
   ).trim();
+  const priceText =
+    item.price == null
+      ? '—'
+      : type === 'index'
+        ? Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })
+        : formatPrice(item.price);
 
   return (
     <button
@@ -80,9 +86,7 @@ function SecurityListRow({ item, onOpen }) {
         </div>
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-[15px] font-semibold tabular-nums text-pe-text">
-          {item.price != null ? formatPrice(item.price) : '—'}
-        </p>
+        <p className="text-[15px] font-semibold tabular-nums text-pe-text">{priceText}</p>
         {hasPct ? (
           <p className={`text-[12px] font-semibold tabular-nums ${pnlClass(changePct)}`}>
             {formatPct(changePct)}
@@ -302,6 +306,7 @@ export default function GlobalSearchPanel({
             ...(byType.stocks ?? []).map((row) => toIdeaSecurity(row, 'stock')),
             ...(byType.etf ?? []).map((row) => toIdeaSecurity(row, 'etf')),
             ...(byType.mutual_funds ?? []).map((row) => toIdeaSecurity(row, 'fund')),
+            ...(byType.indices ?? []).map((row) => toIdeaSecurity(row, 'index')),
             ...(byType.commodity ?? []).map((row) => toIdeaSecurity(row, 'commodity')),
             ...bonds.filter((item) => {
               const hay = [item.name, item.symbol, item.isin]
@@ -347,6 +352,7 @@ export default function GlobalSearchPanel({
     typeFilter === 'stock' ||
     typeFilter === 'fund' ||
     typeFilter === 'etf' ||
+    typeFilter === 'index' ||
     typeFilter === 'commodity' ||
     typeFilter === 'bond';
   const securitySearchActive = debouncedQuery.length >= MARKET_MIN_SEARCH_CHARS;

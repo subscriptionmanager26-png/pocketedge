@@ -9,11 +9,12 @@ export const IDEA_ASSET_TYPES = [
   { id: 'stock', label: 'Stocks', tab: 'stocks', kind: 'security' },
   { id: 'fund', label: 'Funds', tab: 'mutual_funds', kind: 'security' },
   { id: 'etf', label: 'ETF', tab: 'etf', kind: 'security' },
+  { id: 'index', label: 'Indices', tab: 'indices', kind: 'security' },
   { id: 'commodity', label: 'Commodity', tab: 'commodity', kind: 'security' },
   { id: 'bond', label: 'Bonds', tab: null, kind: 'security' },
 ];
 
-export const IDEA_MARKET_TABS = ['stocks', 'mutual_funds', 'etf', 'commodity'];
+export const IDEA_MARKET_TABS = ['stocks', 'mutual_funds', 'etf', 'indices', 'commodity'];
 
 export function isIdeaSecurityFilter(typeId) {
   const meta = IDEA_ASSET_TYPES.find((t) => t.id === typeId);
