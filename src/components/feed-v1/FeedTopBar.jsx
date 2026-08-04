@@ -37,6 +37,8 @@ export default function FeedTopBar({
   wide = false,
   /** Marketing / public pages — no Shell sidebar offset; show logo on desktop. */
   standalone = false,
+  /** Mobile-only actions that replace the profile avatar (e.g. portfolio Edit/Save). */
+  mobileActions = null,
 }) {
   const [feedMenuOpen, setFeedMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -75,7 +77,7 @@ export default function FeedTopBar({
   useEffect(() => {
     setFeedMenuOpen(false);
     setProfileMenuOpen(false);
-  }, [showFeedMenu, mobileBack]);
+  }, [showFeedMenu, mobileBack, mobileActions]);
 
   const unreadLabel =
     activityUnread > 0
@@ -129,86 +131,109 @@ export default function FeedTopBar({
     </div>
   );
 
-  const renderAccountActions = (menuRef) => (
-    <>
-      <button
-        type="button"
-        onClick={onActivity}
-        className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition duration-150 hover:text-[var(--fv-text)] md:h-11 md:w-11"
-        aria-label={guestMode ? 'Sign in to see activity' : unreadLabel}
-      >
-        <Bell className="h-[18px] w-[18px] md:h-5 md:w-5" strokeWidth={2} />
-        {!guestMode && activityUnread > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#dc2626] px-1 text-[10px] font-bold text-white md:h-[18px] md:min-w-[18px] md:text-[11px]">
-            {activityUnread > 9 ? '9+' : activityUnread}
-          </span>
-        ) : null}
-      </button>
+  const renderAccountActions = (menuRef, { allowMobileActions = false } = {}) => {
+    if (allowMobileActions && mobileActions) {
+      return (
+        <>
+          <button
+            type="button"
+            onClick={onActivity}
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition duration-150 hover:text-[var(--fv-text)]"
+            aria-label={guestMode ? 'Sign in to see activity' : unreadLabel}
+          >
+            <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
+            {!guestMode && activityUnread > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#dc2626] px-1 text-[10px] font-bold text-white">
+                {activityUnread > 9 ? '9+' : activityUnread}
+              </span>
+            ) : null}
+          </button>
+          <div className="flex shrink-0 items-center">{mobileActions}</div>
+        </>
+      );
+    }
 
-      <div className="relative shrink-0" ref={menuRef}>
+    return (
+      <>
         <button
           type="button"
-          onClick={() => {
-            setFeedMenuOpen(false);
-            setProfileMenuOpen((open) => !open);
-          }}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fv-accent)] text-[14px] font-semibold text-white shadow-[var(--fv-shadow)] md:h-11 md:w-11 md:text-[15px]"
-          aria-label={guestMode ? 'Account menu' : 'Profile and menu'}
-          aria-haspopup="menu"
-          aria-expanded={profileMenuOpen}
+          onClick={onActivity}
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition duration-150 hover:text-[var(--fv-text)] md:h-11 md:w-11"
+          aria-label={guestMode ? 'Sign in to see activity' : unreadLabel}
         >
-          {guestMode ? '?' : avatarInitial}
+          <Bell className="h-[18px] w-[18px] md:h-5 md:w-5" strokeWidth={2} />
+          {!guestMode && activityUnread > 0 ? (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#dc2626] px-1 text-[10px] font-bold text-white md:h-[18px] md:min-w-[18px] md:text-[11px]">
+              {activityUnread > 9 ? '9+' : activityUnread}
+            </span>
+          ) : null}
         </button>
-        {profileMenuOpen ? (
-          <div
-            role="menu"
-            aria-label="Profile and tools"
-            className="absolute right-0 top-full z-50 mt-2 min-w-[12.5rem] overflow-hidden rounded-[14px] border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
+
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setFeedMenuOpen(false);
+              setProfileMenuOpen((open) => !open);
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fv-accent)] text-[14px] font-semibold text-white shadow-[var(--fv-shadow)] md:h-11 md:w-11 md:text-[15px]"
+            aria-label={guestMode ? 'Account menu' : 'Profile and menu'}
+            aria-haspopup="menu"
+            aria-expanded={profileMenuOpen}
           >
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                closeProfileMenu();
-                onProfile?.();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
+            {guestMode ? '?' : avatarInitial}
+          </button>
+          {profileMenuOpen ? (
+            <div
+              role="menu"
+              aria-label="Profile and tools"
+              className="absolute right-0 top-full z-50 mt-2 min-w-[12.5rem] overflow-hidden rounded-[14px] border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
             >
-              <User className="h-4 w-4 shrink-0 text-[var(--fv-text-muted)]" strokeWidth={2} />
-              {guestMode ? 'Sign in' : 'Profile'}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                closeProfileMenu();
-                onSettings?.();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
-            >
-              <Settings className="h-4 w-4 shrink-0 text-[var(--fv-text-muted)]" strokeWidth={2} />
-              {guestMode ? 'Sign in' : 'Settings'}
-            </button>
-            {menuItems.length ? (
-              <div className="border-t border-[var(--fv-border)] py-1">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    role="menuitem"
-                    onClick={closeProfileMenu}
-                    className="flex w-full items-center px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </>
-  );
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  closeProfileMenu();
+                  onProfile?.();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
+              >
+                <User className="h-4 w-4 shrink-0 text-[var(--fv-text-muted)]" strokeWidth={2} />
+                {guestMode ? 'Sign in' : 'Profile'}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  closeProfileMenu();
+                  onSettings?.();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
+              >
+                <Settings className="h-4 w-4 shrink-0 text-[var(--fv-text-muted)]" strokeWidth={2} />
+                {guestMode ? 'Sign in' : 'Settings'}
+              </button>
+              {menuItems.length ? (
+                <div className="border-t border-[var(--fv-border)] py-1">
+                  {menuItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      role="menuitem"
+                      onClick={closeProfileMenu}
+                      className="flex w-full items-center px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </>
+    );
+  };
 
   const logoButton = (
     <button
@@ -305,7 +330,7 @@ export default function FeedTopBar({
         ) : (
           renderSearchField()
         )}
-        {renderAccountActions(profileMenuRefMobile)}
+        {renderAccountActions(profileMenuRefMobile, { allowMobileActions: true })}
       </div>
 
       {/*

@@ -186,20 +186,17 @@ export default function ProfilePage({
     onFollowListModeChange?.(followListMode);
     if (followListMode) {
       onRegisterFollowListBackHandler?.(() => setFollowListMode(null));
-      onMobileHeaderActionsChange?.(<span className="sr-only">Follow list</span>);
     } else {
       onRegisterFollowListBackHandler?.(null);
     }
     return () => {
       onFollowListModeChange?.(null);
       onRegisterFollowListBackHandler?.(null);
-      if (followListMode) onMobileHeaderActionsChange?.(null);
     };
   }, [
     followListMode,
     onFollowListModeChange,
     onRegisterFollowListBackHandler,
-    onMobileHeaderActionsChange,
   ]);
   const [graphTick, setGraphTick] = useState(0);
 
@@ -1531,23 +1528,23 @@ function PortfolioDetailMobileActions({
 }) {
   if (editing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-1 rounded-full bg-white px-3 text-sm font-semibold text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition hover:text-[var(--fv-text)] disabled:opacity-50"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" strokeWidth={2} />
           Cancel
         </button>
         <button
           type="button"
           onClick={onSave}
           disabled={saving}
-          className="inline-flex items-center gap-1 rounded-md bg-pe-accent px-2.5 py-1.5 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-70"
+          className="inline-flex h-10 items-center gap-1 rounded-full bg-[var(--fv-accent)] px-3.5 text-sm font-bold text-white shadow-[var(--fv-shadow)] transition hover:opacity-90 disabled:opacity-70"
         >
-          {saved && !saving ? <Check className="h-3.5 w-3.5" /> : null}
+          {saved && !saving ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
           {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
         </button>
       </div>
@@ -1558,9 +1555,10 @@ function PortfolioDetailMobileActions({
     <button
       type="button"
       onClick={onEdit}
-      className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+      className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--fv-accent)] px-3.5 text-sm font-semibold text-white shadow-[var(--fv-shadow)] transition hover:opacity-90"
+      aria-label="Edit portfolio"
     >
-      <Pencil className="h-3.5 w-3.5" />
+      <Pencil className="h-4 w-4" strokeWidth={2} />
       Edit
     </button>
   );

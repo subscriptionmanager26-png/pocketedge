@@ -479,6 +479,7 @@ export default function Shell({
                 avatarInitial={avatarInitial}
                 guestMode={guestMode}
                 wide={wideContent}
+                mobileActions={mobileActions}
                 searchQuery={searchQuery}
                 onSearchChange={(value) => {
                   setSearchQuery(value);
