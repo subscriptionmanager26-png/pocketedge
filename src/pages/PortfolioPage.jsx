@@ -775,16 +775,22 @@ function PortfolioPnlCard({ label, amount, pct }) {
 
   return (
     <div
-      className={`flex min-w-0 flex-1 flex-col justify-between rounded-[16px] bg-white p-3 ${CARD_SHADOW} sm:p-3.5`}
+      className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-[16px] bg-white px-3 py-3 ${CARD_SHADOW} sm:gap-3 sm:px-3.5 sm:py-3.5`}
     >
-      <p className="text-[12px] font-medium leading-snug text-pe-text-muted">{label}</p>
-      <div className={`mt-2 min-w-0 tabular-nums ${pnlClass(tone)}`}>
-        <p className="truncate text-[15px] font-bold tracking-tight leading-none sm:text-[16px]">
+      <p className="min-w-0 max-w-[4.25rem] text-[12px] font-medium leading-snug text-pe-text-muted sm:max-w-[5.5rem]">
+        {label}
+      </p>
+      <div className={`min-w-0 shrink-0 text-right tabular-nums ${pnlClass(tone)}`}>
+        {pctText ? (
+          <p className="text-[12px] font-semibold leading-none">{pctText}</p>
+        ) : null}
+        <p
+          className={`truncate text-[15px] font-bold tracking-tight leading-none sm:text-[16px] ${
+            pctText ? 'mt-1.5' : ''
+          }`}
+        >
           {amountText}
         </p>
-        {pctText ? (
-          <p className="mt-1.5 text-[12px] font-semibold leading-none">{pctText}</p>
-        ) : null}
       </div>
     </div>
   );
