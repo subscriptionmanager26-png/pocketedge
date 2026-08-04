@@ -41,7 +41,7 @@ export default function MarketingShell({ children, wide = false }) {
 
   return (
     <div
-      className={`flex min-h-dvh flex-col bg-pe-canvas text-pe-text${
+      className={`pe-feed-v1 flex min-h-dvh flex-col bg-white text-[var(--fv-text)]${
         drawerOpen ? ' overflow-hidden' : ''
       }`}
     >
@@ -56,12 +56,14 @@ export default function MarketingShell({ children, wide = false }) {
       />
 
       <main
-        className={`mx-auto w-full flex-1 px-4 py-8 md:px-8 md:py-10 print:max-w-none print:px-0 print:py-0 ${
+        className={`mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8 print:max-w-none print:px-0 print:py-0 ${
           wide ? 'max-w-6xl' : 'max-w-3xl'
         }`}
       >
         {children}
-        {error ? <p className="mt-6 text-sm text-pe-negative">{error}</p> : null}
+        {error ? (
+          <p className="mt-6 text-sm text-[var(--fv-negative)]">{error}</p>
+        ) : null}
       </main>
     </div>
   );

@@ -170,7 +170,7 @@ const KNOWN_TABS = new Set([
 ]);
 
 const RETIRED_TABS = new Set(['explore', 'markets', 'search']);
-const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures']);
+const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'disclosures']);
 const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
 export function parseAppPath(pathname) {
@@ -196,7 +196,7 @@ export function parseAppPath(pathname) {
   const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener|etf-inav|sgb)\/?$/);
   if (resourcesToolMatch) {
     return {
-      kind: 'marketing',
+      kind: 'resources',
       page: 'resources',
       section: resourcesToolMatch[1],
     };
@@ -214,8 +214,12 @@ export function parseAppPath(pathname) {
     };
   }
 
+  if (pathname === '/resources' || pathname === '/resources/') {
+    return { kind: 'resources', page: 'resources', section: null };
+  }
+
   const marketingMatch = pathname.match(
-    /^\/(insights|learning|business-model|resources)\/?$/
+    /^\/(insights|learning|business-model)\/?$/
   );
   if (marketingMatch && MARKETING_PAGES.has(marketingMatch[1])) {
     const page =

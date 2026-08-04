@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import MarketingShell from '../../components/MarketingShell';
+import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import { ScreenerFilters } from '../../components/mfScreener/ScreenerFilters';
 import { loadAmfiEquityDirectGrowth, uniqueSorted } from '../../lib/mfScreener/amfiSchemes';
 import { standardizeAmcName } from '../../lib/mfScreener/amcNames';
@@ -46,54 +46,58 @@ function FundDetail({ row, scheme, snapshotLoading, onBack }) {
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-pe-accent hover:underline"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--fv-text-secondary)] transition hover:text-[var(--fv-accent)]"
       >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
+        <ArrowLeft className="h-4 w-4" aria-hidden strokeWidth={2} />
         Back to screener
       </button>
 
-      <article className="rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm">
+      <article className="fv-card rounded-[20px] p-5 shadow-[var(--fv-shadow)]">
         <div className="flex flex-wrap gap-2">
           {row.sectorTheme ? (
-            <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
+            <span className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[12px] font-medium text-[var(--fv-text-secondary)]">
               {row.sectorTheme}
             </span>
           ) : (
-            <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
+            <span className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[12px] font-medium text-[var(--fv-text-secondary)]">
               {shortCategoryLabel(row.subCategory)}
             </span>
           )}
-          <span className="rounded-full bg-pe-surface px-2.5 py-1 text-xs font-semibold text-pe-text-secondary">
+          <span className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[12px] font-medium text-[var(--fv-text-secondary)]">
             Direct · Growth
           </span>
         </div>
-        <h2 className="mt-3 text-2xl font-bold tracking-tight text-pe-text">
+        <h2 className="mt-3 text-[22px] font-semibold tracking-tight text-[var(--fv-text)] md:text-[28px]">
           {simplifySchemeName(row.name, row.amfiCode)}
         </h2>
-        <p className="mt-1 text-sm text-pe-text-secondary">{standardizeAmcName(row.amc)}</p>
+        <p className="mt-1 text-[14px] text-[var(--fv-text-secondary)]">
+          {standardizeAmcName(row.amc)}
+        </p>
 
         <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-pe-text-muted">AUM</p>
-            <p className="mt-1 text-base font-semibold text-pe-text">{formatAum(scheme?.aumCr)}</p>
+            <p className="fv-label">AUM</p>
+            <p className="mt-1 text-[15px] font-semibold text-[var(--fv-text)]">
+              {formatAum(scheme?.aumCr)}
+            </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-              Expense ratio
-            </p>
-            <p className="mt-1 text-base font-semibold text-pe-text">
+            <p className="fv-label">Expense ratio</p>
+            <p className="mt-1 text-[15px] font-semibold text-[var(--fv-text)]">
               {formatTer(scheme?.expenseRatio)}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-pe-text-muted">1Y return</p>
-            <p className={`mt-1 text-base font-semibold ${returnTone(ret1y)}`}>
+            <p className="fv-label">1Y return</p>
+            <p className={`mt-1 text-[15px] font-semibold ${returnTone(ret1y)}`}>
               {formatReturnPct(ret1y)}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-pe-text-muted">3Y CAGR</p>
-            <p className={`mt-1 text-base font-semibold ${returnTone(scheme?.cagrByPeriod?.['3y'])}`}>
+            <p className="fv-label">3Y CAGR</p>
+            <p
+              className={`mt-1 text-[15px] font-semibold ${returnTone(scheme?.cagrByPeriod?.['3y'])}`}
+            >
               {formatReturnPct(scheme?.cagrByPeriod?.['3y'])}
             </p>
           </div>
@@ -101,34 +105,34 @@ function FundDetail({ row, scheme, snapshotLoading, onBack }) {
 
         <Link
           to={fundPath(row.amfiCode)}
-          className="mt-5 inline-flex text-sm font-semibold text-pe-accent hover:underline"
+          className="mt-5 inline-flex text-[14px] font-semibold text-[var(--fv-accent)] hover:underline"
         >
           Open fund page →
         </Link>
       </article>
 
-      <section className="rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-pe-accent">Returns</p>
-        <div className="mt-3 divide-y divide-pe-border">
+      <section className="fv-card rounded-[20px] p-5 shadow-[var(--fv-shadow)]">
+        <p className="fv-label">Returns</p>
+        <div className="mt-3 divide-y divide-[var(--fv-border)]">
           {returnRows.length ? (
             returnRows.map((r) => (
               <div key={r.timeframe} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="text-pe-text-secondary">{r.label}</span>
+                <span className="text-[var(--fv-text-secondary)]">{r.label}</span>
                 <span className={`font-semibold ${returnTone(r.valuePct)}`}>
                   {formatReturnPct(r.valuePct)}
                 </span>
               </div>
             ))
           ) : (
-            <p className="text-sm text-pe-text-muted">
+            <p className="fv-caption">
               {snapshotLoading ? 'Loading returns…' : 'No return data'}
             </p>
           )}
         </div>
       </section>
 
-      <section className="rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-pe-accent">Fundamentals</p>
+      <section className="fv-card rounded-[20px] p-5 shadow-[var(--fv-shadow)]">
+        <p className="fv-label">Fundamentals</p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             ['P/E', formatRatio(parseUpvalyMetric(scheme?.fundamentals?.pe), 1)],
@@ -136,28 +140,26 @@ function FundDetail({ row, scheme, snapshotLoading, onBack }) {
             ['P/S', formatRatio(parseUpvalyMetric(scheme?.fundamentals?.priceToSale), 1)],
             ['Inception', scheme?.inceptionDate ?? '—'],
           ].map(([label, val]) => (
-            <div key={label} className="rounded-lg bg-pe-surface px-3 py-2.5">
-              <p className="text-xs text-pe-text-muted">{label}</p>
-              <p className="mt-0.5 text-sm font-semibold text-pe-text">{val}</p>
+            <div key={label} className="rounded-[14px] bg-black/[0.03] px-3 py-2.5">
+              <p className="fv-caption">{label}</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--fv-text)]">{val}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-pe-accent">
-          Risk (3Y std dev)
-        </p>
-        <div className="mt-3 divide-y divide-pe-border text-sm">
+      <section className="fv-card rounded-[20px] p-5 shadow-[var(--fv-shadow)]">
+        <p className="fv-label">Risk (3Y std dev)</p>
+        <div className="mt-3 divide-y divide-[var(--fv-border)] text-sm">
           <div className="flex justify-between py-2.5">
-            <span className="text-pe-text-secondary">Fund</span>
-            <span className="font-semibold text-pe-text">
+            <span className="text-[var(--fv-text-secondary)]">Fund</span>
+            <span className="font-semibold text-[var(--fv-text)]">
               {risk3y?.value != null ? `${formatRatio(risk3y.value, 1)}%` : '—'}
             </span>
           </div>
           <div className="flex justify-between py-2.5">
-            <span className="text-pe-text-secondary">Category avg</span>
-            <span className="font-semibold text-pe-text">
+            <span className="text-[var(--fv-text-secondary)]">Category avg</span>
+            <span className="font-semibold text-[var(--fv-text)]">
               {risk3y?.categoryAverage != null
                 ? `${formatRatio(risk3y.categoryAverage, 1)}%`
                 : '—'}
@@ -167,16 +169,18 @@ function FundDetail({ row, scheme, snapshotLoading, onBack }) {
       </section>
 
       {scheme?.holdings?.length ? (
-        <section className="rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-pe-accent">Top holdings</p>
-          <div className="mt-3 divide-y divide-pe-border">
+        <section className="fv-card rounded-[20px] p-5 shadow-[var(--fv-shadow)]">
+          <p className="fv-label">Top holdings</p>
+          <div className="mt-3 divide-y divide-[var(--fv-border)]">
             {scheme.holdings.slice(0, 10).map((h) => (
               <div key={h.name} className="flex items-start justify-between gap-4 py-2.5">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-pe-text">{h.name}</p>
-                  <p className="text-xs text-pe-text-muted">{h.sector ?? '—'}</p>
+                  <p className="text-sm font-semibold text-[var(--fv-text)]">{h.name}</p>
+                  <p className="fv-caption">{h.sector ?? '—'}</p>
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-pe-text">{h.weightage}</span>
+                <span className="shrink-0 text-sm font-semibold text-[var(--fv-text)]">
+                  {h.weightage}
+                </span>
               </div>
             ))}
           </div>
@@ -380,45 +384,33 @@ export default function MfScreenerPage() {
 
   if (selected) {
     return (
-      <MarketingShell wide>
+      <div className="px-4 pb-8 pt-2 md:px-0">
         <FundDetail
           row={selected}
           scheme={metrics[selected.amfiCode]}
           snapshotLoading={snapshotLoading}
           onBack={() => setSelectedCode(null)}
         />
-      </MarketingShell>
+      </div>
     );
   }
 
   return (
-    <MarketingShell wide>
-      <div className="mb-6">
-        <Link
-          to={resourcesPath()}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-pe-accent hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Resources
-        </Link>
-        <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-pe-accent">Resources</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
-          MF screener
-        </h1>
-        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">
-          Equity Direct Growth funds — filter by category or sector/theme, then compare rolling
-          returns, CAGR, risk, and fundamentals.
-        </p>
-      </div>
+    <div className="px-4 pb-8 pt-2 md:px-0">
+      <ResourcesPageHeader
+        title="MF screener"
+        backTo={resourcesPath()}
+        subtitle="Equity Direct Growth funds — filter by category or sector/theme, then compare rolling returns, CAGR, risk, and fundamentals."
+      />
 
       {loadError ? (
-        <p className="mb-4 rounded-lg border border-pe-negative/30 bg-pe-negative/5 px-4 py-3 text-sm text-pe-negative">
+        <p className="mb-4 rounded-[16px] bg-[var(--fv-negative)]/8 px-4 py-3 text-sm text-[var(--fv-negative)]">
           {loadError}
         </p>
       ) : null}
 
       {csvLoading && !allRows.length ? (
-        <div className="flex items-center gap-2 text-sm text-pe-text-muted">
+        <div className="flex items-center gap-2 fv-caption">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           Loading funds…
         </div>
@@ -438,12 +430,12 @@ export default function MfScreenerPage() {
         />
       ) : null}
 
-      <section className="mf-screener-table-wrap mt-4 overflow-hidden rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
-        <div className="mf-screener-table-meta flex flex-wrap items-baseline gap-2 border-b border-pe-border px-3.5 py-2.5">
-          <span className="text-sm font-bold text-pe-text">{sorted.length} Funds</span>
-          <span className="text-sm font-bold text-pe-accent">{activeFilterLabel}</span>
+      <section className="mf-screener-table-wrap mt-4 overflow-hidden rounded-[20px] bg-white shadow-[var(--fv-shadow)]">
+        <div className="mf-screener-table-meta flex flex-wrap items-baseline gap-2 border-b border-[var(--fv-border)] px-3.5 py-2.5">
+          <span className="text-sm font-semibold text-[var(--fv-text)]">{sorted.length} Funds</span>
+          <span className="text-sm font-semibold text-[var(--fv-accent)]">{activeFilterLabel}</span>
           {snapshotDate ? (
-            <span className="ml-auto text-xs text-pe-text-muted">
+            <span className="fv-caption ml-auto">
               Data as of {formatSnapshotDate(snapshotDate)}
             </span>
           ) : null}
@@ -495,7 +487,7 @@ export default function MfScreenerPage() {
                         {row.amcLabel}
                       </button>
                       {row.sectorTheme && activeSector === 'all-themes' ? (
-                        <p className="mt-0.5 text-[12px] font-medium text-pe-text-muted">
+                        <p className="mt-0.5 text-[12px] font-medium text-[var(--fv-text-muted)]">
                           {row.sectorTheme}
                         </p>
                       ) : null}
@@ -517,7 +509,7 @@ export default function MfScreenerPage() {
                 <tr>
                   <td
                     colSpan={1 + ALL_SCREENER_COLUMNS.length}
-                    className="py-10 text-center text-sm text-pe-text-muted"
+                    className="py-10 text-center text-sm text-[var(--fv-text-muted)]"
                   >
                     No funds match these filters.
                   </td>
@@ -527,6 +519,6 @@ export default function MfScreenerPage() {
           </table>
         </div>
       </section>
-    </MarketingShell>
+    </div>
   );
 }

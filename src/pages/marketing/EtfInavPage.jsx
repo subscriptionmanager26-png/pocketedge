@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowDownUp, Loader2, Search } from 'lucide-react';
-import MarketingShell from '../../components/MarketingShell';
+import { ArrowDownUp, Loader2, Search } from 'lucide-react';
+import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import {
   ETF_INAV_CATEGORIES,
   ETF_INAV_CATEGORY_SHORT,
@@ -32,13 +32,13 @@ function SortHeader({ label, active, dir, onClick, align = 'left' }) {
       onClick={onClick}
       className={`inline-flex items-center gap-1 font-semibold ${
         align === 'right' ? 'justify-end w-full' : ''
-      } ${active ? 'text-pe-text' : 'text-pe-text-muted'}`}
+      } ${active ? 'text-[var(--fv-text)]' : 'text-[var(--fv-text-muted)]'}`}
     >
       {label}
       {active ? (
         <span className="text-[12px]">{dir === 'asc' ? '↑' : '↓'}</span>
       ) : (
-        <ArrowDownUp className="h-3 w-3 opacity-40" aria-hidden />
+        <ArrowDownUp className="h-3 w-3 opacity-40" aria-hidden strokeWidth={2} />
       )}
     </button>
   );
@@ -210,47 +210,41 @@ export default function EtfInavPage() {
 
   const quotesLabel = formatSnapshotTime(quoteSyncedAt);
 
+  const meta = quotesLabel ? (
+    <p className="fv-caption">
+      Last fetched{' '}
+      <time dateTime={quoteSyncedAt} className="font-semibold tabular-nums text-[var(--fv-text)]">
+        {quotesLabel}
+      </time>
+      {quotesRefreshing ? (
+        <span className="ml-2 inline-flex items-center gap-1 text-[var(--fv-text-muted)]">
+          <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+          refreshing
+        </span>
+      ) : (
+        <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--fv-positive)]/12 px-2 py-0.5 text-[11px] font-semibold text-[var(--fv-positive)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--fv-positive)]" />
+          Live
+        </span>
+      )}
+    </p>
+  ) : (
+    <span className="inline-flex items-center gap-2 fv-caption">
+      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+      Fetching live quotes…
+    </span>
+  );
+
   return (
-    <MarketingShell wide>
-      <div className="mb-6">
-        <Link
-          to={resourcesPath()}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-pe-accent hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Resources
-        </Link>
-        <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-pe-accent">
-          Resources
-        </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
-          ETF iNAV tracker
-        </h1>
-        <p className="mt-3 text-sm text-pe-text-secondary">
-          {quotesLabel ? (
-            <>
-              Last fetched{' '}
-              <time dateTime={quoteSyncedAt} className="font-semibold tabular-nums text-pe-text">
-                {quotesLabel}
-              </time>
-              {quotesRefreshing ? (
-                <span className="ml-2 inline-flex items-center gap-1 text-xs text-pe-text-muted">
-                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                  refreshing
-                </span>
-              ) : null}
-            </>
-          ) : (
-            <span className="inline-flex items-center gap-2 text-pe-text-muted">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              Fetching live quotes…
-            </span>
-          )}
-        </p>
-      </div>
+    <div className="px-4 pb-8 pt-2 md:px-0">
+      <ResourcesPageHeader
+        title="ETF iNAV tracker"
+        backTo={resourcesPath()}
+        meta={meta}
+      />
 
       {error ? (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-[16px] bg-[var(--fv-negative)]/8 px-4 py-3 text-sm text-[var(--fv-negative)]">
           {error}
         </p>
       ) : null}
@@ -261,18 +255,19 @@ export default function EtfInavPage() {
             <div className="flex items-center gap-2">
               <label className="relative min-w-0 flex-1">
                 <Search
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted"
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
                   aria-hidden
+                  strokeWidth={2}
                 />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search symbol or name"
-                  className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-9 pr-3 text-sm text-pe-text outline-none ring-pe-accent focus:ring-2"
+                  className="w-full rounded-full border border-[var(--fv-border)] bg-white py-2.5 pl-10 pr-3 text-sm text-[var(--fv-text)] outline-none transition focus:border-[var(--fv-accent)] focus:shadow-[var(--fv-shadow)]"
                 />
               </label>
-              <p className="shrink-0 text-xs tabular-nums text-pe-text-muted">{filtered.length}</p>
+              <p className="fv-caption shrink-0 tabular-nums">{filtered.length}</p>
             </div>
 
             <label className="block sm:hidden">
@@ -280,7 +275,7 @@ export default function EtfInavPage() {
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-3 pr-8 text-sm font-medium text-pe-text outline-none ring-pe-accent focus:ring-2"
+                className="w-full appearance-none rounded-full border border-[var(--fv-border)] bg-white py-2.5 pl-3 pr-8 text-sm font-medium text-[var(--fv-text)] outline-none focus:border-[var(--fv-accent)]"
                 style={{
                   backgroundImage:
                     "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
@@ -311,15 +306,15 @@ export default function EtfInavPage() {
                     aria-selected={active}
                     title={opt.label}
                     onClick={() => setCategoryId(opt.id)}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition duration-150 ${
                       active
-                        ? 'bg-pe-text text-pe-canvas'
-                        : 'bg-pe-surface text-pe-text-secondary hover:bg-pe-border/60'
+                        ? 'bg-[var(--fv-text)] text-white'
+                        : 'bg-black/[0.04] text-[var(--fv-text-secondary)] hover:bg-black/[0.06]'
                     }`}
                   >
                     {opt.shortLabel}
                     <span
-                      className={`ml-1.5 tabular-nums ${active ? 'opacity-70' : 'text-pe-text-muted'}`}
+                      className={`ml-1.5 tabular-nums ${active ? 'opacity-70' : 'text-[var(--fv-text-muted)]'}`}
                     >
                       {opt.count}
                     </span>
@@ -329,7 +324,7 @@ export default function EtfInavPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
+          <div className="overflow-x-auto rounded-[20px] bg-white shadow-[var(--fv-shadow)]">
             <table className="mf-screener-table w-full min-w-[480px]">
               <thead>
                 <tr>
@@ -373,7 +368,7 @@ export default function EtfInavPage() {
               <tbody>
                 {loading && !quoteSyncedAt ? (
                   <tr>
-                    <td colSpan={4} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={4} className="py-10 text-center text-sm text-[var(--fv-text-muted)]">
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                         Loading quotes…
@@ -389,12 +384,12 @@ export default function EtfInavPage() {
                       <td className="!whitespace-normal">
                         <Link
                           to={etfPath(row.symbol)}
-                          className="font-semibold text-pe-accent hover:underline"
+                          className="font-semibold text-[var(--fv-accent)] hover:underline"
                         >
                           {row.symbol}
                         </Link>
                         {etfName ? (
-                          <p className="mt-0.5 max-w-[220px] text-[12px] leading-snug text-pe-text-secondary sm:max-w-[280px]">
+                          <p className="mt-0.5 max-w-[220px] text-[12px] leading-snug text-[var(--fv-text-secondary)] sm:max-w-[280px]">
                             {etfName}
                           </p>
                         ) : null}
@@ -410,7 +405,7 @@ export default function EtfInavPage() {
                         {formatPrice(row.inav)}
                         {row.usedNseFallback ? (
                           <span
-                            className="mt-0.5 block text-[12px] font-medium text-pe-text-muted"
+                            className="mt-0.5 block text-[12px] font-medium text-[var(--fv-text-muted)]"
                             title="AMC iNAV premium/discount exceeded 30%; using NSE iNAV"
                           >
                             NSE iNAV
@@ -422,7 +417,7 @@ export default function EtfInavPage() {
                 })}
                 {!loading && quoteSyncedAt && !filtered.length ? (
                   <tr>
-                    <td colSpan={4} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={4} className="py-10 text-center text-sm text-[var(--fv-text-muted)]">
                       No ETFs match this filter.
                     </td>
                   </tr>
@@ -431,7 +426,7 @@ export default function EtfInavPage() {
             </table>
           </div>
 
-          <p className="mt-4 text-xs leading-relaxed text-pe-text-muted">
+          <p className="fv-caption mt-4 leading-relaxed">
             iNAV prefers AMC indicative NAV scrapes (refreshed ~every minute). LTP is live NSE. If
             |premium vs AMC| exceeds 30%, that row uses NSE iNAV instead. Both AMC and NSE iNAV are
             stored for analysis. Premium = LTP ÷ displayed iNAV. This is not investment advice.
@@ -439,6 +434,6 @@ export default function EtfInavPage() {
           </p>
         </>
       ) : null}
-    </MarketingShell>
+    </div>
   );
 }

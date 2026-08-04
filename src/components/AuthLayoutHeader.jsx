@@ -132,10 +132,9 @@ function ExploreSearchField({ className = '', compact = false }) {
       }}
     >
       <Search
-        className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-pe-text-muted ${
-          compact ? 'h-4 w-4' : 'h-4 w-4'
-        }`}
+        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted"
         aria-hidden
+        strokeWidth={2}
       />
       <input
         type="search"
@@ -143,8 +142,8 @@ function ExploreSearchField({ className = '', compact = false }) {
         onChange={(event) => setValue(event.target.value)}
         placeholder="Explore stocks, funds, ETFs…"
         aria-label="Explore"
-        className={`w-full rounded-full border border-pe-border bg-pe-surface text-pe-text outline-none ring-pe-accent placeholder:text-pe-text-muted focus:border-pe-accent focus:ring-2 ${
-          compact ? 'h-9 py-1.5 pl-9 pr-3 text-[15px]' : 'h-10 py-2 pl-9 pr-4 text-[15px]'
+        className={`w-full rounded-full border border-pe-border bg-white text-pe-text outline-none placeholder:text-pe-text-muted transition focus:border-pe-accent focus:shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] ${
+          compact ? 'h-9 py-1.5 pl-9 pr-3 text-[14px]' : 'h-10 py-2 pl-10 pr-4 text-[15px]'
         }`}
       />
     </form>
@@ -191,7 +190,11 @@ function NavDropdown({ group, pathname, search }) {
         onClick={() => setOpen((value) => !value)}
       >
         {group.label}
-        <ChevronDown className={`h-3.5 w-3.5 transition ${open ? 'rotate-180' : ''}`} aria-hidden />
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition ${open ? 'rotate-180' : ''}`}
+          aria-hidden
+          strokeWidth={2}
+        />
       </button>
       {open ? (
         <div
@@ -199,7 +202,7 @@ function NavDropdown({ group, pathname, search }) {
           role="menu"
           className="absolute left-0 top-full z-50 min-w-[12rem] pt-2"
         >
-          <div className="overflow-hidden rounded-xl border border-pe-border bg-pe-canvas py-1.5 shadow-lg">
+          <div className="overflow-hidden rounded-[16px] bg-white py-1.5 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]">
             {group.items.map((item) => {
               const itemActive = hrefActive(pathname, search, item.href);
               return (
@@ -208,7 +211,7 @@ function NavDropdown({ group, pathname, search }) {
                   to={item.href}
                   role="menuitem"
                   onClick={() => setOpen(false)}
-                  className={`block px-3.5 py-2.5 text-[15px] font-medium transition hover:bg-pe-surface hover:text-pe-accent ${
+                  className={`block px-3.5 py-2.5 text-[15px] font-medium transition hover:bg-black/[0.03] hover:text-pe-accent ${
                     itemActive ? 'text-pe-accent' : 'text-pe-text'
                   }`}
                 >
@@ -235,13 +238,13 @@ export default function AuthLayoutHeader({
 }) {
   const location = useLocation();
   const ctaClass =
-    'shrink-0 rounded-md bg-pe-accent px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
+    'inline-flex h-10 shrink-0 items-center justify-center rounded-[14px] bg-pe-accent px-5 text-[14px] font-semibold text-white transition hover:bg-pe-accent-pressed';
   const drawerCtaClass =
-    'mt-2 rounded-md bg-pe-accent px-3 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-pe-accent-pressed';
+    'inline-flex mt-2 h-11 w-full items-center justify-center rounded-[14px] bg-pe-accent px-3 text-[14px] font-semibold text-white transition hover:bg-pe-accent-pressed';
 
   return (
     <>
-      <header className="pe-landing-nav sticky top-0 z-40 shrink-0 border-b border-pe-border bg-pe-canvas/95 backdrop-blur-md print:hidden">
+      <header className="pe-landing-nav sticky top-0 z-40 shrink-0 border-b border-pe-border bg-white/95 backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 max-w-feed items-center gap-3 px-4 md:h-[72px] lg:max-w-6xl lg:gap-4 lg:px-8">
           <Link
             to="/"
@@ -280,13 +283,17 @@ export default function AuthLayoutHeader({
 
               <button
                 type="button"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-pe-text transition hover:bg-pe-surface lg:hidden"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-pe-text transition hover:bg-black/[0.04] lg:hidden"
                 aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={drawerOpen}
                 aria-controls="auth-layout-drawer"
                 onClick={onToggleDrawer}
               >
-                {drawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {drawerOpen ? (
+                  <X className="h-5 w-5" strokeWidth={2} />
+                ) : (
+                  <Menu className="h-5 w-5" strokeWidth={2} />
+                )}
               </button>
             </>
           ) : badge ? (
@@ -309,7 +316,7 @@ export default function AuthLayoutHeader({
 
           <aside
             id="auth-layout-drawer"
-            className={`fixed right-0 top-0 z-[60] flex h-full w-[min(320px,85vw)] flex-col border-l border-pe-border bg-pe-canvas shadow-xl transition-transform duration-300 lg:hidden print:hidden ${
+            className={`fixed right-0 top-0 z-[60] flex h-full w-[min(320px,85vw)] flex-col bg-white shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] transition-transform duration-300 lg:hidden print:hidden ${
               drawerOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
             aria-hidden={!drawerOpen}
@@ -318,17 +325,17 @@ export default function AuthLayoutHeader({
               <span className="text-[15px] font-semibold text-pe-text">Menu</span>
               <button
                 type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-pe-surface"
+                className="flex h-9 w-9 items-center justify-center rounded-[14px] hover:bg-black/[0.04]"
                 aria-label="Close menu"
                 onClick={onCloseDrawer}
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" strokeWidth={2} />
               </button>
             </div>
             <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
               {MARKETING_NAV_GROUPS.map((group) => (
                 <div key={group.id}>
-                  <p className="px-3 pb-1 text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  <p className="px-3 pb-1 text-[12px] font-medium text-pe-text-muted">
                     {group.label}
                   </p>
                   <div className="flex flex-col gap-0.5">
@@ -343,8 +350,8 @@ export default function AuthLayoutHeader({
                           key={item.href}
                           to={item.href}
                           onClick={onCloseDrawer}
-                          className={`rounded-lg px-3 py-3 text-left text-[15px] font-medium transition hover:bg-pe-surface ${
-                            active ? 'bg-pe-surface text-pe-accent' : 'text-pe-text'
+                          className={`rounded-[14px] px-3 py-3 text-left text-[15px] font-medium transition hover:bg-black/[0.03] ${
+                            active ? 'bg-black/[0.04] text-pe-accent' : 'text-pe-text'
                           }`}
                         >
                           {item.label}

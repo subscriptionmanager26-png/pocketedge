@@ -30,6 +30,8 @@ export default function FeedTopBar({
   onSearchChange,
   onSearchFocus,
   onSearchClear,
+  /** When true, no right-rail gutter — full-width tool pages (Resources). */
+  wide = false,
 }) {
   const [feedMenuOpen, setFeedMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -290,8 +292,12 @@ export default function FeedTopBar({
         Bell/profile pin to the true right edge of the page.
       */}
       <div className="relative hidden w-full items-center md:flex">
-        <div className="flex min-w-0 flex-1 justify-center md:mr-[420px]">
-          <div className="relative flex w-full max-w-feed items-center">
+        <div
+          className={`flex min-w-0 flex-1 justify-center ${wide ? '' : 'md:mr-[420px]'}`}
+        >
+          <div
+            className={`relative flex w-full items-center ${wide ? 'max-w-6xl' : 'max-w-feed'}`}
+          >
             {mobileBack ? (
               <div className="absolute right-full top-1/2 mr-3 flex -translate-y-1/2 items-center">
                 {backButton}

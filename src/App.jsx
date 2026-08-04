@@ -51,7 +51,7 @@ import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from 
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
-import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, profilePath, stockPath, tabPath } from './lib/routes';
+import { parseAppPath, commodityPath, etfPath, fundPath, indexPath, postPath, profilePath, resourcesPath, stockPath, tabPath } from './lib/routes';
 import {
   navigateBack,
   navigateToProfile,
@@ -88,10 +88,6 @@ function MarketingRoute({ page, section, symbol }) {
   if (page === 'insights') return <InsightsPage />;
   if (page === 'business-model' && section === 'brief') return <CompanyBriefPage symbol={symbol} />;
   if (page === 'business-model' || page === 'learning') return <BusinessModelPage />;
-  if (page === 'resources' && section === 'mf-screener') return <MfScreenerPage />;
-  if (page === 'resources' && section === 'etf-inav') return <EtfInavPage />;
-  if (page === 'resources' && section === 'sgb') return <SgbTrackerPage />;
-  if (page === 'resources') return <ResourcesPage />;
   if (page === 'disclosures') return <DisclosuresPage section={section} />;
   return <HomePage />;
 }
@@ -167,7 +163,11 @@ export default function App() {
     selectedTicker || selectedFundId || selectedIndexId || selectedCommodityId
   );
 
+  const parsedPath = useMemo(() => parseAppPath(location.pathname), [location.pathname]);
+  const isResources = parsedPath.kind === 'resources';
+
   const routeKey = useMemo(() => {
+    if (isResources) return `resources:${parsedPath.section || 'hub'}`;
     if (tab === 'feed' && selectedPostId) return `post:${selectedPostId}`;
     if (tab === 'feed' && !hasAssetDetail) return 'feed';
     const panelSuffix = assetDetailPanel ? `:${assetDetailPanel}` : '';
@@ -192,6 +192,8 @@ export default function App() {
     if (tab === 'profile') return `profile:${profileUserId}`;
     return tab;
   }, [
+    isResources,
+    parsedPath.section,
     tab,
     selectedPostId,
     selectedFundId,
@@ -851,6 +853,15 @@ export default function App() {
 
   const mobileBack = useMemo(() => {
     if (!inShell) return null;
+    if (isResources && parsedPath.section) {
+      return {
+        label: 'Resources',
+        onBack: () => {
+          backScroll();
+          navigate(resourcesPath());
+        },
+      };
+    }
     if (selectedPostId && tab === 'feed' && !hasAssetDetail) {
       return { label: 'Back', onBack: closePost };
     }
@@ -919,6 +930,8 @@ export default function App() {
   }, [
     inShell,
     authView,
+    isResources,
+    parsedPath.section,
     selectedPostId,
     tab,
     hasAssetDetail,
@@ -975,7 +988,6 @@ export default function App() {
     );
   }
 
-  const parsedPath = parseAppPath(location.pathname);
   if (parsedPath.kind === 'marketing') {
     return (
       <RouteSuspense>
@@ -1039,8 +1051,21 @@ export default function App() {
         onOpenPost={openPost}
         onOpenProfile={openProfile}
         onGraphChange={() => setGraphTick((n) => n + 1)}
+        wideContent={isResources}
       >
-        {hasAssetDetail ? (
+        {isResources ? (
+          <RouteSuspense>
+            {parsedPath.section === 'mf-screener' ? (
+              <MfScreenerPage />
+            ) : parsedPath.section === 'etf-inav' ? (
+              <EtfInavPage />
+            ) : parsedPath.section === 'sgb' ? (
+              <SgbTrackerPage />
+            ) : (
+              <ResourcesPage />
+            )}
+          </RouteSuspense>
+        ) : hasAssetDetail ? (
           selectedCommodityId ? (
             <RouteSuspense>
               <CommodityDetailPage

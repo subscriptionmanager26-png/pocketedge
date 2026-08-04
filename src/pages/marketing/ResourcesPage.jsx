@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BarChart3, Coins, LineChart } from 'lucide-react';
-import MarketingShell from '../../components/MarketingShell';
+import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import { resourcesPath } from '../../lib/routes';
 import { useSeoMeta } from '../../hooks/useSeoMeta';
 
@@ -36,30 +36,24 @@ export default function ResourcesPage() {
     path: '/resources',
   });
   return (
-    <MarketingShell wide>
-      <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-pe-accent">Resources</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
-          Market tools
-        </h1>
-        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-pe-text-secondary">
-          Lightweight utilities for everyday investing research. More trackers are on the roadmap.
-        </p>
-      </div>
+    <div className="px-4 pb-8 pt-2 md:px-0">
+      <ResourcesPageHeader
+        title="Market tools"
+        subtitle="Lightweight utilities for everyday investing research. More trackers are on the roadmap."
+        className="mb-8"
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         {TOOLS.map((tool) => {
           const Icon = tool.icon;
           const body = (
             <>
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-pe-accent-wash text-pe-accent">
-                <Icon className="h-5 w-5" aria-hidden />
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]">
+                <Icon className="h-5 w-5" aria-hidden strokeWidth={2} />
               </span>
-              <h2 className="mt-4 text-lg font-bold text-pe-text">{tool.title}</h2>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-pe-text-secondary">{tool.body}</p>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-pe-text-muted">
-                {tool.status}
-              </p>
+              <h2 className="fv-card-title mt-4">{tool.title}</h2>
+              <p className="fv-body mt-2 flex-1 text-[var(--fv-text-secondary)]">{tool.body}</p>
+              <p className="fv-caption mt-4 font-medium uppercase tracking-wide">{tool.status}</p>
             </>
           );
 
@@ -68,7 +62,7 @@ export default function ResourcesPage() {
               <Link
                 key={tool.title}
                 to={tool.href}
-                className="flex flex-col rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm transition hover:border-pe-accent/40 hover:shadow-md"
+                className="fv-card flex flex-col rounded-[20px] p-5 shadow-[var(--fv-shadow)] transition duration-150 hover:shadow-[var(--fv-shadow-hover)]"
               >
                 {body}
               </Link>
@@ -78,7 +72,7 @@ export default function ResourcesPage() {
           return (
             <article
               key={tool.title}
-              className="flex flex-col rounded-xl border border-pe-border bg-pe-canvas p-5 shadow-sm"
+              className="fv-card flex flex-col rounded-[20px] p-5 shadow-[var(--fv-shadow)]"
             >
               {body}
             </article>
@@ -86,18 +80,24 @@ export default function ResourcesPage() {
         })}
       </div>
 
-      <p className="mt-8 text-sm text-pe-text-muted">
+      <p className="fv-caption mt-8">
         Looking for company explainers?{' '}
-        <Link to="/business-model" className="font-semibold text-pe-accent hover:underline">
+        <Link
+          to="/business-model"
+          className="font-semibold text-[var(--fv-accent)] hover:underline"
+        >
           Open Business Model
         </Link>
         {' · '}
         daily move digests on{' '}
-        <Link to="/insights" className="font-semibold text-pe-accent hover:underline">
+        <Link
+          to="/insights"
+          className="font-semibold text-[var(--fv-accent)] hover:underline"
+        >
           Insights
         </Link>
         .
       </p>
-    </MarketingShell>
+    </div>
   );
 }

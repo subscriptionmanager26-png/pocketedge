@@ -121,12 +121,14 @@ export default function Shell({
   onOpenPost,
   onOpenProfile,
   onGraphChange,
+  /** Wide main column, no right rail — Resources tools. */
+  wideContent = false,
   children,
 }) {
   const feedTitle = FEED_LABELS[feedMode] ?? 'For You';
   // Feed mode tabs live in FeedDesignPage; mobile logo menu only on home feed.
   const showFeedSelector = false;
-  const showFeedMenu = tab === 'feed' && !pageTitleOverride && !mobileBack;
+  const showFeedMenu = tab === 'feed' && !pageTitleOverride && !mobileBack && !wideContent;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
@@ -139,7 +141,12 @@ export default function Shell({
   // Must be after searchOpen state — authenticated path evaluates !searchOpen;
   // guestMode short-circuits earlier, which is why logout still rendered.
   const showMobileComposeFab =
-    tab === 'feed' && !guestMode && !mobileBack && !searchOpen && !pageTitleOverride;
+    tab === 'feed' &&
+    !guestMode &&
+    !mobileBack &&
+    !searchOpen &&
+    !pageTitleOverride &&
+    !wideContent;
   const desktopMenuRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevRouteKeyRef = useRef(routeKey);
@@ -403,8 +410,16 @@ export default function Shell({
         className="flex min-h-dvh min-w-0 flex-1 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain"
       >
         <div className="flex min-h-0 min-w-0 flex-1 md:px-5">
-          <div className="flex min-h-0 min-w-0 flex-1 justify-center md:mr-[420px]">
-            <div className="flex min-h-0 w-full min-w-0 max-w-feed flex-col md:pt-[72px]">
+          <div
+            className={`flex min-h-0 min-w-0 flex-1 justify-center ${
+              wideContent ? '' : 'md:mr-[420px]'
+            }`}
+          >
+            <div
+              className={`flex min-h-0 w-full min-w-0 flex-col md:pt-[72px] ${
+                wideContent ? 'max-w-6xl' : 'max-w-feed'
+              }`}
+            >
               <FeedTopBar
                 feedMode={feedMode}
                 onFeedModeChange={selectFeedMode}
@@ -418,6 +433,7 @@ export default function Shell({
                 activityUnread={activityUnread}
                 avatarInitial={avatarInitial}
                 guestMode={guestMode}
+                wide={wideContent}
                 searchQuery={searchQuery}
                 onSearchChange={(value) => {
                   setSearchQuery(value);
@@ -488,22 +504,24 @@ export default function Shell({
         </div>
       </div>
 
-      <div className="hidden md:contents">
-        <FeedRightRail
-          trending={railTrending}
-          discussions={railDiscussions}
-          people={railPeople}
-          live={railLive}
-          guestMode={guestMode}
-          onOpenIndex={onSelectIndex}
-          onOpenStock={onSelectStock}
-          onOpenPost={onOpenPost}
-          onOpenProfile={onOpenProfile || onOpenProfileFromSearch}
-          onCompose={onCompose}
-          onRequireSignIn={onRequireSignIn}
-          onFollowChange={onGraphChange}
-        />
-      </div>
+      {wideContent ? null : (
+        <div className="hidden md:contents">
+          <FeedRightRail
+            trending={railTrending}
+            discussions={railDiscussions}
+            people={railPeople}
+            live={railLive}
+            guestMode={guestMode}
+            onOpenIndex={onSelectIndex}
+            onOpenStock={onSelectStock}
+            onOpenPost={onOpenPost}
+            onOpenProfile={onOpenProfile || onOpenProfileFromSearch}
+            onCompose={onCompose}
+            onRequireSignIn={onRequireSignIn}
+            onFollowChange={onGraphChange}
+          />
+        </div>
+      )}
 
       {showMobileComposeFab ? (
         <button

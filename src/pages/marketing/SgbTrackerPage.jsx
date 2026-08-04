@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowDownUp, Loader2, Search } from 'lucide-react';
-import MarketingShell from '../../components/MarketingShell';
+import { ArrowDownUp, Loader2, Search } from 'lucide-react';
+import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import { listSgbMarketQuotes } from '../../lib/marketDataApi';
 import { shouldPollMarket } from '../../lib/marketRefreshPolicy';
 import {
@@ -22,12 +21,16 @@ const POLL_MS = 60_000;
 
 function SortHeader({ label, active, dir, onClick }) {
   return (
-    <button type="button" onClick={onClick} className={`sgb-sort ${active ? 'text-pe-text' : ''}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`sgb-sort ${active ? 'text-[var(--fv-text)]' : 'text-[var(--fv-text-muted)]'}`}
+    >
       {label}
       {active ? (
         <span className="text-[12px]">{dir === 'asc' ? '↑' : '↓'}</span>
       ) : (
-        <ArrowDownUp className="h-3 w-3 opacity-40" aria-hidden />
+        <ArrowDownUp className="h-3 w-3 opacity-40" aria-hidden strokeWidth={2} />
       )}
     </button>
   );
@@ -226,57 +229,50 @@ export default function SgbTrackerPage() {
 
   const goldSyncedLabel = formatSyncedAt(goldSpot?.syncedAt);
 
-  return (
-    <MarketingShell wide>
-      <div className="mb-6">
-        <Link
-          to={resourcesPath()}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-pe-accent hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Resources
-        </Link>
-        <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-pe-accent">
-          Resources
-        </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-pe-text md:text-4xl">
-          SGB tracker
-        </h1>
-        {goldSpot?.price != null ? (
-          <p className="mt-3 text-sm text-pe-text-secondary">
-            IBJA Fine Gold (999){' '}
-            <span className="font-semibold tabular-nums text-pe-text">
-              ₹{formatInr(goldSpot.price, 0)}/g
-            </span>
-            <span className="text-pe-text-muted"> excl. GST</span>
-            {goldSyncedLabel ? (
-              <>
-                {' '}
-                ·{' '}
-                <time dateTime={goldSpot.syncedAt} className="tabular-nums text-pe-text">
-                  {goldSyncedLabel}
-                </time>
-              </>
-            ) : null}
-            {refreshing ? (
-              <span className="ml-2 inline-flex items-center gap-1 text-xs text-pe-text-muted">
-                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                refreshing
-              </span>
-            ) : null}
-          </p>
-        ) : loading ? (
-          <p className="mt-3 inline-flex items-center gap-2 text-sm text-pe-text-muted">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            Loading gold rate and SGB prices…
-          </p>
+  const meta =
+    goldSpot?.price != null ? (
+      <p className="fv-caption">
+        IBJA Fine Gold (999){' '}
+        <span className="font-semibold tabular-nums text-[var(--fv-text)]">
+          ₹{formatInr(goldSpot.price, 0)}/g
+        </span>
+        <span className="text-[var(--fv-text-muted)]"> excl. GST</span>
+        {goldSyncedLabel ? (
+          <>
+            {' '}
+            ·{' '}
+            <time dateTime={goldSpot.syncedAt} className="tabular-nums text-[var(--fv-text)]">
+              {goldSyncedLabel}
+            </time>
+          </>
+        ) : null}
+        {refreshing ? (
+          <span className="ml-2 inline-flex items-center gap-1 text-[var(--fv-text-muted)]">
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+            refreshing
+          </span>
         ) : (
-          <p className="mt-3 text-sm text-pe-text-muted">IBJA gold rate unavailable</p>
+          <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--fv-positive)]/12 px-2 py-0.5 text-[11px] font-semibold text-[var(--fv-positive)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--fv-positive)]" />
+            Live
+          </span>
         )}
-      </div>
+      </p>
+    ) : loading ? (
+      <p className="inline-flex items-center gap-2 fv-caption">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+        Loading gold rate and SGB prices…
+      </p>
+    ) : (
+      <p className="fv-caption">IBJA gold rate unavailable</p>
+    );
+
+  return (
+    <div className="px-4 pb-8 pt-2 md:px-0">
+      <ResourcesPageHeader title="SGB tracker" backTo={resourcesPath()} meta={meta} />
 
       {error ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-[16px] bg-[var(--fv-negative)]/8 px-4 py-3 text-sm text-[var(--fv-negative)]">
           {error}
         </p>
       ) : null}
@@ -287,18 +283,19 @@ export default function SgbTrackerPage() {
             <div className="flex items-center gap-2">
               <label className="relative min-w-0 flex-1">
                 <Search
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pe-text-muted"
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fv-text-muted)]"
                   aria-hidden
+                  strokeWidth={2}
                 />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search symbol or series"
-                  className="w-full rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-9 pr-3 text-sm text-pe-text outline-none ring-pe-accent focus:ring-2"
+                  className="w-full rounded-full border border-[var(--fv-border)] bg-white py-2.5 pl-10 pr-3 text-sm text-[var(--fv-text)] outline-none transition focus:border-[var(--fv-accent)] focus:shadow-[var(--fv-shadow)]"
                 />
               </label>
-              <p className="shrink-0 text-xs tabular-nums text-pe-text-muted">{filtered.length}</p>
+              <p className="fv-caption shrink-0 tabular-nums">{filtered.length}</p>
             </div>
 
             <label className="block sm:hidden">
@@ -306,7 +303,7 @@ export default function SgbTrackerPage() {
               <select
                 value={yearId}
                 onChange={(e) => setYearId(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-pe-border bg-pe-canvas py-2.5 pl-3 pr-8 text-sm font-medium text-pe-text outline-none ring-pe-accent focus:ring-2"
+                className="w-full appearance-none rounded-full border border-[var(--fv-border)] bg-white py-2.5 pl-3 pr-8 text-sm font-medium text-[var(--fv-text)] outline-none focus:border-[var(--fv-accent)]"
                 style={{
                   backgroundImage:
                     "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
@@ -322,7 +319,11 @@ export default function SgbTrackerPage() {
               </select>
             </label>
 
-            <div className="hidden gap-1.5 overflow-x-auto pb-1 sm:flex" role="tablist" aria-label="Maturity year">
+            <div
+              className="hidden gap-1.5 overflow-x-auto pb-1 sm:flex"
+              role="tablist"
+              aria-label="Maturity year"
+            >
               {yearOptions.map((opt) => {
                 const active = opt.id === yearId;
                 return (
@@ -332,14 +333,16 @@ export default function SgbTrackerPage() {
                     role="tab"
                     aria-selected={active}
                     onClick={() => setYearId(opt.id)}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition duration-150 ${
                       active
-                        ? 'bg-pe-text text-pe-canvas'
-                        : 'bg-pe-surface text-pe-text-secondary hover:bg-pe-border/60'
+                        ? 'bg-[var(--fv-text)] text-white'
+                        : 'bg-black/[0.04] text-[var(--fv-text-secondary)] hover:bg-black/[0.06]'
                     }`}
                   >
                     {opt.label}
-                    <span className={`ml-1.5 tabular-nums ${active ? 'opacity-70' : 'text-pe-text-muted'}`}>
+                    <span
+                      className={`ml-1.5 tabular-nums ${active ? 'opacity-70' : 'text-[var(--fv-text-muted)]'}`}
+                    >
                       {opt.count}
                     </span>
                   </button>
@@ -348,7 +351,7 @@ export default function SgbTrackerPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-pe-border bg-pe-canvas shadow-sm">
+          <div className="overflow-x-auto rounded-[20px] bg-white shadow-[var(--fv-shadow)]">
             <table className="mf-screener-table sgb-tracker-table w-full min-w-[360px]">
               <thead>
                 <tr>
@@ -381,7 +384,7 @@ export default function SgbTrackerPage() {
               <tbody>
                 {loading && !items.length ? (
                   <tr>
-                    <td colSpan={3} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={3} className="py-10 text-center text-sm text-[var(--fv-text-muted)]">
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                         Loading…
@@ -391,8 +394,12 @@ export default function SgbTrackerPage() {
                 ) : null}
                 {filtered.map((row) => (
                   <tr key={row.symbol}>
-                    <td className="sgb-col-symbol font-semibold text-pe-text">{row.symbol}</td>
-                    <td className={`sgb-col-prem tabular-nums font-semibold ${premiumTone(row.premiumPct)}`}>
+                    <td className="sgb-col-symbol font-semibold text-[var(--fv-text)]">
+                      {row.symbol}
+                    </td>
+                    <td
+                      className={`sgb-col-prem tabular-nums font-semibold ${premiumTone(row.premiumPct)}`}
+                    >
                       {formatPremiumPct(row.premiumPct)}
                     </td>
                     <td className="sgb-col-ltp tabular-nums">{formatInr(row.ltp)}</td>
@@ -400,7 +407,7 @@ export default function SgbTrackerPage() {
                 ))}
                 {!loading && !filtered.length ? (
                   <tr>
-                    <td colSpan={3} className="py-10 text-center text-sm text-pe-text-muted">
+                    <td colSpan={3} className="py-10 text-center text-sm text-[var(--fv-text-muted)]">
                       No SGBs match this filter.
                     </td>
                   </tr>
@@ -409,14 +416,14 @@ export default function SgbTrackerPage() {
             </table>
           </div>
 
-          <p className="mt-4 text-xs leading-relaxed text-pe-text-muted">
+          <p className="fv-caption mt-4 leading-relaxed">
             SGB prices and IBJA Fine Gold (999) come from PocketEdge market data. Premium/discount is
             SGB LTP vs IBJA ₹/g (excl. GST). Gold is refreshed hourly 10:00–19:00 IST from{' '}
             <a
               href="https://ibja.co/"
               target="_blank"
               rel="noreferrer"
-              className="font-medium text-pe-accent hover:underline"
+              className="font-medium text-[var(--fv-accent)] hover:underline"
             >
               ibja.co
             </a>
@@ -430,6 +437,6 @@ export default function SgbTrackerPage() {
           </p>
         </>
       ) : null}
-    </MarketingShell>
+    </div>
   );
 }
