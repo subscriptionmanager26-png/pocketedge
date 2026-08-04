@@ -112,6 +112,7 @@ export function assetsFromHoldings(holdings) {
     const assetType = holding?.assetType ?? 'stock';
     const meta = metaForAssetType(assetType);
     const logoIconUrl = holding?.logoIconUrl ?? holding?.logo_icon_url ?? null;
+    const asOfDate = holding?.asOfDate ?? holding?.navDate ?? holding?.as_of_date ?? null;
     map[ticker] = {
       key: ticker,
       symbol: ticker,
@@ -124,6 +125,8 @@ export function assetsFromHoldings(holdings) {
       item: {
         changePct: changePct ?? null,
         previousClose: holding?.previousClose ?? null,
+        asOfDate,
+        navDate: asOfDate,
         assetType,
         logoIconUrl,
       },
@@ -141,7 +144,12 @@ export function holdingsNeedLiveResolve(holdings) {
     const price = Number(holding?.price);
     const hasPrice = Number.isFinite(price) && price > 0;
     const hasChange = holding?.changePct != null;
-    return !hasPrice || !hasChange;
+    const assetType = String(holding?.assetType ?? '').toLowerCase();
+    const isFund = assetType === 'fund' || /^\d{6,}$/.test(String(holding?.ticker ?? '').trim());
+    const hasAsOfDate = Boolean(
+      holding?.asOfDate ?? holding?.navDate ?? holding?.as_of_date ?? holding?.nav_date
+    );
+    return !hasPrice || !hasChange || (isFund && !hasAsOfDate);
   });
 }
 
