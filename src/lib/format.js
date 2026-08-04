@@ -79,6 +79,28 @@ export function formatNewsDate(iso) {
   }).format(d);
 }
 
+/** NAV as-of label like "3rd Aug 2026" from YYYY-MM-DD (IST calendar, no TZ shift). */
+export function formatNavDate(ymd) {
+  if (!ymd) return '';
+  const raw = String(ymd).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return formatNewsDate(ymd);
+  const year = Number(match[1]);
+  const monthIdx = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  if (!Number.isFinite(year) || monthIdx < 0 || monthIdx > 11 || !Number.isFinite(day)) {
+    return formatNewsDate(ymd);
+  }
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const j = day % 10;
+  const k = day % 100;
+  let suffix = 'th';
+  if (j === 1 && k !== 11) suffix = 'st';
+  else if (j === 2 && k !== 12) suffix = 'nd';
+  else if (j === 3 && k !== 13) suffix = 'rd';
+  return `${day}${suffix} ${months[monthIdx]} ${year}`;
+}
+
 export function timeAgo(iso) {
   const then = new Date(iso).getTime();
   const now = Date.now();

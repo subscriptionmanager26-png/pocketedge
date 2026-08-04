@@ -1,4 +1,4 @@
-import { dayChangeAmount, formatPct, formatPrice, pnlClass } from '../lib/format';
+import { dayChangeAmount, formatNavDate, formatPct, formatPrice, pnlClass } from '../lib/format';
 import { isInFundNavPublishWindow } from '../lib/fundDayPnl';
 import { isInMcxSession, isInNseSession } from '../lib/marketRefreshPolicy';
 import AssetLogo from './AssetLogo';
@@ -37,11 +37,15 @@ export function QuoteChangeBlock({
   previousClose,
   change,
   priceText = null,
+  priceLabel = null,
+  asOfDate = null,
   formatAsCurrency = true,
   size = 'row',
   className = '',
   assetType = null,
 }) {
+  const type = String(assetType ?? '').toLowerCase();
+  const isFund = type === 'fund';
   const numericPrice =
     typeof price === 'number'
       ? price
@@ -71,10 +75,10 @@ export function QuoteChangeBlock({
   const showPct = pctValue != null && Number.isFinite(pctValue);
   const meaningful = hasMeaningfulMove(amount, showPct ? pctValue : null);
   const sessionLive = isLiveSessionForAsset(assetType);
-  // Flat moves never show. On the security detail header, also hide when the
-  // market session is closed — LTP is not moving, so "Today's Change" is noise.
+  // Flat moves never show. Equities hide closed-session noise on detail.
+  // Funds keep day change whenever prior NAV / changePct is available.
   const hasChange =
-    meaningful && (size !== 'detail' || !assetType || sessionLive);
+    meaningful && (size !== 'detail' || !assetType || sessionLive || isFund);
   const tone = amount != null ? amount : showPct ? pctValue : 0;
   const formatValue = (n) => (formatAsCurrency ? formatPrice(n) : formatSignedPlain(n));
   const priceDisplay =
@@ -88,6 +92,14 @@ export function QuoteChangeBlock({
           ? price
           : formatValue(Number(price))
         : '-');
+  const navDateLabel = formatNavDate(asOfDate);
+  const resolvedPriceLabel =
+    priceLabel ??
+    (isFund
+      ? navDateLabel
+        ? `NAV (${navDateLabel})`
+        : 'NAV'
+      : 'Current Price');
 
   const priceClass =
     size === 'detail'
@@ -106,12 +118,12 @@ export function QuoteChangeBlock({
     return (
       <div className={`flex items-start gap-8 ${className}`.trim()}>
         <div className="min-w-0">
-          <p className={labelClass}>Current Price</p>
+          <p className={labelClass}>{resolvedPriceLabel}</p>
           <p className={priceClass}>{priceDisplay}</p>
         </div>
         {hasChange ? (
           <div className="min-w-0">
-            <p className={labelClass}>Today&apos;s Change</p>
+            <p className={labelClass}>{isFund ? <>Day&apos;s Change</> : <>Today&apos;s Change</>}</p>
             <p className={changeClass}>{changeText}</p>
           </div>
         ) : null}
@@ -139,6 +151,8 @@ export default function AssetProductHeader({
   changePct,
   previousClose,
   change,
+  asOfDate = null,
+  priceLabel = null,
   formatAsCurrency = true,
   metaValue,
   priceSource,
@@ -181,6 +195,8 @@ export default function AssetProductHeader({
           changePct={changePct}
           previousClose={previousClose}
           change={change}
+          asOfDate={asOfDate}
+          priceLabel={priceLabel}
           formatAsCurrency={formatAsCurrency}
           priceText={typeof price === 'string' ? price : null}
         />

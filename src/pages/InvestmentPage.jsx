@@ -128,6 +128,11 @@ export default function InvestmentPage({
   );
 
   const hasResolvedFund = Boolean(seedFund || marketFund);
+  const amfiCode = String(fund.id ?? fund.schemeCode ?? fundId ?? '').trim();
+  const navAsOf = fund.asOfDate ?? fund.navDate ?? null;
+  // Prefer category · AMC; avoid a bare "Mutual Fund" standing in for the symbol.
+  const subtitle =
+    categoryLine && categoryLine.toLowerCase() !== 'mutual fund' ? categoryLine : undefined;
 
   if (!marketLoading && !hasResolvedFund) {
     return (
@@ -141,6 +146,7 @@ export default function InvestmentPage({
         <>
           <AssetProductHeader
             name={fund.name}
+            ticker={amfiCode || undefined}
             logoIconUrl={fund.logoIconUrl}
             assetType="fund"
             assetKey={fund.id ?? fundId}
@@ -148,7 +154,8 @@ export default function InvestmentPage({
             changePct={fund.changePct}
             previousClose={fund.previousClose}
             change={fund.change}
-            subtitle={categoryLine || undefined}
+            asOfDate={navAsOf}
+            subtitle={subtitle}
           />
         </>
       ) : null}
