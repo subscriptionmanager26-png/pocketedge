@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import Avatar from './Avatar';
 import {
   getAppCurrentUserId,
@@ -24,7 +23,7 @@ export default function FollowListView({
   userId,
   mode,
   graphTick,
-  onBack,
+  onBack: _onBack,
   onOpenProfile,
   onGraphChange,
 }) {
@@ -73,17 +72,7 @@ export default function FollowListView({
 
   return (
     <div>
-      <div className="hidden items-center gap-3 px-4 py-3 md:flex md:px-6">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-pe-text-secondary transition hover:text-pe-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-      </div>
-
+      {/* Back lives in Shell FeedTopBar gutter — do not duplicate under search. */}
       <div className="px-4 py-4 md:px-6">
         <h2 className="text-[20px] font-semibold tracking-tight text-pe-text">{title}</h2>
       </div>

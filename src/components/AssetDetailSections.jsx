@@ -34,7 +34,7 @@ const RAIL_CARD =
 
 /** Extra vertical padding so each card’s shadow isn’t clipped by overflow-x. */
 const RAIL_SCROLL =
-  'flex gap-3 overflow-x-auto px-4 py-3 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+  'flex gap-3 overflow-x-auto bg-white px-4 py-3 md:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 function MarkdownFallback() {
   return <p className="text-sm text-pe-text-muted">Loading…</p>;
@@ -69,12 +69,11 @@ function LoadingRail() {
   return <p className="px-4 text-[13px] text-pe-text-secondary md:px-6">Loading…</p>;
 }
 
-/** Inline panel back — Shell owns mobile back; avoid a second sticky header band. */
-function PanelBackHeader({ assetLabel, onBack, desktopOnly = false }) {
+/** Prefer Shell FeedTopBar back when the shell owns navigation. */
+function PanelBackHeader({ assetLabel, onBack, hidden = false }) {
+  if (hidden) return null;
   return (
-    <div
-      className={`px-4 py-3 md:px-6 ${desktopOnly ? 'hidden md:block' : ''}`}
-    >
+    <div className="px-4 py-3 md:px-6">
       <button
         type="button"
         onClick={onBack}
@@ -248,7 +247,7 @@ export function AssetInsightsView({
       <PanelBackHeader
         assetLabel={assetLabel}
         onBack={onBack}
-        desktopOnly={panelBackDesktopOnly}
+        hidden={panelBackDesktopOnly}
       />
 
       <div className="border-b border-pe-border px-4 pb-3 pt-2">
@@ -337,7 +336,7 @@ export function AssetCorporateActionsView({
       <PanelBackHeader
         assetLabel={assetLabel}
         onBack={onBack}
-        desktopOnly={panelBackDesktopOnly}
+        hidden={panelBackDesktopOnly}
       />
 
       <div className="border-b border-pe-border px-4 pb-3 pt-2">
@@ -399,7 +398,7 @@ function AssetListPanel({ title, assetLabel, onBack, panelBackDesktopOnly = fals
       <PanelBackHeader
         assetLabel={assetLabel}
         onBack={onBack}
-        desktopOnly={panelBackDesktopOnly}
+        hidden={panelBackDesktopOnly}
       />
       <div className="border-b border-pe-border px-4 pb-3 pt-2">
         <h1 className="text-[20px] font-semibold tracking-tight text-pe-text">{title}</h1>

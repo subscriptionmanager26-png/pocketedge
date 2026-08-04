@@ -363,10 +363,6 @@ export default function Shell({
     goTab('activity');
   };
 
-  // #region agent log
-  fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'post-fix',hypothesisId:'H5',location:'Shell.jsx:render',message:'Shell render reached after searchOpen fix',data:{guestMode,tab,searchOpen,showMobileComposeFab},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
-
   return (
     <div className="pe-feed-v1 min-h-dvh bg-white text-pe-text md:flex md:h-dvh md:overflow-hidden">
       <aside className="hidden md:flex md:h-full md:w-[232px] md:shrink-0 md:flex-col md:overflow-y-auto md:overscroll-y-contain md:border-r md:border-pe-border md:p-2">

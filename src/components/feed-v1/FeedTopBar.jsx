@@ -202,79 +202,85 @@ export default function FeedTopBar({
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--fv-border)]/60 bg-white/95 px-3 py-2.5 backdrop-blur-md md:fixed md:left-[232px] md:right-0 md:border-b-0 md:bg-white md:px-5 md:py-4">
-      {/* Mobile row */}
-      <div className="flex items-center gap-2 md:hidden">
-        <div className="relative shrink-0" ref={feedMenuRef}>
-          {mobileBack ? (
-            backButton
-          ) : showFeedMenu ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileMenuOpen(false);
-                  setFeedMenuOpen((open) => !open);
-                }}
-                className="inline-flex h-10 items-center gap-0.5"
-                aria-haspopup="listbox"
-                aria-expanded={feedMenuOpen}
-                aria-label={`Feed menu. Currently ${feedTitle}`}
-              >
-                <span className="flex h-10 w-10 items-center justify-center">
-                  <LogoMark />
-                </span>
-                <ChevronDown
-                  className={`h-4 w-4 text-[var(--fv-text-secondary)] transition ${
-                    feedMenuOpen ? 'rotate-180' : ''
-                  }`}
-                  strokeWidth={2}
-                />
-              </button>
-              {feedMenuOpen ? (
-                <div
-                  role="listbox"
-                  aria-label="Feed mode"
-                  className="absolute left-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
+      {/*
+        Mobile: Back gets its own row so search keeps full width.
+        Logo / feed menu only when there is no back destination.
+      */}
+      <div className="md:hidden">
+        {mobileBack ? <div className="mb-2 flex items-center">{backButton}</div> : null}
+        <div className="flex items-center gap-2">
+          {!mobileBack ? (
+            <div className="relative shrink-0" ref={feedMenuRef}>
+              {showFeedMenu ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      setFeedMenuOpen((open) => !open);
+                    }}
+                    className="inline-flex h-10 items-center gap-0.5"
+                    aria-haspopup="listbox"
+                    aria-expanded={feedMenuOpen}
+                    aria-label={`Feed menu. Currently ${feedTitle}`}
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center">
+                      <LogoMark />
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-[var(--fv-text-secondary)] transition ${
+                        feedMenuOpen ? 'rotate-180' : ''
+                      }`}
+                      strokeWidth={2}
+                    />
+                  </button>
+                  {feedMenuOpen ? (
+                    <div
+                      role="listbox"
+                      aria-label="Feed mode"
+                      className="absolute left-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
+                    >
+                      {FEED_OPTIONS.map((option) => {
+                        const active = feedMode === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            onClick={() => {
+                              onFeedModeChange?.(option.id);
+                              setFeedMenuOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium transition ${
+                              active
+                                ? 'bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]'
+                                : 'text-[var(--fv-text)] hover:bg-black/[0.03]'
+                            }`}
+                          >
+                            {option.label}
+                            {active ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onGoHome}
+                  className="flex h-10 w-10 items-center justify-center"
+                  aria-label="Go to home feed"
                 >
-                  {FEED_OPTIONS.map((option) => {
-                    const active = feedMode === option.id;
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        role="option"
-                        aria-selected={active}
-                        onClick={() => {
-                          onFeedModeChange?.(option.id);
-                          setFeedMenuOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium transition ${
-                          active
-                            ? 'bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]'
-                            : 'text-[var(--fv-text)] hover:bg-black/[0.03]'
-                        }`}
-                      >
-                        {option.label}
-                        {active ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onGoHome}
-              className="flex h-10 w-10 items-center justify-center"
-              aria-label="Go to home feed"
-            >
-              <LogoMark />
-            </button>
-          )}
+                  <LogoMark />
+                </button>
+              )}
+            </div>
+          ) : null}
+          {searchField}
+          {accountActions}
         </div>
-        {searchField}
-        {accountActions}
       </div>
 
       {/*

@@ -37,13 +37,19 @@ function SecurityRail({ items, onOpen }) {
   if (!items.length) {
     return <p className="px-4 text-[12px] text-pe-text-secondary">Nothing here yet.</p>;
   }
+  // White padding + vertical room so each card’s own shadow isn’t clipped into a strip.
   return (
-    <div className="flex gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {items.map((item) => (
-        <div key={ideaSecurityKey(item)} className="h-[148px] w-[min(240px,78vw)] min-w-[240px] shrink-0">
-          <SecurityIdeaCard item={item} onOpen={onOpen} />
-        </div>
-      ))}
+    <div className="bg-white">
+      <div className="flex gap-3 overflow-x-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item) => (
+          <div
+            key={ideaSecurityKey(item)}
+            className="relative z-0 h-[148px] w-[min(240px,78vw)] min-w-[240px] shrink-0"
+          >
+            <SecurityIdeaCard item={item} onOpen={onOpen} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

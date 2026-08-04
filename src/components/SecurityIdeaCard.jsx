@@ -29,7 +29,7 @@ export default function SecurityIdeaCard({ item, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen?.(item)}
-      className={`flex h-full w-full flex-col overflow-hidden rounded-[20px] bg-white p-4 text-left transition duration-150 hover:-translate-y-px ${CARD_SHADOW} ${CARD_SHADOW_HOVER}`}
+      className={`relative z-0 flex h-full w-full flex-col overflow-hidden rounded-[20px] bg-white p-4 text-left transition duration-150 hover:z-10 hover:-translate-y-px ${CARD_SHADOW} ${CARD_SHADOW_HOVER}`}
       data-security-key={ideaSecurityKey(item)}
     >
       <div className="flex items-start gap-3">
