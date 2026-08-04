@@ -1,6 +1,7 @@
 import {
   fetchMarketPreview,
   loadSearchIndex,
+  lookupMarketAssetsBatch,
   resolveMarketIndex,
 } from './marketDataApi';
 import { rankMostWatchedSecurities } from './ideaSecurities';
@@ -38,7 +39,29 @@ export function toRailIndexRow(item) {
   };
 }
 
-async function resolveIndexRows(ids) {
+async function resolveIndexRows(ids, { force = false } = {}) {
+  if (!ids.length) return [];
+
+  // Prefer one batch (and bypass stale client cache when force) so Overview
+  // shows the post-close / CAS settlement levels rather than a mid-session hit.
+  if (force) {
+    try {
+      const batch = await lookupMarketAssetsBatch(ids, { force: true });
+      const rows = ids.map((id) => {
+        const item =
+          batch.get(id) ??
+          batch.get(String(id).toUpperCase()) ??
+          batch.get(String(id).toLowerCase());
+        return item?.assetType === 'index' || item?.assetType == null
+          ? toRailIndexRow(item)
+          : null;
+      });
+      if (rows.some(Boolean)) return rows.filter(Boolean);
+    } catch {
+      /* fall through */
+    }
+  }
+
   const rows = await Promise.all(
     ids.map(async (id) => {
       try {
@@ -52,15 +75,15 @@ async function resolveIndexRows(ids) {
 }
 
 export async function loadRailOverviewIndices() {
-  return resolveIndexRows(OVERVIEW_INDEX_IDS);
+  return resolveIndexRows(OVERVIEW_INDEX_IDS, { force: true });
 }
 
 export async function loadRailTrackedIndices() {
-  return resolveIndexRows(getRailIndexIds());
+  return resolveIndexRows(getRailIndexIds(), { force: true });
 }
 
 export async function loadRailTrackedSectors() {
-  return resolveIndexRows(getRailSectorIds());
+  return resolveIndexRows(getRailSectorIds(), { force: true });
 }
 
 /** Catalog for pickers — prefer search index (full set, light payload). */

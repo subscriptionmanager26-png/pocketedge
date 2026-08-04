@@ -1,21 +1,10 @@
 import { dayChangeAmount, formatNavDate, formatPct, formatPrice, pnlClass } from '../lib/format';
-import { isInFundNavPublishWindow } from '../lib/fundDayPnl';
-import { isInMcxSession, isInNseSession } from '../lib/marketRefreshPolicy';
 import AssetLogo from './AssetLogo';
 
 function formatSignedPlain(n) {
   if (n == null || Number.isNaN(n)) return '-';
   const sign = n > 0 ? '+' : n < 0 ? '−' : '';
   return `${sign}${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-}
-
-function isLiveSessionForAsset(assetType, date = new Date()) {
-  const type = String(assetType ?? '').toLowerCase();
-  if (!type) return true;
-  if (type === 'fund') return isInFundNavPublishWindow(date);
-  if (type === 'commodity') return isInMcxSession(date);
-  // stock / etf / bond / index share NSE hours
-  return isInNseSession(date);
 }
 
 function hasMeaningfulMove(amount, pctValue) {
@@ -74,11 +63,9 @@ export function QuoteChangeBlock({
   const pctValue = hasPct ? Number(changePct) : derivedPct;
   const showPct = pctValue != null && Number.isFinite(pctValue);
   const meaningful = hasMeaningfulMove(amount, showPct ? pctValue : null);
-  const sessionLive = isLiveSessionForAsset(assetType);
-  // Flat moves never show. Equities hide closed-session noise on detail.
-  // Funds keep day change whenever prior NAV / changePct is available.
-  const hasChange =
-    meaningful && (size !== 'detail' || !assetType || sessionLive || isFund);
+  // Show day move whenever we have one — session hours only gate live polling,
+  // not whether the last session's change is displayed after the close.
+  const hasChange = meaningful;
   const tone = amount != null ? amount : showPct ? pctValue : 0;
   const formatValue = (n) => (formatAsCurrency ? formatPrice(n) : formatSignedPlain(n));
   const priceDisplay =

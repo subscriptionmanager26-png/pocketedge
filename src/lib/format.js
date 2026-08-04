@@ -56,7 +56,11 @@ export function dayChangeAmount({ price, changePct, previousClose, change } = {}
   const prev = Number(previousClose);
   if (Number.isFinite(px) && Number.isFinite(prev)) return px - prev;
   const pct = Number(changePct);
-  if (Number.isFinite(px) && Number.isFinite(pct)) return px * (pct / 100);
+  // Derive points from last price + % move: Δ = P − P/(1+r) = P·r/(1+r).
+  if (Number.isFinite(px) && Number.isFinite(pct) && pct !== -100) {
+    return (px * pct) / (100 + pct);
+  }
+  if (Number.isFinite(prev) && Number.isFinite(pct)) return prev * (pct / 100);
   return null;
 }
 
