@@ -303,6 +303,17 @@ export default function PortfolioPage({
           changePct: asset?.item?.changePct ?? holding.changePct ?? null,
           asOfDate: asset?.item?.asOfDate ?? asset?.item?.navDate ?? holding.asOfDate ?? null,
           navDate: asset?.item?.navDate ?? asset?.item?.asOfDate ?? holding.navDate ?? null,
+          previousClose: asset?.item?.previousClose ?? holding.previousClose ?? null,
+          previousNav:
+            asset?.item?.previousNav ??
+            asset?.item?.previousClose ??
+            holding.previousNav ??
+            holding.previousClose ??
+            null,
+          previousAsOfDate:
+            asset?.item?.previousAsOfDate ?? holding.previousAsOfDate ?? null,
+          previousChangePct:
+            asset?.item?.previousChangePct ?? holding.previousChangePct ?? null,
         };
       }),
     };

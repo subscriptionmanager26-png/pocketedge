@@ -5,6 +5,10 @@
  * Portfolio Day's PnL on calendar day D therefore uses the fund move for
  * as_of_date = D-1 (yesterday IST). Stocks/ETFs/bonds stay same-day.
  *
+ * After ~23:30 IST many funds already publish same-day NAV. In that case the
+ * live quote's as_of_date is today, and Day's PnL must come from the previous
+ * NAV observation (previousAsOfDate / previousChangePct) returned by the API.
+ *
  * Backend fetch slots (IST): 23:00, 23:30, 00:30, 10:00, 10:30.
  */
 
@@ -63,6 +67,9 @@ export function isFundNavForPnlDay(asOfDate, date = new Date()) {
 /**
  * Day-change % to use for portfolio Day's PnL.
  * Stocks/ETFs/bonds keep live changePct; funds use yesterday's NAV date move.
+ *
+ * After ~23:30 IST many funds already expose same-day NAV (asOfDate = today).
+ * In that case use previousChangePct when previousAsOfDate is yesterday.
  */
 export function dayChangePctForPnl(holding, date = new Date()) {
   const raw = Number(holding?.changePct ?? holding?.dayChangePct);
@@ -71,7 +78,18 @@ export function dayChangePctForPnl(holding, date = new Date()) {
 
   const asOf =
     holding?.asOfDate ?? holding?.navDate ?? holding?.as_of_date ?? holding?.nav_date ?? null;
-  return isFundNavForPnlDay(asOf, date) ? changePct : 0;
+  if (isFundNavForPnlDay(asOf, date)) return changePct;
+
+  const previousAsOf =
+    holding?.previousAsOfDate ??
+    holding?.previous_as_of_date ??
+    holding?.previousNavDate ??
+    holding?.previous_nav_date ??
+    null;
+  if (!isFundNavForPnlDay(previousAsOf, date)) return 0;
+
+  const previousRaw = Number(holding?.previousChangePct ?? holding?.previous_change_pct);
+  return Number.isFinite(previousRaw) ? previousRaw : 0;
 }
 
 /**

@@ -125,6 +125,11 @@ export function assetsFromHoldings(holdings) {
       item: {
         changePct: changePct ?? null,
         previousClose: holding?.previousClose ?? null,
+        previousNav: holding?.previousNav ?? holding?.previous_nav ?? holding?.previousClose ?? null,
+        previousAsOfDate:
+          holding?.previousAsOfDate ?? holding?.previous_as_of_date ?? null,
+        previousChangePct:
+          holding?.previousChangePct ?? holding?.previous_change_pct ?? null,
         asOfDate,
         navDate: asOfDate,
         assetType,

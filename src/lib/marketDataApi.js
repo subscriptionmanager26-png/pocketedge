@@ -144,6 +144,19 @@ export function marketAssetRowToItem(row) {
         ? ((Number(price) - Number(previousClose)) / Number(previousClose)) * 100
         : null;
   const asOfDate = row.as_of_date ?? row.asOfDate ?? null;
+  const previousAsOfDate = row.previous_as_of_date ?? row.previousAsOfDate ?? null;
+  const previousNavRaw = row.previous_nav ?? row.previousNav ?? null;
+  const previousNav =
+    previousNavRaw != null && Number.isFinite(Number(previousNavRaw))
+      ? Number(previousNavRaw)
+      : previousClose != null && Number.isFinite(Number(previousClose))
+        ? Number(previousClose)
+        : null;
+  const previousChangePctRaw = row.previous_change_pct ?? row.previousChangePct ?? null;
+  const previousChangePct =
+    previousChangePctRaw != null && Number.isFinite(Number(previousChangePctRaw))
+      ? Number(previousChangePctRaw)
+      : null;
   const priceSource = row.price_source ?? row.priceSource ?? null;
   const syncedAt = row.synced_at ?? row.syncedAt ?? null;
   const exchange = row.exchange ?? null;
@@ -161,6 +174,9 @@ export function marketAssetRowToItem(row) {
       price,
       changePct,
       previousClose,
+      previousNav,
+      previousAsOfDate,
+      previousChangePct,
       asOfDate,
       navDate: asOfDate,
       priceSource,
@@ -185,6 +201,9 @@ export function marketAssetRowToItem(row) {
       change: previousClose != null && price != null ? price - previousClose : null,
       changePct,
       previousClose,
+      previousNav,
+      previousAsOfDate,
+      previousChangePct,
       asOfDate,
       priceSource,
       syncedAt,
@@ -206,6 +225,9 @@ export function marketAssetRowToItem(row) {
         previousClose != null && price != null ? Number(price) - Number(previousClose) : null,
       changePct,
       previousClose,
+      previousNav,
+      previousAsOfDate,
+      previousChangePct,
       asOfDate,
       priceSource,
       syncedAt,
@@ -224,6 +246,9 @@ export function marketAssetRowToItem(row) {
     nav: row.nav ?? null,
     changePct,
     previousClose,
+    previousNav,
+    previousAsOfDate,
+    previousChangePct,
     asOfDate,
     priceSource,
     syncedAt,
@@ -885,6 +910,9 @@ export function marketFundToDetail(fund) {
     changePct: fund.changePct,
     change: fund.change,
     previousClose: fund.previousClose,
+    previousNav: fund.previousNav ?? fund.previousClose,
+    previousAsOfDate: fund.previousAsOfDate ?? null,
+    previousChangePct: fund.previousChangePct ?? null,
     syncedAt: fund.syncedAt,
     priceSource: fund.priceSource,
     schemeType: fund.schemeType,
