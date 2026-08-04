@@ -112,7 +112,9 @@ export function writeProfileGraphCache(userId, payload) {
   if (!userId || !payload) return;
   const current = readRaw() ?? {};
   const profileGraph = { ...(current.profileGraph ?? {}) };
-  profileGraph[String(userId)] = payload;
+  const key = String(userId);
+  // Merge so counts-only header writes do not wipe following/followers id lists.
+  profileGraph[key] = { ...(profileGraph[key] ?? {}), ...payload };
   mergePatch({ profileGraph });
 }
 

@@ -40,6 +40,28 @@ function emit() {
   listeners.forEach((fn) => fn());
 }
 
+/** Coerce follow list entries to user-id strings (boot/cache may store objects). */
+export function normalizeFollowIdList(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (item == null) return '';
+      if (typeof item === 'string' || typeof item === 'number') return String(item).trim();
+      if (typeof item === 'object') {
+        return String(
+          item.followerId ??
+            item.follower_id ??
+            item.userId ??
+            item.user_id ??
+            item.id ??
+            ''
+        ).trim();
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
 function readJson(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -211,8 +233,8 @@ export function getFollowingForUser(userId) {
   const id = String(userId);
 
   if (useFollowBackend()) {
-    if (followingListCache.has(id)) return [...followingListCache.get(id)];
-    if (id === getAppCurrentUserId()) return [...getFollowingIds()];
+    if (followingListCache.has(id)) return normalizeFollowIdList(followingListCache.get(id));
+    if (id === getAppCurrentUserId()) return normalizeFollowIdList([...getFollowingIds()]);
     return [];
   }
 
@@ -229,7 +251,7 @@ export function getFollowersForUser(userId) {
   const id = String(userId);
 
   if (useFollowBackend()) {
-    if (followersListCache.has(id)) return [...followersListCache.get(id)];
+    if (followersListCache.has(id)) return normalizeFollowIdList(followersListCache.get(id));
     return [];
   }
 
@@ -288,10 +310,14 @@ export async function hydrateFollowGraph(userId) {
   }
 
   const sessionGraph = peekProfileGraphCache(id);
-  if (sessionGraph?.counts) {
+  const sessionHasLists =
+    Array.isArray(sessionGraph?.following) && Array.isArray(sessionGraph?.followers);
+  if (sessionGraph?.counts && sessionHasLists) {
+    const followingIds = normalizeFollowIdList(sessionGraph.following);
+    const followerIds = normalizeFollowIdList(sessionGraph.followers);
     countsCache.set(id, sessionGraph.counts);
-    if (Array.isArray(sessionGraph.following)) followingListCache.set(id, sessionGraph.following);
-    if (Array.isArray(sessionGraph.followers)) followersListCache.set(id, sessionGraph.followers);
+    followingListCache.set(id, followingIds);
+    followersListCache.set(id, followerIds);
     graphHydratedAt.set(id, Date.now());
     emit();
     return sessionGraph.counts;
@@ -306,28 +332,28 @@ export async function hydrateFollowGraph(userId) {
     isSelf ? fetchRecentFollowers(id, { limit: 50 }) : fetchFollowerIds(id),
   ]);
 
+  const followingIds = normalizeFollowIdList(following);
+  const followerIds = isSelf
+    ? normalizeFollowIdList(followersPayload.map((event) => event.followerId))
+    : normalizeFollowIdList(followersPayload);
+
   countsCache.set(id, counts);
-  followingListCache.set(id, following);
+  followingListCache.set(id, followingIds);
 
   if (isSelf) {
     myFollowerEventsCache = followersPayload;
-    followersListCache.set(
-      id,
-      followersPayload.map((event) => event.followerId)
-    );
-    myFollowingCache = new Set(following);
-    writeJson(FOLLOWING_KEY, following);
+    followersListCache.set(id, followerIds);
+    myFollowingCache = new Set(followingIds);
+    writeJson(FOLLOWING_KEY, followingIds);
   } else {
-    followersListCache.set(id, followersPayload);
+    followersListCache.set(id, followerIds);
   }
 
   graphHydratedAt.set(id, Date.now());
   writeProfileGraphCache(id, {
     counts,
-    following,
-    followers: isSelf
-      ? followersPayload.map((event) => event.followerId)
-      : followersPayload,
+    following: followingIds,
+    followers: followerIds,
     source: 'network',
   });
 

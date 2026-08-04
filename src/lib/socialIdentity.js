@@ -28,11 +28,13 @@ export function getAppCurrentUserId() {
 
 export function profileToPerson(profile) {
   if (!profile) return null;
-  const name = profile.display_name || profile.username || 'Investor';
+  const username = String(profile.username ?? '').trim();
+  const displayName = String(profile.display_name ?? '').trim();
+  const name = displayName || username || 'Investor';
   return {
     id: profile.user_id,
     name,
-    handle: profile.username,
+    handle: username || null,
     avatar: name.charAt(0).toUpperCase(),
     avatarUrl: profile.avatar_url ?? null,
     bio: profile.bio ?? '',

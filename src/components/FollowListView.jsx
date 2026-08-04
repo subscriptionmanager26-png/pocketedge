@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Avatar from './Avatar';
 import {
   getAppCurrentUserId,
   getPersonSync,
-  resolvePerson,
+  resolvePeople,
 } from '../lib/socialIdentity';
 import {
   getFollowersForUser,
@@ -19,6 +19,14 @@ function isMockUserId(id) {
   return value === 'u_me' || /^u\d+$/.test(value) || /^u_[a-z0-9]+$/i.test(value);
 }
 
+function listIdsForMode(userId, mode) {
+  const raw =
+    mode === 'followers' ? getFollowersForUser(userId) : getFollowingForUser(userId);
+  if (isDevMockMode()) return raw;
+  // Drop leftover demo IDs so production lists never show mock people.
+  return raw.filter((id) => !isMockUserId(id));
+}
+
 export default function FollowListView({
   userId,
   mode,
@@ -28,47 +36,54 @@ export default function FollowListView({
   onGraphChange,
 }) {
   const title = mode === 'followers' ? 'Followers' : 'Following';
+  const [people, setPeople] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return undefined;
+    if (!userId) {
+      setPeople([]);
+      setLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
-    hydrateFollowGraph(userId).catch(() => {
+    setLoading(true);
+
+    (async () => {
+      await hydrateFollowGraph(userId).catch(() => {});
       if (cancelled) return;
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, mode]);
 
-  const ids = useMemo(() => {
-    void graphTick;
-    const raw =
-      mode === 'followers' ? getFollowersForUser(userId) : getFollowingForUser(userId);
-    if (isDevMockMode()) return raw;
-    // Drop leftover demo IDs so production lists never show mock people.
-    return raw.filter((id) => !isMockUserId(id));
-  }, [userId, mode, graphTick]);
+      void graphTick;
+      const ids = listIdsForMode(userId, mode);
+      if (!ids.length) {
+        setPeople([]);
+        setLoading(false);
+        return;
+      }
 
-  const idsKey = ids.join(',');
-  const [people, setPeople] = useState(() =>
-    ids.map((id) => getPersonSync(id)).filter(Boolean)
-  );
+      // Paint sync placeholders immediately, then replace with resolved profiles.
+      setPeople(ids.map((id) => getPersonSync(id)).filter(Boolean));
 
-  useEffect(() => {
-    let cancelled = false;
-    const nextIds = idsKey ? idsKey.split(',') : [];
-    setPeople(nextIds.map((id) => getPersonSync(id)).filter(Boolean));
-
-    Promise.all(nextIds.map((id) => resolvePerson(id).catch(() => getPersonSync(id))))
-      .then((resolved) => {
+      try {
+        const resolved = await resolvePeople(ids);
         if (cancelled) return;
-        setPeople(resolved.filter(Boolean));
-      });
+        setPeople(
+          resolved.length
+            ? resolved
+            : ids.map((id) => getPersonSync(id)).filter(Boolean)
+        );
+      } catch {
+        if (cancelled) return;
+        setPeople(ids.map((id) => getPersonSync(id)).filter(Boolean));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [idsKey]);
+  }, [userId, mode, graphTick]);
 
   return (
     <div>
@@ -77,7 +92,11 @@ export default function FollowListView({
         <h2 className="text-[20px] font-semibold tracking-tight text-pe-text">{title}</h2>
       </div>
 
-      {people.length === 0 ? (
+      {loading && people.length === 0 ? (
+        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary md:px-6">
+          Loading…
+        </p>
+      ) : people.length === 0 ? (
         <p className="px-4 py-12 text-center text-sm text-pe-text-secondary md:px-6">
           {mode === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}
         </p>
@@ -103,6 +122,10 @@ function PersonRow({ person, graphTick, onOpenProfile, onGraphChange }) {
   const currentUserId = getAppCurrentUserId();
   const following = isFollowing(person.id);
   const isSelf = person.id === currentUserId;
+  const displayName =
+    String(person.name ?? '').trim() ||
+    String(person.handle ?? '').trim() ||
+    'Investor';
 
   return (
     <div className="flex items-center gap-3 py-3.5">
@@ -113,7 +136,7 @@ function PersonRow({ person, graphTick, onOpenProfile, onGraphChange }) {
         className="min-w-0 flex-1 text-left"
       >
         <p className="truncate text-[15px] font-semibold text-pe-text hover:underline">
-          {person.name}
+          {displayName}
         </p>
         {person.handle ? (
           <p className="truncate text-sm text-pe-text-muted">@{person.handle}</p>
