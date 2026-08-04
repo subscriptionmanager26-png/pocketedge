@@ -56,14 +56,15 @@ const TAG_LABEL = {
   unsure: 'Neutral',
 };
 
-export function FormStatusTag({ form }) {
+export function FormStatusTag({ form, compact = false }) {
   if (!form || !TAG_LABEL[form]) return null;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[12px] font-semibold tracking-wide ${TAG_CLASS[form]}`}
+      className={`inline-flex max-w-full items-center gap-1 rounded-md border px-1.5 py-0.5 text-[12px] font-semibold tracking-wide ${TAG_CLASS[form]}`}
+      title={TAG_LABEL[form]}
     >
       <FormStatusIcon form={form} className="h-3.5 w-3.5 shrink-0" />
-      {TAG_LABEL[form]}
+      <span className={compact ? 'hidden sm:inline' : undefined}>{TAG_LABEL[form]}</span>
     </span>
   );
 }

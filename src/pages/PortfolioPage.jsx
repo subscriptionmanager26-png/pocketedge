@@ -515,21 +515,21 @@ export default function PortfolioPage({
         <section className="px-4 py-5 md:px-6">
           <div className="relative overflow-hidden">
             <div className="pointer-events-none select-none blur-[4px]" aria-hidden>
-              <div className="grid grid-cols-2 gap-x-4">
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4">
                 <div className="min-w-0">
                   <p className="text-[12px] font-semibold text-pe-text-muted">Invested Value</p>
-                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
                     ₹10,00,000
                   </p>
                 </div>
                 <div className="min-w-0 text-right">
                   <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
-                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
                     ₹12,48,320
                   </p>
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-3 flex items-stretch gap-2 sm:gap-3">
                 <PortfolioPnlCard label="Total PnL" amount={248320} pct={24.83} />
                 <PortfolioPnlCard label="1D PnL" amount={8420} pct={0.68} />
               </div>
@@ -636,24 +636,24 @@ export default function PortfolioPage({
         {metrics?.kind === 'portfolio' ? (
           <>
             <div>
-              <div className="grid grid-cols-2 gap-x-4">
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[12px] font-semibold text-pe-text-muted">Invested Value</p>
                     <PortfolioKindMetaTags portfolio={activeList} />
                   </div>
-                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
                     {formatInr(metrics.invested)}
                   </p>
                 </div>
                 <div className="min-w-0 text-right">
                   <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
-                  <p className="mt-1 text-[24px] font-bold tracking-tight tabular-nums text-pe-text">
+                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
                     {formatInr(metrics.totalValue)}
                   </p>
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-3 flex items-stretch gap-2 sm:gap-3">
                 <PortfolioPnlCard
                   label="Total PnL"
                   amount={metrics.totalPnl}
@@ -775,16 +775,16 @@ function PortfolioPnlCard({ label, amount, pct }) {
 
   return (
     <div
-      className={`flex min-w-0 items-center justify-between gap-3 rounded-[20px] bg-white px-3.5 py-3.5 ${CARD_SHADOW}`}
+      className={`flex min-w-0 flex-1 flex-col justify-between rounded-[16px] bg-white p-3 ${CARD_SHADOW} sm:p-3.5`}
     >
-      <p className="shrink-0 text-[12px] font-medium text-pe-text-muted">{label}</p>
-      <div className={`min-w-0 text-right tabular-nums ${pnlClass(tone)}`}>
-        {pctText ? (
-          <p className="text-[12px] font-semibold leading-none">{pctText}</p>
-        ) : null}
-        <p className={`text-[15px] font-bold tracking-tight leading-none ${pctText ? 'mt-1.5' : ''}`}>
+      <p className="text-[12px] font-medium leading-snug text-pe-text-muted">{label}</p>
+      <div className={`mt-2 min-w-0 tabular-nums ${pnlClass(tone)}`}>
+        <p className="truncate text-[15px] font-bold tracking-tight leading-none sm:text-[16px]">
           {amountText}
         </p>
+        {pctText ? (
+          <p className="mt-1.5 text-[12px] font-semibold leading-none">{pctText}</p>
+        ) : null}
       </div>
     </div>
   );

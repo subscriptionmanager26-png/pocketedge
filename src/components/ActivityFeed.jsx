@@ -164,11 +164,11 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 
   return (
     <div>
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-[var(--fv-border,#ececec)] px-4 py-2.5 sm:gap-x-3.5 sm:px-5">
-        <p className="col-span-2 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--fv-border,#ececec)] px-4 py-2.5 sm:gap-x-3.5 sm:px-5">
+        <p className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted">
           Security
         </p>
-        <div className="inline-flex items-center justify-end gap-2">
+        <div className="inline-flex min-w-0 flex-wrap items-center justify-end gap-2">
           <div className="relative" ref={sortMenuRef}>
             <button
               type="button"
@@ -241,12 +241,12 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
           <button
             type="button"
             onClick={cycleMetric}
-            className="inline-flex items-center justify-end gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text"
+            className="inline-flex max-w-[9.5rem] items-center justify-end gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text sm:max-w-none"
             aria-label={`Metric column: ${metricLabel}. Click to change.`}
             title="Tap to switch metric"
           >
-            <span className="whitespace-nowrap">{metricLabel}</span>
-            <span aria-hidden="true" className="text-[12px] leading-none">{'<>'}</span>
+            <span className="truncate whitespace-nowrap">{metricLabel}</span>
+            <span aria-hidden="true" className="shrink-0 text-[12px] leading-none">{'<>'}</span>
           </button>
         </div>
       </div>
@@ -360,7 +360,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                     assetType: h.assetType,
                   });
                 }}
-                className="flex w-full items-start gap-x-3 px-4 py-4 text-left transition hover:bg-black/[0.03] sm:gap-x-3.5 sm:px-5 sm:py-5"
+                className="flex w-full items-start gap-x-2.5 px-4 py-3.5 text-left transition hover:bg-black/[0.03] sm:gap-x-3.5 sm:px-5 sm:py-5"
               >
                 {/*
                   Center logo in a fixed band:
@@ -383,17 +383,17 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex h-5 items-center justify-between gap-3">
+                  <div className="flex h-5 items-center justify-between gap-2 sm:gap-3">
                     <div
                       data-holding-invested
-                      className="flex h-5 min-w-0 items-center gap-2"
+                      className="flex h-5 min-w-0 items-center gap-1.5 sm:gap-2"
                     >
                       <p className="min-w-0 truncate text-[12px] font-semibold leading-5 tabular-nums text-pe-text-muted">
                         Invested {investedText ?? '—'}
                       </p>
                       {form ? (
-                        <span className="inline-flex max-h-5 items-center overflow-visible">
-                          <FormStatusTag form={form} />
+                        <span className="inline-flex max-h-5 shrink-0 items-center overflow-visible">
+                          <FormStatusTag form={form} compact />
                         </span>
                       ) : null}
                     </div>
@@ -413,7 +413,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                     </p>
                   </div>
 
-                  <div className="mt-0.5 flex items-start justify-between gap-3">
+                  <div className="mt-0.5 flex items-start justify-between gap-2 sm:gap-3">
                     <p
                       data-holding-name
                       className="min-w-0 line-clamp-2 text-[15px] font-semibold leading-5 text-pe-text"

@@ -1881,25 +1881,25 @@ function PortfolioHoldingsList({ portfolio }) {
 
   return (
     <div>
-      <section className="px-4 pt-4">
-        <div className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-end gap-2 border-b border-pe-border py-3">
-          <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+      <section className="px-4 pt-4 md:px-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(4rem,72px)] items-end gap-2 border-b border-[var(--fv-border,#ececec)] py-3">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
             Holdings
           </p>
-          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            Allocation
+          <p className="text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
+            Alloc.
           </p>
-          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            {periodLabel} return
+          <p className="text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
+            {periodLabel}
           </p>
         </div>
-        <div className="divide-y divide-pe-border">
+        <div className="divide-y divide-[var(--fv-border,#ececec)]">
           {pageRows.map((row) => (
             <div
               key={row.key}
-              className="grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-2 py-3.5"
+              className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(4rem,72px)] items-center gap-2 py-3.5"
             >
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                 <AssetLogo
                   logoIconUrl={row.logoIconUrl}
                   assetType={row.assetType}
@@ -1911,11 +1911,11 @@ function PortfolioHoldingsList({ portfolio }) {
                   <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
                 </div>
               </div>
-              <p className="w-[88px] text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
+              <p className="min-w-0 text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
                 {row.weight.toFixed(1)}%
               </p>
               <p
-                className={`w-[72px] text-right text-[15px] font-bold tabular-nums ${pnlClass(row.itemReturn)}`}
+                className={`min-w-0 text-right text-[15px] font-bold tabular-nums ${pnlClass(row.itemReturn)}`}
               >
                 {formatPct(row.itemReturn)}
               </p>
@@ -1923,7 +1923,7 @@ function PortfolioHoldingsList({ portfolio }) {
           ))}
         </div>
       {sortedRows.length > HOLDINGS_PAGE_SIZE ? (
-        <div className="flex items-center justify-between gap-3 border-t border-pe-border py-3.5">
+        <div className="flex items-center justify-between gap-3 border-t border-[var(--fv-border,#ececec)] py-3.5">
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
