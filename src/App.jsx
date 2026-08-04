@@ -1036,6 +1036,8 @@ export default function App() {
         onSelectCommodity={openCommodity}
         onSelectIndex={openIndex}
         onOpenProfileFromSearch={openProfile}
+        onOpenPost={openPost}
+        onOpenProfile={openProfile}
         onGraphChange={() => setGraphTick((n) => n + 1)}
       >
         {hasAssetDetail ? (

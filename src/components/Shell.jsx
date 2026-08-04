@@ -12,13 +12,12 @@ import PageHeader from './PageHeader';
 import FeedTopBar from './feed-v1/FeedTopBar';
 import FeedRightRail from './feed-v1/FeedRightRail';
 import GlobalSearchPanel from './GlobalSearchPanel';
-import {
-  MARKET_PULSE,
-  SUGGESTED_INVESTORS,
-  TOP_DISCUSSIONS,
-  TRENDING_STOCKS,
-} from '../data/feedDesignMock';
 import { fetchMarketPreview } from '../lib/marketDataApi';
+import {
+  loadRailDiscussions,
+  loadRailPeople,
+  loadRailTrending,
+} from '../lib/feedRailData';
 import { getAppCurrentUser } from '../lib/socialIdentity';
 import { disclosuresPath, insightsPath, resourcesPath } from '../lib/routes';
 import { prefetchTab } from '../lib/tabPrefetch';
@@ -119,6 +118,8 @@ export default function Shell({
   onSelectCommodity,
   onSelectIndex,
   onOpenProfileFromSearch,
+  onOpenPost,
+  onOpenProfile,
   onGraphChange,
   children,
 }) {
@@ -131,8 +132,9 @@ export default function Shell({
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [railMarket, setRailMarket] = useState(MARKET_PULSE);
-  const [railTrending, setRailTrending] = useState(TRENDING_STOCKS);
+  const [railTrending, setRailTrending] = useState([]);
+  const [railDiscussions, setRailDiscussions] = useState([]);
+  const [railPeople, setRailPeople] = useState([]);
   const [railLive, setRailLive] = useState(false);
   // Must be after searchOpen state — authenticated path evaluates !searchOpen;
   // guestMode short-circuits earlier, which is why logout still rendered.
@@ -148,38 +150,23 @@ export default function Shell({
   useEffect(() => {
     let cancelled = false;
     Promise.all([
+      loadRailTrending(5).catch(() => ({ live: false, items: [] })),
+      loadRailDiscussions(4, { guestMode }).catch(() => []),
+      loadRailPeople(4).catch(() => []),
       fetchMarketPreview('indices').catch(() => null),
-      fetchMarketPreview('stocks').catch(() => null),
-    ]).then(([indicesPayload, stocksPayload]) => {
+    ]).then(([trendingPayload, discussions, people, indicesPayload]) => {
       if (cancelled) return;
-      if (indicesPayload?.items?.length) {
-        setRailMarket((prev) => ({
-          ...prev,
-          indices: indicesPayload.items.slice(0, 3).map((item) => ({
-            name: item.name || item.symbol || 'Index',
-            value:
-              item.price != null
-                ? Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })
-                : '—',
-            changePct: item.changePct,
-          })),
-        }));
-        setRailLive(indicesPayload.source === 'rpc');
-      }
-      if (stocksPayload?.items?.length) {
-        setRailTrending(
-          stocksPayload.items.slice(0, 5).map((item) => ({
-            ticker: item.symbol || item.id || '—',
-            name: item.name || item.symbol || 'Stock',
-            changePct: item.changePct,
-          }))
-        );
-      }
+      setRailTrending(trendingPayload?.items ?? []);
+      setRailDiscussions(discussions ?? []);
+      setRailPeople(people ?? []);
+      setRailLive(
+        Boolean(trendingPayload?.live) || indicesPayload?.source === 'rpc'
+      );
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [guestMode]);
 
   useEffect(() => {
     disableBrowserScrollRestoration();
@@ -503,11 +490,18 @@ export default function Shell({
 
       <div className="hidden md:contents">
         <FeedRightRail
-          market={railMarket}
           trending={railTrending}
-          discussions={TOP_DISCUSSIONS}
-          people={SUGGESTED_INVESTORS}
+          discussions={railDiscussions}
+          people={railPeople}
           live={railLive}
+          guestMode={guestMode}
+          onOpenIndex={onSelectIndex}
+          onOpenStock={onSelectStock}
+          onOpenPost={onOpenPost}
+          onOpenProfile={onOpenProfile || onOpenProfileFromSearch}
+          onCompose={onCompose}
+          onRequireSignIn={onRequireSignIn}
+          onFollowChange={onGraphChange}
         />
       </div>
 
