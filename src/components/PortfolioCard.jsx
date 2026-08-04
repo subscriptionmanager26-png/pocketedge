@@ -133,7 +133,7 @@ export default function PortfolioCard({
   };
 
   return (
-    <article className="mx-3 mb-4 rounded-[20px] bg-white px-4 py-5 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] transition hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] md:mx-6 md:mb-5 md:px-6 md:py-6">
+    <article className="mx-3 mb-4 rounded-[20px] bg-white px-4 pt-5 pb-2 shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)] transition hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] md:mx-6 md:mb-5 md:px-6 md:pt-6 md:pb-2.5">
       <button type="button" onClick={() => onOpen?.(portfolio.id)} className="w-full text-left">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[18px] font-semibold tracking-tight text-pe-text">{portfolio.name}</h3>
@@ -174,12 +174,12 @@ export default function PortfolioCard({
         </button>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[var(--fv-border,#ececec)]/80 pt-3 text-pe-text-secondary">
+      <div className="mt-2 grid w-full grid-cols-4 text-pe-text-secondary">
         <button
           type="button"
           onClick={handleLike}
           aria-pressed={liked}
-          className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${
+          className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
             liked ? 'text-pe-accent' : ''
           }`}
         >
@@ -191,12 +191,13 @@ export default function PortfolioCard({
           count={commentCount}
           unreadCount={showUnreadComments ? social?.unreadComments ?? 0 : 0}
           onClick={handleDiscuss}
+          className="h-8 justify-start px-0"
         />
 
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04]"
+          className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04]"
         >
           <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
           {formatCount(shares)}
@@ -207,7 +208,7 @@ export default function PortfolioCard({
             type="button"
             onClick={handleCopy}
             aria-pressed={copied}
-            className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${
+            className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
               copied ? 'text-pe-accent' : ''
             }`}
           >
@@ -219,7 +220,7 @@ export default function PortfolioCard({
             {formatCount(copies)}
           </button>
         ) : (
-          <span className="inline-flex h-10 items-center gap-1.5 px-2.5 text-[13px] font-medium text-pe-text-muted">
+          <span className="inline-flex h-8 items-center justify-start gap-1.5 text-[13px] font-medium text-pe-text-muted">
             <Copy className="h-[18px] w-[18px] opacity-40" strokeWidth={2} />
             {formatCount(copies)}
           </span>

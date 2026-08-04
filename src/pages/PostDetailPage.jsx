@@ -104,7 +104,7 @@ export default function PostDetailPage({
   }
 
   return (
-    <div>
+    <div className="pt-1 md:pt-0">
       <PostCard
         post={post}
         variant="detail"

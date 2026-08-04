@@ -57,7 +57,7 @@ export default function FeedRightRail({
     <aside className={shellClass}>
       <div className={`flex flex-col gap-5 ${stacked ? '' : 'pb-8 pt-[72px]'}`}>
         {/* Market Today */}
-        <section className="fv-card p-5">
+        <section className="fv-card-rail p-5">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">Market Today</h2>
             {live ? (
@@ -106,7 +106,7 @@ export default function FeedRightRail({
         </section>
 
         {/* Trending */}
-        <section className="fv-card p-5">
+        <section className="fv-card-rail p-5">
           <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">
             Trending on PocketEdge
           </h2>
@@ -134,7 +134,7 @@ export default function FeedRightRail({
         </section>
 
         {/* Top Discussions */}
-        <section className="fv-card p-5">
+        <section className="fv-card-rail p-5">
           <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">Top Discussions</h2>
           <ul className="mt-3 space-y-3">
             {(discussions ?? []).map((d) => (
@@ -155,7 +155,7 @@ export default function FeedRightRail({
         </section>
 
         {/* People to Follow */}
-        <section className="fv-card p-5">
+        <section className="fv-card-rail p-5">
           <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">People to Follow</h2>
           <ul className="mt-3 space-y-3.5">
             {(people ?? []).map((p) => (
@@ -179,7 +179,7 @@ export default function FeedRightRail({
         </section>
 
         {/* Portfolio CTA */}
-        <section className="overflow-hidden rounded-[20px] bg-gradient-to-br from-[#fff4ec] via-white to-[#ffe8d6] p-5 shadow-[var(--fv-shadow)]">
+        <section className="fv-card-rail overflow-hidden bg-gradient-to-br from-[#fff4ec] via-white to-[#ffe8d6] p-5">
           <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">Create your portfolio</h2>
           <p className="fv-meta mt-1.5 leading-relaxed">
             Track holdings, share theses, and see how you compare with serious investors.

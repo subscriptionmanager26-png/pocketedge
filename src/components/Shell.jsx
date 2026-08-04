@@ -473,7 +473,7 @@ export default function Shell({
               )}
 
               <main
-                className={`flex min-h-0 flex-1 flex-col md:pb-10 ${
+                className={`relative z-0 flex min-h-0 flex-1 flex-col md:pb-10 ${
                   showMobileComposeFab
                     ? 'pb-[calc(3.5rem+4.25rem+env(safe-area-inset-bottom,0px))]'
                     : 'pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]'

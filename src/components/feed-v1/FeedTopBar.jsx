@@ -34,7 +34,8 @@ export default function FeedTopBar({
   const [feedMenuOpen, setFeedMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const feedMenuRef = useRef(null);
-  const profileMenuRef = useRef(null);
+  const profileMenuRefMobile = useRef(null);
+  const profileMenuRefDesktop = useRef(null);
   const feedTitle = FEED_OPTIONS.find((o) => o.id === feedMode)?.label ?? 'For You';
   const hasQuery = Boolean(searchQuery?.trim());
 
@@ -44,7 +45,9 @@ export default function FeedTopBar({
       if (feedMenuRef.current && !feedMenuRef.current.contains(event.target)) {
         setFeedMenuOpen(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+      const inMobile = profileMenuRefMobile.current?.contains(event.target);
+      const inDesktop = profileMenuRefDesktop.current?.contains(event.target);
+      if (!inMobile && !inDesktop) {
         setProfileMenuOpen(false);
       }
     };
@@ -90,7 +93,36 @@ export default function FeedTopBar({
     </button>
   ) : null;
 
-  const accountActions = (
+  const renderSearchField = () => (
+    <div className="relative min-w-0 flex-1">
+      <Search
+        className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[var(--fv-text-muted)] md:left-4 md:h-5 md:w-5"
+        strokeWidth={2}
+      />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(event) => onSearchChange?.(event.target.value)}
+        onFocus={onSearchFocus}
+        className="fv-search"
+        placeholder="Search…"
+        aria-label="Search people, stocks, topics"
+        autoComplete="off"
+      />
+      {hasQuery ? (
+        <button
+          type="button"
+          onClick={() => onSearchClear?.()}
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[var(--fv-text-muted)] transition hover:bg-black/[0.04] hover:text-[var(--fv-text)]"
+          aria-label="Clear search"
+        >
+          <X className="h-4 w-4" strokeWidth={2} />
+        </button>
+      ) : null}
+    </div>
+  );
+
+  const renderAccountActions = (menuRef) => (
     <>
       <button
         type="button"
@@ -106,7 +138,7 @@ export default function FeedTopBar({
         ) : null}
       </button>
 
-      <div className="relative shrink-0" ref={profileMenuRef}>
+      <div className="relative shrink-0" ref={menuRef}>
         <button
           type="button"
           onClick={() => {
@@ -171,116 +203,85 @@ export default function FeedTopBar({
     </>
   );
 
-  const searchField = (
-    <div className="relative min-w-0 flex-1">
-      <Search
-        className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[var(--fv-text-muted)] md:left-4 md:h-5 md:w-5"
-        strokeWidth={2}
-      />
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={(event) => onSearchChange?.(event.target.value)}
-        onFocus={onSearchFocus}
-        className="fv-search"
-        placeholder="Search…"
-        aria-label="Search people, stocks, topics"
-        autoComplete="off"
-      />
-      {hasQuery ? (
-        <button
-          type="button"
-          onClick={() => onSearchClear?.()}
-          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[var(--fv-text-muted)] transition hover:bg-black/[0.04] hover:text-[var(--fv-text)]"
-          aria-label="Clear search"
-        >
-          <X className="h-4 w-4" strokeWidth={2} />
-        </button>
-      ) : null}
-    </div>
-  );
-
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--fv-border)]/60 bg-white/95 px-3 py-2.5 backdrop-blur-md md:fixed md:left-[232px] md:right-0 md:border-b-0 md:bg-white md:px-5 md:py-4">
+    <header className="sticky top-0 z-40 isolate border-b border-[var(--fv-border)]/60 bg-white px-3 py-2.5 md:fixed md:left-[232px] md:right-0 md:border-b-0 md:px-5 md:py-4">
       {/*
-        Mobile: Back gets its own row so search keeps full width.
-        Logo / feed menu only when there is no back destination.
+        Mobile: Back replaces the logo in the left chrome slot (same row as search).
       */}
-      <div className="md:hidden">
-        {mobileBack ? <div className="mb-2 flex items-center">{backButton}</div> : null}
-        <div className="flex items-center gap-2">
-          {!mobileBack ? (
-            <div className="relative shrink-0" ref={feedMenuRef}>
-              {showFeedMenu ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      setFeedMenuOpen((open) => !open);
-                    }}
-                    className="inline-flex h-10 items-center gap-0.5"
-                    aria-haspopup="listbox"
-                    aria-expanded={feedMenuOpen}
-                    aria-label={`Feed menu. Currently ${feedTitle}`}
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center">
-                      <LogoMark />
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 text-[var(--fv-text-secondary)] transition ${
-                        feedMenuOpen ? 'rotate-180' : ''
-                      }`}
-                      strokeWidth={2}
-                    />
-                  </button>
-                  {feedMenuOpen ? (
-                    <div
-                      role="listbox"
-                      aria-label="Feed mode"
-                      className="absolute left-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
-                    >
-                      {FEED_OPTIONS.map((option) => {
-                        const active = feedMode === option.id;
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            role="option"
-                            aria-selected={active}
-                            onClick={() => {
-                              onFeedModeChange?.(option.id);
-                              setFeedMenuOpen(false);
-                            }}
-                            className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium transition ${
-                              active
-                                ? 'bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]'
-                                : 'text-[var(--fv-text)] hover:bg-black/[0.03]'
-                            }`}
-                          >
-                            {option.label}
-                            {active ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </>
-              ) : (
+      <div className="flex items-center gap-2 md:hidden">
+        {mobileBack ? (
+          backButton
+        ) : (
+          <div className="relative shrink-0" ref={feedMenuRef}>
+            {showFeedMenu ? (
+              <>
                 <button
                   type="button"
-                  onClick={onGoHome}
-                  className="flex h-10 w-10 items-center justify-center"
-                  aria-label="Go to home feed"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setFeedMenuOpen((open) => !open);
+                  }}
+                  className="inline-flex h-10 items-center gap-0.5"
+                  aria-haspopup="listbox"
+                  aria-expanded={feedMenuOpen}
+                  aria-label={`Feed menu. Currently ${feedTitle}`}
                 >
-                  <LogoMark />
+                  <span className="flex h-10 w-10 items-center justify-center">
+                    <LogoMark />
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-[var(--fv-text-secondary)] transition ${
+                      feedMenuOpen ? 'rotate-180' : ''
+                    }`}
+                    strokeWidth={2}
+                  />
                 </button>
-              )}
-            </div>
-          ) : null}
-          {searchField}
-          {accountActions}
-        </div>
+                {feedMenuOpen ? (
+                  <div
+                    role="listbox"
+                    aria-label="Feed mode"
+                    className="absolute left-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-[var(--fv-border)] bg-white py-1 shadow-[var(--fv-shadow-hover)]"
+                  >
+                    {FEED_OPTIONS.map((option) => {
+                      const active = feedMode === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => {
+                            onFeedModeChange?.(option.id);
+                            setFeedMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium transition ${
+                            active
+                              ? 'bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]'
+                              : 'text-[var(--fv-text)] hover:bg-black/[0.03]'
+                          }`}
+                        >
+                          {option.label}
+                          {active ? <Check className="h-4 w-4" strokeWidth={2} /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={onGoHome}
+                className="flex h-10 w-10 items-center justify-center"
+                aria-label="Go to home feed"
+              >
+                <LogoMark />
+              </button>
+            )}
+          </div>
+        )}
+        {renderSearchField()}
+        {renderAccountActions(profileMenuRefMobile)}
       </div>
 
       {/*
@@ -296,11 +297,11 @@ export default function FeedTopBar({
                 {backButton}
               </div>
             ) : null}
-            {searchField}
+            {renderSearchField()}
           </div>
         </div>
         <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2 md:right-5">
-          {accountActions}
+          {renderAccountActions(profileMenuRefDesktop)}
         </div>
       </div>
     </header>

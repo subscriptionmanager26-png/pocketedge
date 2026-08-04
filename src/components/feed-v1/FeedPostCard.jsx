@@ -53,7 +53,7 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
   const extraTickers = Math.max(0, tickers.length - 2);
 
   return (
-    <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] p-4 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:p-6">
+    <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] px-4 pt-4 pb-1.5 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:px-6 md:pt-6 md:pb-2">
       {/* Identity — single visual row on mobile */}
       <header className="flex items-center gap-2.5 md:gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--fv-accent)]/12 text-[12px] font-semibold text-[var(--fv-accent)] md:h-11 md:w-11 md:text-[15px]">
@@ -191,30 +191,34 @@ export default function FeedPostCard({ post, followingIds, onFollow }) {
         </div>
       ) : null}
 
-      {/* Actions — quiet, equal weight, no divider line on mobile */}
-      <div className="mt-3 flex items-center gap-1 border-t border-[var(--fv-border)]/80 pt-3">
-        <button
-          type="button"
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04] md:flex-none md:justify-start md:px-2.5"
-        >
-          <Heart className="h-[18px] w-[18px]" strokeWidth={2} />
-          <span className="tabular-nums">{post.likes}</span>
-        </button>
-        <button
-          type="button"
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04] md:flex-none md:justify-start md:px-2.5"
-        >
-          <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
-          <span className="tabular-nums">{post.comments}</span>
-        </button>
-        <button
-          type="button"
-          aria-label="Share"
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04] md:flex-none md:justify-start md:px-2.5"
-        >
-          <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
-          <span className="hidden md:inline">Share</span>
-        </button>
+      {/* Actions — flush to card bottom, no divider */}
+      {/* Actions — 3 equal columns; icon+label left-aligned in each (Like lines up with name) */}
+      <div className="mt-2 flex items-center gap-2.5 md:gap-3">
+        <span className="invisible h-8 w-8 shrink-0 md:h-11 md:w-11" aria-hidden />
+        <div className="grid min-w-0 flex-1 grid-cols-3">
+          <button
+            type="button"
+            className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04]"
+          >
+            <Heart className="h-[18px] w-[18px]" strokeWidth={2} />
+            <span className="tabular-nums">{post.likes}</span>
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04]"
+          >
+            <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
+            <span className="tabular-nums">{post.comments}</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Share"
+            className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-[var(--fv-text-secondary)] active:bg-black/[0.04]"
+          >
+            <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
+            <span className="hidden md:inline">Share</span>
+          </button>
+        </div>
       </div>
 
       {/* Mobile list separator instead of card chrome */}

@@ -2,14 +2,15 @@ import AssetLogo from './AssetLogo';
 import { formatPct, formatPrice, pnlClass } from '../lib/format';
 import { ideaAssetTypeLabel, ideaSecurityKey } from '../lib/ideaSecurities';
 
+/** Tight shadow — large blur inside overflow-x rails paints a grey pad behind the row. */
 const CARD_SHADOW =
-  'shadow-[0_6px_24px_rgba(0,0,0,0.09),0_1px_3px_rgba(0,0,0,0.05)]';
+  'shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_8px_rgba(0,0,0,0.06)]';
 const CARD_SHADOW_HOVER =
-  'hover:shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]';
+  'hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_6px_16px_rgba(0,0,0,0.08)]';
 
 /**
  * Ideas card for an individual security — Design Language v1:
- * white surface, shadow lift (no grey fill / heavy border).
+ * white surface, own shadow lift (no shared grey rail pad).
  */
 export default function SecurityIdeaCard({ item, onOpen }) {
   if (!item) return null;

@@ -150,7 +150,7 @@ export default function PostCard({
   const closeTicker = () => setTickerPopup(null);
 
   return (
-    <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] bg-white px-4 py-5 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:px-6 md:py-6 md:transition md:duration-150 md:hover:shadow-[var(--fv-shadow-hover)]">
+    <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] bg-white px-4 pt-5 pb-2 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:px-6 md:pt-6 md:pb-2.5 md:transition md:duration-150 md:hover:shadow-[var(--fv-shadow-hover)]">
       {post.via && post.via.kind !== 'person' && (
         <p className="mb-2 text-[12px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>
@@ -284,7 +284,7 @@ export default function PostCard({
           )}
 
           <div
-            className="mt-4 flex items-center gap-1 border-t border-[var(--fv-border,#ececec)]/80 pt-3 text-pe-text-secondary"
+            className="mt-2 grid w-full grid-cols-3 text-pe-text-secondary"
             onClick={stopBubble}
             onKeyDown={stopBubble}
             role="presentation"
@@ -299,7 +299,7 @@ export default function PostCard({
                 setLiked((v) => !v);
                 setLikes((n) => Math.max(0, n + (liked ? -1 : 1)));
               }}
-              className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${liked ? 'text-pe-accent' : ''}`}
+              className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${liked ? 'text-pe-accent' : ''}`}
             >
               <Heart className={`h-[18px] w-[18px] ${liked ? 'fill-current' : ''}`} strokeWidth={2} />
               {formatCount(likes)}
@@ -310,7 +310,7 @@ export default function PostCard({
                 stopBubble(event);
                 if (!isDetail) openPost();
               }}
-              className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${
+              className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
                 isDetail ? 'text-pe-text' : ''
               }`}
               aria-label={isDetail ? `${commentCount} comments` : 'Open post to view comments'}
@@ -321,7 +321,7 @@ export default function PostCard({
             <button
               type="button"
               aria-label="Share"
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04]"
+              className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04]"
             >
               <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
             </button>
@@ -329,26 +329,19 @@ export default function PostCard({
         </div>
       </div>
 
-      {isDetail && (
-        <div className="mt-5 border-t border-[var(--fv-border,#ececec)] pt-1">
-          <p className="py-3 text-[13px] font-semibold tracking-wide text-pe-text-muted">
-            Comments · {commentCount}
-          </p>
-          {!(post.comments?.length) ? (
-            <p className="pb-4 text-sm text-pe-text-secondary">No comments yet.</p>
-          ) : (
-            post.comments.map((c) => (
-              <CommentRow
-                key={c.id}
-                comment={c}
-                enrichmentTick={enrichmentTick}
-                onOpenProfile={onOpenProfile}
-                onOpenStock={onOpenStock}
-              />
-            ))
-          )}
+      {isDetail && post.comments?.length ? (
+        <div className="mt-3">
+          {post.comments.map((c) => (
+            <CommentRow
+              key={c.id}
+              comment={c}
+              enrichmentTick={enrichmentTick}
+              onOpenProfile={onOpenProfile}
+              onOpenStock={onOpenStock}
+            />
+          ))}
         </div>
-      )}
+      ) : null}
     </article>
   );
 }

@@ -24,7 +24,7 @@ export default function CommentEngagementButton({
     </>
   );
 
-  const baseClass = `inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition hover:bg-black/[0.04] ${className}`;
+  const baseClass = `inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${className}`;
 
   if (as === 'span') {
     return <span className={baseClass}>{inner}</span>;

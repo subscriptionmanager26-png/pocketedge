@@ -278,6 +278,25 @@ textarea {
   transform: translateY(-1px);
 }
 
+/* Post cards: no lift — transform creates a stacking context that can paint over the sticky search bar on mobile. */
+.pe-feed-v1 .fv-post-card:hover {
+  transform: none;
+}
+
+/* Compact / rail cards — tight shadow so padding stays white (no grey bloom pad). */
+.pe-feed-v1 .fv-card-rail {
+  background: var(--fv-card);
+  border: none;
+  border-radius: var(--fv-radius-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 150ms ease, transform 100ms ease;
+}
+
+.pe-feed-v1 .fv-card-rail:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 767px) {
   .pe-feed-v1 .fv-stock-pill {
     padding: 4px 10px;

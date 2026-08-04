@@ -480,7 +480,7 @@ export default function ProfilePage({
         showFollowButton={!isOwn && !isMePublic}
       />
 
-      <div className="sticky top-14 z-20 border-b border-[var(--fv-border,#ececec)] bg-white/95 backdrop-blur-md md:top-0">
+      <div className="sticky top-14 z-20 isolate border-b border-[var(--fv-border,#ececec)] bg-white md:top-0">
         <div className="flex h-12 items-center px-4 md:h-14 md:px-6">
           <UnderlineTabs
             embedded
@@ -492,7 +492,7 @@ export default function ProfilePage({
       </div>
 
       {tab === 'posts' && (
-        <div className="md:pt-2">
+        <div className="pt-1 md:pt-2">
           {authorPosts.length === 0 ? (
             <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
               {isOwn
@@ -548,7 +548,7 @@ function PortfoliosListPanel({
   void portfolioSocialTick;
 
   return (
-    <div>
+    <div className="pt-1 md:pt-2">
       {loading ? (
         <PortfoliosListSkeleton count={2} />
       ) : !portfolios.length ? (
@@ -1600,30 +1600,31 @@ function PortfolioSocialBar({
   };
 
   return (
-    <div className="border-t border-pe-border px-4 py-4">
-      <div className="flex flex-wrap items-center gap-5 text-pe-text-secondary">
+    <div className="border-t border-pe-border px-4 py-3">
+      <div className="grid w-full grid-cols-4 text-pe-text-secondary">
         <button
           type="button"
           onClick={handleLike}
           aria-pressed={liked}
-          className={`inline-flex items-center gap-1.5 text-sm transition ${
-            liked ? 'text-pe-accent' : 'hover:text-pe-accent'
+          className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
+            liked ? 'text-pe-accent' : ''
           }`}
         >
-          <Heart className={`h-4 w-4 ${liked ? 'fill-current text-pe-accent' : ''}`} />
+          <Heart className={`h-[18px] w-[18px] ${liked ? 'fill-current text-pe-accent' : ''}`} strokeWidth={2} />
           {formatCount(likes)}
         </button>
         <CommentEngagementButton
           count={commentCount}
           unreadCount={showUnreadComments ? social.unreadComments ?? 0 : 0}
           onClick={onOpenDiscussion}
+          className="h-8 justify-start px-0"
         />
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex items-center gap-1.5 text-sm transition hover:text-pe-text"
+          className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04]"
         >
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
           {formatCount(shares)}
         </button>
         {canCopy ? (
@@ -1631,20 +1632,20 @@ function PortfolioSocialBar({
             type="button"
             onClick={handleCopy}
             aria-pressed={copied}
-            className={`inline-flex items-center gap-1.5 text-sm transition ${
-              copied ? 'text-pe-accent' : 'hover:text-pe-text'
+            className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
+              copied ? 'text-pe-accent' : ''
             }`}
           >
             {copied ? (
-              <ClipboardCheck className="h-4 w-4 text-pe-accent" />
+              <ClipboardCheck className="h-[18px] w-[18px] text-pe-accent" strokeWidth={2} />
             ) : (
-              <Copy className="h-4 w-4 text-pe-text-secondary" />
+              <Copy className="h-[18px] w-[18px]" strokeWidth={2} />
             )}
             {formatCount(copies)}
           </button>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-sm text-pe-text-muted">
-            <Copy className="h-4 w-4 opacity-40" />
+          <span className="inline-flex h-8 items-center justify-start gap-1.5 text-[13px] font-medium text-pe-text-muted">
+            <Copy className="h-[18px] w-[18px] opacity-40" strokeWidth={2} />
             {formatCount(copies)}
           </span>
         )}
@@ -1677,23 +1678,15 @@ function PortfolioDiscussion({
 
   return (
     <section id="portfolio-discussion" className="border-t border-pe-border px-4 py-5">
-      <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-        Discussion · {comments.length}
-      </p>
-
-      {comments.length === 0 ? (
-        <p className="mt-4 text-sm text-pe-text-secondary">
-          Be the first to discuss this portfolio - ask about allocation, thesis, or recent moves.
-        </p>
-      ) : (
-        <div className="mt-2 divide-y divide-pe-border border-y border-pe-border">
+      {comments.length > 0 ? (
+        <div className="divide-y divide-pe-border border-y border-pe-border">
           {comments.map((comment) => (
             <CommentRow key={comment.id} comment={comment} />
           ))}
         </div>
-      )}
+      ) : null}
 
-      <div className="mt-4 flex gap-2">
+      <div className={`${comments.length > 0 ? 'mt-4' : ''} flex gap-2`}>
         <input
           value={commentDraft}
           onChange={(e) => onCommentDraftChange(e.target.value)}
