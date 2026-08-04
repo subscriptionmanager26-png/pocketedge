@@ -21,16 +21,36 @@ function normalizeTicker(ticker) {
     .toUpperCase();
 }
 
-function mapNewsRow(row) {
-  const publishedAt = row.published_at ?? row.first_seen_at;
+/** Map AI digest rows — UI shows bullets, never the raw article body. */
+function mapAiNewsSummaryRow(row) {
+  const publishedAt = row.generated_at ?? row.as_of_date ?? null;
   return {
     id: row.id,
-    ticker: row.ticker,
-    title: row.title,
-    summary: row.summary ?? '',
+    ticker: normalizeTicker(row.ticker),
+    title: row.title || row.subject || 'Update',
+    summary: String(row.ai_bullets ?? '').trim(),
     publishedAt,
     time: publishedAt ? formatNewsDate(publishedAt) : '',
+    source: row.external_id ?? null,
   };
+}
+
+function isZerodhaNewsRow(row) {
+  const external = String(row?.external_id ?? row?.source ?? '').toLowerCase();
+  if (external.includes('zerodha')) return true;
+  const sources = row?.source_external_ids;
+  if (Array.isArray(sources) && sources.some((id) => String(id).toLowerCase().includes('zerodha'))) {
+    return true;
+  }
+  return false;
+}
+
+function finalizeNewsItems(rows, limit) {
+  return (rows ?? [])
+    .filter((row) => !isZerodhaNewsRow(row))
+    .map(mapAiNewsSummaryRow)
+    .filter((item) => item.summary)
+    .slice(0, limit);
 }
 
 export async function fetchStockNews(ticker, { limit = 20 } = {}) {
@@ -38,18 +58,22 @@ export async function fetchStockNews(ticker, { limit = 20 } = {}) {
   if (!symbol || !stockNewsClient) return [];
 
   const { data, error } = await stockNewsClient
-    .from('mn_latest_news')
-    .select('id, ticker, title, summary, published_at, source, first_seen_at')
+    .from('mn_news_ai_summaries')
+    .select(
+      'id, ticker, title, subject, ai_bullets, as_of_date, generated_at, external_id, source_external_ids, type'
+    )
     .eq('ticker', symbol)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(limit);
+    .eq('type', 'Stock')
+    .not('external_id', 'ilike', '%zerodha%')
+    .order('generated_at', { ascending: false, nullsFirst: false })
+    .limit(Math.min(limit * 2, 80));
 
   if (error) {
     console.error('fetchStockNews failed', error);
     return [];
   }
 
-  return (data ?? []).map(mapNewsRow);
+  return finalizeNewsItems(data, limit);
 }
 
 /**
@@ -285,18 +309,22 @@ export async function fetchStockNewsForTickers(tickers, { limit = 50 } = {}) {
   if (!symbols.length || !stockNewsClient) return [];
 
   const { data, error } = await stockNewsClient
-    .from('mn_latest_news')
-    .select('id, ticker, title, summary, published_at, source, first_seen_at')
+    .from('mn_news_ai_summaries')
+    .select(
+      'id, ticker, title, subject, ai_bullets, as_of_date, generated_at, external_id, source_external_ids, type'
+    )
     .in('ticker', symbols)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(limit);
+    .eq('type', 'Stock')
+    .not('external_id', 'ilike', '%zerodha%')
+    .order('generated_at', { ascending: false, nullsFirst: false })
+    .limit(Math.min(limit * 2, 200));
 
   if (error) {
     console.error('fetchStockNewsForTickers failed', error);
     return [];
   }
 
-  return (data ?? []).map(mapNewsRow);
+  return finalizeNewsItems(data, limit);
 }
 
 function parseEventDateMs(raw) {
