@@ -14,6 +14,7 @@ export function socialServiceWorkerPlugin() {
     async writeBundle(_options, bundle) {
       const { writeFile, mkdir } = await import('node:fs/promises');
       const path = await import('node:path');
+      const { createHash } = await import('node:crypto');
 
       const assets = Object.keys(bundle)
         .filter((fileName) => !fileName.endsWith('.map'))
@@ -31,9 +32,14 @@ export function socialServiceWorkerPlugin() {
       const precache = Array.from(
         new Set(['/', '/index.html', '/manifest.webmanifest', ...assets, ...marketPreviews])
       );
+      const cacheVersion = createHash('sha1')
+        .update(precache.join('|'))
+        .digest('hex')
+        .slice(0, 12);
+      const cacheName = `pe-social-${cacheVersion}`;
 
       const sw = `/* Generated — do not edit */
-const CACHE = 'pe-social-v1';
+const CACHE = '${cacheName}';
 const PRECACHE = ${JSON.stringify(precache, null, 2)};
 
 self.addEventListener('install', (event) => {
