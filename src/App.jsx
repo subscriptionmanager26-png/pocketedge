@@ -276,6 +276,7 @@ export default function App() {
         const user = session?.user ?? null;
         // #region agent log
         fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:syncAuth',message:'syncAuth invoked',data:{hasUser:Boolean(user),authGen,nextAuthGen:authGen+1,prevAuthView:authView},timestamp:Date.now()})}).catch(()=>{});
+        fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:syncAuth',message:'syncAuth invoked',data:{hasUser:Boolean(user),authGen,nextAuthGen:authGen+1,prevAuthView:authView},timestamp:Date.now()})}).catch(()=>{});
         // #endregion
         setAuthUser(user);
         if (user) {
@@ -288,6 +289,7 @@ export default function App() {
           resolveAuthViewForUserAsync(user).then((view) => {
             // #region agent log
             fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:resolveAuthViewForUserAsync.then',message:'resolved auth view',data:{resolvedView:view,gen,authGen,cancelled},timestamp:Date.now()})}).catch(()=>{});
+            fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H1',location:'App.jsx:resolveAuthViewForUserAsync.then',message:'resolved auth view',data:{resolvedView:view,gen,authGen,cancelled},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
             if (cancelled || gen !== authGen) return;
             setAuthView(view);
@@ -990,6 +992,7 @@ export default function App() {
   const parsedPath = parseAppPath(location.pathname);
   // #region agent log
   fetch('http://127.0.0.1:7685/ingest/1ef20818-3289-4318-8f77-c6b9a2f1769f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ebe724'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H3',location:'App.jsx:renderGate',message:'render gate state',data:{authView,parsedKind:parsedPath.kind,pathname:location.pathname,tab,hasAssetDetail},timestamp:Date.now()})}).catch(()=>{});
+  fetch('/api/client-debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'ebe724',runId:'login-blank-debug',hypothesisId:'H3',location:'App.jsx:renderGate',message:'render gate state',data:{authView,parsedKind:parsedPath.kind,pathname:location.pathname,tab,hasAssetDetail},timestamp:Date.now()})}).catch(()=>{});
   // #endregion
   if (parsedPath.kind === 'marketing') {
     return (
