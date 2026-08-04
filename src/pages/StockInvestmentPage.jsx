@@ -94,7 +94,7 @@ export default function StockInvestmentPage({
       setMarketLoading(true);
     }
 
-    resolveMarketStock(ticker)
+    resolveMarketStock(ticker, { force: true })
       .then((resolved) => {
         if (cancelled) return;
         if (resolved?.assetType === 'etf') setIsEtf(true);

@@ -18,6 +18,7 @@ import {
   loadRailPeople,
   loadRailTrending,
 } from '../lib/feedRailData';
+import { shouldPollMarket } from '../lib/marketRefreshPolicy';
 import { getAppCurrentUser } from '../lib/socialIdentity';
 import { disclosuresPath, insightsPath, resourcesPath } from '../lib/routes';
 import { prefetchTab } from '../lib/tabPrefetch';
@@ -156,22 +157,66 @@ export default function Shell({
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      loadRailTrending(5).catch(() => ({ live: false, items: [] })),
-      loadRailDiscussions(4, { guestMode }).catch(() => []),
-      loadRailPeople(4).catch(() => []),
-      fetchMarketPreview('indices').catch(() => null),
-    ]).then(([trendingPayload, discussions, people, indicesPayload]) => {
-      if (cancelled) return;
-      setRailTrending(trendingPayload?.items ?? []);
-      setRailDiscussions(discussions ?? []);
-      setRailPeople(people ?? []);
-      setRailLive(
-        Boolean(trendingPayload?.live) || indicesPayload?.source === 'rpc'
-      );
-    });
+
+    const loadRail = ({ force = false } = {}) =>
+      Promise.all([
+        loadRailTrending(5, { force }).catch(() => ({ live: false, items: [] })),
+        loadRailDiscussions(4, { guestMode }).catch(() => []),
+        loadRailPeople(4).catch(() => []),
+        fetchMarketPreview('indices', { force }).catch(() => null),
+      ]).then(([trendingPayload, discussions, people, indicesPayload]) => {
+        if (cancelled) return;
+        setRailTrending(trendingPayload?.items ?? []);
+        setRailDiscussions(discussions ?? []);
+        setRailPeople(people ?? []);
+        setRailLive(
+          Boolean(trendingPayload?.live) || indicesPayload?.source === 'rpc'
+        );
+      });
+
+    loadRail();
+
+    const refreshTrending = () => {
+      loadRailTrending(5, { force: true })
+        .then((trendingPayload) => {
+          if (cancelled) return;
+          setRailTrending(trendingPayload?.items ?? []);
+          if (trendingPayload?.live) setRailLive(true);
+        })
+        .catch(() => {});
+    };
+
+    let timer = null;
+    const schedule = () => {
+      if (timer) window.clearInterval(timer);
+      if (!shouldPollMarket('stock')) return;
+      timer = window.setInterval(() => {
+        if (!shouldPollMarket('stock')) return;
+        refreshTrending();
+      }, 60_000);
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+        return;
+      }
+      // Always re-pull once when the tab becomes visible (including after hours)
+      // so overnight CAS / settlement levels replace mid-session quotes.
+      refreshTrending();
+      schedule();
+    };
+
+    schedule();
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
       cancelled = true;
+      if (timer) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [guestMode]);
 

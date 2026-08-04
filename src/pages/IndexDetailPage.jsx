@@ -4,7 +4,7 @@ import AssetDetailSections from '../components/AssetDetailSections';
 import { formatIndexGroup } from '../components/MarketDetailLayout';
 import { getIndexDiscussions } from '../lib/assetDiscussions';
 import { isDevMockMode } from '../lib/appMode';
-import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
+import { findCachedMarketItem, peekMarketPreview, resolveMarketIndex } from '../lib/marketDataApi';
 import { indexPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 import { useSeoMeta } from '../hooks/useSeoMeta';
@@ -69,6 +69,8 @@ export default function IndexDetailPage({
     }
 
     (async () => {
+      // Paint from cache immediately, then always force a live lookup so we are
+      // not stuck on a mid-session / rail-seeded quote.
       const peek = peekMarketPreview('indices');
       const fromPeek = peek?.items?.find((item) => item.id === indexId || item.symbol === indexId);
       if (fromPeek && !cancelled) {
@@ -76,16 +78,9 @@ export default function IndexDetailPage({
         setLoading(false);
       }
 
-      const [preview, resolved] = await Promise.all([
-        fromPeek ? Promise.resolve({ items: [fromPeek] }) : fetchMarketPreview('indices'),
-        resolveMarketIndex(indexId),
-      ]);
-      const found =
-        resolved ??
-        preview.items.find((item) => item.id === indexId || item.symbol === indexId) ??
-        null;
+      const resolved = await resolveMarketIndex(indexId, { force: true });
       if (!cancelled) {
-        setIndex(found);
+        setIndex(resolved);
         setLoading(false);
       }
     })().catch(() => {
@@ -101,7 +96,7 @@ export default function IndexDetailPage({
   }, [indexId]);
 
   const refreshIndex = useCallback(async () => {
-    const fresh = await resolveMarketIndex(indexId);
+    const fresh = await resolveMarketIndex(indexId, { force: true });
     if (fresh) setIndex(fresh);
   }, [indexId]);
 

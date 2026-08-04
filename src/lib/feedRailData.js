@@ -36,6 +36,9 @@ export function toRailIndexRow(item) {
     value: formatIndexValue(item),
     changePct: item.changePct,
     assetType: 'index',
+    // Keep the RPC item for navigation seeds — never seed the display row
+    // (formatted `value` string, no `price`) into market-asset cache.
+    seed: item,
   };
 }
 
@@ -120,8 +123,8 @@ export function isBroadOrDerivativesIndex(item) {
 }
 
 /** Top performers = largest positive 1D moves. */
-export async function loadRailTrending(limit = 5) {
-  const payload = await fetchMarketPreview('stocks').catch(() => null);
+export async function loadRailTrending(limit = 5, { force = false } = {}) {
+  const payload = await fetchMarketPreview('stocks', { force }).catch(() => null);
   const items = (payload?.items ?? []).filter(
     (item) => item?.changePct != null && Number(item.changePct) > 0
   );

@@ -10,6 +10,8 @@ const BASE = '/data/markets';
 const MARKET_SEARCH_TTL_MS = 30_000;
 /** Align with 15s equity poll so refresh ticks are not served from a longer stale cache. */
 const MARKET_ASSET_TTL_MS = 15_000;
+/** Session preview may be kept longer for instant paint, but never treated as live past this. */
+const MARKET_PREVIEW_MAX_AGE_MS = 45_000;
 
 export const MARKET_PREVIEW_LIMIT = 40;
 export const MARKET_SEARCH_LIMIT = 50;
@@ -76,7 +78,7 @@ export function subscribeMarketPreview(tab, listener) {
 }
 
 export function peekMarketPreview(tab) {
-  const cached = peekMarketPreviewCache(tab);
+  const cached = peekMarketPreviewCache(tab, MARKET_PREVIEW_MAX_AGE_MS);
   if (!cached) return null;
   return normalizeMarketPreviewPayload(cached);
 }
@@ -347,9 +349,8 @@ function reconcileMarketPreviewInBackground(tab, assetType) {
 
 export async function fetchMarketPreview(tab, { force = false } = {}) {
   const assetType = tabToAssetType(tab);
-  const cached = peekMarketPreviewCache(tab);
+  const cached = force ? null : peekMarketPreviewCache(tab, MARKET_PREVIEW_MAX_AGE_MS);
   if (
-    !force &&
     cached?.source === 'rpc' &&
     Array.isArray(cached.items) &&
     cached.items.length
@@ -533,14 +534,16 @@ export function findCachedMarketItem(tab, id) {
     });
   };
 
-  // Hot queryCache from prior list/detail/batch lookups.
+  // Only the short-lived query cache — session preview can sit for minutes (and its
+  // TTL was being extended by unrelated tab-cache writes), which made Market Today
+  // and resolve*() freeze on mid-session quotes.
   const fromQuery = getCached('market-asset', needle, MARKET_ASSET_TTL_MS);
   if (fromQuery) return fromQuery;
   const fromQueryUpper = getCached('market-asset', needleUpper, MARKET_ASSET_TTL_MS);
   if (fromQueryUpper) return fromQueryUpper;
 
-  // Session tab preview (boot / Markets list) — often warmer than module JSON cache.
-  const preview = peekMarketPreviewCache(tab);
+  // Fresh-enough session preview only (same max age as fetchMarketPreview).
+  const preview = peekMarketPreviewCache(tab, MARKET_PREVIEW_MAX_AGE_MS);
   if (Array.isArray(preview?.items)) {
     const found = preview.items.find(matchItem);
     if (found) {
@@ -549,18 +552,6 @@ export function findCachedMarketItem(tab, id) {
     }
   }
 
-  const previewFile = TAB_PREVIEW[tab];
-  const searchFile = TAB_SEARCH[tab];
-  for (const file of [previewFile, searchFile]) {
-    if (!file) continue;
-    const cached = cache.get(file);
-    if (!cached?.items) continue;
-    const found = cached.items.find(matchItem);
-    if (found) {
-      seedMarketAssetCache(found, needle);
-      return found;
-    }
-  }
   return null;
 }
 
@@ -793,16 +784,18 @@ async function loadFullMarketTab(tab) {
   return payload.items ?? [];
 }
 
-export async function resolveMarketIndex(indexId) {
+export async function resolveMarketIndex(indexId, { force = false } = {}) {
   const id = String(indexId ?? '').trim();
   if (!id) return null;
 
-  const cached = findCachedMarketItem('indices', id);
-  if (cached) return cached;
+  if (!force) {
+    const cached = findCachedMarketItem('indices', id);
+    if (cached) return cached;
+  }
 
   if (useMarketRpc()) {
     try {
-      const found = await lookupMarketAssetRpc(id);
+      const found = await lookupMarketAssetRpc(id, { force });
       if (found?.assetType === 'index') {
         seedMarketAssetCache(found, id);
         return found;

@@ -88,14 +88,24 @@ export function writeMarketPreviewCache(tab, payload) {
   if (!tab || !payload) return;
   const current = readRaw() ?? {};
   const markets = { ...(current.markets ?? {}) };
-  markets[String(tab)] = payload;
+  markets[String(tab)] = { ...payload, _cachedAt: Date.now() };
   mergePatch({ markets });
 }
 
-export function peekMarketPreviewCache(tab) {
+/** @param {number|null} maxAgeMs null = ignore age (legacy); else miss when older. */
+export function peekMarketPreviewCache(tab, maxAgeMs = null) {
   if (!tab) return null;
   const raw = readRaw();
-  return raw?.markets?.[String(tab)] ?? null;
+  const entry = raw?.markets?.[String(tab)];
+  if (!entry || typeof entry !== 'object') return null;
+  if (maxAgeMs != null) {
+    // Require per-entry _cachedAt — blob `ts` is refreshed by unrelated mergePatch
+    // writes (portfolios, etc.) and would keep stale quotes "fresh" forever.
+    const at = Number(entry._cachedAt ?? 0);
+    if (!at || Date.now() - at > maxAgeMs) return null;
+  }
+  const { _cachedAt: _drop, ...payload } = entry;
+  return payload;
 }
 
 export function writeProfileGraphCache(userId, payload) {

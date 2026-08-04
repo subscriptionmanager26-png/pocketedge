@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, MessageSquare, Plus, Search, X } from 'lucide-react';
 import {
   getRailIndexIds,
@@ -15,6 +15,7 @@ import {
   loadRailTrackedIndices,
   loadRailTrackedSectors,
 } from '../../lib/feedRailData';
+import { useMarketQuotePolling } from '../../hooks/useMarketQuoteRefresh';
 import { isFollowing, toggleFollow } from '../../lib/socialGraphStore';
 
 function formatPct(pct) {
@@ -247,6 +248,35 @@ export default function FeedRightRail({
     };
   }, []);
 
+  const refreshMarketToday = useCallback(async () => {
+    const [overview, indices, sectors] = await Promise.all([
+      loadRailOverviewIndices().catch(() => null),
+      loadRailTrackedIndices().catch(() => null),
+      loadRailTrackedSectors().catch(() => null),
+    ]);
+    if (overview) setOverviewRows(overview);
+    if (indices) setIndexRows(indices);
+    if (sectors) setSectorRows(sectors);
+  }, []);
+
+  useMarketQuotePolling({
+    assetType: 'index',
+    enabled: true,
+    onRefresh: refreshMarketToday,
+    deps: [indexIds, sectorIds],
+  });
+
+  // One forced refresh when returning to the tab after hours / overnight so we
+  // are not stuck on a mid-session quote from the previous session.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) return;
+      void refreshMarketToday();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [refreshMarketToday]);
+
   useEffect(() => {
     let cancelled = false;
     loadRailTrackedIndices()
@@ -350,7 +380,7 @@ export default function FeedRightRail({
                 <MarketRow
                   key={row.id}
                   row={row}
-                  onOpen={() => onOpenIndex?.(row.id || row.symbol, row)}
+                  onOpen={() => onOpenIndex?.(row.id || row.symbol, row.seed ?? null)}
                 />
               ))}
             </ul>
