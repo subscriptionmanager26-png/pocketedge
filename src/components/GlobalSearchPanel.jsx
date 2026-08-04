@@ -278,6 +278,7 @@ export default function GlobalSearchPanel({
       typeFilter === 'stock' ||
       typeFilter === 'fund' ||
       typeFilter === 'etf' ||
+      typeFilter === 'index' ||
       typeFilter === 'commodity' ||
       typeFilter === 'bond';
 
