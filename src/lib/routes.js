@@ -138,11 +138,21 @@ export function resourcesPath(tool) {
     .trim()
     .toLowerCase();
   if (key === 'mf-screener' || key === 'screener') return '/resources/mf-screener';
-  if (key === 'etf-inav' || key === 'etf-inav-tracker' || key === 'inav') {
-    return '/resources/etf-inav';
+  if (
+    key === 'etf-tracker' ||
+    key === 'etf-inav' ||
+    key === 'etf-inav-tracker' ||
+    key === 'inav'
+  ) {
+    return '/etf-tracker';
   }
-  if (key === 'sgb' || key === 'sgb-tracker' || key === 'gold-sgb') {
-    return '/resources/sgb';
+  if (
+    key === 'gold-tracker' ||
+    key === 'sgb' ||
+    key === 'sgb-tracker' ||
+    key === 'gold-sgb'
+  ) {
+    return '/gold-tracker';
   }
   return '/resources';
 }
@@ -193,12 +203,31 @@ export function parseAppPath(pathname) {
     };
   }
 
-  const resourcesToolMatch = pathname.match(/^\/resources\/(mf-screener|etf-inav|sgb)\/?$/);
-  if (resourcesToolMatch) {
+  const trackerMatch = pathname.match(/^\/(gold-tracker|etf-tracker)\/?$/);
+  if (trackerMatch) {
     return {
       kind: 'marketing',
       page: 'resources',
-      section: resourcesToolMatch[1],
+      section: trackerMatch[1] === 'gold-tracker' ? 'sgb' : 'etf-inav',
+    };
+  }
+
+  // Legacy /resources/* tracker URLs — App may redirect to the new root paths.
+  const resourcesToolMatch = pathname.match(
+    /^\/resources\/(mf-screener|etf-inav|sgb)\/?$/
+  );
+  if (resourcesToolMatch) {
+    const section = resourcesToolMatch[1];
+    return {
+      kind: 'marketing',
+      page: 'resources',
+      section,
+      redirectTo:
+        section === 'sgb'
+          ? '/gold-tracker'
+          : section === 'etf-inav'
+            ? '/etf-tracker'
+            : null,
     };
   }
 

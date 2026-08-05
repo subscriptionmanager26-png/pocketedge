@@ -58,7 +58,7 @@ export default function SgbTrackerPage() {
     title: 'SGB tracker',
     description:
       'Live Sovereign Gold Bond series prices, coupons, and maturity years on PocketEdge.',
-    path: '/resources/sgb',
+    path: '/gold-tracker',
   });
   const [universe, setUniverse] = useState(null);
   const [items, setItems] = useState([]);

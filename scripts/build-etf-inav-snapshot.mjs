@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Merge AMC iNAV CSV with NSE ETF LTP catalog into a static snapshot
- * for /resources/etf-inav.
+ * for /etf-tracker.
  *
  * Usage:
  *   node scripts/build-etf-inav-snapshot.mjs

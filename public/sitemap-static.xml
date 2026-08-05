@@ -43,13 +43,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.pocketedge.in/resources/etf-inav</loc>
+    <loc>https://www.pocketedge.in/etf-tracker</loc>
     <lastmod>2026-07-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.pocketedge.in/resources/sgb</loc>
+    <loc>https://www.pocketedge.in/gold-tracker</loc>
     <lastmod>2026-07-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>

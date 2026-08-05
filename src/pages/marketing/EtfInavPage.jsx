@@ -49,7 +49,7 @@ export default function EtfInavPage() {
   useSeoMeta({
     title: 'ETF iNAV tracker',
     description: 'Live LTP and NAV for NSE ETFs, with premium or discount versus NAV.',
-    path: '/resources/etf-inav',
+    path: '/etf-tracker',
   });
   const [snapshot, setSnapshot] = useState(null);
   const [items, setItems] = useState([]);
