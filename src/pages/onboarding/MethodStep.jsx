@@ -1,66 +1,59 @@
 import { Camera, FileSpreadsheet, Keyboard } from 'lucide-react';
-import OnboardingShell, { sectionLabelClass } from './OnboardingShell';
+import OnboardingShell from './OnboardingShell';
 
 export default function MethodStep({ onManual, onScreenshot, onExcel, onBack }) {
   return (
-    <OnboardingShell onBack={onBack} badge="Setup">
-      <p className="text-2xl font-bold text-pe-text md:text-3xl">
-        How do you want to add holdings?
-      </p>
-      <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Choose a Zerodha file, a screenshot, or manual entry. Every option ends with the same
-        editable form check.
+    <OnboardingShell onBack={onBack} badge={null}>
+      <p className="text-center text-2xl font-bold tracking-tight text-pe-text md:text-3xl">
+        How do you want to enter your holdings?
       </p>
 
-      <div className="mt-8 border-t border-pe-border pt-8">
-        <p className={sectionLabelClass}>Choose a path</p>
-        <div className="mt-3 divide-y divide-pe-border rounded-lg border border-pe-border">
-          <MethodRow
-            icon={<FileSpreadsheet className="h-5 w-5 text-pe-accent" />}
-            title="Upload Excel file"
-            description="Upload a Zerodha holdings statement. We read Equity and Mutual Fund positions locally."
-            badge="Zerodha only"
-            onClick={onExcel}
-          />
-          <MethodRow
-            icon={<Camera className="h-5 w-5 text-pe-accent" />}
-            title="Upload screenshot"
-            description="Upload Zerodha Kite holdings screenshots. We parse them locally into an editable summary."
-            badge="Zerodha only"
-            onClick={onScreenshot}
-          />
-          <MethodRow
-            icon={<Keyboard className="h-5 w-5 text-pe-text-secondary" />}
-            title="Add manually"
-            description="Enter ticker, total invested, and quantity yourself. Available to everyone, including Zerodha users."
-            onClick={onManual}
-          />
-        </div>
+      <div className="mt-8 grid gap-3">
+        <MethodCard
+          icon={<FileSpreadsheet className="h-7 w-7" strokeWidth={1.75} />}
+          title="Excel"
+          hint="Zerodha only"
+          onClick={onExcel}
+        />
+        <MethodCard
+          icon={<Camera className="h-7 w-7" strokeWidth={1.75} />}
+          title="Screenshot"
+          hint="Zerodha Kite only"
+          onClick={onScreenshot}
+        />
+        <MethodCard
+          icon={<Keyboard className="h-7 w-7" strokeWidth={1.75} />}
+          title="Manual"
+          hint="Any broker"
+          onClick={onManual}
+          muted
+        />
       </div>
     </OnboardingShell>
   );
 }
 
-function MethodRow({ icon, title, description, onClick, badge }) {
+function MethodCard({ icon, title, hint, onClick, muted = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-pe-surface first:rounded-t-lg last:rounded-b-lg"
+      className={`flex w-full items-center gap-4 rounded-2xl border px-4 py-5 text-left transition active:scale-[0.99] ${
+        muted
+          ? 'border-pe-border bg-white hover:bg-pe-surface'
+          : 'border-pe-accent-border bg-pe-accent-wash/50 hover:bg-pe-accent-wash'
+      }`}
     >
-      <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-pe-surface">
+      <span
+        className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl ${
+          muted ? 'bg-pe-surface text-pe-text-secondary' : 'bg-white text-pe-accent'
+        }`}
+      >
         {icon}
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[15px] font-semibold text-pe-text">{title}</p>
-          {badge ? (
-            <span className="rounded-md border border-pe-accent-border bg-pe-accent-wash px-1.5 py-0.5 text-[12px] font-bold uppercase tracking-wide text-pe-accent">
-              {badge}
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-0.5 text-sm text-pe-text-muted">{description}</p>
+      <div className="min-w-0">
+        <p className="text-[18px] font-bold text-pe-text">{title}</p>
+        <p className="mt-0.5 text-[13px] font-medium text-pe-text-muted">{hint}</p>
       </div>
     </button>
   );

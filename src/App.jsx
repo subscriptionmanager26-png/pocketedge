@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import ComposeModal from './components/ComposeModal';
 import Shell from './components/Shell';
 import FeedDesignPage from './pages/FeedDesignPage';
@@ -37,6 +37,7 @@ import {
   setSelfProfile,
   getHandleForUserIdSync,
 } from './lib/socialIdentity';
+import { createDraftPortfolio } from './lib/socialPortfolioApi';
 import {
   addPostComment,
   buildOptimisticPostComment,
@@ -152,6 +153,7 @@ export default function App() {
   const [profileReturnTab, setProfileReturnTab] = useState('feed');
   const [settingsReturnTab, setSettingsReturnTab] = useState('feed');
   const [profilePortfolioId, setProfilePortfolioId] = useState(null);
+  const [profileStartUpdateHoldings, setProfileStartUpdateHoldings] = useState(false);
   const [profileSeedPerson, setProfileSeedPerson] = useState(null);
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
@@ -769,7 +771,7 @@ export default function App() {
     navigateToProfile(navigate, userId);
   };
 
-  const openProfilePortfolio = (userId, portfolioId) => {
+  const openProfilePortfolio = (userId, portfolioId, { updateHoldings = false } = {}) => {
     if (!userId || !portfolioId) return;
     if (
       authView === 'landing' &&
@@ -784,8 +786,20 @@ export default function App() {
     setProfileUserId(userId);
     setProfileMode(userId === currentUserId ? 'own' : 'public');
     setProfilePortfolioId(portfolioId);
+    setProfileStartUpdateHoldings(Boolean(updateHoldings));
     setTab('profile');
     navigateToProfile(navigate, userId, { portfolioId });
+  };
+
+  const createOwnPortfolio = async () => {
+    if (authView === 'landing') {
+      void requireSignIn();
+      return;
+    }
+    const ownerId = currentUserId;
+    if (!ownerId) return;
+    const created = await createDraftPortfolio(ownerId);
+    openProfilePortfolio(ownerId, created.id);
   };
 
   const handleTabChange = (next) => {
@@ -969,6 +983,9 @@ export default function App() {
     const bootPath = parseAppPath(location.pathname);
     // Public marketing can paint without waiting on auth for guests.
     if (bootPath.kind === 'marketing') {
+      if (bootPath.redirectTo) {
+        return <Navigate to={bootPath.redirectTo} replace />;
+      }
       return (
         <RouteSuspense>
           <MarketingRoute
@@ -992,6 +1009,9 @@ export default function App() {
 
   const parsedPath = parseAppPath(location.pathname);
   if (parsedPath.kind === 'marketing') {
+    if (parsedPath.redirectTo) {
+      return <Navigate to={parsedPath.redirectTo} replace />;
+    }
     return (
       <RouteSuspense>
         <MarketingRoute
@@ -1043,6 +1063,7 @@ export default function App() {
         onSettings={openSettings}
         onGoHome={goHome}
         onCompose={openCompose}
+        onCreatePortfolio={createOwnPortfolio}
         guestMode={guestMode}
         onRequireSignIn={requireSignIn}
         mobileActions={mobileHeaderActions}
@@ -1179,6 +1200,7 @@ export default function App() {
               onOpenProfile={openProfile}
               onOpenPost={openPost}
               onOpenSourcePortfolio={openProfilePortfolio}
+              onCreatePortfolio={createOwnPortfolio}
             />
           </RouteSuspense>
         )}
@@ -1207,17 +1229,22 @@ export default function App() {
                 }
                 posts={posts}
                 selectedPortfolioId={profilePortfolioId}
+                startUpdateHoldings={profileStartUpdateHoldings}
+                onUpdateHoldingsConsumed={() => setProfileStartUpdateHoldings(false)}
                 onSelectPortfolio={(id) => {
                   resetScroll();
+                  setProfileStartUpdateHoldings(false);
                   setProfilePortfolioId(id);
                   navigateToProfile(navigate, profileUserId, { portfolioId: id });
                 }}
                 onClearPortfolio={() => {
                   backScroll();
+                  setProfileStartUpdateHoldings(false);
                   navigateBack(navigate, location, profileBackFallback());
                 }}
                 onBack={() => {
                   backScroll();
+                  setProfileStartUpdateHoldings(false);
                   navigateBack(navigate, location, tabPath(profileReturnTab || 'feed'));
                 }}
                 onOpenPublicPreview={() => {

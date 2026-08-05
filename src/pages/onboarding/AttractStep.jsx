@@ -1,68 +1,80 @@
 import { ArrowRight } from 'lucide-react';
 import { FormStatusIcon } from '../../components/FormStatusIcons';
-import OnboardingShell, { primaryBtnClass, sectionLabelClass } from './OnboardingShell';
+import OnboardingShell, { primaryBtnClass } from './OnboardingShell';
 
-export default function AttractStep({ onContinue }) {
+const SIGNALS = [
+  {
+    form: 'out_of_form',
+    label: 'Out of Form',
+    meaning: 'Stocks that are below their trendline',
+    tone: 'negative',
+  },
+  {
+    form: 'unsure',
+    label: 'Neutral',
+    meaning: 'No clear signal',
+    tone: 'muted',
+  },
+  {
+    form: 'in_form',
+    label: 'In Form',
+    meaning: 'Stocks that are above their trendline',
+    tone: 'positive',
+  },
+];
+
+export default function AttractStep({ onContinue, onSkip }) {
   return (
     <OnboardingShell
-      badge="Portfolio check"
+      badge={null}
       footer={
         <>
           <button type="button" onClick={onContinue} className={primaryBtnClass}>
-            <span>Check my portfolio</span>
+            <span>Check Now</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
-          <p className="mt-3 text-center text-[12px] text-pe-text-muted">
-            Takes about a minute. You can edit holdings anytime after.
-          </p>
+          {onSkip ? (
+            <button
+              type="button"
+              onClick={onSkip}
+              className="mt-3 w-full py-2 text-center text-[14px] font-semibold text-pe-text-muted transition hover:text-pe-text"
+            >
+              Check Later
+            </button>
+          ) : null}
         </>
       }
     >
-      <p className="text-2xl font-bold text-pe-text md:text-3xl">
-        Is your portfolio actually in form?
-      </p>
-      <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Add your holdings once. We classify stocks, ETFs, and mutual funds with the
-        daily 50/200 DMA momentum screen - so you know what is in form, and what is
-        off track.
+      <h1 className="text-center text-[28px] font-bold tracking-tight text-pe-text md:text-[32px]">
+        Are your holdings doing well?
+      </h1>
+      <p className="mx-auto mt-2 max-w-[22rem] text-center text-[15px] leading-snug text-pe-text-secondary">
+        Each holding gets a clear signal based on 200 and 50 DMA.
       </p>
 
-      <div className="mt-8 border-t border-pe-border pt-8">
-        <p className={sectionLabelClass}>What you&apos;ll see</p>
-        <div className="mt-3 divide-y divide-pe-border rounded-lg border border-pe-border">
-          <SignalRow
-            form="in_form"
-            label="In Form"
-            hint="Bullish - above both DMAs with a rising 200 DMA"
-          />
-          <SignalRow
-            form="out_of_form"
-            label="Out of Form"
-            hint="Bearish - below both DMAs with a falling 200 DMA"
-          />
-          <SignalRow
-            form="unsure"
-            label="Neutral"
-            hint="Mixed signal or insufficient price history"
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-lg border border-pe-accent-border bg-pe-accent-wash px-4 py-3 text-[15px] text-pe-text-secondary">
-        Upload one or more Zerodha Kite or Groww holdings screenshots, or add holdings
-        manually - your choice.
+      <div className="mx-auto mt-10 flex w-full max-w-md flex-col gap-3">
+        {SIGNALS.map((signal) => (
+          <SignalCard key={signal.form} {...signal} />
+        ))}
       </div>
     </OnboardingShell>
   );
 }
 
-function SignalRow({ form, label, hint }) {
+function SignalCard({ form, label, meaning, tone }) {
+  const labelClass =
+    tone === 'positive'
+      ? 'text-pe-positive'
+      : tone === 'negative'
+        ? 'text-pe-negative'
+        : 'text-pe-text-muted';
+
   return (
-    <div className="flex items-start gap-3 px-4 py-3.5 first:rounded-t-lg last:rounded-b-lg">
-      <FormStatusIcon form={form} className="mt-0.5 h-5 w-5 shrink-0" />
-      <div>
-        <p className="text-[15px] font-semibold text-pe-text">{label}</p>
-        <p className="text-sm text-pe-text-muted">{hint}</p>
+    <div className="flex items-center gap-4 rounded-2xl border border-pe-border bg-white px-4 py-4 text-left">
+      <FormStatusIcon form={form} className="h-12 w-12 shrink-0" />
+      <div className="min-w-0">
+        <p className={`text-[15px] font-bold leading-tight ${labelClass}`}>{label}</p>
+        <p className="mt-1 text-[13px] leading-snug text-pe-text-muted">{meaning}</p>
       </div>
     </div>
   );

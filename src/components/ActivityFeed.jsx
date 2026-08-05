@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import NewsList from './NewsList';
 import Avatar from './Avatar';
 import AssetLogo from './AssetLogo';
@@ -14,6 +15,24 @@ import { getPersonSync } from '../lib/socialIdentity';
 import { formatInr, pnlClass, timeAgo } from '../lib/format';
 import { bodyMentionsTicker, formatTicker } from '../lib/tickers';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
+
+const ASSET_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'stock', label: 'Stocks' },
+  { id: 'etf', label: 'ETFs' },
+  { id: 'bond', label: 'Bonds' },
+  { id: 'fund', label: 'MFs' },
+];
+
+function holdingAssetKind(holding) {
+  const ticker = String(holding?.ticker ?? '').trim();
+  const type = String(holding?.assetType ?? '').toLowerCase();
+  if (type === 'fund' || /^\d{6,}$/.test(ticker)) return 'fund';
+  if (type === 'etf') return 'etf';
+  if (type === 'bond') return 'bond';
+  if (type === 'commodity') return 'stock';
+  return type === 'stock' || !type ? 'stock' : type;
+}
 
 /** Aggregate news / posts for a set of tickers (portfolio-level or single stock). */
 export function collectActivity(tickers) {
@@ -123,7 +142,44 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
   const [sortBy, setSortBy] = useState('invested_value');
   const [sortOrder, setSortOrder] = useState('desc');
   const [sortOpen, setSortOpen] = useState(false);
-  const sortMenuRef = useRef(null);
+  const [assetFilter, setAssetFilter] = useState('all');
+  const sortButtonRef = useRef(null);
+  const sortPanelRef = useRef(null);
+  const [sortMenuPos, setSortMenuPos] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!sortOpen) {
+      setSortMenuPos(null);
+      return undefined;
+    }
+    const syncPos = () => {
+      const button = sortButtonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      setSortMenuPos({
+        top: rect.bottom + 4,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    };
+    syncPos();
+    window.addEventListener('resize', syncPos);
+    window.addEventListener('scroll', syncPos, true);
+    return () => {
+      window.removeEventListener('resize', syncPos);
+      window.removeEventListener('scroll', syncPos, true);
+    };
+  }, [sortOpen]);
+
+  useEffect(() => {
+    if (!sortOpen) return undefined;
+    const onPointerDown = (event) => {
+      const inButton = sortButtonRef.current?.contains(event.target);
+      const inPanel = sortPanelRef.current?.contains(event.target);
+      if (!inButton && !inPanel) setSortOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [sortOpen]);
 
   if (!holdings.length) return <Empty label="No positions in this list." />;
 
@@ -134,22 +190,20 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
     });
   };
 
-  const metricLabel = METRIC_OPTIONS.find((opt) => opt.id === metric)?.label ?? "Today's PnL";
-  const sortLabel = SORT_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? 'Invested Value';
+  const cycleAssetFilter = () => {
+    setAssetFilter((prev) => {
+      const idx = ASSET_FILTERS.findIndex((opt) => opt.id === prev);
+      return ASSET_FILTERS[(idx + 1) % ASSET_FILTERS.length].id;
+    });
+  };
 
-  useEffect(() => {
-    if (!sortOpen) return undefined;
-    const onPointerDown = (event) => {
-      if (!sortMenuRef.current?.contains(event.target)) {
-        setSortOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [sortOpen]);
+  const metricLabel = METRIC_OPTIONS.find((opt) => opt.id === metric)?.label ?? "Day's PnL";
+  const sortLabel = SORT_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? 'Invested Value';
+  const assetLabel = ASSET_FILTERS.find((opt) => opt.id === assetFilter)?.label ?? 'All';
 
   const sortedHoldings = [...holdings]
     .filter((h) => !h.overall)
+    .filter((h) => assetFilter === 'all' || holdingAssetKind(h) === assetFilter)
     .sort((a, b) => {
       if (sortBy === 'name') {
         const aName = holdingDisplayLabel(a).toLocaleLowerCase();
@@ -162,18 +216,35 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
       return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
     });
 
+  const pillClass =
+    'inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text sm:px-2.5';
+
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--fv-border,#ececec)] px-4 py-2.5 sm:gap-x-3.5 sm:px-5">
-        <p className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted">
-          Security
+      <div className="relative z-10 flex flex-nowrap items-center gap-1.5 overflow-visible border-b border-[var(--fv-border,#ececec)] px-4 py-2.5 sm:gap-2 sm:px-5">
+        <p className="inline-flex shrink-0 items-center px-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted sm:px-2">
+          Name
         </p>
-        <div className="inline-flex min-w-0 flex-wrap items-center justify-end gap-2">
-          <div className="relative" ref={sortMenuRef}>
+        <div className="relative ml-auto flex shrink-0 flex-nowrap items-center gap-1.5 overflow-visible sm:gap-2">
+          <button
+            type="button"
+            onClick={cycleAssetFilter}
+            className={pillClass}
+            aria-label={`Asset filter: ${assetLabel}. Click to change.`}
+            title="Tap to switch asset type"
+          >
+            <span className="whitespace-nowrap">{assetLabel}</span>
+            <span aria-hidden="true" className="shrink-0 text-[12px] leading-none">
+              {'>'}
+            </span>
+          </button>
+
+          <div className="relative shrink-0">
             <button
+              ref={sortButtonRef}
               type="button"
               onClick={() => setSortOpen((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text"
+              className={pillClass}
               aria-haspopup="menu"
               aria-expanded={sortOpen}
               aria-label={`Sort holdings. Current: ${sortLabel}`}
@@ -186,71 +257,81 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
               </span>
             </button>
 
-            {sortOpen ? (
-              <div
-                role="menu"
-                className="absolute right-0 z-20 mt-1 w-44 rounded-[14px] bg-white p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]"
-              >
-                <div className="mb-1 grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setSortOrder('asc')}
-                    className={`rounded-lg px-2 py-1 text-[12px] font-semibold leading-5 ${
-                      sortOrder === 'asc'
-                        ? 'bg-black/[0.06] text-pe-text'
-                        : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
-                    }`}
+            {sortOpen && sortMenuPos && typeof document !== 'undefined'
+              ? createPortal(
+                  <div
+                    ref={sortPanelRef}
+                    role="menu"
+                    style={{ top: sortMenuPos.top, right: sortMenuPos.right }}
+                    className="fixed z-[80] w-44 rounded-[14px] bg-white p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)]"
                   >
-                    Asc
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSortOrder('desc')}
-                    className={`rounded-lg px-2 py-1 text-[12px] font-semibold leading-5 ${
-                      sortOrder === 'desc'
-                        ? 'bg-black/[0.06] text-pe-text'
-                        : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
-                    }`}
-                  >
-                    Desc
-                  </button>
-                </div>
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={sortBy === opt.id}
-                    onClick={() => {
-                      setSortBy(opt.id);
-                      setSortOpen(false);
-                    }}
-                    className={`block w-full rounded-lg px-2 py-1.5 text-left text-[12px] font-semibold leading-5 ${
-                      sortBy === opt.id
-                        ? 'bg-black/[0.06] text-pe-text'
-                        : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+                    <div className="mb-1 grid grid-cols-2 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setSortOrder('asc')}
+                        className={`rounded-lg px-2 py-1 text-[12px] font-semibold leading-5 ${
+                          sortOrder === 'asc'
+                            ? 'bg-black/[0.06] text-pe-text'
+                            : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
+                        }`}
+                      >
+                        Asc
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortOrder('desc')}
+                        className={`rounded-lg px-2 py-1 text-[12px] font-semibold leading-5 ${
+                          sortOrder === 'desc'
+                            ? 'bg-black/[0.06] text-pe-text'
+                            : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
+                        }`}
+                      >
+                        Desc
+                      </button>
+                    </div>
+                    {SORT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={sortBy === opt.id}
+                        onClick={() => {
+                          setSortBy(opt.id);
+                          setSortOpen(false);
+                        }}
+                        className={`block w-full rounded-lg px-2 py-1.5 text-left text-[12px] font-semibold leading-5 ${
+                          sortBy === opt.id
+                            ? 'bg-black/[0.06] text-pe-text'
+                            : 'text-pe-text-muted hover:bg-black/[0.04] hover:text-pe-text'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>,
+                  document.body
+                )
+              : null}
           </div>
 
           <button
             type="button"
             onClick={cycleMetric}
-            className="inline-flex max-w-[9.5rem] items-center justify-end gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em] text-pe-text-muted shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition hover:text-pe-text sm:max-w-none"
+            className={pillClass}
             aria-label={`Metric column: ${metricLabel}. Click to change.`}
             title="Tap to switch metric"
           >
-            <span className="truncate whitespace-nowrap">{metricLabel}</span>
-            <span aria-hidden="true" className="shrink-0 text-[12px] leading-none">{'<>'}</span>
+            <span className="whitespace-nowrap">{metricLabel}</span>
+            <span aria-hidden="true" className="shrink-0 text-[12px] leading-none">
+              {'>'}
+            </span>
           </button>
         </div>
       </div>
 
+      {sortedHoldings.length === 0 ? (
+        <Empty label="No holdings in this category." />
+      ) : (
       <div className="divide-y divide-[var(--fv-border,#ececec)]">
         {sortedHoldings.map((h) => {
             const stock = STOCKS[h.ticker];
@@ -436,6 +517,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             );
           })}
       </div>
+      )}
     </div>
   );
 }

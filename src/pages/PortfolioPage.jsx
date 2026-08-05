@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, RefreshCw } from 'lucide-react';
 import AppModalOverlay from '../components/AppModalOverlay';
 import GuestSignInCta from '../components/GuestSignInCta';
 import UnderlineTabs from '../components/UnderlineTabs';
@@ -47,6 +47,8 @@ export default function PortfolioPage({
   onOpenProfile,
   onOpenPost,
   onOpenSourcePortfolio,
+  onCreatePortfolio,
+  onUpdateHoldings,
 }) {
   const [listId, setListId] = useState(null);
   const [contentTab, setContentTab] = useState('performance');
@@ -598,16 +600,17 @@ export default function PortfolioPage({
   if (useBackend() && !lists.length) {
     return (
       <div className="px-4 py-16 text-center">
-        <p className="text-lg font-semibold text-pe-text">No portfolios yet</p>
+        <p className="text-lg font-semibold text-pe-text">Create My Portfolio</p>
         <p className="mt-2 text-sm text-pe-text-secondary">
-          Add a portfolio from your profile to track holdings here.
+          Upload broker holdings in under 2 minutes. Form signals and PnL light up after your first
+          import.
         </p>
         <button
           type="button"
-          onClick={() => onOpenProfile?.(ownerId)}
+          onClick={() => onCreatePortfolio?.() ?? onOpenProfile?.(ownerId)}
           className="mt-6 inline-flex items-center justify-center rounded-lg bg-pe-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
         >
-          Go to profile
+          Create / import my portfolio
         </button>
       </div>
     );
@@ -673,6 +676,16 @@ export default function PortfolioPage({
                   pct={metrics.todayPnlPct}
                 />
               </div>
+              {(activeList?.kind ?? 'live') !== 'watchlist' && false && onUpdateHoldings ? (
+                <button
+                  type="button"
+                  onClick={() => onUpdateHoldings?.(activeList?.id ?? listId)}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-pe-border bg-white py-2.5 text-sm font-semibold text-pe-text shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition hover:border-pe-accent hover:text-pe-accent sm:w-auto sm:px-4"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Update holdings
+                </button>
+              ) : null}
             </div>
           </>
         ) : null}

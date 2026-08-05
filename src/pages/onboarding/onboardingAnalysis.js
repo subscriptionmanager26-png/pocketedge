@@ -35,32 +35,28 @@ export async function analyzeHoldings(holdings) {
 }
 
 export function summarizeAnalysis(rows) {
+  const mapped = rows.filter((r) => !r.unmapped);
+  const unmapped = rows.filter((r) => r.unmapped);
   const buckets = {
-    in_form: rows.filter((r) => r.form === 'in_form'),
-    out_of_form: rows.filter((r) => r.form === 'out_of_form'),
-    unsure: rows.filter((r) => r.form === 'unsure'),
+    in_form: mapped.filter((r) => r.form === 'in_form'),
+    out_of_form: mapped.filter((r) => r.form === 'out_of_form'),
+    unsure: mapped.filter((r) => r.form === 'unsure'),
+    unmapped,
   };
-  const totalValue = rows.reduce((sum, r) => sum + r.value, 0);
+  const totalValue = mapped.reduce((sum, r) => sum + r.value, 0);
   const totalInvested = rows.reduce((sum, r) => sum + r.invested, 0);
   const inFormValue = buckets.in_form.reduce((sum, r) => sum + r.value, 0);
   const offTrackValue = buckets.out_of_form.reduce((sum, r) => sum + r.value, 0);
 
   let headline = 'Mixed signals';
-  let detail =
-    'Some names are in a bullish DMA regime, others need a closer look. Start with Off Track weights.';
-
-  if (rows.length && totalValue > 0 && inFormValue / totalValue >= 0.65) {
+  if (mapped.length && totalValue > 0 && inFormValue / totalValue >= 0.65) {
     headline = 'Mostly in form';
-    detail =
-      'A large share of your portfolio (stocks, ETFs, and funds) is classified Bullish on the daily 50/200 DMA screen.';
-  } else if (rows.length && totalValue > 0 && offTrackValue / totalValue >= 0.5) {
+  } else if (mapped.length && totalValue > 0 && offTrackValue / totalValue >= 0.5) {
     headline = 'Under pressure';
-    detail =
-      'Over half of your portfolio value is classified Bearish. Review those names first.';
-  } else if (buckets.unsure.length === rows.length) {
-    headline = 'Need clearer data';
-    detail =
-      'We could not classify every holding yet. Use NSE equity tickers, or try again after today’s screen updates.';
+  } else if (!mapped.length && unmapped.length) {
+    headline = 'Needs mapping';
+  } else if (buckets.unsure.length === mapped.length && mapped.length) {
+    headline = 'Mostly neutral';
   }
 
   return {
@@ -70,7 +66,7 @@ export function summarizeAnalysis(rows) {
     pnlPct: totalInvested ? ((totalValue - totalInvested) / totalInvested) * 100 : 0,
     inFormShare: totalValue ? (inFormValue / totalValue) * 100 : 0,
     offTrackShare: totalValue ? (offTrackValue / totalValue) * 100 : 0,
+    unmappedCount: unmapped.length,
     headline,
-    detail,
   };
 }

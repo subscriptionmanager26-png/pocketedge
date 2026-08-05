@@ -4,14 +4,13 @@ import {
   ChevronRight,
   ClipboardCheck,
   Copy,
-  FileSpreadsheet,
   Heart,
-  ImagePlus,
   Pencil,
   Plus,
   Share2,
   Trash2,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import ProfileHero from '../components/ProfileHero';
@@ -40,6 +39,12 @@ import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
 import GuestSignInCta from '../components/GuestSignInCta';
+import UpdateHoldingsSheet from '../components/UpdateHoldingsSheet';
+import {
+  holdingFallbackName,
+  holdingIsin,
+  previewPortfolioImportMerge,
+} from '../lib/portfolioImportMerge';
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
 import AssetLogo from '../components/AssetLogo';
 import PortfolioCard from '../components/PortfolioCard';
@@ -95,19 +100,6 @@ const RETURN_PERIOD_LABELS = {
   '1Y': '1Y',
 };
 const RETURN_PERIOD_KEY = 'pe_profile_return_period';
-const ISIN_RE = /^[A-Z0-9]{12}$/;
-
-function holdingIsin(value) {
-  const isin = String(value ?? '').trim().toUpperCase();
-  return ISIN_RE.test(isin) ? isin : null;
-}
-
-function holdingFallbackName(row) {
-  const value = String(row?.name ?? row?.ticker ?? '').trim().toUpperCase();
-  // Broker/exchange series badges are temporary suffixes: GOLDBEES-X,
-  // GOLDBEES - SE, etc. Keep the stable root for non-ISIN matching.
-  return value.replace(/\s*-\s*[A-Z]{1,3}$/, '').trim();
-}
 
 function getStoredReturnPeriod() {
   try {
@@ -137,6 +129,8 @@ export default function ProfilePage({
   guestMode = false,
   posts,
   selectedPortfolioId,
+  startUpdateHoldings = false,
+  onUpdateHoldingsConsumed,
   initialPerson = null,
   onSelectPortfolio,
   onClearPortfolio,
@@ -472,6 +466,8 @@ export default function ProfilePage({
         userId={person?.id}
         canEdit={canEdit}
         guestMode={guestMode}
+        startUpdateHoldings={startUpdateHoldings}
+        onUpdateHoldingsConsumed={onUpdateHoldingsConsumed}
         onPortfolioUpdated={(updated) => {
           if (updated) {
             setPortfolios((prev) => {
@@ -598,9 +594,26 @@ function PortfoliosListPanel({
       {loading ? (
         <PortfoliosListSkeleton count={2} />
       ) : !portfolios.length ? (
-        <p className="px-4 py-12 text-center text-sm text-pe-text-secondary">
-          {canEdit ? 'No portfolios yet.' : 'No portfolios published yet.'}
-        </p>
+        <div className="px-4 py-12 text-center md:px-6">
+          <p className="text-lg font-semibold text-pe-text">
+            {canEdit ? 'Create My Portfolio' : 'No portfolios published yet.'}
+          </p>
+          {canEdit ? (
+            <>
+              <p className="mt-2 text-sm text-pe-text-secondary">
+                Upload broker holdings in under 2 minutes — Excel or screenshots from Zerodha and
+                Groww.
+              </p>
+              <button
+                type="button"
+                onClick={onAddPortfolio}
+                className="mt-6 inline-flex items-center justify-center rounded-lg bg-pe-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+              >
+                Create / import my portfolio
+              </button>
+            </>
+          ) : null}
+        </div>
       ) : (
         <div>
           {portfolios.map((portfolio) => (
@@ -641,6 +654,8 @@ function PortfolioDetailView({
   userId,
   canEdit,
   guestMode = false,
+  startUpdateHoldings = false,
+  onUpdateHoldingsConsumed,
   onPortfolioUpdated,
   onBack,
   canCopy = false,
@@ -655,6 +670,7 @@ function PortfolioDetailView({
 }) {
   const isDraft = Boolean(portfolio.isDraft);
   const [editing, setEditing] = useState(startInEditMode);
+  const [updateSheetOpen, setUpdateSheetOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(portfolio.name);
@@ -796,6 +812,25 @@ function PortfolioDetailView({
     setEditing(true);
   };
 
+  const openUpdateHoldings = () => {
+    if (isWatchlistKind(portfolioKind)) return;
+    if (!editing) {
+      editSessionRef.current += 1;
+      setEditRows(buildEditRows(portfolioKind));
+      setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
+      setImportNotice('');
+      setEditing(true);
+    }
+    setUpdateSheetOpen(true);
+  };
+
+  useEffect(() => {
+    if (!startUpdateHoldings || !canEdit || guestMode) return;
+    // Update-holdings sheet is WIP — consume the route flag without opening it.
+    onUpdateHoldingsConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when flagged from routing
+  }, [startUpdateHoldings, portfolio.id, canEdit, guestMode]);
+
   const applyImportedHoldings = async (importedRows, sourceLabel) => {
     const incoming = importedRows.filter((row) => String(row.ticker ?? '').trim());
     if (!incoming.length) {
@@ -812,69 +847,13 @@ function PortfolioDetailView({
       label: 'Matching holdings…',
     }));
     try {
-      const current = editRows.filter((row) => String(row.ticker ?? '').trim());
-      const assetsByToken = await resolvePortfolioAssets([
-        ...current.map((row) => row.ticker),
-        ...incoming.map((row) => row.ticker),
-      ]);
-      const importedByIsin = new Map();
-      const importedByFallbackName = new Map();
-      const importedRowsByKey = new Map();
-      for (const row of incoming) {
-        const asset = assetsByToken.get(row.ticker);
-        const key = asset?.key ?? row.ticker;
-        const isin = holdingIsin(row.isin);
-        const prepared = {
-          ...row,
-          ticker: key,
-          name: asset ? (asset.kind === 'fund' ? asset.name : asset.symbol ?? '') : row.name,
-          isin,
-          unmapped: !asset,
-          missingFromImport: false,
-        };
-        importedRowsByKey.set(key, prepared);
-        if (isin) {
-          importedByIsin.set(isin, prepared);
-        } else {
-          const fallbackName = holdingFallbackName(prepared);
-          if (fallbackName) importedByFallbackName.set(fallbackName, prepared);
-        }
-      }
-
-      setEditRows((previous) => {
-        const merged = [];
-        const consumed = new Set();
-        for (const row of previous) {
-          if (!String(row.ticker ?? '').trim()) continue;
-          const asset = assetsByToken.get(row.ticker);
-          const key = asset?.key ?? row.ticker;
-          const existingIsin = holdingIsin(row.isin) ?? holdingIsin(asset?.isin);
-          // When an ISIN was provided by the import it is the sole identity.
-          // Name/symbol matching is only a fallback for rows with no ISIN.
-          const imported = existingIsin
-            ? importedByIsin.get(existingIsin)
-            : importedByFallbackName.get(holdingFallbackName(row));
-          if (imported) {
-            merged.push({
-              ...row,
-              ...imported,
-              isin: imported.isin ?? existingIsin,
-              id: row.id,
-              missingFromImport: false,
-            });
-            consumed.add(imported.ticker);
-          } else {
-            merged.push({ ...row, isin: existingIsin, missingFromImport: true });
-          }
-        }
-        for (const [key, imported] of importedRowsByKey) {
-          if (consumed.has(key)) continue;
-          merged.push({ ...imported, id: makeRowId(), missingFromImport: false });
-        }
-        return [...merged, makeBlankRow()];
+      const { merged, unmappedCount } = await previewPortfolioImportMerge({
+        currentRows: editRows,
+        importedRows: incoming,
+        makeRowId,
       });
+      setEditRows([...merged, makeBlankRow()]);
       setFieldErrors((previous) => ({ ...previous, rows: {} }));
-      const unmappedCount = incoming.filter((row) => !assetsByToken.has(row.ticker)).length;
       const unmappedText = unmappedCount
         ? ` ${unmappedCount} unmapped ${
             unmappedCount === 1 ? 'security was' : 'securities were'
@@ -886,6 +865,22 @@ function PortfolioDetailView({
     } catch (error) {
       setImportNotice(error?.message ?? `Could not read that ${sourceLabel}.`);
     }
+  };
+
+  const applyUpdateSheetRows = (finalRows, meta) => {
+    setEditRows([...finalRows.filter((row) => String(row.ticker ?? '').trim()), makeBlankRow()]);
+    setFieldErrors((previous) => ({ ...previous, rows: {} }));
+    const removed = meta?.removedStaleCount ?? 0;
+    const unmappedCount = meta?.unmappedCount ?? 0;
+    const bits = [
+      `${meta?.sourceLabel ?? 'Import'} applied.`,
+      removed ? ` Removed ${removed} stale ${removed === 1 ? 'holding' : 'holdings'}.` : '',
+      unmappedCount
+        ? ` ${unmappedCount} unmapped ${unmappedCount === 1 ? 'security' : 'securities'} may need review.`
+        : '',
+      ' Save when you are done.',
+    ];
+    setImportNotice(bits.join(''));
   };
 
   const importExcelHoldings = async (file) => {
@@ -1113,6 +1108,8 @@ function PortfolioDetailView({
           editing
           saved={saved}
           saving={saving}
+          showUpdate={false}
+          onUpdate={openUpdateHoldings}
           onCancel={() => {
             if (!saving) cancelEditsRef.current();
           }}
@@ -1121,13 +1118,17 @@ function PortfolioDetailView({
           }}
         />
       ) : (
-        <PortfolioDetailMobileActions onEdit={startEditing} />
+        <PortfolioDetailMobileActions
+          showUpdate={false}
+          onUpdate={openUpdateHoldings}
+          onEdit={startEditing}
+        />
       )
     );
 
     return () => onMobileHeaderActionsChange(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, editing, saved, saving, onMobileHeaderActionsChange]);
+  }, [canEdit, editing, saved, saving, onMobileHeaderActionsChange, portfolio.kind, portfolioKind]);
 
   const handleKindChange = (nextKind) => {
     setPortfolioKind(nextKind);
@@ -1272,7 +1273,7 @@ function PortfolioDetailView({
               <p className="mt-1 text-sm text-pe-text-secondary">
                 {isWatchlist
                   ? 'Search a stock, ETF, or fund and enter its share of total holdings (%). Weights must add up to 100%.'
-                  : 'Search a stock, ETF, or fund, then enter cost and quantity. Switch between total invested and avg price depending on what your broker shows.'}
+                  : 'Search a ticker and enter invested amount and quantity.'}
               </p>
             </div>
             {!isWatchlist ? (
@@ -1280,98 +1281,54 @@ function PortfolioDetailView({
             ) : null}
           </div>
 
-          {!isWatchlist ? (
+          {false && !isWatchlist ? (
             <div className="mt-5 rounded-lg border border-pe-border bg-pe-surface p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-pe-text">Update from broker export</p>
+                  <p className="text-sm font-semibold text-pe-text">Update holdings</p>
                   <p className="mt-0.5 text-[12px] text-pe-text-muted">
-                    Imported symbols update matching holdings. Unlisted existing holdings stay and
-                    are marked for review.
+                    Excel (Zerodha) or Kite / Groww screenshots. PDF coming soon.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={importingHoldings}
-                    onClick={() => excelInputRef.current?.click()}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[12px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
-                  >
-                    <FileSpreadsheet className="h-3.5 w-3.5" />
-                    Upload Excel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={importingHoldings}
-                    onClick={() => screenshotInputRef.current?.click()}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-pe-border-strong px-2.5 text-[12px] font-semibold text-pe-text-secondary hover:bg-pe-canvas disabled:opacity-60"
-                  >
-                    <ImagePlus className="h-3.5 w-3.5" />
-                    Upload screenshot
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  disabled={importingHoldings}
+                  onClick={openUpdateHoldings}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md bg-pe-accent px-2.5 text-[12px] font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Open updater
+                </button>
               </div>
-              {importingHoldings && importProgress ? (
-                <div className="mt-3" role="status" aria-live="polite">
-                  <div className="flex items-center justify-between gap-3 text-[12px]">
-                    <p className="font-semibold text-pe-text">{importProgress.label}</p>
-                    <p className="shrink-0 tabular-nums text-pe-text-muted">
-                      {Math.round(importProgress.percent)}%
-                    </p>
-                  </div>
-                  {importProgress.fileName ? (
-                    <p className="mt-1 truncate text-[12px] text-pe-text-muted">
-                      {importProgress.fileName}
-                    </p>
-                  ) : null}
-                  <div className="relative mt-2.5">
-                    <div className="h-2 overflow-hidden rounded-full bg-pe-canvas">
-                      <div
-                        className="h-full rounded-full bg-pe-accent transition-all duration-300"
-                        style={{ width: `${Math.max(2, importProgress.percent)}%` }}
-                      />
-                    </div>
-                    {(importProgress.total ?? 1) > 1 ? (
-                      <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-0.5">
-                        {Array.from({ length: importProgress.total }).map((_, index) => {
-                          const done =
-                            importProgress.percent >=
-                            ((index + 1) / importProgress.total) * 85;
-                          const active = importProgress.current === index + 1;
-                          return (
-                            <span
-                              key={`import-mile-${index}`}
-                              className={`h-2.5 w-2.5 rounded-full border-2 border-pe-surface ${
-                                done || active ? 'bg-pe-accent' : 'bg-pe-border-strong'
-                              }`}
-                              aria-hidden
-                            />
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : importNotice ? (
-                <p className="mt-2 text-[12px] text-pe-text-secondary">{importNotice}</p>
+              {importNotice ? (
+                <p className="mt-3 text-[12px] leading-relaxed text-pe-text-secondary">{importNotice}</p>
               ) : null}
-              <input
-                ref={excelInputRef}
-                type="file"
-                className="hidden"
-                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                onChange={(event) => importExcelHoldings(event.target.files?.[0])}
-              />
-              <input
-                ref={screenshotInputRef}
-                type="file"
-                className="hidden"
-                accept="image/png,image/jpeg,image/webp"
-                multiple
-                onChange={(event) => importScreenshotHoldings(event.target.files)}
-              />
             </div>
           ) : null}
+
+          <input
+            ref={excelInputRef}
+            type="file"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            className="hidden"
+            onChange={(event) => importExcelHoldings(event.target.files?.[0])}
+          />
+          <input
+            ref={screenshotInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/*"
+            multiple
+            className="hidden"
+            onChange={(event) => importScreenshotHoldings(event.target.files)}
+          />
+
+          <UpdateHoldingsSheet
+            open={updateSheetOpen}
+            currentRows={editRows}
+            makeRowId={makeRowId}
+            onClose={() => setUpdateSheetOpen(false)}
+            onApply={applyUpdateSheetRows}
+          />
 
           <div className="mt-4 space-y-2">
             <div className={`${rowGridClass} px-0.5`}>
@@ -1591,6 +1548,8 @@ function PortfolioDetailMobileActions({
   editing = false,
   saved = false,
   saving = false,
+  showUpdate = false,
+  onUpdate,
   onEdit,
   onCancel,
   onSave,
@@ -1598,6 +1557,18 @@ function PortfolioDetailMobileActions({
   if (editing) {
     return (
       <div className="flex items-center gap-1.5">
+        {showUpdate ? (
+          <button
+            type="button"
+            onClick={onUpdate}
+            disabled={saving}
+            className="inline-flex h-10 items-center gap-1 rounded-full bg-white px-3 text-sm font-semibold text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition hover:text-[var(--fv-text)] disabled:opacity-50"
+            aria-label="Update holdings"
+          >
+            <RefreshCw className="h-4 w-4" strokeWidth={2} />
+            Update
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onCancel}
@@ -1621,15 +1592,28 @@ function PortfolioDetailMobileActions({
   }
 
   return (
-    <button
-      type="button"
-      onClick={onEdit}
-      className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--fv-accent)] px-3.5 text-sm font-semibold text-white shadow-[var(--fv-shadow)] transition hover:opacity-90"
-      aria-label="Edit portfolio"
-    >
-      <Pencil className="h-4 w-4" strokeWidth={2} />
-      Edit
-    </button>
+    <div className="flex items-center gap-1.5">
+      {showUpdate ? (
+        <button
+          type="button"
+          onClick={onUpdate}
+          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--fv-accent)] px-3.5 text-sm font-semibold text-white shadow-[var(--fv-shadow)] transition hover:opacity-90"
+          aria-label="Update holdings"
+        >
+          <RefreshCw className="h-4 w-4" strokeWidth={2} />
+          Update
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-semibold text-[var(--fv-text)] shadow-[var(--fv-shadow)] transition hover:opacity-90"
+        aria-label="Edit portfolio manually"
+      >
+        <Pencil className="h-4 w-4" strokeWidth={2} />
+        Edit
+      </button>
+    </div>
   );
 }
 

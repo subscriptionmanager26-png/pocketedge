@@ -40,20 +40,15 @@ export default function ManualStep({ onBack, onSubmit }) {
         <>
           {error ? <p className="mb-2 text-[12px] text-pe-negative">{error}</p> : null}
           <button type="button" onClick={handleSubmit} className={primaryBtnClass}>
-            <span>Analyse the portfolio</span>
+            <span>Continue</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </>
       }
     >
-      <p className="text-2xl font-bold text-pe-text md:text-3xl">Add your holdings</p>
-      <p className="mt-2 text-[15px] leading-relaxed text-pe-text-secondary">
-        Enter ticker, cost, and quantity - same as editing a portfolio in PocketEdge.
-        Switch between total invested and avg price to match your broker. Works for any
-        broker, including Zerodha.
-      </p>
+      <p className="text-center text-2xl font-bold text-pe-text md:text-3xl">Type holdings</p>
 
-      <div className="mt-8 border-t border-pe-border pt-8">
+      <div className="mt-8">
         <HoldingsEditTable
           rows={rows}
           fieldErrors={fieldErrors}

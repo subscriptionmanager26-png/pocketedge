@@ -17,6 +17,8 @@ import {
 } from '../../lib/feedRailData';
 import { useMarketQuotePolling } from '../../hooks/useMarketQuoteRefresh';
 import { isFollowing, toggleFollow } from '../../lib/socialGraphStore';
+import { getAppCurrentUserId } from '../../lib/socialIdentity';
+import { fetchUserPortfolios, peekUserPortfolios } from '../../lib/socialPortfolioApi';
 
 function formatPct(pct) {
   const n = Number(pct);
@@ -209,7 +211,7 @@ export default function FeedRightRail({
   onOpenStock,
   onOpenPost,
   onOpenProfile,
-  onCompose,
+  onCreatePortfolio,
   onRequireSignIn,
   onFollowChange,
 }) {
@@ -222,10 +224,46 @@ export default function FeedRightRail({
   const [catalog, setCatalog] = useState([]);
   const [picker, setPicker] = useState(null); // 'indices' | 'sector' | null
   const [peopleState, setPeopleState] = useState(people);
+  const [showPortfolioCta, setShowPortfolioCta] = useState(() => guestMode);
 
   useEffect(() => {
     setPeopleState(people);
   }, [people]);
+
+  useEffect(() => {
+    if (guestMode) {
+      setShowPortfolioCta(true);
+      return undefined;
+    }
+
+    const ownerId = getAppCurrentUserId();
+    if (!ownerId) {
+      setShowPortfolioCta(true);
+      return undefined;
+    }
+
+    const hasPortfolio = (rows) =>
+      (rows ?? []).some((p) => p && !p.isDraft && !p.isArchived);
+
+    const cached = peekUserPortfolios(ownerId);
+    if (Array.isArray(cached)) {
+      setShowPortfolioCta(!hasPortfolio(cached));
+      if (hasPortfolio(cached)) return undefined;
+    }
+
+    let cancelled = false;
+    fetchUserPortfolios(ownerId)
+      .then((rows) => {
+        if (!cancelled) setShowPortfolioCta(!hasPortfolio(rows));
+      })
+      .catch(() => {
+        if (!cancelled) setShowPortfolioCta(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [guestMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -568,26 +606,29 @@ export default function FeedRightRail({
           )}
         </section>
 
-        {/* Portfolio CTA */}
-        <section className="fv-card-rail overflow-hidden bg-gradient-to-br from-[#fff4ec] via-white to-[#ffe8d6] p-5">
-          <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">Create your portfolio</h2>
-          <p className="fv-meta mt-1.5 leading-relaxed">
-            Track holdings, share theses, and see how you compare with serious investors.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              if (guestMode) {
-                onRequireSignIn?.();
-                return;
-              }
-              onCompose?.();
-            }}
-            className="fv-btn-primary mt-4 h-10 w-full text-[14px]"
-          >
-            Get started
-          </button>
-        </section>
+        {/* Portfolio CTA — only when the signed-in user has no published portfolio yet */}
+        {showPortfolioCta ? (
+          <section className="fv-card-rail overflow-hidden bg-gradient-to-br from-[#fff4ec] via-white to-[#ffe8d6] p-5">
+            <h2 className="text-[16px] font-semibold text-[var(--fv-text)]">Create My Portfolio</h2>
+            <p className="fv-meta mt-1.5 leading-relaxed">
+              Upload broker holdings in under 2 minutes. Form signals and PnL light up after your
+              first import.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (guestMode) {
+                  onRequireSignIn?.();
+                  return;
+                }
+                void onCreatePortfolio?.();
+              }}
+              className="fv-btn-primary mt-4 h-10 w-full text-[14px]"
+            >
+              Get started
+            </button>
+          </section>
+        ) : null}
       </div>
     </aside>
   );

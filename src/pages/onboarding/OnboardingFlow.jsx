@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { setOnboardingComplete } from '../../lib/sessionStore';
 import { buildLiveHoldings } from '../../lib/portfolioEdit';
 import { resolvePortfolioAssets } from '../../lib/portfolioAssetUniverse';
+import { mergeOnboardingHoldings } from '../../lib/portfolioImportMerge';
 import {
   createDraftPortfolio,
   saveSocialPortfolio,
@@ -12,6 +13,8 @@ import ExcelStep from './ExcelStep';
 import MethodStep from './MethodStep';
 import ManualStep from './ManualStep';
 import ScreenshotStep from './ScreenshotStep';
+import MoreSourcesStep from './MoreSourcesStep';
+import ConfirmInvestedStep from './ConfirmInvestedStep';
 import AnalysisStep, { AnalyzingStep } from './AnalysisStep';
 
 const STEPS = {
@@ -20,28 +23,76 @@ const STEPS = {
   manual: 'manual',
   excel: 'excel',
   screenshot: 'screenshot',
+  moreSources: 'moreSources',
+  confirmInvested: 'confirmInvested',
   analyzing: 'analyzing',
   analysis: 'analysis',
 };
 
-/** Portfolio form-check onboarding - replaces fund-review gate. */
+/** First-time portfolio form-check onboarding. */
 export default function OnboardingFlow({ userId, onComplete }) {
   const [step, setStep] = useState(STEPS.attract);
   const [holdings, setHoldings] = useState([]);
-  const [source, setSource] = useState('manual');
+  const [sources, setSources] = useState([]);
+  const [excelDraft, setExcelDraft] = useState(null);
+  const [screenshotDraft, setScreenshotDraft] = useState(null);
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [unmappedCount, setUnmappedCount] = useState(0);
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState('');
 
-  const runAnalysis = useCallback(async (nextHoldings, nextSource) => {
+  const skipToApp = useCallback(() => {
+    if (userId) setOnboardingComplete(userId);
+    onComplete?.();
+  }, [userId, onComplete]);
+
+  const acceptImport = useCallback((nextHoldings, nextSource) => {
+    setHoldings((prev) => mergeOnboardingHoldings(prev, nextHoldings));
+    setSources((prev) => (prev.includes(nextSource) ? prev : [...prev, nextSource]));
+    if (nextSource === 'zerodha-excel') setExcelDraft(null);
+    if (nextSource === 'screenshot') {
+      setScreenshotDraft((prev) => {
+        (prev?.shots ?? []).forEach((shot) => {
+          if (shot?.url) URL.revokeObjectURL(shot.url);
+        });
+        return null;
+      });
+    }
+    setStep(STEPS.moreSources);
+  }, []);
+
+  const runAnalysis = useCallback(async (nextHoldings) => {
     setHoldings(nextHoldings);
-    setSource(nextSource);
     setStep(STEPS.analyzing);
-    const analysed = await analyzeHoldings(nextHoldings);
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    setRows(analysed);
-    setSummary(summarizeAnalysis(analysed));
+
+    const assetsByKey = await resolvePortfolioAssets(nextHoldings.map((h) => h.ticker));
+    const marked = nextHoldings.map((h) => {
+      const ticker = String(h.ticker ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/\.NS$/i, '');
+      const asset = assetsByKey.get(h.ticker) || assetsByKey.get(ticker);
+      return {
+        ...h,
+        ticker,
+        name: asset?.kind === 'fund' ? asset.name : h.name,
+        unmapped: !asset,
+      };
+    });
+
+    const analysed = await analyzeHoldings(marked);
+    // Preserve unmapped flag through analysis (DMA treat as unsure form).
+    const withFlags = analysed.map((row, i) => ({
+      ...row,
+      unmapped: Boolean(marked[i]?.unmapped),
+      form: marked[i]?.unmapped ? 'unsure' : row.form,
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const nextSummary = summarizeAnalysis(withFlags);
+    setRows(withFlags);
+    setSummary(nextSummary);
+    setUnmappedCount(nextSummary.unmappedCount ?? 0);
     setStep(STEPS.analysis);
   }, []);
 
@@ -51,14 +102,22 @@ export default function OnboardingFlow({ userId, onComplete }) {
     setFinishError('');
 
     try {
-      const editRows = holdings.map((h) => ({
+      const sourceRows = rows.length
+        ? rows
+        : holdings.map((h) => ({
+            ...h,
+            ticker: String(h.ticker ?? '').trim().toUpperCase(),
+          }));
+      const editRows = sourceRows.map((h) => ({
         id: crypto.randomUUID(),
         ticker: h.ticker,
-        invested: String(h.qty * h.avg),
+        name: h.name ?? '',
+        invested: String(h.invested ?? h.qty * h.avg),
         qty: String(h.qty),
+        avg: String(h.avg ?? ''),
       }));
 
-      const assetsByKey = await resolvePortfolioAssets(holdings.map((h) => h.ticker));
+      const assetsByKey = await resolvePortfolioAssets(editRows.map((r) => r.ticker));
       const built = buildLiveHoldings(editRows, assetsByKey);
 
       const draft = await createDraftPortfolio(userId);
@@ -75,12 +134,11 @@ export default function OnboardingFlow({ userId, onComplete }) {
       setOnboardingComplete(userId);
       onComplete?.();
     } catch (err) {
-      // Still unlock the app if save fails - user can add portfolio later.
       console.error(err);
       setFinishError(
         err?.message
-          ? `Could not save portfolio (${err.message}). Entering anyway - you can add it from Profile.`
-          : 'Could not save portfolio. Entering anyway - you can add it from Profile.'
+          ? `Could not save portfolio (${err.message}). Entering anyway.`
+          : 'Could not save portfolio. Entering anyway.'
       );
       setOnboardingComplete(userId);
       window.setTimeout(() => onComplete?.(), 1200);
@@ -90,7 +148,7 @@ export default function OnboardingFlow({ userId, onComplete }) {
   };
 
   if (step === STEPS.attract) {
-    return <AttractStep onContinue={() => setStep(STEPS.method)} />;
+    return <AttractStep onContinue={() => setStep(STEPS.method)} onSkip={skipToApp} />;
   }
 
   if (step === STEPS.method) {
@@ -106,17 +164,55 @@ export default function OnboardingFlow({ userId, onComplete }) {
 
   if (step === STEPS.manual) {
     return (
-      <ManualStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />
+      <ManualStep
+        onBack={() => setStep(STEPS.method)}
+        onSubmit={(next) => acceptImport(next, 'manual')}
+      />
     );
   }
 
   if (step === STEPS.excel) {
-    return <ExcelStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />;
+    return (
+      <ExcelStep
+        draft={excelDraft}
+        onDraftChange={setExcelDraft}
+        onBack={() => setStep(holdings.length ? STEPS.moreSources : STEPS.method)}
+        onSubmit={(next) => acceptImport(next, 'zerodha-excel')}
+      />
+    );
   }
 
   if (step === STEPS.screenshot) {
     return (
-      <ScreenshotStep onBack={() => setStep(STEPS.method)} onSubmit={runAnalysis} />
+      <ScreenshotStep
+        draft={screenshotDraft}
+        onDraftChange={setScreenshotDraft}
+        onBack={() => setStep(holdings.length ? STEPS.moreSources : STEPS.method)}
+        onSubmit={(next) => acceptImport(next, 'screenshot')}
+      />
+    );
+  }
+
+  if (step === STEPS.moreSources) {
+    return (
+      <MoreSourcesStep
+        holdingCount={holdings.length}
+        onBack={() => setStep(STEPS.method)}
+        onAddExcel={() => setStep(STEPS.excel)}
+        onAddScreenshot={() => setStep(STEPS.screenshot)}
+        onContinue={() => setStep(STEPS.confirmInvested)}
+      />
+    );
+  }
+
+  if (step === STEPS.confirmInvested) {
+    return (
+      <ConfirmInvestedStep
+        holdings={holdings}
+        onBack={() => setStep(STEPS.moreSources)}
+        onChangeHoldings={setHoldings}
+        onConfirm={() => void runAnalysis(holdings)}
+      />
     );
   }
 
@@ -126,9 +222,8 @@ export default function OnboardingFlow({ userId, onComplete }) {
 
   return (
     <AnalysisStep
-      rows={rows}
       summary={summary}
-      source={source}
+      unmappedCount={unmappedCount}
       finishing={finishing}
       finishError={finishError}
       onFinish={finish}
