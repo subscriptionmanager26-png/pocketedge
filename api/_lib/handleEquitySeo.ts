@@ -1,5 +1,7 @@
 import {
-  fetchBriefBlurb,
+  briefSectionsFromPayload,
+  buildWebPageJsonLd,
+  fetchCompanyBrief,
   fetchMarketSearchItem,
   renderAssetSeoHtml,
   siteOrigin,
@@ -47,7 +49,14 @@ export async function handleEquitySeoRequest(
   const canonical = `${origin}${path}`;
   const image = `${origin}/og-image.jpg?v=20260723`;
 
-  const blurb = assetKind === 'stock' ? await fetchBriefBlurb(origin, symbol) : null;
+  const brief = assetKind === 'stock' ? await fetchCompanyBrief(origin, symbol) : null;
+  const sections = briefSectionsFromPayload(brief);
+  const blurb =
+    brief?.sections?.executiveSummary?.prose ||
+    brief?.tagline ||
+    brief?.kicker ||
+    null;
+  const blurbText = blurb ? String(blurb).trim() : '';
 
   const priceLine =
     price != null && Number.isFinite(Number(price))
@@ -60,12 +69,44 @@ export async function handleEquitySeoRequest(
         }.`
       : null;
 
+  const categoryLine = [row?.category, row?.sector, row?.industry]
+    .filter(Boolean)
+    .map(String)
+    .join(' · ');
+
   const title = `${name} (${symbol})${assetKind === 'etf' ? ' ETF' : ''} · PocketEdge`;
-  const description = blurb
-    ? `${blurb.slice(0, 155)}${blurb.length > 155 ? '…' : ''}`
+  const description = blurbText
+    ? `${blurbText.slice(0, 155)}${blurbText.length > 155 ? '…' : ''}`
     : `${name} (${symbol}) — ${
         assetKind === 'etf' ? 'ETF' : 'stock'
-      } quotes, insights, and news on PocketEdge.`;
+      } quotes and company overview on PocketEdge.`;
+
+  const paragraphs = [
+    `${name} (${symbol})${assetKind === 'etf' ? ' ETF' : ''} on PocketEdge.`,
+    categoryLine ? `Category: ${categoryLine}.` : null,
+    priceLine,
+    assetKind === 'stock' && !sections.length && blurbText ? blurbText : null,
+    assetKind === 'etf'
+      ? `Track ${symbol} ETF price and community discussion on PocketEdge.`
+      : null,
+  ].filter(Boolean) as string[];
+
+  const mainEntity =
+    assetKind === 'etf'
+      ? {
+          '@type': 'InvestmentFund',
+          '@id': `${canonical}#fund`,
+          name,
+          tickerSymbol: symbol,
+          url: canonical,
+        }
+      : {
+          '@type': 'Corporation',
+          '@id': `${canonical}#org`,
+          name,
+          tickerSymbol: symbol,
+          url: canonical,
+        };
 
   const html = renderAssetSeoHtml({
     title,
@@ -73,17 +114,10 @@ export async function handleEquitySeoRequest(
     canonical,
     image,
     h1: name,
-    paragraphs: [
-      `${name} (${symbol}) on PocketEdge.`,
-      priceLine,
-      blurb,
-      assetKind === 'stock'
-        ? `Read AI insights, news, and the company business model for ${symbol}.`
-        : `Track ${symbol} ETF price and community discussion on PocketEdge.`,
-    ].filter(Boolean) as string[],
+    paragraphs,
+    sections: assetKind === 'stock' ? sections.slice(0, 4) : [],
     links: [
       { href: canonical, label: `Open ${symbol} on PocketEdge` },
-      { href: `${origin}/markets`, label: 'Browse Markets' },
       ...(assetKind === 'stock'
         ? [
             {
@@ -91,8 +125,23 @@ export async function handleEquitySeoRequest(
               label: 'Business model brief',
             },
           ]
-        : []),
+        : [{ href: `${origin}/etf-tracker`, label: 'ETF iNAV tracker' }]),
+      { href: `${origin}/`, label: 'PocketEdge home' },
     ],
+    jsonLd: buildWebPageJsonLd({
+      title,
+      description,
+      canonical,
+      breadcrumbs: [
+        { name: 'Home', url: `${origin}/` },
+        {
+          name: assetKind === 'etf' ? 'ETFs' : 'Stocks',
+          url: `${origin}/ideas`,
+        },
+        { name: symbol, url: canonical },
+      ],
+      mainEntity,
+    }),
   });
 
   return new Response(html, {

@@ -8,6 +8,7 @@ import { findCachedMarketItem, peekMarketPreview, resolveMarketIndex } from '../
 import { indexPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 import { useSeoMeta } from '../hooks/useSeoMeta';
+import { indexSeoMeta } from '../lib/seoCopy';
 
 export default function IndexDetailPage({
   indexId,
@@ -109,11 +110,12 @@ export default function IndexDetailPage({
 
   const displayIndex = index;
 
+  const seo = indexSeoMeta({ name: displayIndex?.name || indexId });
   useSeoMeta(
     guestMode
       ? {
-          title: `${displayIndex?.name || indexId} index`,
-          description: `Track ${displayIndex?.name || indexId} index levels and community discussion on PocketEdge.`,
+          title: seo.title,
+          description: seo.description,
           path: indexPath(indexId),
         }
       : null

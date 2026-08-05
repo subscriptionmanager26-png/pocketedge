@@ -15,6 +15,7 @@ import { isDevMockMode } from '../lib/appMode';
 import { fundPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 import { useSeoMeta } from '../hooks/useSeoMeta';
+import { fundSeoMeta } from '../lib/seoCopy';
 
 /** Growth + Direct schemes are indexable; other plan variants stay public but noindex. */
 export function isSelectiveFundForSeo(fund) {
@@ -54,14 +55,17 @@ export default function InvestmentPage({
     });
   const indexable = isSelectiveFundForSeo(fund);
   const categoryLine = [fund.category, fund.amc].filter(Boolean).join(' · ');
+  const seo = fundSeoMeta({
+    name: fund.name,
+    schemeCode: fundId,
+    categoryLine,
+  });
 
   useSeoMeta(
     guestMode
       ? {
-          title: fund.name || `Fund ${fundId}`,
-          description: categoryLine
-            ? `${fund.name} — ${categoryLine}. NAV and details on PocketEdge.`
-            : `${fund.name || fundId} mutual fund details on PocketEdge.`,
+          title: seo.title,
+          description: seo.description,
           path: fundPath(fundId),
           noindex: !indexable,
         }

@@ -15,6 +15,7 @@ import { formatTicker } from '../lib/tickers';
 import { truncateSummary } from '../lib/assetDetailHelpers';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 import { useSeoMeta } from '../hooks/useSeoMeta';
+import { stockSeoMeta } from '../lib/seoCopy';
 
 function peekCachedStockDetail(ticker) {
   const cached =
@@ -24,7 +25,7 @@ function peekCachedStockDetail(ticker) {
 
 function briefExcerpt(brief) {
   const prose = brief?.sections?.executiveSummary?.prose || brief?.tagline || '';
-  return truncateSummary(prose, 140) || null;
+  return truncateSummary(prose, 155) || null;
 }
 
 export default function StockInvestmentPage({
@@ -67,14 +68,18 @@ export default function StockInvestmentPage({
   const displayStock = stock;
   const symbolKey = formatTicker(ticker);
   const excerpt = briefExcerpt(brief);
+  const seo = stockSeoMeta({
+    name: displayStock.name || symbolKey,
+    symbol: symbolKey,
+    isEtf,
+    excerpt,
+  });
 
   useSeoMeta(
     guestMode
       ? {
-          title: `${displayStock.name || symbolKey}${isEtf ? ' ETF' : ' share price'}`,
-          description: excerpt
-            ? `${excerpt} Track ${symbolKey} on PocketEdge.`
-            : `${displayStock.name || symbolKey} (${symbolKey}) — live price, insights, and news on PocketEdge.`,
+          title: seo.title,
+          description: seo.description,
           path: isEtf ? etfPath(ticker) : stockPath(ticker),
         }
       : null

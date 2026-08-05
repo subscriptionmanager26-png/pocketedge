@@ -42,11 +42,28 @@ export function isSelectiveFundName(name: string) {
   return isDirect && isGrowth;
 }
 
+export const BRIEF_SECTION_ORDER = [
+  { key: 'executiveSummary', label: 'Executive summary' },
+  { key: 'products', label: 'Products' },
+  { key: 'customers', label: 'Customers' },
+  { key: 'businessModel', label: 'Business model' },
+  { key: 'moats', label: 'Moats' },
+  { key: 'growth', label: 'Growth' },
+  { key: 'risks', label: 'Risks' },
+] as const;
+
 type SearchPayload = { items?: Array<Record<string, unknown>> };
+
+export type MarketSearchFile =
+  | 'stocks-search.json'
+  | 'etf-search.json'
+  | 'mutual-funds-search.json'
+  | 'indices-search.json'
+  | 'commodities-search.json';
 
 export async function fetchMarketSearchItem(
   origin: string,
-  file: 'stocks-search.json' | 'etf-search.json' | 'mutual-funds-search.json',
+  file: MarketSearchFile,
   matcher: (row: Record<string, unknown>) => boolean
 ) {
   try {
@@ -54,15 +71,32 @@ export async function fetchMarketSearchItem(
       headers: { accept: 'application/json' },
     });
     if (!res.ok) return null;
-    const payload = (await res.json()) as SearchPayload;
-    const items = Array.isArray(payload.items) ? payload.items : [];
+    const payload = (await res.json()) as SearchPayload | Array<Record<string, unknown>>;
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload.items)
+        ? payload.items
+        : [];
     return items.find(matcher) ?? null;
   } catch {
     return null;
   }
 }
 
-export async function fetchBriefBlurb(origin: string, symbol: string) {
+export type CompanyBriefPayload = {
+  symbol?: string;
+  name?: string;
+  legalName?: string;
+  kicker?: string;
+  tagline?: string;
+  website?: string;
+  sections?: Record<string, { prose?: string; tags?: string[] } | undefined>;
+};
+
+export async function fetchCompanyBrief(
+  origin: string,
+  symbol: string
+): Promise<CompanyBriefPayload | null> {
   const key = String(symbol || '')
     .trim()
     .toUpperCase();
@@ -74,18 +108,60 @@ export async function fetchBriefBlurb(origin: string, symbol: string) {
       headers: { accept: 'application/json' },
     });
     if (!res.ok) return null;
-    const payload = (await res.json()) as Record<string, any>;
-    const brief = payload?.[key];
-    if (!brief) return null;
-    const prose =
-      brief?.sections?.executiveSummary?.prose || brief?.tagline || brief?.kicker || '';
-    const text = String(prose).trim();
-    if (!text) return null;
-    return text.length > 400 ? `${text.slice(0, 397).trim()}…` : text;
+    const payload = (await res.json()) as Record<string, CompanyBriefPayload>;
+    return payload?.[key] ?? null;
   } catch {
     return null;
   }
 }
+
+export function briefSectionsFromPayload(brief: CompanyBriefPayload | null) {
+  if (!brief?.sections) return [] as Array<{ heading: string; prose: string }>;
+  return BRIEF_SECTION_ORDER.map(({ key, label }) => {
+    const prose = String(brief.sections?.[key]?.prose ?? '').trim();
+    if (!prose) return null;
+    return { heading: label, prose };
+  }).filter(Boolean) as Array<{ heading: string; prose: string }>;
+}
+
+export async function fetchBriefBlurb(origin: string, symbol: string) {
+  const brief = await fetchCompanyBrief(origin, symbol);
+  if (!brief) return null;
+  const prose =
+    brief?.sections?.executiveSummary?.prose || brief?.tagline || brief?.kicker || '';
+  const text = String(prose).trim();
+  if (!text) return null;
+  return text.length > 400 ? `${text.slice(0, 397).trim()}…` : text;
+}
+
+export type FundSeoLite = {
+  aum?: string | null;
+  expenseRatio?: string | null;
+  cagr?: Record<string, string> | null;
+  holdings?: Array<{ name?: string; weightage?: string; sector?: string }> | null;
+};
+
+export async function fetchFundSeoLite(
+  origin: string,
+  schemeCode: string
+): Promise<FundSeoLite | null> {
+  const code = String(schemeCode || '').trim();
+  if (!code) return null;
+  try {
+    const res = await fetch(`${origin}/data/screener/fund-seo-lite.json`, {
+      headers: { accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const payload = (await res.json()) as { funds?: Record<string, FundSeoLite> };
+    return payload?.funds?.[code] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export type SeoBreadcrumb = { name: string; url: string };
+
+export type SeoSection = { heading: string; prose: string };
 
 export function renderAssetSeoHtml({
   title,
@@ -93,29 +169,59 @@ export function renderAssetSeoHtml({
   canonical,
   image,
   h1,
-  paragraphs,
-  links,
+  paragraphs = [],
+  sections = [],
+  lists = [],
+  links = [],
   noindex = false,
+  jsonLd = null,
 }: {
   title: string;
   description: string;
   canonical: string;
   image: string;
   h1: string;
-  paragraphs: string[];
-  links: Array<{ href: string; label: string }>;
+  paragraphs?: string[];
+  sections?: SeoSection[];
+  lists?: Array<{ heading: string; items: string[] }>;
+  links?: Array<{ href: string; label: string }>;
   noindex?: boolean;
+  jsonLd?: Record<string, unknown> | Array<Record<string, unknown>> | null;
 }) {
   const bodyParas = paragraphs
     .filter(Boolean)
     .map((p) => `<p>${escapeHtml(p)}</p>`)
     .join('\n    ');
+
+  const bodySections = sections
+    .filter((s) => s?.heading && s?.prose)
+    .map(
+      (s) =>
+        `<section>\n      <h2>${escapeHtml(s.heading)}</h2>\n      <p>${escapeHtml(s.prose)}</p>\n    </section>`
+    )
+    .join('\n    ');
+
+  const bodyLists = lists
+    .filter((l) => l?.heading && Array.isArray(l.items) && l.items.length)
+    .map((l) => {
+      const items = l.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('\n        ');
+      return `<section>\n      <h2>${escapeHtml(l.heading)}</h2>\n      <ul>\n        ${items}\n      </ul>\n    </section>`;
+    })
+    .join('\n    ');
+
   const bodyLinks = links
     .map(
       (l) =>
         `<p><a href="${escapeHtml(l.href)}">${escapeHtml(l.label)}</a></p>`
     )
     .join('\n    ');
+
+  const ld = jsonLd
+    ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(
+        /</g,
+        '\\u003c'
+      )}</script>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -136,13 +242,64 @@ export function renderAssetSeoHtml({
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />
+    ${ld}
   </head>
   <body>
     <main>
       <h1>${escapeHtml(h1)}</h1>
       ${bodyParas}
+      ${bodySections}
+      ${bodyLists}
       ${bodyLinks}
     </main>
   </body>
 </html>`;
+}
+
+export function buildBreadcrumbJsonLd(items: SeoBreadcrumb[]) {
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}
+
+export function buildWebPageJsonLd({
+  title,
+  description,
+  canonical,
+  breadcrumbs,
+  mainEntity,
+}: {
+  title: string;
+  description: string;
+  canonical: string;
+  breadcrumbs: SeoBreadcrumb[];
+  mainEntity?: Record<string, unknown> | null;
+}) {
+  const graph: Array<Record<string, unknown>> = [
+    {
+      '@type': 'WebPage',
+      '@id': `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      description,
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'PocketEdge',
+        url: 'https://www.pocketedge.in/',
+      },
+      ...(mainEntity ? { mainEntity } : {}),
+    },
+    buildBreadcrumbJsonLd(breadcrumbs),
+  ];
+  if (mainEntity) graph.push(mainEntity);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': graph,
+  };
 }

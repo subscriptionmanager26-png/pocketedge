@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Generate public sitemap index + child sitemaps from static market/brief data.
+ * Also builds a compact fund-seo-lite.json for edge SEO handlers.
  * Run: node scripts/generate-sitemaps.mjs
  */
 import fs from 'node:fs';
@@ -61,13 +62,17 @@ function readJson(rel) {
   return JSON.parse(fs.readFileSync(path.join(PUBLIC, rel), 'utf8'));
 }
 
+function marketItems(payload) {
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload)) return payload;
+  return [];
+}
+
 // --- static ---
 const staticUrls = [
   ['/', 'daily', '1.0'],
   ['/insights', 'daily', '0.9'],
   ['/business-model', 'weekly', '0.9'],
-  ['/markets', 'hourly', '0.9'],
-  ['/search', 'weekly', '0.7'],
   ['/resources', 'weekly', '0.7'],
   ['/resources/mf-screener', 'weekly', '0.6'],
   ['/etf-tracker', 'daily', '0.6'],
@@ -91,18 +96,8 @@ const briefUrls = briefItems.map((item) =>
 writeUrlset('sitemap-briefs.xml', briefUrls);
 
 // --- stocks + etfs ---
-const stocksSearch = readJson('data/markets/stocks-search.json');
-const etfSearch = readJson('data/markets/etf-search.json');
-const stockRows = Array.isArray(stocksSearch.items)
-  ? stocksSearch.items
-  : Array.isArray(stocksSearch)
-    ? stocksSearch
-    : [];
-const etfRows = Array.isArray(etfSearch.items)
-  ? etfSearch.items
-  : Array.isArray(etfSearch)
-    ? etfSearch
-    : [];
+const stockRows = marketItems(readJson('data/markets/stocks-search.json'));
+const etfRows = marketItems(readJson('data/markets/etf-search.json'));
 
 const stockUrls = stockRows
   .map((row) => String(row.symbol ?? row.id ?? '').trim().toUpperCase())
@@ -127,12 +122,7 @@ const etfUrls = etfRows
 writeUrlset('sitemap-stocks.xml', [...stockUrls, ...etfUrls]);
 
 // --- selective funds: Growth + Direct only (name heuristics) ---
-const fundsSearch = readJson('data/markets/mutual-funds-search.json');
-const fundRows = Array.isArray(fundsSearch.items)
-  ? fundsSearch.items
-  : Array.isArray(fundsSearch)
-    ? fundsSearch
-    : [];
+const fundRows = marketItems(readJson('data/markets/mutual-funds-search.json'));
 
 function isSelectiveFund(row) {
   const name = String(row.name ?? row.schemeName ?? '').toLowerCase();
@@ -157,13 +147,87 @@ const fundUrls = selectiveFunds
 
 writeUrlset('sitemap-funds.xml', fundUrls);
 
+// --- indices + commodities ---
+const indexRows = marketItems(readJson('data/markets/indices-search.json'));
+const commodityRows = marketItems(readJson('data/markets/commodities-search.json'));
+
+const indexUrls = indexRows
+  .map((row) => String(row.id ?? row.symbol ?? '').trim())
+  .filter(Boolean)
+  .map((id) =>
+    urlEntry(`${ORIGIN}/index/${encodeURIComponent(id)}`, {
+      changefreq: 'daily',
+      priority: '0.55',
+    })
+  );
+
+const commodityUrls = commodityRows
+  .map((row) => String(row.id ?? row.symbol ?? '').trim())
+  .filter(Boolean)
+  .map((id) =>
+    urlEntry(`${ORIGIN}/commodity/${encodeURIComponent(id)}`, {
+      changefreq: 'daily',
+      priority: '0.5',
+    })
+  );
+
+writeUrlset('sitemap-markets-extra.xml', [...indexUrls, ...commodityUrls]);
+
 writeIndex([
   'sitemap-static.xml',
   'sitemap-briefs.xml',
   'sitemap-stocks.xml',
   'sitemap-funds.xml',
+  'sitemap-markets-extra.xml',
 ]);
 
 console.log(
   `selective funds: ${fundUrls.length} of ${fundRows.length} (Growth+Direct heuristic)`
 );
+console.log(`indices: ${indexUrls.length}; commodities: ${commodityUrls.length}`);
+
+// --- compact fund SEO lite for edge handlers ---
+function buildFundSeoLite() {
+  const snapshotPath = path.join(PUBLIC, 'data/screener/screener-snapshot.json');
+  if (!fs.existsSync(snapshotPath)) {
+    console.warn('skip fund-seo-lite: screener-snapshot.json missing');
+    return;
+  }
+  const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+  const funds = snapshot?.funds && typeof snapshot.funds === 'object' ? snapshot.funds : {};
+  const lite = {};
+  for (const [code, fund] of Object.entries(funds)) {
+    const holdings = Array.isArray(fund?.holdings) ? fund.holdings : [];
+    lite[code] = {
+      aum: fund?.aum ?? null,
+      expenseRatio: fund?.expenseRatio ?? null,
+      cagr: fund?.cagr
+        ? {
+            '1y': fund.cagr['1y'] ?? fund.cagr['1Y'] ?? null,
+            '3y': fund.cagr['3y'] ?? fund.cagr['3Y'] ?? null,
+            '5y': fund.cagr['5y'] ?? fund.cagr['5Y'] ?? null,
+          }
+        : null,
+      holdings: holdings.slice(0, 10).map((h) => ({
+        name: h?.name ?? null,
+        weightage: h?.weightage ?? null,
+        sector: h?.sector ?? null,
+      })),
+    };
+  }
+  const outDir = path.join(PUBLIC, 'data/screener');
+  fs.mkdirSync(outDir, { recursive: true });
+  const outPath = path.join(outDir, 'fund-seo-lite.json');
+  fs.writeFileSync(
+    outPath,
+    JSON.stringify({
+      generatedAt: TODAY,
+      fundCount: Object.keys(lite).length,
+      funds: lite,
+    })
+  );
+  const mb = (fs.statSync(outPath).size / 1024 / 1024).toFixed(2);
+  console.log(`wrote data/screener/fund-seo-lite.json (${Object.keys(lite).length} funds, ${mb} MB)`);
+}
+
+buildFundSeoLite();

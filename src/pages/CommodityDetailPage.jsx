@@ -7,6 +7,7 @@ import { fetchMarketPreview, findCachedMarketItem, peekMarketPreview, resolveMar
 import { commodityPath } from '../lib/routes';
 import { useMarketQuotePolling } from '../hooks/useMarketQuoteRefresh';
 import { useSeoMeta } from '../hooks/useSeoMeta';
+import { commoditySeoMeta } from '../lib/seoCopy';
 
 export default function CommodityDetailPage({
   commodityId,
@@ -115,11 +116,12 @@ export default function CommodityDetailPage({
     deps: [commodityId, loading],
   });
 
+  const seo = commoditySeoMeta({ name: commodity?.name || commodityId });
   useSeoMeta(
     guestMode
       ? {
-          title: `${commodity?.name || commodityId} commodity`,
-          description: `Spot price and market info for ${commodity?.name || commodityId} on PocketEdge.`,
+          title: seo.title,
+          description: seo.description,
           path: commodityPath(commodityId),
         }
       : null

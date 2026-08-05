@@ -6,17 +6,22 @@ import CompanyBriefSheet from '../../components/company-brief/CompanyBriefSheet'
 import { getCompanyBrief } from '../../data/companyBriefs';
 import { businessModelPath, stockPath } from '../../lib/routes';
 import { useSeoMeta } from '../../hooks/useSeoMeta';
+import { briefSeoMeta } from '../../lib/seoCopy';
 
 export default function CompanyBriefPage({ symbol }) {
   const ticker = String(symbol || '').toUpperCase();
   const [brief, setBrief] = useState(null);
   const [status, setStatus] = useState('loading');
 
+  const seo = briefSeoMeta({
+    name: brief?.legalName || brief?.name,
+    symbol: ticker,
+    kicker: brief?.kicker,
+  });
+
   useSeoMeta({
-    title: brief?.legalName || brief?.name || `${ticker} business model`,
-    description: brief?.kicker
-      ? `${brief.kicker}. Plain-language business model brief for ${ticker} on PocketEdge.`
-      : `What ${ticker} does and how the business works — company brief on PocketEdge.`,
+    title: seo.title,
+    description: seo.description,
     path: `/business-model/${encodeURIComponent(ticker)}`,
   });
 

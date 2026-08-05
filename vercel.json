@@ -321,6 +321,39 @@
       ],
       "destination": "/api/seo/fund/:schemeCode"
     },
+    {
+      "source": "/business-model/:symbol",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(googlebot|bingbot|duckduckbot|yandex|baiduspider|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|applebot).*"
+        }
+      ],
+      "destination": "/api/seo/brief/:symbol"
+    },
+    {
+      "source": "/index/:indexId",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(googlebot|bingbot|duckduckbot|yandex|baiduspider|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|applebot).*"
+        }
+      ],
+      "destination": "/api/seo/index/:indexId"
+    },
+    {
+      "source": "/commodity/:commodityId",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(googlebot|bingbot|duckduckbot|yandex|baiduspider|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|applebot).*"
+        }
+      ],
+      "destination": "/api/seo/commodity/:commodityId"
+    },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!api/|asset-logos/).*)", "destination": "/index.html" }
   ]
