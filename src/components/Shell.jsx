@@ -111,6 +111,7 @@ export default function Shell({
   onSettings,
   onGoHome,
   onCompose,
+  onCreatePortfolio,
   guestMode = false,
   onRequireSignIn,
   mobileActions = null,
@@ -585,7 +586,7 @@ export default function Shell({
             onOpenStock={onSelectStock}
             onOpenPost={onOpenPost}
             onOpenProfile={onOpenProfile || onOpenProfileFromSearch}
-            onCompose={onCompose}
+            onCreatePortfolio={onCreatePortfolio}
             onRequireSignIn={onRequireSignIn}
             onFollowChange={onGraphChange}
           />
