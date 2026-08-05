@@ -122,6 +122,23 @@ function useMarketLogoLookup() {
   return Boolean(supabase) && isSupabaseConfigured();
 }
 
+/**
+ * Guests do not load the Supabase chunk at boot (`shouldLoadSupabaseEarly` is
+ * false without a session). Market Today / resolve* must await this before
+ * reading `supabase`, or they silently fall back to stale static JSON.
+ */
+async function ensureMarketLookupAvailable() {
+  if (!isSupabaseConfigured()) return false;
+  await ensureSupabase();
+  return useMarketLogoLookup();
+}
+
+async function ensureMarketRpcAvailable() {
+  if (!isSupabaseConfigured() || skipAuthForDev()) return false;
+  await ensureSupabase();
+  return useMarketRpc();
+}
+
 function tabToAssetType(tab) {
   return TAB_TO_ASSET_TYPE[tab] ?? null;
 }
@@ -283,9 +300,10 @@ function previewItemKey(row, assetType) {
 }
 
 async function enrichMarketItemsWithLogos(items, assetType) {
-  if (!assetType || !useMarketLogoLookup() || !Array.isArray(items) || !items.length) {
+  if (!assetType || !Array.isArray(items) || !items.length) {
     return items;
   }
+  if (!(await ensureMarketLookupAvailable())) return items;
 
   const needsLogo = items.some((row) => !(row.logoIconUrl ?? row.logo_icon_url));
   if (!needsLogo) return items;
@@ -520,7 +538,7 @@ async function searchMarketTabLocal(tab, query, limit) {
 
 async function searchMarketTabRpc(tab, query, limit) {
   const assetType = tabToAssetType(tab);
-  if (!assetType || !useMarketLogoLookup()) return null;
+  if (!assetType || !(await ensureMarketLookupAvailable())) return null;
 
   const { data, error } = await supabase.rpc('search_social_market_assets', {
     p_query: query,
@@ -549,7 +567,7 @@ export async function searchMarketTab(tab, query, limit = MARKET_SEARCH_LIMIT) {
     return searchMarketTabLocal(tab, q, limit);
   }
 
-  if (useMarketLogoLookup()) {
+  if (await ensureMarketLookupAvailable()) {
     const cacheKey = `${tab}|${q.toLowerCase()}|${limit}`;
     return cachedFetch('market-search', cacheKey, MARKET_SEARCH_TTL_MS, async () => {
       try {
@@ -616,7 +634,7 @@ export function findCachedMarketItem(tab, id) {
 }
 
 async function lookupMarketAssetRpc(key, { force = false } = {}) {
-  if (!useMarketLogoLookup()) return null;
+  if (!(await ensureMarketLookupAvailable())) return null;
   if (!force) {
     const hit = getCached('market-asset', key, MARKET_ASSET_TTL_MS);
     if (hit !== undefined) return hit;
@@ -655,7 +673,7 @@ export async function lookupMarketAssetsBatch(keys, { force = false } = {}) {
 
   if (!missing.length) return map;
 
-  if (useMarketLogoLookup()) {
+  if (await ensureMarketLookupAvailable()) {
     const sortedMissing = [...missing].sort();
     const inflightKey = `batch:${force ? 'f' : 'c'}:${sortedMissing.join('|')}`;
     try {
@@ -791,7 +809,7 @@ export async function resolveMarketStock(symbol, { force = false } = {}) {
     if (etfCached) return etfCached;
   }
 
-  if (useMarketRpc()) {
+  if (await ensureMarketRpcAvailable()) {
     try {
       const found = await lookupMarketAssetRpc(symbol, { force });
       if (found && (found.assetType === 'stock' || found.assetType === 'etf')) {
@@ -823,7 +841,7 @@ export async function resolveMarketFund(schemeCode) {
   const cached = findCachedMarketItem('mutual_funds', code);
   if (cached) return cached;
 
-  if (useMarketRpc()) {
+  if (await ensureMarketRpcAvailable()) {
     try {
       const found = await lookupMarketAssetRpc(code);
       if (found && found.assetType === 'fund') {
@@ -858,7 +876,7 @@ export async function resolveMarketIndex(indexId, { force = false } = {}) {
     if (cached) return cached;
   }
 
-  if (useMarketRpc()) {
+  if (await ensureMarketRpcAvailable()) {
     try {
       const found = await lookupMarketAssetRpc(id, { force });
       if (found?.assetType === 'index') {
@@ -906,7 +924,7 @@ export async function resolveMarketCommodity(commodityId) {
   const cached = findCachedMarketItem('commodity', id);
   if (cached) return cached;
 
-  if (useMarketRpc()) {
+  if (await ensureMarketRpcAvailable()) {
     try {
       const live = await lookupMarketAssetRpc(id);
       if (live?.assetType === 'commodity') {
@@ -983,7 +1001,8 @@ export function marketStockToDetail(stock) {
 
 /** Daily close / NAV history for analytics charts. */
 export async function getSocialMarketPriceHistory(assetType, assetKey, limit = 120) {
-  if (!useMarketRpc() || !assetType || !assetKey) return [];
+  if (!assetType || !assetKey) return [];
+  if (!(await ensureMarketRpcAvailable())) return [];
   const { data, error } = await supabase.rpc('get_social_market_price_history', {
     p_asset_type: assetType,
     p_asset_key: assetKey,
