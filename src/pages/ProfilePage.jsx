@@ -447,6 +447,7 @@ export default function ProfilePage({
         onRegisterPortfolioBackHandler={onRegisterPortfolioBackHandler}
         onOpenSourcePortfolio={onOpenSourcePortfolio}
         onSelectPortfolio={onSelectPortfolio}
+        onOpenStock={onOpenStock}
       />
     );
   }
@@ -601,6 +602,7 @@ function PortfolioDetailView({
   startInEditMode = false,
   onOpenSourcePortfolio,
   onSelectPortfolio,
+  onOpenStock,
 }) {
   const isDraft = Boolean(portfolio.isDraft);
   const [editing, setEditing] = useState(startInEditMode);
@@ -1461,7 +1463,7 @@ function PortfolioDetailView({
           </div>
         </div>
       ) : (
-        <PortfolioHoldingsList portfolio={portfolio} />
+        <PortfolioHoldingsList portfolio={portfolio} onOpenStock={onOpenStock} />
       )}
 
       {!editing ? (
@@ -1716,7 +1718,7 @@ function portfolioHoldingsNeedClientResolve(portfolio) {
   return (portfolio.tickers ?? []).length > 0;
 }
 
-function PortfolioHoldingsList({ portfolio }) {
+function PortfolioHoldingsList({ portfolio, onOpenStock }) {
   const HOLDINGS_PAGE_SIZE = 4;
   const [page, setPage] = useState(0);
   const [assetsByKey, setAssetsByKey] = useState(() => assetsFromHoldings(portfolio.holdings));
@@ -1868,19 +1870,23 @@ function PortfolioHoldingsList({ portfolio }) {
     );
   }
 
-  const periodLabel = 'Total';
+  const periodLabel = 'Unrealised Gains';
+  const openHolding = (row) => {
+    if (!onOpenStock || !row?.key) return;
+    onOpenStock(row.key, { assetType: row.assetType || 'stock' });
+  };
 
   return (
     <div>
       <section className="px-4 pt-4 md:px-6">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(4rem,72px)] items-end gap-2 border-b border-[var(--fv-border,#ececec)] py-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(5.5rem,7rem)] items-end gap-2 border-b border-[var(--fv-border,#ececec)] py-3">
           <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
             Holdings
           </p>
           <p className="text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
             Alloc.
           </p>
-          <p className="text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
+          <p className="text-right text-[11px] font-semibold uppercase leading-tight tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
             {periodLabel}
           </p>
         </div>
@@ -1888,9 +1894,9 @@ function PortfolioHoldingsList({ portfolio }) {
           {pageRows.map((row) => (
             <div
               key={row.key}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(4rem,72px)] items-center gap-2 py-3.5"
+              className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(5.5rem,7rem)] items-start gap-2 py-3.5"
             >
-              <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
                 <AssetLogo
                   logoIconUrl={row.logoIconUrl}
                   assetType={row.assetType}
@@ -1899,7 +1905,19 @@ function PortfolioHoldingsList({ portfolio }) {
                   size="sm"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-[15px] font-semibold text-pe-text">{row.title}</p>
+                  {onOpenStock ? (
+                    <button
+                      type="button"
+                      onClick={() => openHolding(row)}
+                      className="line-clamp-2 text-left text-[15px] font-semibold leading-snug text-pe-text transition hover:text-pe-accent hover:underline"
+                    >
+                      {row.title}
+                    </button>
+                  ) : (
+                    <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
+                      {row.title}
+                    </p>
+                  )}
                 </div>
               </div>
               <p className="min-w-0 text-right text-sm font-semibold tabular-nums text-pe-text-secondary">

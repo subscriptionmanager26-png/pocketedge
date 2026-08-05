@@ -153,8 +153,8 @@ export default function PortfolioCard({
             </p>
             <div className="mt-3 space-y-2">
               {topHoldings.map((row) => (
-                <div key={row.ticker} className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
+                <div key={row.ticker} className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-2">
                     <AssetLogo
                       logoIconUrl={row.logoIconUrl}
                       assetType={row.assetType}
@@ -162,9 +162,11 @@ export default function PortfolioCard({
                       name={row.label}
                       size="xs"
                     />
-                    <p className="truncate text-[15px] font-semibold text-pe-text">{row.label}</p>
+                    <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
+                      {row.label}
+                    </p>
                   </div>
-                  <p className="shrink-0 text-[12px] font-semibold tabular-nums text-pe-text">
+                  <p className="shrink-0 pt-0.5 text-[12px] font-semibold tabular-nums text-pe-text">
                     {formatPct(row.weight, { signed: false })}
                   </p>
                 </div>
