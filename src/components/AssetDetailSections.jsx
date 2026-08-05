@@ -4,7 +4,6 @@ import Avatar from './Avatar';
 import NewsList, { NewsSummarySheet } from './NewsList';
 import CorporateActionsList from './CorporateActionsList';
 import GuestSignInCta from './GuestSignInCta';
-import GuestBlurredRail from './GuestBlurredRail';
 import { DiscussionsList, HoldersList } from './InvestmentSections';
 import { getPersonSync, resolvePeople } from '../lib/socialIdentity';
 import { formatNewsDate } from '../lib/format';
@@ -745,20 +744,19 @@ export default function AssetDetailSections({
     return (
       <div className="pb-6">
         <SectionBlock title="Insights">
-          <GuestBlurredRail kind="insights" height={168} />
+          <GuestSignInCta
+            variant="hero"
+            title="Go deeper on this name"
+            description="Sign in for AI insights, holder portfolios, discussions, and corporate actions — free on PocketEdge."
+            action="unlock security details"
+            showExploreHint={false}
+            benefits={[
+              'Daily AI insights & archives',
+              'See who holds it publicly',
+              'News and corporate actions',
+            ]}
+          />
         </SectionBlock>
-        <GuestSignInCta
-          variant="hero"
-          title="Go deeper on this name"
-          description="Sign in for AI insights, holder portfolios, discussions, and corporate actions — free on PocketEdge."
-          action="unlock security details"
-          showExploreHint={false}
-          benefits={[
-            'Daily AI insights & archives',
-            'See who holds it publicly',
-            'News and corporate actions',
-          ]}
-        />
       </div>
     );
   }

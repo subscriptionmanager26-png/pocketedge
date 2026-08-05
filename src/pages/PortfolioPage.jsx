@@ -559,35 +559,12 @@ export default function PortfolioPage({
               </div>
             </div>
           </div>
-
-          <PortfolioSignalsSection
-            counts={{ out_of_form: 1, unsure: 2, in_form: 5 }}
-            decorative
-          />
         </section>
-
-        <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
 
         <GuestSignInCta
           variant="hero"
-          title={
-            contentTab === 'performance'
-              ? 'See your real performance'
-              : contentTab === 'news'
-                ? 'News on your holdings'
-                : contentTab === 'corporate_actions'
-                  ? 'Never miss a corporate action'
-                  : 'Posts about your book'
-          }
-          description={
-            contentTab === 'performance'
-              ? 'Sign in to track live PnL, holdings, and form signals across every list you follow.'
-              : contentTab === 'news'
-                ? 'Get curated headlines for the tickers you actually own — not the whole market noise.'
-                : contentTab === 'corporate_actions'
-                  ? 'Dividends, splits, and board events for your holdings, in one place.'
-                  : 'Read theses and discussions tagged to names in your portfolio.'
-          }
+          title="See your real performance"
+          description="Sign in to track live PnL, holdings, and form signals across every list you follow."
           action="unlock your portfolio"
           showExploreHint={false}
           benefits={[
@@ -596,6 +573,13 @@ export default function PortfolioPage({
             'News & actions for your holdings only',
           ]}
         />
+
+        <section className="px-4 pb-5 md:px-6">
+          <PortfolioSignalsSection
+            counts={{ out_of_form: 1, unsure: 2, in_form: 5 }}
+            decorative
+          />
+        </section>
       </div>
     );
   }

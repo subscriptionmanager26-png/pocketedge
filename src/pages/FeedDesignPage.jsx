@@ -125,7 +125,7 @@ export default function FeedDesignPage({
       <div className="min-h-full bg-white">
         <div className="pb-10">
           <div className="mt-0 flex flex-col gap-0 md:mt-5 md:gap-5">
-            {GUEST_FEED_POSTS.map((post) => (
+            {GUEST_FEED_POSTS.slice(0, 1).map((post) => (
               <div
                 key={post.id}
                 className="pointer-events-none select-none blur-[5px]"
