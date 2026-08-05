@@ -229,13 +229,38 @@ export async function enrichPortfolioHoldingsLogos(holdings) {
   }
 }
 
+function escapeSearchRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasSearchWordToken(text, needle) {
+  if (!text || !needle) return false;
+  return new RegExp(
+    `(^|[^a-z0-9])${escapeSearchRegExp(needle)}([^a-z0-9]|$)`,
+    'i'
+  ).test(String(text));
+}
+
 function scoreEntry(entry, needle) {
   const key = entry.key.toLowerCase();
   const name = entry.name.toLowerCase();
+  const item = entry.item ?? {};
+  const shortQuery = needle.length <= 3;
+  const industryBits = [item.industry, item.sector, item.broadSector];
+
   if (key === needle) return 100;
-  if (key.startsWith(needle)) return 80;
+  if (hasSearchWordToken(name, needle)) return 88;
+  if (hasSearchWordToken(key, needle)) return 86;
+  if (industryBits.some((value) => hasSearchWordToken(value, needle))) return 78;
+  if (key.startsWith(needle)) return shortQuery ? 65 : 80;
   if (name.startsWith(needle)) return 60;
   if (key.includes(needle) || name.includes(needle)) return 40;
+  if (
+    needle.length >= 4 &&
+    industryBits.some((value) => String(value ?? '').toLowerCase().includes(needle))
+  ) {
+    return 36;
+  }
   return 0;
 }
 

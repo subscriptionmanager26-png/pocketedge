@@ -50,10 +50,13 @@ function TypeChip({ active, label, onClick }) {
 function SecurityListRow({ item, onOpen }) {
   const type = item.assetType || item._ideaType;
   const title = item.name || item.symbol || 'Security';
-  const subtitle =
+  const industry = item.industry || item.screener_industry || null;
+  const typeLabel = ideaAssetTypeLabel(type);
+  const identity =
     type === 'fund'
-      ? `${ideaAssetTypeLabel(type)}${item.schemeCode ? ` · ${item.schemeCode}` : ''}`
-      : `${ideaAssetTypeLabel(type)}${item.symbol ? ` · ${item.symbol}` : ''}`;
+      ? item.schemeCode || null
+      : item.symbol || null;
+  const subtitle = [typeLabel, identity, industry].filter(Boolean).join(' · ');
   const changePct = item.changePct;
   const hasPct = changePct != null && Number.isFinite(Number(changePct));
   const assetKey = String(

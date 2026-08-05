@@ -42,9 +42,9 @@ const TAB_FULL = {
 };
 
 const SEARCH_FIELDS = {
-  stocks: ['symbol', 'name', 'isin'],
+  stocks: ['symbol', 'name', 'isin', 'industry', 'sector', 'broadSector'],
   mutual_funds: ['schemeCode', 'name', 'category', 'subCategory', 'amc'],
-  etf: ['symbol', 'name'],
+  etf: ['symbol', 'name', 'industry', 'sector'],
   indices: ['id', 'symbol', 'name', 'group'],
   commodity: ['id', 'name', 'symbol', 'location', 'unit'],
 };
@@ -164,6 +164,11 @@ export function marketAssetRowToItem(row) {
   const isin = row.isin ?? null;
   const logoIconUrl = row.logo_icon_url ?? row.logoIconUrl ?? null;
   const logoUrl = row.logo_url ?? row.logoUrl ?? null;
+  const industry =
+    row.screener_industry ?? row.screenerIndustry ?? row.industry ?? null;
+  const sector = row.screener_sector ?? row.screenerSector ?? row.sector ?? null;
+  const broadSector =
+    row.screener_broad_sector ?? row.screenerBroadSector ?? row.broadSector ?? null;
 
   if (type === 'fund') {
     return {
@@ -181,6 +186,9 @@ export function marketAssetRowToItem(row) {
       navDate: asOfDate,
       priceSource,
       syncedAt,
+      industry,
+      sector,
+      broadSector,
       logoIconUrl,
       logoUrl,
       assetType: 'fund',
@@ -205,6 +213,9 @@ export function marketAssetRowToItem(row) {
       previousAsOfDate,
       previousChangePct,
       asOfDate,
+      industry,
+      sector,
+      broadSector,
       priceSource,
       syncedAt,
       logoIconUrl,
@@ -229,6 +240,9 @@ export function marketAssetRowToItem(row) {
       previousAsOfDate,
       previousChangePct,
       asOfDate,
+      industry,
+      sector,
+      broadSector,
       priceSource,
       syncedAt,
       logoIconUrl,
@@ -250,6 +264,9 @@ export function marketAssetRowToItem(row) {
     previousAsOfDate,
     previousChangePct,
     asOfDate,
+    industry,
+    sector,
+    broadSector,
     priceSource,
     syncedAt,
     exchange,
@@ -447,18 +464,36 @@ export async function loadSearchIndex(tab) {
   return payload.items ?? [];
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Whole-word / token match (e.g. "IT" in "NIFTY IT", not in "LIMITED"). */
+function hasWordToken(text, needle) {
+  if (!text || !needle) return false;
+  const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(needle)}([^a-z0-9]|$)`, 'i');
+  return re.test(String(text));
+}
+
 function scoreMarketSearchItem(item, fields, needle) {
   const symbol = String(item.symbol ?? item.id ?? '').toLowerCase();
   const name = String(item.name ?? '').toLowerCase();
+  const shortQuery = needle.length <= 3;
 
   if (symbol === needle) return 100;
-  if (symbol.startsWith(needle)) return 80;
+  if (hasWordToken(name, needle)) return 88;
+  if (hasWordToken(symbol, needle)) return 86;
+
+  const industryFields = ['industry', 'sector', 'broadSector', 'screener_industry'];
+  if (industryFields.some((field) => hasWordToken(item[field], needle))) return 78;
+
+  if (symbol.startsWith(needle)) return shortQuery ? 65 : 80;
   if (name.startsWith(needle)) return 60;
 
   const fieldHit = fields.some((field) =>
     String(item[field] ?? '').toLowerCase().includes(needle)
   );
-  return fieldHit ? 40 : 0;
+  return fieldHit ? (shortQuery ? 36 : 40) : 0;
 }
 
 async function searchMarketTabLocal(tab, query, limit) {
