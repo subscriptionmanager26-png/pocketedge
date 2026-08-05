@@ -11,6 +11,7 @@ import { getPersonSync } from '../lib/socialIdentity';
 import { formatCount, timeAgo } from '../lib/format';
 import { extractTickers, sameTicker } from '../lib/tickers';
 import { clampPostBody, createTextMeasurer, fontFromStyle } from '../lib/clampPostBody';
+import { reshapeNewsFeedBody } from '../lib/newsPostBody';
 
 /** Feed cards show at most this many lines; full text is on the open post. */
 const FEED_PREVIEW_LINES = 4;
@@ -113,7 +114,9 @@ export default function PostCard({
   void enrichmentTick;
   const person = getPersonSync(post.authorId);
   const isNewsPost = post.via?.source === 'mn_news_ai_summaries';
-  const tickers = extractTickers(post.body);
+  const rawBody = String(post.body ?? '');
+  const bodyText = isNewsPost ? reshapeNewsFeedBody(rawBody) : rawBody;
+  const tickers = extractTickers(bodyText);
   if (post.trade?.ticker && !tickers.some((t) => sameTicker(t, post.trade.ticker))) {
     tickers.unshift(post.trade.ticker);
   }
@@ -128,7 +131,6 @@ export default function PostCard({
     Array.isArray(post.comments) ? post.comments.length : 0,
     Number(post.commentCount) || 0
   );
-  const bodyText = String(post.body ?? '');
   const [bodyRef, clampedBody] = useClampedBody(bodyText, {
     maxLines: FEED_PREVIEW_LINES,
     enabled: !isDetail,
@@ -218,7 +220,7 @@ export default function PostCard({
               containerRef={bodyRef}
               text={isDetail ? bodyText : clampedBody.text}
               authorId={post.authorId}
-              boldContentLine={isNewsPost ? 1 : null}
+              boldContentLine={isNewsPost ? 0 : null}
               onOpenStock={onOpenStock}
               trailing={
                 !isDetail && clampedBody.truncated ? (
