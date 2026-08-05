@@ -820,15 +820,22 @@ export default function App() {
   const inShell = authView === 'app' || authView === 'landing';
   const guestMode = authView === 'landing';
 
-  // Guests have no Activity / Profile chrome — bounce deep links to Feed.
+  // Guests: Activity and own Profile stay gated. Shared public portfolios stay open.
   useEffect(() => {
     if (!guestMode) return;
-    if (tab !== 'activity' && tab !== 'profile') return;
+    if (tab === 'activity') {
+      setTab('feed');
+      setSelectedPostId(null);
+      navigateToTab(navigate, 'feed');
+      return;
+    }
+    if (tab !== 'profile') return;
+    if (profileMode === 'public' && profilePortfolioId) return;
     setTab('feed');
     setSelectedPostId(null);
     setProfilePortfolioId(null);
     navigateToTab(navigate, 'feed');
-  }, [guestMode, tab, navigate]);
+  }, [guestMode, tab, navigate, profileMode, profilePortfolioId]);
 
   const pageTitleOverride =
     inShell && tab === 'settings'
@@ -1186,6 +1193,7 @@ export default function App() {
               <ProfilePage
                 mode={profileMode}
                 userId={profileUserId}
+                guestMode={guestMode}
                 initialPerson={
                   profileSeedPerson?.id === profileUserId ? profileSeedPerson : null
                 }

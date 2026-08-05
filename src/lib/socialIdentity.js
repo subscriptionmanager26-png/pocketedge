@@ -108,10 +108,21 @@ export async function resolvePersonByHandle(handle) {
     return profileToPerson(byUsername.get(normalized));
   }
 
-  const profile = await fetchProfileByUsername(normalized);
-  if (profile) {
-    cacheProfile(profile);
-    return profileToPerson(profile);
+  try {
+    const profile = await fetchProfileByUsername(normalized);
+    if (profile) {
+      cacheProfile(profile);
+      return profileToPerson(profile);
+    }
+  } catch {
+    // Guests (and failed auth profiles) fall through to the public RPC.
+  }
+
+  const { fetchPublicProfile } = await import('./socialProfileApi');
+  const publicProfile = await fetchPublicProfile(normalized);
+  if (publicProfile) {
+    cacheProfile(publicProfile);
+    return profileToPerson(publicProfile);
   }
 
   return null;

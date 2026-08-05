@@ -29,15 +29,17 @@ import {
   createDraftPortfolio,
   fetchUserPortfolio,
   fetchUserPortfolios,
+  fetchPublicPortfolioShare,
   peekUserPortfolios,
   saveSocialPortfolio,
   isLocalDraftId,
 } from '../lib/socialPortfolioApi';
 import { updateSocialProfile, fetchProfileHeader } from '../lib/socialProfileApi';
-import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, resolvePerson } from '../lib/socialIdentity';
+import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, rememberPerson, resolvePerson } from '../lib/socialIdentity';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
 import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import GuestSignInCta from '../components/GuestSignInCta';
 import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
 import AssetLogo from '../components/AssetLogo';
 import PortfolioCard from '../components/PortfolioCard';
@@ -132,6 +134,7 @@ function Field({ label, children }) {
 export default function ProfilePage({
   mode = 'own',
   userId = CURRENT_USER.id,
+  guestMode = false,
   posts,
   selectedPortfolioId,
   initialPerson = null,
@@ -237,6 +240,11 @@ export default function ProfilePage({
 
   useEffect(() => {
     if (!person?.id) return;
+    if (guestMode) {
+      setPortfolios([]);
+      setPortfoliosLoading(false);
+      return undefined;
+    }
     let cancelled = false;
     const cached = peekUserPortfolios(person.id);
     if (Array.isArray(cached) && cached.length) {
@@ -259,21 +267,50 @@ export default function ProfilePage({
     return () => {
       cancelled = true;
     };
-  }, [person?.id, portfolioVersion]);
+  }, [person?.id, portfolioVersion, guestMode]);
 
   useEffect(() => {
-    if (!person?.id || !selectedPortfolioId) return;
-    if (portfolios.some((p) => p.id === selectedPortfolioId)) return;
+    if (!selectedPortfolioId) return undefined;
+    if (!guestMode) {
+      if (!person?.id) return undefined;
+      if (portfolios.some((p) => p.id === selectedPortfolioId)) return undefined;
+      let cancelled = false;
+      fetchUserPortfolio(person.id, selectedPortfolioId)
+        .then((row) => {
+          if (!cancelled && row) setPortfolios((prev) => [...prev, row]);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (portfolios.some((p) => p.id === selectedPortfolioId)) return undefined;
     let cancelled = false;
-    fetchUserPortfolio(person.id, selectedPortfolioId)
-      .then((row) => {
-        if (!cancelled && row) setPortfolios((prev) => [...prev, row]);
+    setPortfoliosLoading(true);
+    fetchPublicPortfolioShare(selectedPortfolioId)
+      .then((share) => {
+        if (cancelled || !share?.portfolio) return;
+        if (share.ownerId && share.ownerHandle) {
+          rememberPerson({
+            id: share.ownerId,
+            name: share.ownerName || share.ownerHandle,
+            handle: share.ownerHandle,
+          });
+        }
+        setPortfolios((prev) => {
+          if (prev.some((p) => p.id === share.portfolio.id)) return prev;
+          return [...prev, share.portfolio];
+        });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPortfoliosLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [person?.id, selectedPortfolioId, portfolios, portfolioVersion]);
+  }, [person?.id, selectedPortfolioId, portfolios, portfolioVersion, guestMode]);
 
   useEffect(() => {
     if (!person || !isOwn) return;
@@ -411,6 +448,16 @@ export default function ProfilePage({
   }
 
   if (selectedPortfolioId && !selectedPortfolio) {
+    if (guestMode && !portfoliosLoading) {
+      return (
+        <div className="px-4 py-16 text-center md:px-6">
+          <p className="text-lg font-semibold text-pe-text">Portfolio unavailable</p>
+          <p className="mt-2 text-sm text-pe-text-secondary">
+            This shared portfolio may be private, archived, or no longer exists.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="px-4 py-6">
         <PortfolioHoldingsSkeleton rows={4} />
@@ -422,8 +469,9 @@ export default function ProfilePage({
     return (
       <PortfolioDetailView
         portfolio={selectedPortfolio}
-        userId={person.id}
+        userId={person?.id}
         canEdit={canEdit}
+        guestMode={guestMode}
         onPortfolioUpdated={(updated) => {
           if (updated) {
             setPortfolios((prev) => {
@@ -439,11 +487,11 @@ export default function ProfilePage({
           bumpPortfolios();
         }}
         onBack={onClearPortfolio}
-        canCopy={!canEdit}
+        canCopy={!canEdit && !guestMode}
         returnPeriod={returnPeriod}
         onReturnPeriodChange={handleReturnPeriodChange}
         onMobileHeaderActionsChange={onMobileHeaderActionsChange}
-        startInEditMode={Boolean(selectedPortfolio.isDraft)}
+        startInEditMode={Boolean(selectedPortfolio.isDraft) && !guestMode}
         onRegisterPortfolioBackHandler={onRegisterPortfolioBackHandler}
         onOpenSourcePortfolio={onOpenSourcePortfolio}
         onSelectPortfolio={onSelectPortfolio}
@@ -592,6 +640,7 @@ function PortfolioDetailView({
   portfolio,
   userId,
   canEdit,
+  guestMode = false,
   onPortfolioUpdated,
   onBack,
   canCopy = false,
@@ -1462,11 +1511,29 @@ function PortfolioDetailView({
             </button>
           </div>
         </div>
+      ) : guestMode ? (
+        <div className="pb-6 pt-1">
+          <p className="px-4 text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted md:px-6">
+            Holdings
+          </p>
+          <GuestSignInCta
+            variant="hero"
+            title="See the full book"
+            description="Sign in to view holdings, weights, and discussions on this shared portfolio."
+            action="unlock holdings"
+            showExploreHint={false}
+            benefits={[
+              'See every holding and weight',
+              'Follow the investor’s next moves',
+              'Like, copy, and discuss this book',
+            ]}
+          />
+        </div>
       ) : (
         <PortfolioHoldingsList portfolio={portfolio} onOpenStock={onOpenStock} />
       )}
 
-      {!editing ? (
+      {!editing && !guestMode ? (
         <PortfolioSocialBar
           portfolio={portfolio}
           social={social}
@@ -1479,7 +1546,7 @@ function PortfolioDetailView({
         />
       ) : null}
 
-      {!editing ? (
+      {!editing && !guestMode ? (
         <PortfolioDiscussion
           portfolioId={portfolio.id}
           comments={social.comments ?? []}

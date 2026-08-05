@@ -296,6 +296,57 @@ export function discardLocalDraft(ownerId, portfolioId) {
 }
 
 /**
+ * Anonymous/share view of a published portfolio (summary only for guests).
+ * Holdings are stripped client-side so the SPA can gate them behind sign-in.
+ * @returns {Promise<{ portfolio: object, ownerId: string|null, ownerHandle: string|null, ownerName: string|null }|null>}
+ */
+export async function fetchPublicPortfolioShare(portfolioId) {
+  if (!portfolioId) return null;
+
+  if (!useBackend()) {
+    for (const [ownerId, list] of Object.entries(USER_PORTFOLIOS)) {
+      const found = (list ?? []).find(
+        (p) => p.id === portfolioId && !p.isDraft && !p.isArchived
+      );
+      if (!found) continue;
+      const owner = getPerson(ownerId);
+      const mapped = enrichUserPortfolio(found);
+      return {
+        portfolio: {
+          ...mapped,
+          holdings: [],
+          tickers: [],
+        },
+        ownerId,
+        ownerHandle: owner?.handle ?? null,
+        ownerName: owner?.name ?? null,
+      };
+    }
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc('get_public_portfolio_share', {
+    p_portfolio_id: portfolioId,
+  });
+  if (error) throw error;
+  if (!data?.portfolio) return null;
+
+  const mapped = mapRpcRow(data.portfolio);
+  if (!mapped) return null;
+
+  return {
+    portfolio: {
+      ...mapped,
+      holdings: [],
+      tickers: [],
+    },
+    ownerId: data.portfolio.owner_id ?? mapped.ownerId ?? null,
+    ownerHandle: data.ownerHandle ?? data.owner_handle ?? null,
+    ownerName: data.ownerName ?? data.owner_name ?? null,
+  };
+}
+
+/**
  * Discover published portfolios across the network (public-redacted).
  * @returns {Promise<Array<{ portfolio: object, owner: { id, name, handle, avatarUrl?, bio? } }>>}
  */
