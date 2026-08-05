@@ -173,6 +173,28 @@
       "permanent": true
     },
     {
+      "source": "/gold-tracker",
+      "destination": "/resources/sgb",
+      "permanent": true
+    },
+    {
+      "source": "/etf-tracker",
+      "destination": "/resources/etf-inav",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.saffronai.in" }],
+      "destination": "https://www.pocketedge.in/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "saffronai.in" }],
+      "destination": "https://www.pocketedge.in/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "social.pocketedge.in" }],
       "destination": "https://www.pocketedge.in/:path*",
