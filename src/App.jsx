@@ -106,7 +106,15 @@ function initialAuthState() {
   if (cached?.user) {
     return { authView: 'bootstrapping', authUser: cached.user };
   }
-  return { authView: 'bootstrapping', authUser: null };
+  // OAuth callback must wait for PKCE exchange before stripping ?code=.
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('code') || url.searchParams.has('error')) {
+      return { authView: 'bootstrapping', authUser: null };
+    }
+  }
+  // Guests: paint landing immediately — no splash wait for Supabase.
+  return { authView: 'landing', authUser: null };
 }
 
 function initialBootstrapState() {

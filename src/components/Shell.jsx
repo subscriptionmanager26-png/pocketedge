@@ -157,24 +157,43 @@ export default function Shell({
 
   useEffect(() => {
     let cancelled = false;
+    let idleId = null;
+    let idleTimeoutId = null;
 
-    const loadRail = ({ force = false } = {}) =>
+    const loadCriticalRail = ({ force = false } = {}) =>
       Promise.all([
         loadRailTrending(5, { force }).catch(() => ({ live: false, items: [] })),
-        loadRailDiscussions(4, { guestMode }).catch(() => []),
-        loadRailPeople(4).catch(() => []),
         fetchMarketPreview('indices', { force }).catch(() => null),
-      ]).then(([trendingPayload, discussions, people, indicesPayload]) => {
+      ]).then(([trendingPayload, indicesPayload]) => {
         if (cancelled) return;
         setRailTrending(trendingPayload?.items ?? []);
-        setRailDiscussions(discussions ?? []);
-        setRailPeople(people ?? []);
         setRailLive(
           Boolean(trendingPayload?.live) || indicesPayload?.source === 'rpc'
         );
       });
 
-    loadRail();
+    const loadDeferredRail = () =>
+      Promise.all([
+        loadRailDiscussions(4, { guestMode }).catch(() => []),
+        loadRailPeople(4).catch(() => []),
+      ]).then(([discussions, people]) => {
+        if (cancelled) return;
+        setRailDiscussions(discussions ?? []);
+        setRailPeople(people ?? []);
+      });
+
+    loadCriticalRail();
+
+    const scheduleDeferred = () => {
+      if (cancelled) return;
+      void loadDeferredRail();
+    };
+
+    if (typeof requestIdleCallback === 'function') {
+      idleId = requestIdleCallback(scheduleDeferred, { timeout: 2000 });
+    } else {
+      idleTimeoutId = window.setTimeout(scheduleDeferred, 1);
+    }
 
     const refreshTrending = () => {
       loadRailTrending(5, { force: true })
@@ -216,6 +235,10 @@ export default function Shell({
     return () => {
       cancelled = true;
       if (timer) window.clearInterval(timer);
+      if (idleId != null && typeof cancelIdleCallback === 'function') {
+        cancelIdleCallback(idleId);
+      }
+      if (idleTimeoutId != null) window.clearTimeout(idleTimeoutId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [guestMode]);
