@@ -22,6 +22,12 @@ import {
 import { invalidateAuthorPositions } from './authorPositionsStore';
 import { cachedFetch, invalidateCache, getCached, setCached } from './queryCache';
 import { peekPortfoliosCache, writePortfoliosCache, invalidatePortfoliosTabCache } from './tabCache';
+import {
+  findPublishedLivePortfolio,
+  isWatchlistKind,
+  livePortfolioDisplayName,
+} from './portfolioEdit';
+import { getAppCurrentUser } from './socialIdentity';
 
 const PORTFOLIOS_TTL_MS = 45_000;
 
@@ -93,13 +99,19 @@ function mapTableRow(row) {
   return mapRpcRow(row);
 }
 
-function blankDraft(ownerId) {
+function blankDraft(ownerId, { kind = 'live', name } = {}) {
+  const resolvedKind = isWatchlistKind(kind) ? 'watchlist' : 'live';
+  const resolvedName =
+    String(name ?? '').trim() ||
+    (resolvedKind === 'watchlist'
+      ? 'Watchlist'
+      : livePortfolioDisplayName(getAppCurrentUser()?.name));
   return enrichUserPortfolio({
     id: `pf_local_${Date.now()}`,
     ownerId,
-    kind: 'live',
+    kind: resolvedKind,
     isDraft: true,
-    name: 'My portfolio',
+    name: resolvedName,
     objective: '',
     thesis: '',
     totalValue: 0,
@@ -108,6 +120,9 @@ function blankDraft(ownerId) {
     xirr: 0,
     holdings: [],
     tickers: [],
+    ...(resolvedKind === 'watchlist'
+      ? { watchlistBaseInvestment: 10_000 }
+      : {}),
   });
 }
 
@@ -187,8 +202,24 @@ export async function fetchUserPortfolio(ownerId, portfolioId) {
 }
 
 /** Drafts live in the browser only — never written to Supabase until published. */
-export async function createDraftPortfolio(ownerId) {
-  const draft = blankDraft(ownerId);
+export async function createDraftPortfolio(ownerId, options = {}) {
+  const kind = isWatchlistKind(options.kind) ? 'watchlist' : 'live';
+
+  if (kind === 'live') {
+    const existing = findPublishedLivePortfolio(
+      (await fetchUserPortfolios(ownerId).catch(() => null)) ??
+        peekUserPortfolios(ownerId) ??
+        []
+    );
+    if (existing) {
+      throw new Error('You already have a live portfolio. Create a watchlist instead.');
+    }
+  }
+
+  const draft = blankDraft(ownerId, {
+    kind,
+    name: options.name,
+  });
 
   if (useBackend()) {
     return addLocalDraft(ownerId, draft);
@@ -196,9 +227,9 @@ export async function createDraftPortfolio(ownerId) {
 
   return addUserPortfolio(CURRENT_USER.id, {
     id: draft.id.replace('pf_local_', 'pf_'),
-    kind: 'live',
+    kind: draft.kind,
     isDraft: true,
-    name: 'My portfolio',
+    name: draft.name,
     objective: '',
     thesis: '',
     totalValue: 0,
@@ -213,11 +244,35 @@ export async function createDraftPortfolio(ownerId) {
 export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
   const holdings = patch.holdings ?? [];
   const tickers = patch.tickers ?? holdings.map((h) => h.ticker).filter(Boolean);
+  const kind = patch.kind ?? 'live';
+  const resolvedName = isWatchlistKind(kind)
+    ? String(patch.name ?? '').trim()
+    : livePortfolioDisplayName(
+        patch.ownerDisplayName ?? getAppCurrentUser()?.name,
+        'My'
+      );
+
+  if (!isWatchlistKind(kind)) {
+    const list =
+      peekUserPortfolios(ownerId) ?? (await fetchUserPortfolios(ownerId).catch(() => []));
+    const otherLive = (list ?? []).find(
+      (p) =>
+        p &&
+        p.id !== portfolioId &&
+        !p.isDraft &&
+        !p.isArchived &&
+        !isWatchlistKind(p.kind ?? 'live')
+    );
+    if (otherLive) {
+      throw new Error('You can only have one live portfolio. Extra books must be watchlists.');
+    }
+  }
 
   if (isLocalDraftId(portfolioId)) {
     if (!useBackend()) {
       return applyPortfolioHoldingsUpdate(ownerId, portfolioId, holdings, {
         ...patch,
+        name: resolvedName,
         tickers,
       });
     }
@@ -228,8 +283,8 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
 
     const { data, error } = await supabase.rpc('upsert_social_portfolio', {
       p_id: null,
-      p_kind: patch.kind ?? 'live',
-      p_name: patch.name ?? '',
+      p_kind: kind,
+      p_name: resolvedName,
       p_objective: patch.objective ?? '',
       p_thesis: patch.thesis ?? '',
       p_is_draft: false,
@@ -249,14 +304,15 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
   if (!useBackend()) {
     return applyPortfolioHoldingsUpdate(ownerId, portfolioId, holdings, {
       ...patch,
+      name: resolvedName,
       tickers,
     });
   }
 
   const { data, error } = await supabase.rpc('upsert_social_portfolio', {
     p_id: portfolioId,
-    p_kind: patch.kind ?? null,
-    p_name: patch.name ?? null,
+    p_kind: kind,
+    p_name: resolvedName,
     p_objective: patch.objective ?? null,
     p_thesis: patch.thesis ?? null,
     p_is_draft: false,

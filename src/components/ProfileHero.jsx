@@ -95,58 +95,63 @@ export default function ProfileHero({
             />
             <Stat label="Influencing" value={influencingLabel} />
           </dl>
+        </div>
+      </div>
 
-          <div className="mt-4">
-            {canEditBio && !editingBio ? (
-              <div className="mb-1.5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setEditingBio(true)}
-                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-pe-text-secondary hover:bg-black/[0.04] hover:text-pe-accent"
-                >
-                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-                  Edit
-                </button>
-              </div>
-            ) : null}
-            {canEditBio && editingBio ? (
-              <div className="mb-1.5 flex justify-end gap-1">
-                <button
-                  type="button"
-                  onClick={cancelBio}
-                  disabled={savingBio}
-                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-pe-text-secondary hover:bg-black/[0.04]"
-                >
-                  <X className="h-3.5 w-3.5" strokeWidth={2} />
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={saveBio}
-                  disabled={savingBio}
-                  className="inline-flex items-center gap-1 rounded-[14px] bg-pe-accent px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
-                >
-                  {savedFlash ? <Check className="h-3.5 w-3.5" strokeWidth={2} /> : null}
-                  {savingBio ? 'Saving…' : savedFlash ? 'Saved' : 'Save'}
-                </button>
-              </div>
-            ) : null}
-
-            {editingBio ? (
-              <textarea
-                value={bioDraft}
-                onChange={(e) => setBioDraft(e.target.value)}
-                rows={3}
-                placeholder="Add a short bio"
-                className="w-full rounded-[14px] border border-[var(--fv-border,#ececec)] bg-white px-3 py-2 text-[15px] leading-6 text-pe-ink outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent"
-              />
-            ) : bioDraft ? (
-              <p className="text-[15px] leading-6 text-pe-ink">{bioDraft}</p>
-            ) : canEditBio ? (
-              <p className="text-[15px] leading-6 text-pe-text-muted">Add a short bio</p>
+      <div className="mt-4">
+        {editingBio ? (
+          <div>
+            <textarea
+              value={bioDraft}
+              onChange={(e) => setBioDraft(e.target.value)}
+              rows={3}
+              autoFocus
+              placeholder="Add a short bio"
+              className="w-full resize-none rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-left text-[15px] leading-6 text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent"
+            />
+            <div className="mt-2 flex items-center justify-start gap-2">
+              <button
+                type="button"
+                onClick={cancelBio}
+                disabled={savingBio}
+                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-text disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveBio}
+                disabled={savingBio}
+                className="inline-flex items-center gap-1 rounded-lg bg-pe-accent px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
+              >
+                {savedFlash ? <Check className="h-3.5 w-3.5" strokeWidth={2} /> : null}
+                {savingBio ? 'Saving…' : savedFlash ? 'Saved' : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1 text-left">
+              {bioDraft ? (
+                <p className="text-[15px] leading-6 text-pe-ink">{bioDraft}</p>
+              ) : canEditBio ? (
+                <p className="text-[15px] leading-6 text-pe-text-muted">Add a short bio</p>
+              ) : null}
+            </div>
+            {canEditBio ? (
+              <button
+                type="button"
+                onClick={() => setEditingBio(true)}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-accent"
+                aria-label="Edit bio"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                Edit
+              </button>
             ) : null}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

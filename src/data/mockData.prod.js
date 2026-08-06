@@ -177,6 +177,30 @@ export function getHoldingTotalReturnPct(holding, asset = null) {
   return 0;
 }
 
+/** 1D / 1W / 1M price moves for watchlist rows (not cost-based PnL). */
+export function getHoldingPriceMoves(holding, asset = null) {
+  const dayRaw = Number(
+    asset?.item?.changePct ?? holding?.changePct ?? asset?.changePct
+  );
+  const day = Number.isFinite(dayRaw) ? dayRaw : null;
+
+  const monthRaw = getHoldingReturn1M(holding, asset);
+  const month = Number.isFinite(monthRaw) ? monthRaw : null;
+
+  const weekStored = Number(
+    holding?.return1W ?? holding?.return_1w ?? asset?.item?.return1W ?? asset?.item?.return_1w
+  );
+  const week = Number.isFinite(weekStored)
+    ? weekStored
+    : Number.isFinite(month)
+      ? Number((month / 4).toFixed(2))
+      : Number.isFinite(day)
+        ? Number((day * 5).toFixed(2))
+        : null;
+
+  return { '1D': day, '1W': week, '1M': month };
+}
+
 /** 1-month return % for a single holding. */
 export function getHoldingReturn1M(holding, asset = null) {
   const stored = Number(holding?.return1M ?? holding?.return_1m);

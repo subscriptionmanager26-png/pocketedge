@@ -37,7 +37,8 @@ import {
   setSelfProfile,
   getHandleForUserIdSync,
 } from './lib/socialIdentity';
-import { createDraftPortfolio } from './lib/socialPortfolioApi';
+import { createDraftPortfolio, fetchUserPortfolios } from './lib/socialPortfolioApi';
+import { findPublishedLivePortfolio } from './lib/portfolioEdit';
 import {
   addPostComment,
   buildOptimisticPostComment,
@@ -798,8 +799,18 @@ export default function App() {
     }
     const ownerId = currentUserId;
     if (!ownerId) return;
-    const created = await createDraftPortfolio(ownerId);
-    openProfilePortfolio(ownerId, created.id);
+    try {
+      const rows = await fetchUserPortfolios(ownerId).catch(() => []);
+      const existing = findPublishedLivePortfolio(rows);
+      if (existing) {
+        openProfilePortfolio(ownerId, existing.id, { updateHoldings: true });
+        return;
+      }
+      const created = await createDraftPortfolio(ownerId, { kind: 'live' });
+      openProfilePortfolio(ownerId, created.id);
+    } catch (error) {
+      window.alert(error?.message ?? 'Could not open portfolio.');
+    }
   };
 
   const handleTabChange = (next) => {
@@ -1065,6 +1076,7 @@ export default function App() {
         onCompose={openCompose}
         onCreatePortfolio={createOwnPortfolio}
         guestMode={guestMode}
+        currentUserId={guestMode ? null : currentUserId}
         onRequireSignIn={requireSignIn}
         mobileActions={mobileHeaderActions}
         onSelectStock={openStock}

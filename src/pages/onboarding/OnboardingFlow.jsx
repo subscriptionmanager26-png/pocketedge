@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
 import { setOnboardingComplete } from '../../lib/sessionStore';
-import { buildLiveHoldings } from '../../lib/portfolioEdit';
+import { buildLiveHoldings, findPublishedLivePortfolio, livePortfolioDisplayName } from '../../lib/portfolioEdit';
 import { resolvePortfolioAssets } from '../../lib/portfolioAssetUniverse';
 import { mergeOnboardingHoldings } from '../../lib/portfolioImportMerge';
+import { getAppCurrentUser } from '../../lib/socialIdentity';
 import {
   createDraftPortfolio,
+  fetchUserPortfolios,
   saveSocialPortfolio,
 } from '../../lib/socialPortfolioApi';
 import { analyzeHoldings, summarizeAnalysis } from './onboardingAnalysis';
@@ -119,17 +121,37 @@ export default function OnboardingFlow({ userId, onComplete }) {
 
       const assetsByKey = await resolvePortfolioAssets(editRows.map((r) => r.ticker));
       const built = buildLiveHoldings(editRows, assetsByKey);
+      const liveName = livePortfolioDisplayName(getAppCurrentUser()?.name);
+      const existing =
+        findPublishedLivePortfolio(await fetchUserPortfolios(userId).catch(() => [])) ?? null;
 
-      const draft = await createDraftPortfolio(userId);
-      await saveSocialPortfolio(userId, draft.id, {
-        kind: 'live',
-        isDraft: false,
-        name: 'My portfolio',
-        objective: '',
-        thesis: '',
-        holdings: built,
-        tickers: built.map((h) => h.ticker),
-      });
+      if (existing) {
+        await saveSocialPortfolio(userId, existing.id, {
+          kind: 'live',
+          isDraft: false,
+          name: liveName,
+          objective: '',
+          thesis: '',
+          holdings: built,
+          tickers: built.map((h) => h.ticker),
+          ownerDisplayName: getAppCurrentUser()?.name,
+        });
+      } else {
+        const draft = await createDraftPortfolio(userId, {
+          kind: 'live',
+          name: liveName,
+        });
+        await saveSocialPortfolio(userId, draft.id, {
+          kind: 'live',
+          isDraft: false,
+          name: liveName,
+          objective: '',
+          thesis: '',
+          holdings: built,
+          tickers: built.map((h) => h.ticker),
+          ownerDisplayName: getAppCurrentUser()?.name,
+        });
+      }
 
       setOnboardingComplete(userId);
       onComplete?.();
