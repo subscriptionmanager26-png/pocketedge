@@ -39,6 +39,8 @@ export default function FeedTopBar({
   standalone = false,
   /** Mobile-only actions that replace the profile avatar (e.g. portfolio Edit/Save). */
   mobileActions = null,
+  /** When true with mobileActions, omit the Activity bell to free space for Cancel/Save. */
+  hideMobileActivity = false,
 }) {
   const [feedMenuOpen, setFeedMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -135,19 +137,21 @@ export default function FeedTopBar({
     if (allowMobileActions && mobileActions) {
       return (
         <>
-          <button
-            type="button"
-            onClick={onActivity}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition duration-150 hover:text-[var(--fv-text)]"
-            aria-label={guestMode ? 'Sign in to see activity' : unreadLabel}
-          >
-            <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
-            {!guestMode && activityUnread > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#dc2626] px-1 text-[10px] font-bold text-white">
-                {activityUnread > 9 ? '9+' : activityUnread}
-              </span>
-            ) : null}
-          </button>
+          {!hideMobileActivity ? (
+            <button
+              type="button"
+              onClick={onActivity}
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition duration-150 hover:text-[var(--fv-text)]"
+              aria-label={guestMode ? 'Sign in to see activity' : unreadLabel}
+            >
+              <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
+              {!guestMode && activityUnread > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#dc2626] px-1 text-[10px] font-bold text-white">
+                  {activityUnread > 9 ? '9+' : activityUnread}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
           <div className="flex shrink-0 items-center">{mobileActions}</div>
         </>
       );
