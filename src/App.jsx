@@ -853,7 +853,7 @@ export default function App() {
   const inShell = authView === 'app' || authView === 'landing';
   const guestMode = authView === 'landing';
 
-  // Guests: Activity and own Profile stay gated. Shared public portfolios stay open.
+  // Guests: Activity and own Profile stay gated. Public profiles (incl. share links) stay open.
   useEffect(() => {
     if (!guestMode) return;
     if (tab === 'activity') {
@@ -863,7 +863,7 @@ export default function App() {
       return;
     }
     if (tab !== 'profile') return;
-    if (profileMode === 'public' && profilePortfolioId) return;
+    if (profileMode === 'public') return;
     setTab('feed');
     setSelectedPostId(null);
     setProfilePortfolioId(null);
