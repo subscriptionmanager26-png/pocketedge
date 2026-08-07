@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
-  ChevronRight,
   ClipboardCheck,
   Copy,
-  Heart,
   Pencil,
   Plus,
   Share2,
@@ -20,8 +18,9 @@ import { isDevMockMode } from '../lib/appMode';
 import {
   CURRENT_USER,
   POSTS,
-  getPortfolioTotalReturnPct,
+  copyPortfolioForUser,
   getHoldingTotalReturnPct,
+  getPortfolioTotalReturnPct,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -34,10 +33,17 @@ import {
   isLocalDraftId,
 } from '../lib/socialPortfolioApi';
 import { updateSocialProfile, fetchProfileHeader } from '../lib/socialProfileApi';
-import { getAppCurrentUser, getHandleForUserIdSync, peekPerson, rememberPerson, resolvePerson } from '../lib/socialIdentity';
+import {
+  getAppCurrentUser,
+  getAppCurrentUserId,
+  getHandleForUserIdSync,
+  peekPerson,
+  rememberPerson,
+  resolvePerson,
+} from '../lib/socialIdentity';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
-import { formatCount, formatPct, formatPrice, pnlClass, timeAgo } from '../lib/format';
+import { formatCount, formatPct, pnlClass } from '../lib/format';
 import GuestSignInCta from '../components/GuestSignInCta';
 import UpdateHoldingsSheet from '../components/UpdateHoldingsSheet';
 import {
@@ -45,27 +51,22 @@ import {
   holdingIsin,
   previewPortfolioImportMerge,
 } from '../lib/portfolioImportMerge';
-import { holdingDisplayLabel, resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
+import { resolvePortfolioAssets, assetsFromHoldings, holdingsNeedClientResolve } from '../lib/portfolioAssetUniverse';
 import AssetLogo from '../components/AssetLogo';
-import PortfolioCard from '../components/PortfolioCard';
 import PortfolioShareSheet from '../components/PortfolioShareSheet';
 import {
   PortfoliosListSkeleton,
   PortfolioHoldingsSkeleton,
 } from '../components/PortfolioSkeletons';
 import { ProfilePageSkeleton } from '../components/PageSkeletons';
-import CommentEngagementButton from '../components/CommentEngagementButton';
-import CommentRow from '../components/CommentRow';
 import { fetchInfluencingAmount } from '../lib/influencingApi';
 import { peekInfluencingCache, writeProfileGraphCache } from '../lib/tabCache';
 import { markTabDataReady, markTabPaint } from '../lib/perfMarks';
 import {
-  addPortfolioComment,
+  confirmPortfolioCopy,
   getPortfolioEngagementSync,
-  markPortfolioCommentsRead,
   subscribePortfolioEngagement,
   togglePortfolioCopy,
-  togglePortfolioLike,
 } from '../lib/portfolioEngagementApi';
 import {
   COST_MODES,
@@ -73,7 +74,9 @@ import {
   buildLiveHoldings,
   buildWatchlistHoldings,
   fieldClass,
+  findPublishedLivePortfolio,
   isWatchlistKind,
+  livePortfolioDisplayName,
   patchLiveCostFields,
   portfolioHasDraftWork,
   validatePortfolioDraft,
@@ -88,8 +91,9 @@ import {
 } from '../components/PortfolioMetaTag';
 
 const PROFILE_TABS = [
-  { id: 'posts', label: 'Posts' },
   { id: 'portfolios', label: 'Portfolio' },
+  { id: 'watchlists', label: 'Watchlists' },
+  { id: 'posts', label: 'Posts' },
 ];
 
 const RETURN_PERIODS = ['1D', '1W', '1M', '1Y'];
@@ -158,11 +162,13 @@ export default function ProfilePage({
   const isMePublic = !isOwn && person?.id === appUser.id;
   const canEdit = isOwn && !isMePublic;
 
-  const [tab, setTab] = useState('posts');
+  const [tab, setTab] = useState('portfolios');
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [portfolios, setPortfolios] = useState([]);
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
+  /** 'edit' | 'update' — opens full-page editor from inline listing actions */
+  const [pendingEditorAction, setPendingEditorAction] = useState(null);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
   const [influencingAmount, setInfluencingAmount] = useState(() => {
     const cached = peekInfluencingCache(userId);
@@ -357,6 +363,15 @@ export default function ProfilePage({
     () => portfolios.filter((p) => !p.isDraft),
     [portfolios]
   );
+  const livePortfolio = useMemo(
+    () => findPublishedLivePortfolio(publishedPortfolios),
+    [publishedPortfolios]
+  );
+  const watchlistPortfolios = useMemo(
+    () =>
+      publishedPortfolios.filter((p) => isWatchlistKind(p.kind ?? 'live')),
+    [publishedPortfolios]
+  );
 
   const selectedPortfolio = useMemo(
     () => (selectedPortfolioId ? portfolios.find((p) => p.id === selectedPortfolioId) ?? null : null),
@@ -364,16 +379,29 @@ export default function ProfilePage({
   );
 
   useEffect(() => {
-    setTab('posts');
+    setTab('portfolios');
     setFollowListMode(null);
   }, [userId, mode]);
 
   useEffect(() => {
-    if (selectedPortfolioId) {
-      setTab('portfolios');
-      setFollowListMode(null);
+    if (!selectedPortfolioId) {
+      setPendingEditorAction(null);
+      return;
     }
-  }, [selectedPortfolioId]);
+    setFollowListMode(null);
+    const selected = portfolios.find((p) => p.id === selectedPortfolioId);
+    if (selected && isWatchlistKind(selected.kind ?? 'live')) {
+      setTab('watchlists');
+    } else {
+      setTab('portfolios');
+    }
+  }, [selectedPortfolioId, portfolios]);
+
+  const openPortfolioEditor = (portfolioId, action) => {
+    if (!portfolioId) return;
+    setPendingEditorAction(action);
+    onSelectPortfolio?.(portfolioId);
+  };
 
   const followCounts = useMemo(() => {
     void graphTick;
@@ -386,10 +414,37 @@ export default function ProfilePage({
   }
 
   const handleAddPortfolio = async () => {
-    const created = await createDraftPortfolio(person.id);
-    setPortfolios((prev) => [created, ...prev]);
-    bumpPortfolios();
-    onSelectPortfolio?.(created.id);
+    if (livePortfolio) {
+      onSelectPortfolio?.(livePortfolio.id);
+      return;
+    }
+    try {
+      const created = await createDraftPortfolio(person.id, {
+        kind: 'live',
+        name: livePortfolioDisplayName(person.name),
+      });
+      setPortfolios((prev) => [created, ...prev]);
+      bumpPortfolios();
+      onSelectPortfolio?.(created.id);
+    } catch (error) {
+      window.alert(error?.message ?? 'Could not create portfolio.');
+    }
+  };
+
+  const handleAddWatchlist = async (watchlistName) => {
+    const name = String(watchlistName ?? '').trim();
+    if (!name) return;
+    try {
+      const created = await createDraftPortfolio(person.id, {
+        kind: 'watchlist',
+        name,
+      });
+      setPortfolios((prev) => [created, ...prev]);
+      bumpPortfolios();
+      onSelectPortfolio?.(created.id);
+    } catch (error) {
+      window.alert(error?.message ?? 'Could not create watchlist.');
+    }
   };
 
   const saveBio = async (nextBio) => {
@@ -422,6 +477,7 @@ export default function ProfilePage({
   const handleTabChange = (next) => {
     setTab(next);
     setFollowListMode(null);
+    setPendingEditorAction(null);
     if (selectedPortfolioId) onClearPortfolio?.();
   };
 
@@ -466,8 +522,11 @@ export default function ProfilePage({
         userId={person?.id}
         canEdit={canEdit}
         guestMode={guestMode}
-        startUpdateHoldings={startUpdateHoldings}
-        onUpdateHoldingsConsumed={onUpdateHoldingsConsumed}
+        startUpdateHoldings={startUpdateHoldings || pendingEditorAction === 'update'}
+        onUpdateHoldingsConsumed={() => {
+          setPendingEditorAction(null);
+          onUpdateHoldingsConsumed?.();
+        }}
         onPortfolioUpdated={(updated) => {
           if (updated) {
             setPortfolios((prev) => {
@@ -478,6 +537,7 @@ export default function ProfilePage({
               );
               return [updated, ...without];
             });
+            setPendingEditorAction(null);
             return;
           }
           bumpPortfolios();
@@ -487,10 +547,10 @@ export default function ProfilePage({
         returnPeriod={returnPeriod}
         onReturnPeriodChange={handleReturnPeriodChange}
         onMobileHeaderActionsChange={onMobileHeaderActionsChange}
-        startInEditMode={Boolean(selectedPortfolio.isDraft) && !guestMode}
+        startInEditMode={
+          (Boolean(selectedPortfolio.isDraft) || pendingEditorAction === 'edit') && !guestMode
+        }
         onRegisterPortfolioBackHandler={onRegisterPortfolioBackHandler}
-        onOpenSourcePortfolio={onOpenSourcePortfolio}
-        onSelectPortfolio={onSelectPortfolio}
         onOpenStock={onOpenStock}
       />
     );
@@ -558,91 +618,345 @@ export default function ProfilePage({
       )}
 
       {tab === 'portfolios' && (
-        <PortfoliosListPanel
-          portfolios={publishedPortfolios}
+        <PortfolioSectionPanel
+          livePortfolio={livePortfolio}
           loading={portfoliosLoading}
           person={person}
           canEdit={canEdit}
+          guestMode={guestMode}
           portfolioSocialTick={portfolioSocialTick}
-          returnPeriod={returnPeriod}
-          onReturnPeriodChange={handleReturnPeriodChange}
-          onSelectPortfolio={onSelectPortfolio}
           onAddPortfolio={handleAddPortfolio}
           onPortfolioCopied={bumpPortfolios}
+          onOpenStock={onOpenStock}
+          onUpdateHoldings={(id) => openPortfolioEditor(id, 'update')}
+        />
+      )}
+
+      {tab === 'watchlists' && (
+        <WatchlistsSectionPanel
+          watchlists={watchlistPortfolios}
+          loading={portfoliosLoading}
+          person={person}
+          canEdit={canEdit}
+          guestMode={guestMode}
+          portfolioSocialTick={portfolioSocialTick}
+          onAddWatchlist={handleAddWatchlist}
+          onPortfolioCopied={bumpPortfolios}
+          onOpenStock={onOpenStock}
+          onEditWatchlist={(id) => openPortfolioEditor(id, 'edit')}
         />
       )}
     </div>
   );
 }
 
-function PortfoliosListPanel({
-  portfolios,
+function InlinePortfolioBook({
+  portfolio,
+  person,
+  canEdit,
+  guestMode = false,
+  canCopy = false,
+  showEdit = false,
+  showUpdateHoldings = false,
+  onEdit,
+  onUpdateHoldings,
+  onPortfolioCopied,
+  onOpenStock,
+}) {
+  const isWatchlist = isWatchlistKind(portfolio.kind ?? 'live');
+  const social = getPortfolioEngagementSync(portfolio.id);
+  const portfolioTotalReturn = useMemo(
+    () => (isWatchlist ? null : getPortfolioTotalReturnPct(portfolio)),
+    [isWatchlist, portfolio]
+  );
+  const holdingCount =
+    portfolio.holdings?.length || portfolio.tickers?.length || 0;
+  const displayName = isWatchlist
+    ? portfolio.name
+    : canEdit
+      ? livePortfolioDisplayName(getAppCurrentUser()?.name || person?.name)
+      : portfolio.name;
+
+  return (
+    <article className="border-b border-[var(--fv-border,#ececec)] last:border-b-0">
+      <div className="px-4 pb-2 pt-5 md:px-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-2xl font-bold text-pe-text">{displayName}</h3>
+          <PortfolioKindMetaTags portfolio={portfolio} />
+        </div>
+
+        {isWatchlist ? (
+          <div className="mt-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+              Total holdings
+            </p>
+            <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
+              {holdingCount.toLocaleString('en-IN')}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                Total holdings
+              </p>
+              <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
+                {holdingCount.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                Unrealised gains
+              </p>
+              <p
+                className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${pnlClass(portfolioTotalReturn)}`}
+              >
+                {formatPct(portfolioTotalReturn)}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {guestMode ? (
+        <div className="pb-6 pt-1">
+          <p className="px-4 text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted md:px-6">
+            Holdings
+          </p>
+          <GuestSignInCta
+            variant="hero"
+            title="See the full book"
+            description="Sign in to view holdings and weights on this shared portfolio."
+            action="unlock holdings"
+            showExploreHint={false}
+            benefits={[
+              'See every holding and weight',
+              'Follow the investor’s next moves',
+              'Share or copy this book',
+            ]}
+          />
+        </div>
+      ) : (
+        <PortfolioHoldingsList portfolio={portfolio} onOpenStock={onOpenStock} />
+      )}
+
+      {!guestMode ? (
+        <PortfolioSocialBar
+          portfolio={portfolio}
+          social={social}
+          canCopy={canCopy}
+          ownerUserId={person?.id}
+          sourceOwnerId={person?.id}
+          sourceOwnerName={canEdit ? undefined : person?.name}
+          onPortfolioCopied={onPortfolioCopied}
+          showEdit={showEdit}
+          onEdit={onEdit}
+        />
+      ) : null}
+
+      {showUpdateHoldings && canEdit && !guestMode ? (
+        <div className="border-t border-pe-border px-4 py-3 md:px-6">
+          <button
+            type="button"
+            onClick={() => onUpdateHoldings?.(portfolio.id)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-pe-border bg-pe-surface px-4 py-2.5 text-sm font-semibold text-pe-text transition hover:border-pe-accent hover:text-pe-accent sm:w-auto"
+          >
+            <RefreshCw className="h-4 w-4" strokeWidth={2} />
+            Update holdings
+          </button>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function PortfolioSectionPanel({
+  livePortfolio,
   loading = false,
   person,
   canEdit,
+  guestMode = false,
   portfolioSocialTick,
-  returnPeriod,
-  onReturnPeriodChange,
-  onSelectPortfolio,
   onAddPortfolio,
   onPortfolioCopied,
+  onOpenStock,
+  onUpdateHoldings,
 }) {
   void portfolioSocialTick;
 
+  if (loading) {
+    return (
+      <div className="pt-1 md:pt-2">
+        <PortfoliosListSkeleton count={1} />
+      </div>
+    );
+  }
+
+  if (!livePortfolio) {
+    return (
+      <div className="px-4 py-12 text-center md:px-6">
+        <p className="text-lg font-semibold text-pe-text">
+          {canEdit ? 'Create My Portfolio' : 'No portfolio published yet.'}
+        </p>
+        {canEdit ? (
+          <>
+            <p className="mt-2 text-sm text-pe-text-secondary">
+              Upload broker holdings in under 2 minutes — Excel or screenshots from Zerodha.
+            </p>
+            <button
+              type="button"
+              onClick={onAddPortfolio}
+              className="mt-6 inline-flex items-center justify-center rounded-lg bg-pe-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
+            >
+              Create / import my portfolio
+            </button>
+          </>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="pt-1 md:pt-2">
-      {loading ? (
+      <InlinePortfolioBook
+        portfolio={livePortfolio}
+        person={person}
+        canEdit={canEdit}
+        guestMode={guestMode}
+        canCopy={!canEdit && !guestMode}
+        showUpdateHoldings={canEdit}
+        onUpdateHoldings={onUpdateHoldings}
+        onPortfolioCopied={onPortfolioCopied}
+        onOpenStock={onOpenStock}
+      />
+    </div>
+  );
+}
+
+function WatchlistsSectionPanel({
+  watchlists = [],
+  loading = false,
+  person,
+  canEdit,
+  guestMode = false,
+  portfolioSocialTick,
+  onAddWatchlist,
+  onPortfolioCopied,
+  onOpenStock,
+  onEditWatchlist,
+}) {
+  void portfolioSocialTick;
+
+  const [watchlistNameOpen, setWatchlistNameOpen] = useState(false);
+  const [watchlistName, setWatchlistName] = useState('');
+  const [creatingWatchlist, setCreatingWatchlist] = useState(false);
+
+  const submitWatchlist = async () => {
+    const name = watchlistName.trim();
+    if (!name || creatingWatchlist) return;
+    setCreatingWatchlist(true);
+    try {
+      await onAddWatchlist?.(name);
+      setWatchlistName('');
+      setWatchlistNameOpen(false);
+    } finally {
+      setCreatingWatchlist(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="pt-1 md:pt-2">
         <PortfoliosListSkeleton count={2} />
-      ) : !portfolios.length ? (
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-1 md:pt-2">
+      {watchlists.length ? (
+        watchlists.map((portfolio) => (
+          <InlinePortfolioBook
+            key={portfolio.id}
+            portfolio={portfolio}
+            person={person}
+            canEdit={canEdit}
+            guestMode={guestMode}
+            canCopy={!canEdit && !guestMode}
+            showEdit={canEdit}
+            onEdit={() => onEditWatchlist?.(portfolio.id)}
+            onPortfolioCopied={onPortfolioCopied}
+            onOpenStock={onOpenStock}
+          />
+        ))
+      ) : (
         <div className="px-4 py-12 text-center md:px-6">
           <p className="text-lg font-semibold text-pe-text">
-            {canEdit ? 'Create My Portfolio' : 'No portfolios published yet.'}
+            {canEdit ? 'Create a watchlist' : 'No watchlists published yet.'}
           </p>
           {canEdit ? (
-            <>
-              <p className="mt-2 text-sm text-pe-text-secondary">
-                Upload broker holdings in under 2 minutes — Excel or screenshots from Zerodha and
-                Groww.
-              </p>
-              <button
-                type="button"
-                onClick={onAddPortfolio}
-                className="mt-6 inline-flex items-center justify-center rounded-lg bg-pe-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
-              >
-                Create / import my portfolio
-              </button>
-            </>
+            <p className="mt-2 text-sm text-pe-text-secondary">
+              Track ideas with weight targets — separate from your live portfolio.
+            </p>
           ) : null}
-        </div>
-      ) : (
-        <div>
-          {portfolios.map((portfolio) => (
-            <PortfolioCard
-              key={portfolio.id}
-              portfolio={portfolio}
-              social={getPortfolioEngagementSync(portfolio.id)}
-              canCopy={!canEdit}
-              showUnreadComments={canEdit}
-              sourceOwnerId={person.id}
-              sourceOwnerName={canEdit ? undefined : person.name}
-              onPortfolioCopied={onPortfolioCopied}
-              onOpen={onSelectPortfolio}
-              onDiscuss={onSelectPortfolio}
-            />
-          ))}
         </div>
       )}
 
       {canEdit ? (
-        <div className="px-4 pb-5 md:px-6">
-          <button
-            type="button"
-            onClick={onAddPortfolio}
-            className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-dashed border-[var(--fv-border,#ececec)] bg-white px-4 py-3.5 text-[13px] font-semibold text-pe-text-secondary shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition hover:border-pe-accent hover:text-pe-accent"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Add portfolio
-          </button>
+        <div className="px-4 pb-5 pt-3 md:px-6">
+          {watchlistNameOpen ? (
+            <div className="rounded-[20px] border border-[var(--fv-border,#ececec)] bg-white p-4 shadow-[0_6px_24px_rgba(0,0,0,0.05)]">
+              <label className="block text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                Watchlist name
+              </label>
+              <input
+                autoFocus
+                value={watchlistName}
+                onChange={(e) => setWatchlistName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void submitWatchlist();
+                  }
+                  if (e.key === 'Escape') {
+                    setWatchlistNameOpen(false);
+                    setWatchlistName('');
+                  }
+                }}
+                placeholder="e.g. Banks to watch"
+                className="mt-2 w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-sm text-pe-text outline-none focus:border-pe-accent"
+              />
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWatchlistNameOpen(false);
+                    setWatchlistName('');
+                  }}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-pe-text-secondary hover:text-pe-text"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!watchlistName.trim() || creatingWatchlist}
+                  onClick={() => void submitWatchlist()}
+                  className="rounded-lg bg-pe-accent px-3.5 py-2 text-sm font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-50"
+                >
+                  {creatingWatchlist ? 'Creating…' : 'Continue'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setWatchlistNameOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-dashed border-[var(--fv-border,#ececec)] bg-white px-4 py-3.5 text-[13px] font-semibold text-pe-text-secondary shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition hover:border-pe-accent hover:text-pe-accent"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Create watchlist
+            </button>
+          )}
         </div>
       ) : null}
     </div>
@@ -664,8 +978,6 @@ function PortfolioDetailView({
   onMobileHeaderActionsChange,
   onRegisterPortfolioBackHandler,
   startInEditMode = false,
-  onOpenSourcePortfolio,
-  onSelectPortfolio,
   onOpenStock,
 }) {
   const isDraft = Boolean(portfolio.isDraft);
@@ -684,7 +996,6 @@ function PortfolioDetailView({
   const [importingHoldings, setImportingHoldings] = useState(false);
   const [importProgress, setImportProgress] = useState(null);
   const [socialTick, setSocialTick] = useState(0);
-  const [commentDraft, setCommentDraft] = useState('');
   const editSessionRef = useRef(0);
   const excelInputRef = useRef(null);
   const screenshotInputRef = useRef(null);
@@ -826,7 +1137,11 @@ function PortfolioDetailView({
 
   useEffect(() => {
     if (!startUpdateHoldings || !canEdit || guestMode) return;
-    // Update-holdings sheet is WIP — consume the route flag without opening it.
+    if (isWatchlistKind(portfolio.kind ?? 'live')) {
+      onUpdateHoldingsConsumed?.();
+      return;
+    }
+    openUpdateHoldings();
     onUpdateHoldingsConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when flagged from routing
   }, [startUpdateHoldings, portfolio.id, canEdit, guestMode]);
@@ -995,25 +1310,26 @@ function PortfolioDetailView({
         ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
         : buildLiveHoldings(validation.completeRows, assetsByKey);
 
+      const liveName = livePortfolioDisplayName(getAppCurrentUser()?.name);
       const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
-        name: name.trim(),
+        name: isWatchlist ? name.trim() : liveName,
         objective: '',
         thesis: '',
         kind: portfolioKind,
         isDraft: false,
         tickers: holdings.map((h) => h.ticker),
         holdings,
+        ownerDisplayName: getAppCurrentUser()?.name,
         ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
       });
+      if (!isWatchlist) setName(liveName);
       onPortfolioUpdated?.(savedPortfolio);
-      if (savedPortfolio?.id && savedPortfolio.id !== portfolio.id) {
-        onSelectPortfolio?.(savedPortfolio.id);
-      }
       setEditing(false);
       setEditRows([]);
       setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
       setSaved(true);
       setTimeout(() => setSaved(false), 1600);
+      onBack?.();
     } catch (error) {
       console.error('Failed to save portfolio', error);
       window.alert(error?.message ?? 'Could not save portfolio. Please try again.');
@@ -1108,7 +1424,7 @@ function PortfolioDetailView({
           editing
           saved={saved}
           saving={saving}
-          showUpdate={false}
+          showUpdate={!isWatchlistKind(portfolioKind)}
           onUpdate={openUpdateHoldings}
           onCancel={() => {
             if (!saving) cancelEditsRef.current();
@@ -1119,7 +1435,7 @@ function PortfolioDetailView({
         />
       ) : (
         <PortfolioDetailMobileActions
-          showUpdate={false}
+          showUpdate={!isWatchlistKind(portfolioKind)}
           onUpdate={openUpdateHoldings}
           onEdit={startEditing}
         />
@@ -1129,11 +1445,6 @@ function PortfolioDetailView({
     return () => onMobileHeaderActionsChange(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEdit, editing, saved, saving, onMobileHeaderActionsChange, portfolio.kind, portfolioKind]);
-
-  const handleKindChange = (nextKind) => {
-    setPortfolioKind(nextKind);
-    if (editing) initEditRows(nextKind);
-  };
 
   const updateRow = (rowId, patch) => {
     if (patch.ticker !== undefined) {
@@ -1183,7 +1494,7 @@ function PortfolioDetailView({
     'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[15px]';
 
   const rowGridClass = isWatchlist
-    ? 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2'
+    ? 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2'
     : 'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
 
   return (
@@ -1212,53 +1523,107 @@ function PortfolioDetailView({
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={startEditing}
-              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </button>
+            <>
+              {!isWatchlist ? (
+                <button
+                  type="button"
+                  onClick={openUpdateHoldings}
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Update holdings
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={startEditing}
+                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            </>
           )}
         </div>
       ) : null}
 
       <div className="border-b border-pe-border px-4 py-5">
         {!editing ? (
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-2xl font-bold text-pe-text">{portfolio.name}</h2>
-                <PortfolioKindMetaTags portfolio={portfolio} />
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl font-bold text-pe-text">
+                {isWatchlist
+                  ? portfolio.name
+                  : canEdit
+                    ? livePortfolioDisplayName(getAppCurrentUser()?.name)
+                    : portfolio.name}
+              </h2>
+              <PortfolioKindMetaTags portfolio={portfolio} />
+            </div>
+
+            {isWatchlist ? (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Total holdings
+                </p>
+                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
+                  {(portfolio.holdings?.length || portfolio.tickers?.length || 0).toLocaleString(
+                    'en-IN'
+                  )}
+                </p>
               </div>
-            </div>
-            <div className="shrink-0 text-right">
-              <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                Unrealised gains
-              </p>
-              <p
-                className={`mt-0.5 text-lg font-bold tabular-nums ${pnlClass(portfolioTotalReturn)}`}
-              >
-                {formatPct(portfolioTotalReturn)}
-              </p>
-            </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                    Total holdings
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
+                    {(portfolio.holdings?.length || portfolio.tickers?.length || 0).toLocaleString(
+                      'en-IN'
+                    )}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                    Unrealised gains
+                  </p>
+                  <p
+                    className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${pnlClass(portfolioTotalReturn)}`}
+                  >
+                    {formatPct(portfolioTotalReturn)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-stretch gap-4">
-            <PortfolioKindToggle value={portfolioKind} onChange={handleKindChange} />
-            <div className="min-w-0 w-full flex-1">
-              <div className="space-y-4">
-                <Field label="Portfolio name">
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={fieldClass(inputClass, fieldErrors.name)}
-                    placeholder="e.g. Main portfolio"
-                  />
-                </Field>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+                {isWatchlist ? 'Watchlist' : 'Live portfolio'}
+              </p>
+              <PortfolioKindMetaTags portfolio={{ ...portfolio, kind: portfolioKind }} />
             </div>
+            {isWatchlist ? (
+              <Field label="Watchlist name">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={fieldClass(inputClass, fieldErrors.name)}
+                  placeholder="e.g. Banks to watch"
+                />
+              </Field>
+            ) : (
+              <div>
+                <p className="text-2xl font-bold text-pe-text">
+                  {livePortfolioDisplayName(getAppCurrentUser()?.name)}
+                </p>
+                <p className="mt-1 text-sm text-pe-text-secondary">
+                  Named automatically from your profile. Update holdings anytime from Excel or screenshots.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1272,7 +1637,7 @@ function PortfolioDetailView({
               </p>
               <p className="mt-1 text-sm text-pe-text-secondary">
                 {isWatchlist
-                  ? 'Search a stock, ETF, or fund and enter its share of total holdings (%). Weights must add up to 100%.'
+                  ? 'Search stocks, ETFs, or funds to track. Allocations default to equal weight.'
                   : 'Search a ticker and enter invested amount and quantity.'}
               </p>
             </div>
@@ -1281,7 +1646,7 @@ function PortfolioDetailView({
             ) : null}
           </div>
 
-          {false && !isWatchlist ? (
+          {!isWatchlist ? (
             <div className="mt-5 rounded-lg border border-pe-border bg-pe-surface p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -1335,11 +1700,7 @@ function PortfolioDetailView({
               <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                 Ticker
               </p>
-              {isWatchlist ? (
-                <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Weight %
-                </p>
-              ) : (
+              {isWatchlist ? null : (
                 <>
                   <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                     {costMode === COST_MODES.avg ? 'Avg price' : 'Total invested'}
@@ -1387,19 +1748,7 @@ function PortfolioDetailView({
                       }
                     />
 
-                    {isWatchlist ? (
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        value={row.weight}
-                        onChange={(e) => updateRow(row.id, { weight: e.target.value })}
-                        placeholder="Weight %"
-                        aria-label="Weight percentage"
-                        className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.weight)}
-                      />
-                    ) : (
+                    {isWatchlist ? null : (
                       <>
                         <input
                           type="number"
@@ -1476,13 +1825,13 @@ function PortfolioDetailView({
           <GuestSignInCta
             variant="hero"
             title="See the full book"
-            description="Sign in to view holdings, weights, and discussions on this shared portfolio."
+            description="Sign in to view holdings and weights on this shared portfolio."
             action="unlock holdings"
             showExploreHint={false}
             benefits={[
               'See every holding and weight',
               'Follow the investor’s next moves',
-              'Like, copy, and discuss this book',
+              'Share or copy this book',
             ]}
           />
         </div>
@@ -1496,50 +1845,8 @@ function PortfolioDetailView({
           social={social}
           canCopy={canCopy}
           ownerUserId={userId}
-          showUnreadComments={canEdit}
-          onOpenDiscussion={() => {
-            document.getElementById('portfolio-discussion')?.scrollIntoView({ behavior: 'smooth' });
-          }}
         />
       ) : null}
-
-      {!editing && !guestMode ? (
-        <PortfolioDiscussion
-          portfolioId={portfolio.id}
-          comments={social.comments ?? []}
-          commentDraft={commentDraft}
-          onCommentDraftChange={setCommentDraft}
-          onSubmitComment={() => {
-            addPortfolioComment(portfolio.id, commentDraft);
-            setCommentDraft('');
-          }}
-          markReadOnMount={canEdit}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function PortfolioKindToggle({ value, onChange }) {
-  return (
-    <div className="flex w-fit gap-1 rounded-lg bg-pe-surface p-1">
-      {[
-        { id: 'live', label: 'Live' },
-        { id: 'watchlist', label: 'Watchlist' },
-      ].map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          onClick={() => onChange(option.id)}
-          className={`rounded-md px-3 py-1.5 text-[12px] font-bold transition ${
-            value === option.id
-              ? 'bg-pe-canvas text-pe-text shadow-sm'
-              : 'text-pe-text-secondary hover:text-pe-text'
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
     </div>
   );
 }
@@ -1622,57 +1929,51 @@ function PortfolioSocialBar({
   social,
   canCopy,
   ownerUserId,
-  showUnreadComments = false,
-  onOpenDiscussion,
+  sourceOwnerId,
+  sourceOwnerName,
+  onPortfolioCopied,
+  showEdit = false,
+  onEdit,
 }) {
-  const [liked, setLiked] = useState(social.liked);
   const [copied, setCopied] = useState(social.copied);
-  const [likes, setLikes] = useState(social.likes);
   const [copies, setCopies] = useState(social.copies);
   const [shares, setShares] = useState(social.shares);
   const [shareOpen, setShareOpen] = useState(false);
-  const commentCount = social.comments?.length ?? 0;
 
-  const handleLike = () => {
-    const next = togglePortfolioLike(portfolio.id);
-    setLiked(next.liked);
-    setLikes(next.likes);
-  };
+  useEffect(() => {
+    setCopied(social.copied);
+    setCopies(social.copies);
+    setShares(social.shares);
+  }, [social.copied, social.copies, social.shares, portfolio.id]);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!canCopy) return;
+    const wasCopied = copied;
     const next = togglePortfolioCopy(portfolio.id);
     setCopied(next.copied);
     setCopies(next.copies);
-  };
-
-  const handleShare = () => {
-    setShareOpen(true);
+    if (!wasCopied) {
+      try {
+        const confirmed = await confirmPortfolioCopy(portfolio.id);
+        if (confirmed.copied) {
+          copyPortfolioForUser(getAppCurrentUserId(), portfolio, {
+            sourceUserId: sourceOwnerId ?? ownerUserId,
+            sourceUserName: sourceOwnerName,
+          });
+          onPortfolioCopied?.();
+        }
+      } catch (err) {
+        console.error('confirmPortfolioCopy failed', err);
+      }
+    }
   };
 
   return (
-    <div className="border-t border-pe-border px-4 py-3">
-      <div className="grid w-full grid-cols-4 text-pe-text-secondary">
+    <div className="border-t border-pe-border px-4 py-3 md:px-6">
+      <div className="flex w-full flex-wrap items-center gap-x-6 gap-y-2 text-pe-text-secondary">
         <button
           type="button"
-          onClick={handleLike}
-          aria-pressed={liked}
-          className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
-            liked ? 'text-pe-accent' : ''
-          }`}
-        >
-          <Heart className={`h-[18px] w-[18px] ${liked ? 'fill-current text-pe-accent' : ''}`} strokeWidth={2} />
-          {formatCount(likes)}
-        </button>
-        <CommentEngagementButton
-          count={commentCount}
-          unreadCount={showUnreadComments ? social.unreadComments ?? 0 : 0}
-          onClick={onOpenDiscussion}
-          className="h-8 justify-start px-0"
-        />
-        <button
-          type="button"
-          onClick={handleShare}
+          onClick={() => setShareOpen(true)}
           className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04]"
         >
           <Share2 className="h-[18px] w-[18px]" strokeWidth={2} />
@@ -1681,7 +1982,7 @@ function PortfolioSocialBar({
         {canCopy ? (
           <button
             type="button"
-            onClick={handleCopy}
+            onClick={() => void handleCopy()}
             aria-pressed={copied}
             className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
               copied ? 'text-pe-accent' : ''
@@ -1700,6 +2001,16 @@ function PortfolioSocialBar({
             {formatCount(copies)}
           </span>
         )}
+        {showEdit ? (
+          <button
+            type="button"
+            onClick={() => onEdit?.()}
+            className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-accent"
+          >
+            <Pencil className="h-[18px] w-[18px]" strokeWidth={2} />
+            Edit
+          </button>
+        ) : null}
       </div>
 
       <PortfolioShareSheet
@@ -1710,56 +2021,6 @@ function PortfolioSocialBar({
         onSharesUpdated={setShares}
       />
     </div>
-  );
-}
-
-function PortfolioDiscussion({
-  portfolioId,
-  comments,
-  commentDraft,
-  onCommentDraftChange,
-  onSubmitComment,
-  markReadOnMount = false,
-}) {
-  useEffect(() => {
-    if (markReadOnMount) {
-      markPortfolioCommentsRead(portfolioId);
-    }
-  }, [markReadOnMount, portfolioId]);
-
-  return (
-    <section id="portfolio-discussion" className="border-t border-pe-border px-4 py-5">
-      {comments.length > 0 ? (
-        <div className="divide-y divide-pe-border border-y border-pe-border">
-          {comments.map((comment) => (
-            <CommentRow key={comment.id} comment={comment} />
-          ))}
-        </div>
-      ) : null}
-
-      <div className={`${comments.length > 0 ? 'mt-4' : ''} flex gap-2`}>
-        <input
-          value={commentDraft}
-          onChange={(e) => onCommentDraftChange(e.target.value)}
-          placeholder="Add to the discussion…"
-          className={`${inputClass} flex-1`}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              onSubmitComment();
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={onSubmitComment}
-          disabled={!commentDraft.trim()}
-          className="shrink-0 rounded-md bg-pe-accent px-4 py-2 text-sm font-bold text-white transition hover:bg-pe-accent-pressed disabled:opacity-40"
-        >
-          Post
-        </button>
-      </div>
-    </section>
   );
 }
 
@@ -1825,7 +2086,45 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
 
   const rows = useMemo(() => {
     const liveHoldings = (portfolio.holdings ?? []).filter(Boolean);
+
+    const toListRow = (h, weight, asset, extras = {}) => {
+      const ticker = String(h.ticker ?? '').trim().toUpperCase();
+      const assetType = h.assetType ?? asset?.kind ?? 'stock';
+      const name = String(h.assetName ?? h.name ?? asset?.name ?? '').trim();
+      const isFund =
+        assetType === 'fund' || asset?.kind === 'fund' || (/^\d{6,}$/.test(ticker) && Boolean(name));
+      const title = isFund ? name || ticker || 'Unknown' : name || ticker || 'Unknown';
+      const amfiCode = String(
+        h.amfiCode ?? h.schemeCode ?? asset?.amfiCode ?? asset?.schemeCode ?? ticker ?? ''
+      ).trim();
+      const subtitle = isFund
+        ? amfiCode && title.toUpperCase() !== amfiCode.toUpperCase()
+          ? amfiCode
+          : ''
+        : name && ticker && name.toUpperCase() !== ticker
+          ? ticker
+          : '';
+      return {
+        key: h.ticker || ticker,
+        title,
+        subtitle,
+        weight,
+        assetType,
+        logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
+        ...extras,
+      };
+    };
+
     if (liveHoldings.length) {
+      if (isWatchlist) {
+        const explicit = liveHoldings.map((h) => Number(h.weightPct ?? h.weight));
+        const allExplicit = explicit.every((w) => Number.isFinite(w) && w > 0);
+        const equal = 100 / liveHoldings.length;
+        return liveHoldings.map((h, index) =>
+          toListRow(h, allExplicit ? explicit[index] : equal, assetsByKey[h.ticker])
+        );
+      }
+
       const totalValue = liveHoldings.reduce((sum, h) => {
         const asset = assetsByKey[h.ticker];
         const livePrice = Number(asset?.price);
@@ -1852,30 +2151,14 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
         const value = (Number(h.qty) || 0) * price;
         const fromWeight = Number(h.weightPct ?? h.weight);
         const weight =
-          isWatchlist && Number.isFinite(fromWeight) && fromWeight > 0
-            ? fromWeight
-            : totalValue > 0
-              ? (value / totalValue) * 100
-              : Number.isFinite(fromWeight) && fromWeight > 0
-                ? fromWeight
-                : 0;
-        const pricedHolding = { ...h, price };
-        return {
-          key: h.ticker,
-          title: holdingDisplayLabel(h, asset),
-          subtitle:
-            (h.assetType ?? asset?.kind) === 'fund'
-              ? ''
-              : h.assetName && h.assetName !== holdingDisplayLabel(h, asset)
-                ? h.assetName
-                : asset?.name && asset.name !== holdingDisplayLabel(h, asset)
-                  ? asset.name
-                  : '',
-          weight,
-          itemReturn: getHoldingTotalReturnPct(pricedHolding, asset),
-          assetType: h.assetType ?? asset?.kind ?? 'stock',
-          logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
-        };
+          totalValue > 0
+            ? (value / totalValue) * 100
+            : Number.isFinite(fromWeight) && fromWeight > 0
+              ? fromWeight
+              : 0;
+        return toListRow(h, weight, asset, {
+          itemReturn: getHoldingTotalReturnPct({ ...h, price }, asset),
+        });
       });
     }
 
@@ -1884,23 +2167,18 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
     const equal = 100 / tickers.length;
     return tickers.map((ticker) => {
       const asset = assetsByKey[ticker];
-      const title = holdingDisplayLabel({ ticker, assetType: asset?.kind }, asset);
-      return {
-        key: ticker,
-        title,
-        subtitle:
-          asset?.kind === 'fund'
-            ? ''
-            : asset?.name && asset.name !== title
-              ? asset.name
-              : '',
-        weight: equal,
-        itemReturn: getHoldingTotalReturnPct({ ticker, changePct: asset?.item?.changePct }, asset),
-        assetType: asset?.kind ?? 'stock',
-        logoIconUrl: asset?.logoIconUrl ?? null,
-      };
+      return toListRow({ ticker }, equal, asset, {
+        ...(isWatchlist
+          ? {}
+          : {
+              itemReturn: getHoldingTotalReturnPct(
+                { ticker, changePct: asset?.item?.changePct },
+                asset
+              ),
+            }),
+      });
     });
-  }, [portfolio, assetsByKey]);
+  }, [portfolio, assetsByKey, isWatchlist]);
 
   const sortedRows = useMemo(
     () => [...rows].sort((a, b) => b.weight - a.weight),
@@ -1915,13 +2193,12 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
 
   if (!rows.length) {
     return (
-      <p className="px-4 py-10 text-center text-sm text-pe-text-secondary">
-        No holdings yet. Tap Edit to add stocks.
+      <p className="px-4 py-10 text-center text-sm text-pe-text-secondary md:px-6">
+        No holdings yet.
       </p>
     );
   }
 
-  const periodLabel = 'Unrealised Gains';
   const openHolding = (row) => {
     if (!onOpenStock || !row?.key) return;
     onOpenStock(row.key, { assetType: row.assetType || 'stock' });
@@ -1929,56 +2206,69 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
 
   return (
     <div>
-      <section className="px-4 pt-4 md:px-6">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(5.5rem,7rem)] items-end gap-2 border-b border-[var(--fv-border,#ececec)] py-3">
+      <section className="px-4 pt-1 md:px-6">
+        <div className="border-b border-[var(--fv-border,#ececec)] pb-2 pt-1">
           <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
             Holdings
-          </p>
-          <p className="text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
-            Alloc.
-          </p>
-          <p className="text-right text-[11px] font-semibold uppercase leading-tight tracking-[0.04em] text-pe-text-muted sm:text-[12px]">
-            {periodLabel}
           </p>
         </div>
         <div className="divide-y divide-[var(--fv-border,#ececec)]">
           {pageRows.map((row) => (
-            <div
-              key={row.key}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,88px)_minmax(5.5rem,7rem)] items-start gap-2 py-3.5"
-            >
-              <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-                <AssetLogo
-                  logoIconUrl={row.logoIconUrl}
-                  assetType={row.assetType}
-                  assetKey={row.key}
-                  name={row.title}
-                  size="sm"
-                />
-                <div className="min-w-0">
-                  {onOpenStock ? (
-                    <button
-                      type="button"
-                      onClick={() => openHolding(row)}
-                      className="line-clamp-2 text-left text-[15px] font-semibold leading-snug text-pe-text transition hover:text-pe-accent hover:underline"
-                    >
-                      {row.title}
-                    </button>
-                  ) : (
-                    <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-pe-text">
-                      {row.title}
+            <div key={row.key} className="flex items-start gap-2.5 py-3.5 sm:gap-3">
+              <AssetLogo
+                logoIconUrl={row.logoIconUrl}
+                assetType={row.assetType}
+                assetKey={row.key}
+                name={row.title}
+                size="sm"
+              />
+              <div className="min-w-0 flex-1">
+                {onOpenStock ? (
+                  <button
+                    type="button"
+                    onClick={() => openHolding(row)}
+                    className="w-full text-left text-[15px] font-semibold leading-snug text-pe-text break-words transition hover:text-pe-accent hover:underline"
+                  >
+                    {row.title}
+                  </button>
+                ) : (
+                  <p className="text-[15px] font-semibold leading-snug text-pe-text break-words">
+                    {row.title}
+                  </p>
+                )}
+                {row.subtitle ? (
+                  <p className="mt-0.5 text-[12px] font-medium tabular-nums text-pe-text-muted">
+                    {row.subtitle}
+                  </p>
+                ) : null}
+
+                <div
+                  className={`mt-2.5 grid gap-x-4 gap-y-1 ${
+                    isWatchlist ? 'grid-cols-1' : 'grid-cols-2'
+                  }`}
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
+                      Alloc.
                     </p>
+                    <p className="mt-0.5 text-sm font-semibold tabular-nums text-pe-text">
+                      {Number.isFinite(row.weight) ? `${row.weight.toFixed(1)}%` : '—'}
+                    </p>
+                  </div>
+                  {isWatchlist ? null : (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
+                        Unrealised
+                      </p>
+                      <p
+                        className={`mt-0.5 text-sm font-bold tabular-nums ${pnlClass(row.itemReturn)}`}
+                      >
+                        {formatPct(row.itemReturn)}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
-              <p className="min-w-0 text-right text-sm font-semibold tabular-nums text-pe-text-secondary">
-                {row.weight.toFixed(1)}%
-              </p>
-              <p
-                className={`min-w-0 text-right text-[15px] font-bold tabular-nums ${pnlClass(row.itemReturn)}`}
-              >
-                {formatPct(row.itemReturn)}
-              </p>
             </div>
           ))}
         </div>

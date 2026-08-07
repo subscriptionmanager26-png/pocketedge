@@ -28,8 +28,6 @@ export function PortfolioCardSkeleton() {
       <div className="mt-4 flex gap-5">
         <Bone className="h-4 w-8" />
         <Bone className="h-4 w-8" />
-        <Bone className="h-4 w-8" />
-        <Bone className="h-4 w-8" />
       </div>
     </article>
   );

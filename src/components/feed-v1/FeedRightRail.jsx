@@ -200,6 +200,10 @@ function MarketRow({ row, onOpen }) {
   );
 }
 
+function hasPublishedPortfolio(rows) {
+  return (rows ?? []).some((p) => p && !p.isDraft && !p.isArchived);
+}
+
 export default function FeedRightRail({
   trending = [],
   discussions = [],
@@ -207,6 +211,7 @@ export default function FeedRightRail({
   stacked = false,
   live = false,
   guestMode = false,
+  currentUserId = null,
   onOpenIndex,
   onOpenStock,
   onOpenPost,
@@ -236,34 +241,58 @@ export default function FeedRightRail({
       return undefined;
     }
 
-    const ownerId = getAppCurrentUserId();
-    if (!ownerId) {
-      setShowPortfolioCta(true);
+    // Prefer the auth/bootstrap id from App — getAppCurrentUserId() can briefly
+    // fall back to the mock `u_me` before selfProfile is set, which wrongly shows CTA.
+    const ownerId = currentUserId || getAppCurrentUserId();
+    if (!ownerId || ownerId === 'u_me') {
+      setShowPortfolioCta(false);
       return undefined;
     }
 
-    const hasPortfolio = (rows) =>
-      (rows ?? []).some((p) => p && !p.isDraft && !p.isArchived);
+    const applyRows = (rows) => {
+      setShowPortfolioCta(!hasPublishedPortfolio(rows));
+    };
 
     const cached = peekUserPortfolios(ownerId);
     if (Array.isArray(cached)) {
-      setShowPortfolioCta(!hasPortfolio(cached));
-      if (hasPortfolio(cached)) return undefined;
+      applyRows(cached);
+      if (hasPublishedPortfolio(cached)) return undefined;
+    } else {
+      // Signed-in: hide until we know — never flash Create for users who already have one
+      setShowPortfolioCta(false);
     }
 
     let cancelled = false;
-    fetchUserPortfolios(ownerId)
-      .then((rows) => {
-        if (!cancelled) setShowPortfolioCta(!hasPortfolio(rows));
-      })
-      .catch(() => {
-        if (!cancelled) setShowPortfolioCta(true);
-      });
+    const refresh = () => {
+      fetchUserPortfolios(ownerId)
+        .then((rows) => {
+          if (!cancelled) applyRows(rows);
+        })
+        .catch(() => {
+          // Keep CTA hidden on error if we never confirmed they lack a portfolio
+        });
+    };
+
+    refresh();
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const next = peekUserPortfolios(ownerId);
+      if (hasPublishedPortfolio(next)) {
+        setShowPortfolioCta(false);
+        return;
+      }
+      refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
 
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
     };
-  }, [guestMode]);
+  }, [guestMode, currentUserId]);
 
   useEffect(() => {
     let cancelled = false;

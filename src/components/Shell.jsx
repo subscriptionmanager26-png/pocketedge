@@ -113,6 +113,7 @@ export default function Shell({
   onCompose,
   onCreatePortfolio,
   guestMode = false,
+  currentUserId = null,
   onRequireSignIn,
   mobileActions = null,
   onSelectStock,
@@ -582,6 +583,7 @@ export default function Shell({
             people={railPeople}
             live={railLive}
             guestMode={guestMode}
+            currentUserId={currentUserId}
             onOpenIndex={onSelectIndex}
             onOpenStock={onSelectStock}
             onOpenPost={onOpenPost}

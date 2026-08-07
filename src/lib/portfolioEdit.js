@@ -1,6 +1,25 @@
 import { recalcHolding } from '../data/mockData';
+import { holderFirstName } from './assetHoldersApi';
 
 export const WATCHLIST_BASE_INVESTMENT = 10_000;
+
+/** Live books use a fixed display title — no custom names. */
+export function livePortfolioDisplayName(displayName, fallback = 'My') {
+  return `${holderFirstName(displayName, fallback)} Portfolio`;
+}
+
+export function isPublishedLivePortfolio(portfolio) {
+  return Boolean(
+    portfolio &&
+      !portfolio.isDraft &&
+      !portfolio.isArchived &&
+      !isWatchlistKind(portfolio.kind ?? 'live')
+  );
+}
+
+export function findPublishedLivePortfolio(portfolios) {
+  return (portfolios ?? []).find(isPublishedLivePortfolio) ?? null;
+}
 
 const inputErrorClass = 'border-pe-negative ring-1 ring-pe-negative focus:border-pe-negative focus:ring-pe-negative';
 
@@ -86,15 +105,46 @@ export function withSyncedAvg(row) {
   return avg === '' ? row : { ...row, avg };
 }
 
+function rowHasInput(row, isWatchlist) {
+  if (isWatchlist) {
+    return Boolean(row.ticker?.trim());
+  }
+  return Boolean(row.ticker?.trim() || row.invested !== '' && row.invested != null || row.qty !== '' && row.qty != null);
+}
+
+/** Resolve watchlist weights: keep explicit % when every row has one; else equal-weight. */
+export function resolveWatchlistWeightPcts(rows) {
+  const list = rows ?? [];
+  const n = list.length;
+  if (!n) return [];
+  const parsed = list.map((row) => Number(row.weight ?? row.weightPct));
+  const allExplicit = parsed.every((w) => Number.isFinite(w) && w > 0);
+  if (allExplicit) return parsed;
+  const equal = 100 / n;
+  return list.map(() => equal);
+}
+
 export function buildWatchlistHoldings(rows, assetsByKey = new Map()) {
-  return rows.map((row) => {
+  const weights = resolveWatchlistWeightPcts(rows);
+  return rows.map((row, index) => {
     const ticker = row.ticker.trim();
     const asset = assetsByKey.get(ticker);
-    const weightPct = Number(row.weight) || 0;
-    const price = asset?.price ?? 0;
-    const invested = WATCHLIST_BASE_INVESTMENT * (weightPct / 100);
-    const qty = price > 0 ? invested / price : 0;
-    return recalcHolding({ ticker: asset?.key ?? ticker, qty, avg: price, price, weightPct });
+    const weightPct = weights[index] ?? 0;
+    const price = Number(asset?.price);
+    return {
+      ticker: asset?.key ?? ticker,
+      assetName: asset?.name ?? row.name?.trim() ?? '',
+      isin: asset?.isin ?? row.isin ?? null,
+      assetType: asset?.kind ?? (/^\d{6,}$/.test(ticker) ? 'fund' : 'stock'),
+      logoIconUrl: asset?.logoIconUrl ?? null,
+      qty: 0,
+      avg: 0,
+      price: Number.isFinite(price) && price > 0 ? price : 0,
+      weightPct,
+      invested: 0,
+      value: 0,
+      pnlPct: 0,
+    };
   });
 }
 
@@ -120,13 +170,6 @@ export function buildLiveHoldings(rows, assetsByKey = new Map()) {
   });
 }
 
-function rowHasInput(row, isWatchlist) {
-  if (isWatchlist) {
-    return Boolean(row.ticker?.trim() || row.weight !== '' && row.weight != null);
-  }
-  return Boolean(row.ticker?.trim() || row.invested !== '' && row.invested != null || row.qty !== '' && row.qty != null);
-}
-
 export function validatePortfolioDraft({ kind, name, rows }) {
   const isWatchlist = isWatchlistKind(kind);
   const errors = {
@@ -136,7 +179,8 @@ export function validatePortfolioDraft({ kind, name, rows }) {
     rows: {},
   };
 
-  if (!name.trim()) errors.name = true;
+  // Live portfolios get an automatic "{FirstName} Portfolio" title.
+  if (isWatchlist && !String(name ?? '').trim()) errors.name = true;
 
   const completeRows = [];
 
@@ -148,10 +192,7 @@ export function validatePortfolioDraft({ kind, name, rows }) {
 
     if (!ticker) rowErrors.ticker = true;
 
-    if (isWatchlist) {
-      const weight = Number(row.weight);
-      if (row.weight === '' || Number.isNaN(weight) || weight <= 0) rowErrors.weight = true;
-    } else {
+    if (!isWatchlist) {
       const invested = Number(row.invested);
       const qty = Number(row.qty);
       if (row.invested === '' || Number.isNaN(invested) || invested < 0) rowErrors.invested = true;
@@ -170,7 +211,7 @@ export function validatePortfolioDraft({ kind, name, rows }) {
     if (fallbackRow) {
       errors.rows[fallbackRow.id] = {
         ticker: true,
-        ...(isWatchlist ? { weight: true } : { invested: true, qty: true }),
+        ...(isWatchlist ? {} : { invested: true, qty: true }),
       };
     }
   } else {
@@ -183,15 +224,6 @@ export function validatePortfolioDraft({ kind, name, rows }) {
         errors.rows[prior] = { ...(errors.rows[prior] ?? {}), ticker: true };
       } else {
         seenTickers.set(ticker, row.id);
-      }
-    }
-  }
-
-  if (completeRows.length >= 1 && isWatchlist) {
-    const totalWeight = completeRows.reduce((sum, row) => sum + (Number(row.weight) || 0), 0);
-    if (Math.abs(totalWeight - 100) > 0.5) {
-      for (const row of completeRows) {
-        errors.rows[row.id] = { ...(errors.rows[row.id] ?? {}), weight: true };
       }
     }
   }

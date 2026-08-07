@@ -14,11 +14,12 @@ export function holdingFallbackName(row) {
   return value.replace(/\s*-\s*[A-Z]{1,3}$/, '').trim();
 }
 
-/** Prefer a published live book named My portfolio; else oldest published live; else first published. */
+/** Prefer the single published live book; else oldest published. */
 export function pickMainPortfolio(portfolios) {
   const published = (portfolios ?? []).filter((p) => p && !p.isDraft && !p.isArchived);
   if (!published.length) return null;
   const live = published.filter((p) => (p.kind ?? 'live') !== 'watchlist');
+  if (live.length === 1) return live[0];
   const pool = live.length ? live : published;
   const named = pool.find((p) => /^my portfolio$/i.test(String(p.name ?? '').trim()));
   if (named) return named;

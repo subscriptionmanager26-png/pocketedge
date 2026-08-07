@@ -1211,6 +1211,30 @@ export function getHoldingTotalReturnPct(holding, asset = null) {
   return 0;
 }
 
+/** 1D / 1W / 1M price moves for watchlist rows (not cost-based PnL). */
+export function getHoldingPriceMoves(holding, asset = null) {
+  const dayRaw = Number(
+    asset?.item?.changePct ?? holding?.changePct ?? asset?.changePct
+  );
+  const day = Number.isFinite(dayRaw) ? dayRaw : null;
+
+  const monthRaw = getHoldingReturn1M(holding, asset);
+  const month = Number.isFinite(monthRaw) ? monthRaw : null;
+
+  const weekStored = Number(
+    holding?.return1W ?? holding?.return_1w ?? asset?.item?.return1W ?? asset?.item?.return_1w
+  );
+  const week = Number.isFinite(weekStored)
+    ? weekStored
+    : Number.isFinite(month)
+      ? Number((month / 4).toFixed(2))
+      : Number.isFinite(day)
+        ? Number((day * 5).toFixed(2))
+        : null;
+
+  return { '1D': day, '1W': week, '1M': month };
+}
+
 /** 1-month return % for a single holding. */
 export function getHoldingReturn1M(holding, asset = null) {
   const stored = Number(holding?.return1M ?? holding?.return_1m);
@@ -1350,22 +1374,42 @@ export function deleteUserPortfolio(userId, portfolioId) {
 
 export const WATCHLIST_BASE_INVESTMENT = 10_000;
 
-/** Build holdings for watchlists from tickers or stored weights (₹10k assumed at creation). */
+/** Build holdings for watchlists from tickers or stored weights (equal-weight default). */
 export function resolveWatchlistHoldings(portfolio) {
-  const base = portfolio.watchlistBaseInvestment ?? WATCHLIST_BASE_INVESTMENT;
   const existing = portfolio.holdings ?? [];
-  if (existing.length) return existing.map(recalcHolding);
+  if (existing.length) {
+    return existing.map((h) => {
+      const weightPct = Number(h.weightPct ?? h.weight);
+      return {
+        ...h,
+        qty: 0,
+        avg: 0,
+        invested: 0,
+        value: 0,
+        pnlPct: 0,
+        weightPct: Number.isFinite(weightPct) && weightPct > 0 ? weightPct : null,
+      };
+    }).map((h, _i, arr) => {
+      if (h.weightPct != null) return h;
+      const equal = 100 / arr.length;
+      return { ...h, weightPct: equal };
+    });
+  }
 
   const tickers = portfolio.tickers ?? [];
   if (!tickers.length) return [];
 
   const weight = 100 / tickers.length;
-  return tickers.map((ticker) => {
-    const price = STOCKS[ticker]?.price ?? 0;
-    const invested = base * (weight / 100);
-    const qty = price > 0 ? invested / price : 0;
-    return recalcHolding({ ticker, qty, avg: price, price, weightPct: weight });
-  });
+  return tickers.map((ticker) => ({
+    ticker,
+    qty: 0,
+    avg: 0,
+    price: STOCKS[ticker]?.price ?? 0,
+    weightPct: weight,
+    invested: 0,
+    value: 0,
+    pnlPct: 0,
+  }));
 }
 
 /** Metrics for Portfolio tab - live and watchlist share the same layout. */
