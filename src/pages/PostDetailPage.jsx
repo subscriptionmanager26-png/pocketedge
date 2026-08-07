@@ -3,6 +3,8 @@ import PostCard from '../components/PostCard';
 import CommentComposer from '../components/CommentComposer';
 import { PostDetailSkeleton } from '../components/PageSkeletons';
 import { isDevMockMode } from '../lib/appMode';
+import { isNewsSocialPost, parseNewsSocialContent } from '../lib/newsPostBody';
+import { useNewsCompanyNames } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 
 export default function PostDetailPage({
@@ -83,6 +85,13 @@ export default function PostDetailPage({
   }, [detailPost, cached]);
   const enrichmentPosts = useMemo(() => (post ? [post] : []), [post]);
   const enrichmentTick = usePostEnrichment(enrichmentPosts);
+  const companyNames = useNewsCompanyNames(enrichmentPosts);
+  const newsCompanyName = useMemo(() => {
+    if (!post || !isNewsSocialPost(post)) return null;
+    const { symbol } = parseNewsSocialContent(post);
+    if (!symbol) return null;
+    return companyNames.get(symbol.toUpperCase()) || symbol;
+  }, [post, companyNames]);
 
   if (loading && !post) {
     return <PostDetailSkeleton />;
@@ -108,13 +117,16 @@ export default function PostDetailPage({
       <PostCard
         post={post}
         variant="detail"
+        companyName={newsCompanyName}
         enrichmentTick={enrichmentTick}
         onOpenProfile={onOpenProfile}
         onOpenStock={onOpenStock}
         onToggleLike={onToggleLike}
       />
 
-      {onAddComment && <CommentComposer onSubmit={onAddComment} />}
+      {onAddComment && !isNewsSocialPost(post) ? (
+        <CommentComposer onSubmit={onAddComment} />
+      ) : null}
     </div>
   );
 }

@@ -11,10 +11,17 @@ import { getPersonSync } from '../lib/socialIdentity';
 import { formatCount, timeAgo } from '../lib/format';
 import { extractTickers, sameTicker } from '../lib/tickers';
 import { clampPostBody, createTextMeasurer, fontFromStyle } from '../lib/clampPostBody';
-import { reshapeNewsFeedBody } from '../lib/newsPostBody';
+import NewsLogoImage from './NewsLogoImage';
+import AssetLogo from './AssetLogo';
+import {
+  isNewsSocialPost,
+  parseNewsSocialContent,
+  reshapeNewsFeedBody,
+} from '../lib/newsPostBody';
 
 /** Feed cards show at most this many lines; full text is on the open post. */
 const FEED_PREVIEW_LINES = 4;
+const NEWS_PREVIEW_LINES = 5;
 const SEE_MORE_LABEL = 'See more';
 const ELLIPSIS = '…';
 const MAX_SHRINK_STEPS = 8;
@@ -105,35 +112,46 @@ export default function PostCard({
   post,
   variant = 'feed',
   enrichmentTick = 0,
+  companyName: companyNameProp = null,
   onOpenProfile,
   onOpenPost,
   onOpenStock,
   onToggleLike,
 }) {
   const isDetail = variant === 'detail';
+  const isNewsLayout = variant === 'news' || (isDetail && isNewsSocialPost(post));
   void enrichmentTick;
   const person = getPersonSync(post.authorId);
-  const isNewsPost = post.via?.source === 'mn_news_ai_summaries';
+  const isNewsPost = isNewsSocialPost(post);
+  const newsParts = isNewsLayout ? parseNewsSocialContent(post) : null;
   const rawBody = String(post.body ?? '');
-  const bodyText = isNewsPost ? reshapeNewsFeedBody(rawBody) : rawBody;
-  const tickers = extractTickers(bodyText);
+  const bodyText = isNewsPost && !isNewsLayout ? reshapeNewsFeedBody(rawBody) : rawBody;
+  const newsText = newsParts?.text || '';
+  const clampSource = isNewsLayout ? newsText : bodyText;
+  const tickers = extractTickers(isNewsLayout ? `${newsParts?.title ?? ''}\n${newsText}` : bodyText);
+  if (newsParts?.symbol && !tickers.some((t) => sameTicker(t, newsParts.symbol))) {
+    tickers.unshift(newsParts.symbol);
+  }
   if (post.trade?.ticker && !tickers.some((t) => sameTicker(t, post.trade.ticker))) {
     tickers.unshift(post.trade.ticker);
   }
   for (const ticker of post.portfolioShare?.tickers ?? []) {
     if (!tickers.some((t) => sameTicker(t, ticker))) tickers.push(ticker);
   }
+  const companyName =
+    companyNameProp ||
+    post.companyName ||
+    (newsParts?.symbol ? newsParts.symbol : null);
   const [liked, setLiked] = useState(post.liked ?? false);
   const [likes, setLikes] = useState(post.likes ?? 0);
-  // Position popup for bottom disclosure tags only; @mentions open the security page.
   const [tickerPopup, setTickerPopup] = useState(null);
   const commentCount = Math.max(
     Array.isArray(post.comments) ? post.comments.length : 0,
     Number(post.commentCount) || 0
   );
-  const [bodyRef, clampedBody] = useClampedBody(bodyText, {
-    maxLines: FEED_PREVIEW_LINES,
-    enabled: !isDetail,
+  const [bodyRef, clampedBody] = useClampedBody(clampSource, {
+    maxLines: isNewsLayout ? NEWS_PREVIEW_LINES : FEED_PREVIEW_LINES,
+    enabled: !isDetail && Boolean(clampSource),
   });
 
   useEffect(() => {
@@ -153,7 +171,7 @@ export default function PostCard({
 
   return (
     <article className="fv-card fv-post-card mx-3 mb-4 rounded-[20px] bg-white px-4 pt-5 pb-2 shadow-[var(--fv-shadow)] md:mx-6 md:mb-5 md:px-6 md:pt-6 md:pb-2.5 md:transition md:duration-150 md:hover:shadow-[var(--fv-shadow-hover)]">
-      {post.via && post.via.kind !== 'person' && (
+      {post.via && post.via.kind !== 'person' && !isNewsLayout && (
         <p className="mb-2 text-[12px] text-pe-text-muted">
           <span className="font-semibold text-pe-text">{post.via.label}</span>
           <span>
@@ -164,41 +182,98 @@ export default function PostCard({
       )}
 
       <div className="flex gap-3">
-        <Avatar
-          person={person}
-          onClick={(event) => {
-            event?.stopPropagation?.();
-            openAuthor();
-          }}
-        />
+        {isNewsLayout ? (
+          newsParts?.symbol ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event?.stopPropagation?.();
+                onOpenStock?.(newsParts.symbol);
+              }}
+              className="shrink-0 self-start rounded-full"
+              aria-label={companyName ? `Open ${companyName}` : `Open ${newsParts.symbol}`}
+            >
+              <AssetLogo
+                assetType={newsParts.assetType}
+                assetKey={newsParts.symbol}
+                name={companyName || newsParts.symbol}
+                size="sm"
+              />
+            </button>
+          ) : null
+        ) : (
+          <Avatar
+            person={person}
+            onClick={(event) => {
+              event?.stopPropagation?.();
+              openAuthor();
+            }}
+          />
+        )}
         <div className="min-w-0 flex-1">
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-baseline gap-x-1.5">
+          {isNewsLayout ? (
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={(event) => {
+                  stopBubble(event);
+                  if (newsParts?.symbol) onOpenStock?.(newsParts.symbol);
+                }}
+                className="block truncate text-[15px] font-semibold leading-5 text-pe-text hover:underline"
+              >
+                {companyName}
+              </button>
+              {newsParts?.symbol ? (
+                <div className="mt-0.5 flex min-w-0 items-baseline gap-x-1.5">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      stopBubble(event);
+                      onOpenStock?.(newsParts.symbol);
+                    }}
+                    className="truncate text-[12px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
+                  >
+                    @{newsParts.symbol}
+                  </button>
+                  <span className="shrink-0 text-[12px] leading-5 text-pe-text-muted">
+                    · {timeAgo(post.createdAt)}
+                  </span>
+                </div>
+              ) : (
+                <p className="mt-0.5 text-[12px] leading-5 text-pe-text-muted">
+                  {timeAgo(post.createdAt)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-baseline gap-x-1.5">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    stopBubble(event);
+                    openAuthor();
+                  }}
+                  className="truncate text-[15px] font-semibold leading-5 text-pe-text hover:underline"
+                >
+                  {person.name}
+                </button>
+                <span className="shrink-0 text-[12px] leading-5 text-pe-text-muted">
+                  · {timeAgo(post.createdAt)}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={(event) => {
                   stopBubble(event);
                   openAuthor();
                 }}
-                className="truncate text-[15px] font-semibold leading-5 text-pe-text hover:underline"
+                className="mt-0.5 block truncate text-[12px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
               >
-                {person.name}
+                @{person.handle}
               </button>
-              <span className="shrink-0 text-[12px] leading-5 text-pe-text-muted">
-                · {timeAgo(post.createdAt)}
-              </span>
             </div>
-            <button
-              type="button"
-              onClick={(event) => {
-                stopBubble(event);
-                openAuthor();
-              }}
-              className="mt-0.5 block truncate text-[12px] leading-5 text-pe-text-muted hover:text-pe-text hover:underline"
-            >
-              @{person.handle}
-            </button>
-          </div>
+          )}
 
           <div
             className={`mt-3 ${!isDetail ? 'cursor-pointer' : ''}`}
@@ -216,30 +291,68 @@ export default function PostCard({
             role={!isDetail ? 'button' : undefined}
             tabIndex={!isDetail ? 0 : undefined}
           >
-            <TickerText
-              containerRef={bodyRef}
-              text={isDetail ? bodyText : clampedBody.text}
-              authorId={post.authorId}
-              boldContentLine={isNewsPost ? 0 : null}
-              onOpenStock={onOpenStock}
-              trailing={
-                !isDetail && clampedBody.truncated ? (
-                  <>
-                    {`${ELLIPSIS} `}
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        stopBubble(event);
-                        openPost();
-                      }}
-                      className="inline font-semibold text-pe-accent hover:underline"
-                    >
-                      {SEE_MORE_LABEL}
-                    </button>
-                  </>
-                ) : null
-              }
-            />
+            {isNewsLayout ? (
+              <>
+                {newsParts?.title ? (
+                  <h3 className="text-[16px] font-semibold leading-snug tracking-tight text-pe-text md:text-[17px]">
+                    {newsParts.title}
+                  </h3>
+                ) : null}
+                {newsText ? (
+                  <div className={newsParts?.title ? 'mt-2' : ''}>
+                    <TickerText
+                      containerRef={bodyRef}
+                      text={isDetail ? newsText : clampedBody.text}
+                      authorId={post.authorId}
+                      onOpenStock={onOpenStock}
+                      className="text-[14px] leading-relaxed text-pe-text-secondary"
+                      trailing={
+                        !isDetail && clampedBody.truncated ? (
+                          <>
+                            {`${ELLIPSIS} `}
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                stopBubble(event);
+                                openPost();
+                              }}
+                              className="inline font-semibold text-pe-accent hover:underline"
+                            >
+                              {SEE_MORE_LABEL}
+                            </button>
+                          </>
+                        ) : null
+                      }
+                    />
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <TickerText
+                containerRef={bodyRef}
+                text={isDetail ? bodyText : clampedBody.text}
+                authorId={post.authorId}
+                boldContentLine={isNewsPost ? 0 : null}
+                onOpenStock={onOpenStock}
+                trailing={
+                  !isDetail && clampedBody.truncated ? (
+                    <>
+                      {`${ELLIPSIS} `}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          stopBubble(event);
+                          openPost();
+                        }}
+                        className="inline font-semibold text-pe-accent hover:underline"
+                      >
+                        {SEE_MORE_LABEL}
+                      </button>
+                    </>
+                  ) : null
+                }
+              />
+            )}
           </div>
 
           {post.trade && (
@@ -259,15 +372,28 @@ export default function PostCard({
             </div>
           )}
 
-          {post.image && (
+          {isNewsLayout && newsParts?.symbol ? (
+            <div onClick={stopBubble} onKeyDown={stopBubble} role="presentation">
+              <NewsLogoImage
+                symbol={newsParts.symbol}
+                companyName={companyName}
+                assetType={newsParts.assetType}
+                isDetail={isDetail}
+                onOpenPost={openPost}
+                onOpenStock={onOpenStock}
+              />
+            </div>
+          ) : null}
+
+          {post.image && !isNewsLayout ? (
             <PostImage
               src={post.image}
               isDetail={isDetail}
               onOpenPost={openPost}
             />
-          )}
+          ) : null}
 
-          {tickers.length > 0 && (
+          {tickers.length > 0 && !isNewsLayout ? (
             <div
               className="mt-3"
               onClick={stopBubble}
@@ -283,10 +409,12 @@ export default function PostCard({
                 onCloseTicker={closeTicker}
               />
             </div>
-          )}
+          ) : null}
 
           <div
-            className="mt-2 grid w-full grid-cols-3 text-pe-text-secondary"
+            className={`mt-2 grid w-full text-pe-text-secondary ${
+              isNewsLayout ? 'grid-cols-2' : 'grid-cols-3'
+            }`}
             onClick={stopBubble}
             onKeyDown={stopBubble}
             role="presentation"
@@ -306,20 +434,22 @@ export default function PostCard({
               <Heart className={`h-[18px] w-[18px] ${liked ? 'fill-current' : ''}`} strokeWidth={2} />
               {formatCount(likes)}
             </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                stopBubble(event);
-                if (!isDetail) openPost();
-              }}
-              className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
-                isDetail ? 'text-pe-text' : ''
-              }`}
-              aria-label={isDetail ? `${commentCount} comments` : 'Open post to view comments'}
-            >
-              <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
-              {commentCount}
-            </button>
+            {isNewsLayout ? null : (
+              <button
+                type="button"
+                onClick={(event) => {
+                  stopBubble(event);
+                  if (!isDetail) openPost();
+                }}
+                className={`inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium transition hover:bg-black/[0.04] ${
+                  isDetail ? 'text-pe-text' : ''
+                }`}
+                aria-label={isDetail ? `${commentCount} comments` : 'Open post to view comments'}
+              >
+                <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
+                {formatCount(commentCount)}
+              </button>
+            )}
             <button
               type="button"
               aria-label="Share"
@@ -331,7 +461,7 @@ export default function PostCard({
         </div>
       </div>
 
-      {isDetail && post.comments?.length ? (
+      {isDetail && !isNewsLayout && post.comments?.length ? (
         <div className="mt-3">
           {post.comments.map((c) => (
             <CommentRow

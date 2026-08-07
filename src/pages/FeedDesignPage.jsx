@@ -97,7 +97,9 @@ export default function FeedDesignPage({
 
   const feedPosts = useMemo(() => {
     if (guestMode) return [];
-    const list = postsProp ?? mockPosts ?? [];
+    const list = (postsProp ?? mockPosts ?? []).filter(
+      (p) => p?.via?.source !== 'mn_news_ai_summaries' && p?.kind !== 'news'
+    );
     if (filter === 'following' || feedMode === 'following') {
       return list.filter(
         (p) =>
