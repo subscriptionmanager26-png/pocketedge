@@ -1,9 +1,14 @@
 import { FUNDS } from '../data/fundData';
 import { POSTS } from '../data/mockData';
 import { isDevMockMode } from './appMode';
+import { isNewsSocialPost } from './newsPostBody';
 import { fetchPostsMentioningTickers, usePostBackend } from './socialPostApi';
 import { warmPostAuthors } from './socialIdentity';
 import { bodyMentionsTicker } from './tickers';
+
+function excludeNewsPosts(posts) {
+  return (posts ?? []).filter((post) => !isNewsSocialPost(post));
+}
 
 /** Fund-specific discussion posts (demo only — stripped from production bundles). */
 export const FUND_DISCUSSION_POSTS = import.meta.env.PROD
@@ -104,22 +109,27 @@ export async function loadPostsMentioning(
 
   if (!usePostBackend()) {
     if (!isDevMockMode()) return [];
-    return sortByDate(
-      POSTS.filter((post) =>
-        unique.some((key) => bodyMentionsTicker(post.body, key) || post.trade?.ticker === key)
+    return excludeNewsPosts(
+      sortByDate(
+        POSTS.filter((post) =>
+          unique.some((key) => bodyMentionsTicker(post.body, key) || post.trade?.ticker === key)
+        )
       )
     ).slice(0, limit);
   }
 
   const posts = await fetchPostsMentioningTickers(unique, { days, limit });
-  await warmPostAuthors(posts).catch(() => {});
-  return posts;
+  const filtered = excludeNewsPosts(posts);
+  await warmPostAuthors(filtered).catch(() => {});
+  return filtered;
 }
 
 export function getStockDiscussions(ticker) {
   if (!isDevMockMode()) return [];
   const fromFeed = POSTS.filter(
-    (post) => post.trade?.ticker === ticker || bodyMentionsTicker(post.body, ticker)
+    (post) =>
+      !isNewsSocialPost(post) &&
+      (post.trade?.ticker === ticker || bodyMentionsTicker(post.body, ticker))
   );
   return sortByDate(fromFeed).slice(0, 12);
 }
@@ -154,9 +164,10 @@ export function getIndexDiscussions(indexId, indexName) {
   if (!isDevMockMode()) return [];
   const fromFeed = POSTS.filter(
     (post) =>
-      bodyMentionsTicker(post.body, indexId) ||
-      bodyMentionsLabel(post.body, indexName) ||
-      bodyMentionsLabel(post.body, indexId)
+      !isNewsSocialPost(post) &&
+      (bodyMentionsTicker(post.body, indexId) ||
+        bodyMentionsLabel(post.body, indexName) ||
+        bodyMentionsLabel(post.body, indexId))
   );
   return sortByDate(fromFeed).slice(0, 12);
 }
@@ -165,8 +176,9 @@ export function getCommodityDiscussions(commodityId, commodityName) {
   if (!isDevMockMode()) return [];
   const fromFeed = POSTS.filter(
     (post) =>
-      bodyMentionsLabel(post.body, commodityName) ||
-      bodyMentionsLabel(post.body, commodityId)
+      !isNewsSocialPost(post) &&
+      (bodyMentionsLabel(post.body, commodityName) ||
+        bodyMentionsLabel(post.body, commodityId))
   );
   return sortByDate(fromFeed).slice(0, 12);
 }

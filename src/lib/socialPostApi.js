@@ -302,7 +302,9 @@ export async function fetchPostsMentioningTickers(
     p_limit: limit,
   });
   if (error) throw error;
-  const posts = (data?.items ?? []).map((row) => mapPostRow(row));
+  const posts = (data?.items ?? [])
+    .map((row) => mapPostRow(row))
+    .filter((post) => post.via?.source !== 'mn_news_ai_summaries');
   posts.forEach((post) => notePostLikeSynced(post.id, post.liked));
   return posts;
 }
