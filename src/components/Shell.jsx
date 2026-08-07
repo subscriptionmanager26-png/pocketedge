@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Home,
   Lightbulb,
+  Newspaper,
   Pencil,
   Wallet,
 } from 'lucide-react';
@@ -37,7 +38,7 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
   if (!prevKey || !nextKey) return false;
   if (nextKey === 'feed' && String(prevKey).startsWith('post:')) return true;
   if (
-    (nextKey === 'markets' || nextKey === 'explore' || nextKey === 'ideas') &&
+    (nextKey === 'markets' || nextKey === 'explore' || nextKey === 'ideas' || nextKey === 'news') &&
     /^(stock|etf|fund|index|commodity):/.test(String(prevKey))
   ) {
     return true;
@@ -62,6 +63,7 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
 
 const DESKTOP_TABS = [
   { id: 'feed', label: 'Feed', icon: Home },
+  { id: 'news', label: 'News', icon: Newspaper },
   // Explore kept in routing/code but hidden from shell UI — Ideas covers discovery for now.
   // { id: 'explore', label: 'Explore', icon: Search },
   { id: 'ideas', label: 'Ideas', icon: Lightbulb },

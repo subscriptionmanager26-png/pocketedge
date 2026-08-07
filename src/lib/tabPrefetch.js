@@ -13,12 +13,19 @@ function prefetchChunk(importer, key) {
 /** Warm Ideas, Portfolio, Profile chunks + default tab data after auth. */
 export function prefetchAppTabData(ownerId = getAppCurrentUserId()) {
   prefetchTab('ideas', ownerId);
+  prefetchTab('news', ownerId);
   prefetchTab('portfolio', ownerId);
   prefetchTab('profile', ownerId);
 }
 
 export function prefetchTab(tab, ownerId = getAppCurrentUserId()) {
   switch (tab) {
+    case 'news':
+      prefetchChunk(() => import('../pages/NewsPage'), 'news');
+      import('../lib/socialPostApi')
+        .then((m) => m.fetchNewsPosts?.({ limit: 30 }))
+        .catch(() => {});
+      break;
     case 'ideas':
       prefetchChunk(() => import('../pages/IdeasPage'), 'ideas');
       prefetchChunk(() => import('../pages/StockInvestmentPage'), 'stock-detail');

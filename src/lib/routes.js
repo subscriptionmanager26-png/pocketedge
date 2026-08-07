@@ -169,6 +169,7 @@ export function disclosuresPath(section) {
 
 const KNOWN_TABS = new Set([
   'feed',
+  'news',
   'explore',
   'ideas',
   'activity',
