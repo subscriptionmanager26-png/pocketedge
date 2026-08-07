@@ -1339,8 +1339,9 @@ export function isCopiedPortfolio(portfolio) {
 
 export function copyPortfolioForUser(userId, source, { sourceUserId = null, sourceUserName = null } = {}) {
   const priorCopies = getUserPortfolios(userId).filter((p) => p.sourcePortfolioId === source.id);
-  const name =
+  const rawName =
     priorCopies.length > 0 ? `${source.name} ${priorCopies.length + 1}` : source.name;
+  const name = String(rawName ?? '').slice(0, 22);
   const created = addUserPortfolio(userId, {
     id: `pf_copy_${Date.now()}`,
     kind: source.kind ?? 'live',

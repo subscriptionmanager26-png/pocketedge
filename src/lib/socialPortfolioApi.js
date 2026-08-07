@@ -26,6 +26,7 @@ import {
   findPublishedLivePortfolio,
   isWatchlistKind,
   livePortfolioDisplayName,
+  truncatePortfolioName,
 } from './portfolioEdit';
 import { getAppCurrentUser } from './socialIdentity';
 
@@ -101,11 +102,12 @@ function mapTableRow(row) {
 
 function blankDraft(ownerId, { kind = 'live', name } = {}) {
   const resolvedKind = isWatchlistKind(kind) ? 'watchlist' : 'live';
-  const resolvedName =
+  const resolvedName = truncatePortfolioName(
     String(name ?? '').trim() ||
-    (resolvedKind === 'watchlist'
-      ? 'Watchlist'
-      : livePortfolioDisplayName(getAppCurrentUser()?.name));
+      (resolvedKind === 'watchlist'
+        ? 'Watchlist'
+        : livePortfolioDisplayName(getAppCurrentUser()?.name))
+  );
   return enrichUserPortfolio({
     id: `pf_local_${Date.now()}`,
     ownerId,
@@ -245,12 +247,14 @@ export async function saveSocialPortfolio(ownerId, portfolioId, patch) {
   const holdings = patch.holdings ?? [];
   const tickers = patch.tickers ?? holdings.map((h) => h.ticker).filter(Boolean);
   const kind = patch.kind ?? 'live';
-  const resolvedName = isWatchlistKind(kind)
-    ? String(patch.name ?? '').trim()
-    : livePortfolioDisplayName(
-        patch.ownerDisplayName ?? getAppCurrentUser()?.name,
-        'My'
-      );
+  const resolvedName = truncatePortfolioName(
+    isWatchlistKind(kind)
+      ? String(patch.name ?? '').trim()
+      : livePortfolioDisplayName(
+          patch.ownerDisplayName ?? getAppCurrentUser()?.name,
+          'My'
+        )
+  );
 
   if (!isWatchlistKind(kind)) {
     const list =

@@ -118,6 +118,7 @@ export default function Shell({
   currentUserId = null,
   onRequireSignIn,
   mobileActions = null,
+  hideMobileActivity = false,
   onSelectStock,
   onSelectFund,
   onSelectCommodity,
@@ -507,6 +508,7 @@ export default function Shell({
                 guestMode={guestMode}
                 wide={wideContent}
                 mobileActions={mobileActions}
+                hideMobileActivity={hideMobileActivity}
                 searchQuery={searchQuery}
                 onSearchChange={(value) => {
                   setSearchQuery(value);

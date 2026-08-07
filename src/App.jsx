@@ -163,6 +163,7 @@ export default function App() {
   const [profileSeedPerson, setProfileSeedPerson] = useState(null);
   const [profileFollowListMode, setProfileFollowListMode] = useState(null);
   const [mobileHeaderActions, setMobileHeaderActions] = useState(null);
+  const [hideMobileActivity, setHideMobileActivity] = useState(false);
   const [assetPanelBack, setAssetPanelBack] = useState(null);
   const [assetDetailPanel, setAssetDetailPanel] = useState(null);
   const portfolioBackRef = useRef(null);
@@ -1032,6 +1033,7 @@ export default function App() {
   useEffect(() => {
     if (tab !== 'profile') {
       setMobileHeaderActions(null);
+      setHideMobileActivity(false);
       setProfileFollowListMode(null);
     }
   }, [tab]);
@@ -1125,6 +1127,7 @@ export default function App() {
         currentUserId={guestMode ? null : currentUserId}
         onRequireSignIn={requireSignIn}
         mobileActions={mobileHeaderActions}
+        hideMobileActivity={hideMobileActivity}
         onSelectStock={openStock}
         onSelectFund={openFund}
         onSelectCommodity={openCommodity}
@@ -1320,16 +1323,17 @@ export default function App() {
                 selectedPortfolioId={profilePortfolioId}
                 startUpdateHoldings={profileStartUpdateHoldings}
                 onUpdateHoldingsConsumed={() => setProfileStartUpdateHoldings(false)}
-                onSelectPortfolio={(id) => {
+                onSelectPortfolio={(id, opts = {}) => {
                   resetScroll();
-                  setProfileStartUpdateHoldings(false);
+                  setProfileStartUpdateHoldings(Boolean(opts.updateHoldings));
                   setProfilePortfolioId(id);
                   navigateToProfile(navigate, profileUserId, { portfolioId: id });
                 }}
                 onClearPortfolio={() => {
                   backScroll();
                   setProfileStartUpdateHoldings(false);
-                  navigateBack(navigate, location, profileBackFallback());
+                  setProfilePortfolioId(null);
+                  navigateToProfile(navigate, profileUserId);
                 }}
                 onBack={() => {
                   backScroll();
@@ -1357,6 +1361,7 @@ export default function App() {
                 onOpenStock={openStock}
                 onGraphChange={() => setGraphTick((n) => n + 1)}
                 onMobileHeaderActionsChange={setMobileHeaderActions}
+                onHideMobileActivityChange={setHideMobileActivity}
                 onRegisterPortfolioBackHandler={(handler) => {
                   portfolioBackRef.current = handler;
                 }}

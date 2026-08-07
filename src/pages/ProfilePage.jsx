@@ -46,6 +46,8 @@ import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydra
 import { formatCount, formatPct, pnlClass } from '../lib/format';
 import GuestSignInCta from '../components/GuestSignInCta';
 import UpdateHoldingsSheet from '../components/UpdateHoldingsSheet';
+import HoldingsSaveDiffSheet from '../components/HoldingsSaveDiffSheet';
+import AppMessageDialog from '../components/AppMessageDialog';
 import {
   holdingFallbackName,
   holdingIsin,
@@ -70,20 +72,25 @@ import {
 } from '../lib/portfolioEngagementApi';
 import {
   COST_MODES,
+  INVESTED_MAX_DECIMALS,
+  PORTFOLIO_NAME_MAX_LENGTH,
+  QTY_MAX_DECIMALS,
   WATCHLIST_BASE_INVESTMENT,
   buildLiveHoldings,
   buildWatchlistHoldings,
   fieldClass,
   findPublishedLivePortfolio,
+  formatPortfolioSaveValidationMessage,
   isWatchlistKind,
   livePortfolioDisplayName,
   patchLiveCostFields,
   portfolioHasDraftWork,
+  sanitizeDecimalInput,
+  summarizeHoldingsChange,
+  truncatePortfolioName,
   validatePortfolioDraft,
-  withSyncedAvg,
 } from '../lib/portfolioEdit';
 import PortfolioAssetSearchField from '../components/PortfolioAssetSearchField';
-import CostModeToggle from '../components/CostModeToggle';
 import { parseZerodhaHoldingsScreenshots } from './onboarding/onboardingHoldings';
 import { parseZerodhaHoldingsWorkbook } from './onboarding/zerodhaHoldingsWorkbook';
 import {
@@ -146,6 +153,7 @@ export default function ProfilePage({
   onOpenStock,
   onGraphChange,
   onMobileHeaderActionsChange,
+  onHideMobileActivityChange,
   onRegisterPortfolioBackHandler,
   onOpenSourcePortfolio,
   onFollowListModeChange,
@@ -169,6 +177,8 @@ export default function ProfilePage({
   const [portfolioSocialTick, setPortfolioSocialTick] = useState(0);
   /** 'edit' | 'update' — opens full-page editor from inline listing actions */
   const [pendingEditorAction, setPendingEditorAction] = useState(null);
+  /** Stay on PortfolioDetailView until back — don't bounce when the update-holdings one-shot clears. */
+  const [forcePortfolioEditor, setForcePortfolioEditor] = useState(false);
   const [returnPeriod, setReturnPeriod] = useState(getStoredReturnPeriod);
   const [influencingAmount, setInfluencingAmount] = useState(() => {
     const cached = peekInfluencingCache(userId);
@@ -386,6 +396,7 @@ export default function ProfilePage({
   useEffect(() => {
     if (!selectedPortfolioId) {
       setPendingEditorAction(null);
+      setForcePortfolioEditor(false);
       return;
     }
     setFollowListMode(null);
@@ -397,10 +408,16 @@ export default function ProfilePage({
     }
   }, [selectedPortfolioId, portfolios]);
 
+  useEffect(() => {
+    if (!startUpdateHoldings || guestMode || !canEdit) return;
+    setForcePortfolioEditor(true);
+  }, [startUpdateHoldings, guestMode, canEdit]);
+
   const openPortfolioEditor = (portfolioId, action) => {
     if (!portfolioId) return;
     setPendingEditorAction(action);
-    onSelectPortfolio?.(portfolioId);
+    setForcePortfolioEditor(true);
+    onSelectPortfolio?.(portfolioId, { updateHoldings: action === 'update' });
   };
 
   const followCounts = useMemo(() => {
@@ -432,7 +449,7 @@ export default function ProfilePage({
   };
 
   const handleAddWatchlist = async (watchlistName) => {
-    const name = String(watchlistName ?? '').trim();
+    const name = truncatePortfolioName(String(watchlistName ?? '').trim());
     if (!name) return;
     try {
       const created = await createDraftPortfolio(person.id, {
@@ -518,7 +535,8 @@ export default function ProfilePage({
   const shouldOpenPortfolioEditor =
     Boolean(selectedPortfolio?.isDraft) ||
     pendingEditorAction != null ||
-    Boolean(startUpdateHoldings);
+    Boolean(startUpdateHoldings) ||
+    forcePortfolioEditor;
 
   if (selectedPortfolio && shouldOpenPortfolioEditor) {
     return (
@@ -527,9 +545,10 @@ export default function ProfilePage({
         userId={person?.id}
         canEdit={canEdit}
         guestMode={guestMode}
-        startUpdateHoldings={startUpdateHoldings || pendingEditorAction === 'update'}
+        startUpdateHoldings={Boolean(startUpdateHoldings)}
         onUpdateHoldingsConsumed={() => {
-          setPendingEditorAction(null);
+          // Keep forcePortfolioEditor; only clear the one-shot App flag + update action tag.
+          setPendingEditorAction((prev) => (prev === 'update' ? null : prev));
           onUpdateHoldingsConsumed?.();
         }}
         onPortfolioUpdated={(updated) => {
@@ -542,7 +561,7 @@ export default function ProfilePage({
               );
               return [updated, ...without];
             });
-            setPendingEditorAction(null);
+            // Stay in the editor after save; back still clears via selectedPortfolioId unset.
             return;
           }
           bumpPortfolios();
@@ -552,6 +571,7 @@ export default function ProfilePage({
         returnPeriod={returnPeriod}
         onReturnPeriodChange={handleReturnPeriodChange}
         onMobileHeaderActionsChange={onMobileHeaderActionsChange}
+        onHideMobileActivityChange={onHideMobileActivityChange}
         startInEditMode={
           (Boolean(selectedPortfolio.isDraft) || pendingEditorAction === 'edit') && !guestMode
         }
@@ -661,9 +681,7 @@ function InlinePortfolioBook({
   canEdit,
   guestMode = false,
   canCopy = false,
-  showEdit = false,
   showUpdateHoldings = false,
-  onEdit,
   onUpdateHoldings,
   onPortfolioCopied,
   onOpenStock,
@@ -754,8 +772,6 @@ function InlinePortfolioBook({
           sourceOwnerId={person?.id}
           sourceOwnerName={canEdit ? undefined : person?.name}
           onPortfolioCopied={onPortfolioCopied}
-          showEdit={showEdit}
-          onEdit={onEdit}
           showUpdateHoldings={showUpdateHoldings}
           onUpdateHoldings={() => onUpdateHoldings?.(portfolio.id)}
         />
@@ -883,8 +899,8 @@ function WatchlistsSectionPanel({
             canEdit={canEdit}
             guestMode={guestMode}
             canCopy={!canEdit && !guestMode}
-            showEdit={canEdit}
-            onEdit={() => onEditWatchlist?.(portfolio.id)}
+            showUpdateHoldings={canEdit}
+            onUpdateHoldings={() => onEditWatchlist?.(portfolio.id)}
             onPortfolioCopied={onPortfolioCopied}
             onOpenStock={onOpenStock}
           />
@@ -912,7 +928,8 @@ function WatchlistsSectionPanel({
               <input
                 autoFocus
                 value={watchlistName}
-                onChange={(e) => setWatchlistName(e.target.value)}
+                maxLength={PORTFOLIO_NAME_MAX_LENGTH}
+                onChange={(e) => setWatchlistName(truncatePortfolioName(e.target.value))}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -926,6 +943,9 @@ function WatchlistsSectionPanel({
                 placeholder="e.g. Banks to watch"
                 className="mt-2 w-full rounded-lg border border-pe-border bg-pe-canvas px-3 py-2.5 text-sm text-pe-text outline-none focus:border-pe-accent"
               />
+              <p className="mt-1.5 text-[12px] text-pe-text-muted">
+                {watchlistName.length}/{PORTFOLIO_NAME_MAX_LENGTH}
+              </p>
               <div className="mt-3 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -976,6 +996,7 @@ function PortfolioDetailView({
   returnPeriod = '1M',
   onReturnPeriodChange,
   onMobileHeaderActionsChange,
+  onHideMobileActivityChange,
   onRegisterPortfolioBackHandler,
   startInEditMode = false,
   onOpenStock,
@@ -990,13 +1011,15 @@ function PortfolioDetailView({
   const [thesis, setThesis] = useState(portfolio.thesis ?? '');
   const [portfolioKind, setPortfolioKind] = useState(portfolio.kind ?? 'live');
   const [editRows, setEditRows] = useState([]);
-  const [costMode, setCostMode] = useState(COST_MODES.invested);
   const [fieldErrors, setFieldErrors] = useState({ name: false, objective: false, thesis: false, rows: {} });
   const [importNotice, setImportNotice] = useState('');
   const [importingHoldings, setImportingHoldings] = useState(false);
   const [importProgress, setImportProgress] = useState(null);
+  const [saveDiff, setSaveDiff] = useState(null);
+  const [saveError, setSaveError] = useState(null);
   const [socialTick, setSocialTick] = useState(0);
   const editSessionRef = useRef(0);
+  const editBaselineHoldingsRef = useRef([]);
   const excelInputRef = useRef(null);
   const screenshotInputRef = useRef(null);
   const saveEditsRef = useRef(async () => {});
@@ -1117,21 +1140,22 @@ function PortfolioDetailView({
   const startEditing = () => {
     editSessionRef.current += 1;
     const rows = buildEditRows(portfolioKind);
+    editBaselineHoldingsRef.current = [...(portfolio.holdings ?? [])];
     setEditRows(rows);
     setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
     setImportNotice('');
     setEditing(true);
   };
 
-  const openUpdateHoldings = () => {
+  /** Listing "Update Holdings" → manual edit page (file upload is a secondary CTA there). */
+  const enterHoldingsEdit = () => {
+    if (!editing) startEditing();
+  };
+
+  /** Opens the Excel / screenshot upload sheet from the edit page. */
+  const openFileUploader = () => {
     if (isWatchlistKind(portfolioKind)) return;
-    if (!editing) {
-      editSessionRef.current += 1;
-      setEditRows(buildEditRows(portfolioKind));
-      setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
-      setImportNotice('');
-      setEditing(true);
-    }
+    if (!editing) startEditing();
     setUpdateSheetOpen(true);
   };
 
@@ -1141,7 +1165,7 @@ function PortfolioDetailView({
       onUpdateHoldingsConsumed?.();
       return;
     }
-    openUpdateHoldings();
+    enterHoldingsEdit();
     onUpdateHoldingsConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when flagged from routing
   }, [startUpdateHoldings, portfolio.id, canEdit, guestMode]);
@@ -1278,6 +1302,7 @@ function PortfolioDetailView({
     if (startInEditMode) {
       editSessionRef.current += 1;
       const rows = buildEditRows(portfolio.kind ?? 'live');
+      editBaselineHoldingsRef.current = [...(portfolio.holdings ?? [])];
       setEditRows(rows);
       setEditing(true);
     }
@@ -1295,7 +1320,13 @@ function PortfolioDetailView({
       rows: editRows,
     });
     setFieldErrors(validation.errors);
-    if (!validation.valid) return;
+    if (!validation.valid) {
+      setSaveError({
+        title: "Can't save yet",
+        message: formatPortfolioSaveValidationMessage(validation.errors, { isWatchlist }),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -1311,8 +1342,9 @@ function PortfolioDetailView({
         : buildLiveHoldings(validation.completeRows, assetsByKey);
 
       const liveName = livePortfolioDisplayName(getAppCurrentUser()?.name);
+      const beforeHoldings = editBaselineHoldingsRef.current ?? [];
       const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
-        name: isWatchlist ? name.trim() : liveName,
+        name: isWatchlist ? truncatePortfolioName(name.trim()) : liveName,
         objective: '',
         thesis: '',
         kind: portfolioKind,
@@ -1329,10 +1361,20 @@ function PortfolioDetailView({
       setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
       setSaved(true);
       setTimeout(() => setSaved(false), 1600);
-      onBack?.();
+
+      if (!isWatchlist) {
+        setSaveDiff(
+          summarizeHoldingsChange(beforeHoldings, savedPortfolio?.holdings ?? holdings)
+        );
+      } else {
+        onBack?.();
+      }
     } catch (error) {
       console.error('Failed to save portfolio', error);
-      window.alert(error?.message ?? 'Could not save portfolio. Please try again.');
+      setSaveError({
+        title: "Couldn't save",
+        message: error?.message ?? 'Could not save portfolio. Please try again.',
+      });
     } finally {
       setSaving(false);
     }
@@ -1354,11 +1396,13 @@ function PortfolioDetailView({
     setEditing(false);
     setEditRows([]);
     setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
+    proceed();
   };
 
   const cancelEdits = () => {
+    // Leave the editor and return to the profile page (portfolio deep links are retired).
     requestBack(() => {
-      if (isDraft) onBack();
+      onBack?.();
     });
   };
 
@@ -1415,6 +1459,7 @@ function PortfolioDetailView({
   useEffect(() => {
     if (!canEdit || !onMobileHeaderActionsChange) {
       onMobileHeaderActionsChange?.(null);
+      onHideMobileActivityChange?.(false);
       return undefined;
     }
 
@@ -1424,8 +1469,7 @@ function PortfolioDetailView({
           editing
           saved={saved}
           saving={saving}
-          showUpdate={!isWatchlistKind(portfolioKind)}
-          onUpdate={openUpdateHoldings}
+          showUpdate={false}
           onCancel={() => {
             if (!saving) cancelEditsRef.current();
           }}
@@ -1435,16 +1479,28 @@ function PortfolioDetailView({
         />
       ) : (
         <PortfolioDetailMobileActions
-          showUpdate={!isWatchlistKind(portfolioKind)}
-          onUpdate={openUpdateHoldings}
-          onEdit={startEditing}
+          showUpdate
+          onUpdate={isWatchlistKind(portfolioKind) ? startEditing : enterHoldingsEdit}
         />
       )
     );
+    onHideMobileActivityChange?.(editing);
 
-    return () => onMobileHeaderActionsChange(null);
+    return () => {
+      onMobileHeaderActionsChange(null);
+      onHideMobileActivityChange?.(false);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, editing, saved, saving, onMobileHeaderActionsChange, portfolio.kind, portfolioKind]);
+  }, [
+    canEdit,
+    editing,
+    saved,
+    saving,
+    onMobileHeaderActionsChange,
+    onHideMobileActivityChange,
+    portfolio.kind,
+    portfolioKind,
+  ]);
 
   const updateRow = (rowId, patch) => {
     if (patch.ticker !== undefined) {
@@ -1455,7 +1511,7 @@ function PortfolioDetailView({
       prev.map((row) => {
         if (row.id !== rowId) return row;
         if (isWatchlist) return { ...row, ...patch };
-        return patchLiveCostFields(row, patch, costMode);
+        return patchLiveCostFields(row, patch, COST_MODES.invested);
       })
     );
 
@@ -1469,13 +1525,6 @@ function PortfolioDetailView({
         else delete rows[rowId];
         return { ...prev, rows };
       });
-    }
-  };
-
-  const handleCostModeChange = (mode) => {
-    setCostMode(mode);
-    if (mode === COST_MODES.avg) {
-      setEditRows((prev) => prev.map((row) => withSyncedAvg(row)));
     }
   };
 
@@ -1523,26 +1572,14 @@ function PortfolioDetailView({
               </button>
             </>
           ) : (
-            <>
-              {!isWatchlist ? (
-                <button
-                  type="button"
-                  onClick={openUpdateHoldings}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Update holdings
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={startEditing}
-                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={isWatchlist ? startEditing : enterHoldingsEdit}
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface hover:text-pe-accent"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Update Holdings
+            </button>
           )}
         </div>
       ) : null}
@@ -1599,29 +1636,33 @@ function PortfolioDetailView({
           </div>
         ) : (
           <div className="flex flex-col items-stretch gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-                {isWatchlist ? 'Watchlist' : 'Live portfolio'}
-              </p>
-              <PortfolioKindMetaTags portfolio={{ ...portfolio, kind: portfolioKind }} />
-            </div>
             {isWatchlist ? (
-              <Field label="Watchlist name">
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={fieldClass(inputClass, fieldErrors.name)}
-                  placeholder="e.g. Banks to watch"
-                />
-              </Field>
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+                    Watchlist
+                  </p>
+                  <PortfolioKindMetaTags portfolio={{ ...portfolio, kind: portfolioKind }} />
+                </div>
+                <Field label="Watchlist name">
+                  <input
+                    value={name}
+                    maxLength={PORTFOLIO_NAME_MAX_LENGTH}
+                    onChange={(e) => setName(truncatePortfolioName(e.target.value))}
+                    className={fieldClass(inputClass, fieldErrors.name)}
+                    placeholder="e.g. Banks to watch"
+                  />
+                  <p className="mt-1.5 text-[12px] text-pe-text-muted">
+                    {String(name ?? '').length}/{PORTFOLIO_NAME_MAX_LENGTH}
+                  </p>
+                </Field>
+              </>
             ) : (
-              <div>
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-2xl font-bold text-pe-text">
                   {livePortfolioDisplayName(getAppCurrentUser()?.name)}
                 </p>
-                <p className="mt-1 text-sm text-pe-text-secondary">
-                  Named automatically from your profile. Update holdings anytime from Excel or screenshots.
-                </p>
+                <PortfolioKindMetaTags portfolio={{ ...portfolio, kind: portfolioKind }} />
               </div>
             )}
           </div>
@@ -1638,19 +1679,16 @@ function PortfolioDetailView({
               <p className="mt-1 text-sm text-pe-text-secondary">
                 {isWatchlist
                   ? 'Search stocks, ETFs, or funds to track. Allocations default to equal weight.'
-                  : 'Search a ticker and enter invested amount and quantity.'}
+                  : 'Upload latest file or edit manually'}
               </p>
             </div>
-            {!isWatchlist ? (
-              <CostModeToggle value={costMode} onChange={handleCostModeChange} />
-            ) : null}
           </div>
 
           {!isWatchlist ? (
             <div className="mt-5 rounded-lg border border-pe-border bg-pe-surface p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-pe-text">Update holdings</p>
+                  <p className="text-sm font-semibold text-pe-text">Import holdings</p>
                   <p className="mt-0.5 text-[12px] text-pe-text-muted">
                     Excel (Zerodha) or Kite / Groww screenshots. PDF coming soon.
                   </p>
@@ -1658,11 +1696,11 @@ function PortfolioDetailView({
                 <button
                   type="button"
                   disabled={importingHoldings}
-                  onClick={openUpdateHoldings}
+                  onClick={openFileUploader}
                   className="inline-flex h-9 items-center gap-1.5 rounded-md bg-pe-accent px-2.5 text-[12px] font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-60"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  Open updater
+                  Upload New File
                 </button>
               </div>
               {importNotice ? (
@@ -1703,7 +1741,7 @@ function PortfolioDetailView({
               {isWatchlist ? null : (
                 <>
                   <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    {costMode === COST_MODES.avg ? 'Avg price' : 'Total invested'}
+                    Total invested
                   </p>
                   <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
                     Qty
@@ -1719,8 +1757,8 @@ function PortfolioDetailView({
                 .filter((entry) => entry.id !== row.id)
                 .map((entry) => entry.ticker.trim())
                 .filter(Boolean);
-              const costLabel = costMode === COST_MODES.avg ? 'Avg price' : 'Total invested';
-              const costValue = costMode === COST_MODES.avg ? row.avg ?? '' : row.invested;
+              const costLabel = 'Total invested';
+              const costValue = row.invested;
               const costHasError = Boolean(rowErr.invested || rowErr.avg);
 
               return (
@@ -1751,17 +1789,17 @@ function PortfolioDetailView({
                     {isWatchlist ? null : (
                       <>
                         <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                          type="text"
+                          inputMode="decimal"
+                          autoComplete="off"
                           value={costValue}
                           onChange={(e) =>
-                            updateRow(
-                              row.id,
-                              costMode === COST_MODES.avg
-                                ? { avg: e.target.value }
-                                : { invested: e.target.value }
-                            )
+                            updateRow(row.id, {
+                              invested: sanitizeDecimalInput(
+                                e.target.value,
+                                INVESTED_MAX_DECIMALS
+                              ),
+                            })
                           }
                           placeholder={costLabel}
                           aria-label={costLabel}
@@ -1771,14 +1809,21 @@ function PortfolioDetailView({
                           )}
                         />
                         <input
-                          type="number"
-                          min="0"
-                          step="any"
+                          type="text"
+                          inputMode="decimal"
+                          autoComplete="off"
                           value={row.qty}
-                          onChange={(e) => updateRow(row.id, { qty: e.target.value })}
+                          onChange={(e) =>
+                            updateRow(row.id, {
+                              qty: sanitizeDecimalInput(e.target.value, QTY_MAX_DECIMALS),
+                            })
+                          }
                           placeholder="Qty"
                           aria-label="Quantity"
-                          className={fieldClass(`${compactInputClass} text-right tabular-nums`, rowErr.qty)}
+                          className={fieldClass(
+                            `${compactInputClass} text-right tabular-nums`,
+                            rowErr.qty
+                          )}
                         />
                       </>
                     )}
@@ -1847,6 +1892,24 @@ function PortfolioDetailView({
           ownerUserId={userId}
         />
       ) : null}
+
+      {saveDiff ? (
+        <HoldingsSaveDiffSheet
+          summary={saveDiff}
+          onClose={() => {
+            setSaveDiff(null);
+            onBack?.();
+          }}
+        />
+      ) : null}
+
+      {saveError ? (
+        <AppMessageDialog
+          title={saveError.title}
+          message={saveError.message}
+          onClose={() => setSaveError(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1870,10 +1933,10 @@ function PortfolioDetailMobileActions({
             onClick={onUpdate}
             disabled={saving}
             className="inline-flex h-10 items-center gap-1 rounded-full bg-white px-3 text-sm font-semibold text-[var(--fv-text-secondary)] shadow-[var(--fv-shadow)] transition hover:text-[var(--fv-text)] disabled:opacity-50"
-            aria-label="Update holdings"
+            aria-label="Upload new file"
           >
             <RefreshCw className="h-4 w-4" strokeWidth={2} />
-            Update
+            Upload
           </button>
         ) : null}
         <button
@@ -1900,25 +1963,14 @@ function PortfolioDetailMobileActions({
 
   return (
     <div className="flex items-center gap-1.5">
-      {showUpdate ? (
-        <button
-          type="button"
-          onClick={onUpdate}
-          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--fv-accent)] px-3.5 text-sm font-semibold text-white shadow-[var(--fv-shadow)] transition hover:opacity-90"
-          aria-label="Update holdings"
-        >
-          <RefreshCw className="h-4 w-4" strokeWidth={2} />
-          Update
-        </button>
-      ) : null}
       <button
         type="button"
-        onClick={onEdit}
+        onClick={onUpdate}
         className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-semibold text-[var(--fv-text)] shadow-[var(--fv-shadow)] transition hover:opacity-90"
-        aria-label="Edit portfolio manually"
+        aria-label="Update Holdings"
       >
         <Pencil className="h-4 w-4" strokeWidth={2} />
-        Edit
+        Update Holdings
       </button>
     </div>
   );
@@ -1932,8 +1984,6 @@ function PortfolioSocialBar({
   sourceOwnerId,
   sourceOwnerName,
   onPortfolioCopied,
-  showEdit = false,
-  onEdit,
   showUpdateHoldings = false,
   onUpdateHoldings,
 }) {
@@ -2004,18 +2054,8 @@ function PortfolioSocialBar({
             onClick={() => onUpdateHoldings?.()}
             className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-accent"
           >
-            <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} />
-            Update holdings
-          </button>
-        ) : null}
-        {showEdit ? (
-          <button
-            type="button"
-            onClick={() => onEdit?.()}
-            className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-accent"
-          >
             <Pencil className="h-[18px] w-[18px]" strokeWidth={2} />
-            Edit
+            Update Holdings
           </button>
         ) : null}
       </div>

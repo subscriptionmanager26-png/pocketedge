@@ -4,6 +4,7 @@ import AppModalOverlay from './AppModalOverlay';
 import PortfolioAssetSearchField from './PortfolioAssetSearchField';
 import { formatTicker } from '../lib/tickers';
 import { resolvePortfolioAsset } from '../lib/portfolioAssetUniverse';
+import { PORTFOLIO_NAME_MAX_LENGTH, truncatePortfolioName } from '../lib/portfolioEdit';
 
 export default function WatchlistModal({ open, onClose, onSave }) {
   const [name, setName] = useState('');
@@ -24,8 +25,9 @@ export default function WatchlistModal({ open, onClose, onSave }) {
   };
 
   const save = () => {
-    if (!name.trim()) return;
-    onSave?.({ name: name.trim(), tickers });
+    const trimmed = truncatePortfolioName(name.trim());
+    if (!trimmed) return;
+    onSave?.({ name: trimmed, tickers });
     setName('');
     setSymbol('');
     setTickers([]);
@@ -51,10 +53,14 @@ export default function WatchlistModal({ open, onClose, onSave }) {
       <div className="space-y-3 px-4 py-4">
         <input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          maxLength={PORTFOLIO_NAME_MAX_LENGTH}
+          onChange={(e) => setName(truncatePortfolioName(e.target.value))}
           placeholder="List name"
           className="w-full rounded-lg border border-pe-border-strong bg-pe-surface px-3 py-2.5 text-base outline-none focus:border-pe-accent md:text-[15px]"
         />
+        <p className="text-[12px] text-pe-text-muted">
+          {name.length}/{PORTFOLIO_NAME_MAX_LENGTH}
+        </p>
         <div className="flex gap-2">
           <div className="min-w-0 flex-1">
             <PortfolioAssetSearchField

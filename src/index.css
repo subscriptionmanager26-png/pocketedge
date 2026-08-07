@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide spinner controls on numeric holdings inputs */
+.pe-no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.pe-no-spinner::-webkit-outer-spin-button,
+.pe-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 :root {
   --pe-canvas: #ffffff;
   --pe-surface: #f7f6f4;
