@@ -477,8 +477,6 @@ export default function ProfilePage({
   const handleTabChange = (next) => {
     setTab(next);
     setFollowListMode(null);
-    setPendingEditorAction(null);
-    if (selectedPortfolioId) onClearPortfolio?.();
   };
 
   if (followListMode) {
@@ -515,7 +513,14 @@ export default function ProfilePage({
     );
   }
 
-  if (selectedPortfolio) {
+  // Full-page editor only for drafts / Update holdings / Edit. Share links land on the
+  // profile listing (inline book) so guests and visitors stay on the profile.
+  const openPortfolioEditor =
+    Boolean(selectedPortfolio?.isDraft) ||
+    pendingEditorAction != null ||
+    Boolean(startUpdateHoldings);
+
+  if (selectedPortfolio && openPortfolioEditor) {
     return (
       <PortfolioDetailView
         portfolio={selectedPortfolio}
@@ -543,7 +548,7 @@ export default function ProfilePage({
           bumpPortfolios();
         }}
         onBack={onClearPortfolio}
-        canCopy={!canEdit && !guestMode}
+        canCopy={false}
         returnPeriod={returnPeriod}
         onReturnPeriodChange={handleReturnPeriodChange}
         onMobileHeaderActionsChange={onMobileHeaderActionsChange}
@@ -751,21 +756,16 @@ function InlinePortfolioBook({
           onPortfolioCopied={onPortfolioCopied}
           showEdit={showEdit}
           onEdit={onEdit}
+          showUpdateHoldings={showUpdateHoldings}
+          onUpdateHoldings={() => onUpdateHoldings?.(portfolio.id)}
         />
-      ) : null}
-
-      {showUpdateHoldings && canEdit && !guestMode ? (
+      ) : (
         <div className="border-t border-pe-border px-4 py-3 md:px-6">
-          <button
-            type="button"
-            onClick={() => onUpdateHoldings?.(portfolio.id)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-pe-border bg-pe-surface px-4 py-2.5 text-sm font-semibold text-pe-text transition hover:border-pe-accent hover:text-pe-accent sm:w-auto"
-          >
-            <RefreshCw className="h-4 w-4" strokeWidth={2} />
-            Update holdings
-          </button>
+          <p className="text-[13px] text-pe-text-secondary">
+            Sign in to share, copy, or follow this book.
+          </p>
         </div>
-      ) : null}
+      )}
     </article>
   );
 }
@@ -1934,6 +1934,8 @@ function PortfolioSocialBar({
   onPortfolioCopied,
   showEdit = false,
   onEdit,
+  showUpdateHoldings = false,
+  onUpdateHoldings,
 }) {
   const [copied, setCopied] = useState(social.copied);
   const [copies, setCopies] = useState(social.copies);
@@ -1995,12 +1997,17 @@ function PortfolioSocialBar({
             )}
             {formatCount(copies)}
           </button>
-        ) : (
-          <span className="inline-flex h-8 items-center justify-start gap-1.5 text-[13px] font-medium text-pe-text-muted">
-            <Copy className="h-[18px] w-[18px] opacity-40" strokeWidth={2} />
-            {formatCount(copies)}
-          </span>
-        )}
+        ) : null}
+        {showUpdateHoldings ? (
+          <button
+            type="button"
+            onClick={() => onUpdateHoldings?.()}
+            className="inline-flex h-8 items-center justify-start gap-1.5 rounded-lg text-[13px] font-medium text-pe-text-secondary transition hover:bg-black/[0.04] hover:text-pe-accent"
+          >
+            <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} />
+            Update holdings
+          </button>
+        ) : null}
         {showEdit ? (
           <button
             type="button"

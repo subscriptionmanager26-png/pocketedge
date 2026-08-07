@@ -240,12 +240,7 @@ export default function PortfolioCard({
             )}
             {formatCount(copies)}
           </button>
-        ) : (
-          <span className="inline-flex h-8 items-center justify-start gap-1.5 text-[13px] font-medium text-pe-text-muted">
-            <Copy className="h-[18px] w-[18px] opacity-40" strokeWidth={2} />
-            {formatCount(copies)}
-          </span>
-        )}
+        ) : null}
       </div>
 
       <PortfolioShareSheet

@@ -115,7 +115,11 @@ export function useProfileRouting({
           clearMarketSelection(setters);
           setSelectedPostId(null);
           setProfileUserId(person.id);
-          setProfileMode(person.id === getAppCurrentUserId() ? 'own' : 'public');
+          // Guests never "own" a profile — avoid feed-bounce when CURRENT_USER
+          // fallback matches a mock id, or a stale selfProfile lingers.
+          const isOwnProfile =
+            authView === 'app' && person.id === getAppCurrentUserId();
+          setProfileMode(isOwnProfile ? 'own' : 'public');
           setProfilePortfolioId(parsed.portfolioId);
           onProfileResolved?.(person);
           setTab('profile');
