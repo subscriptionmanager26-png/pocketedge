@@ -515,12 +515,12 @@ export default function ProfilePage({
 
   // Full-page editor only for drafts / Update holdings / Edit. Share links land on the
   // profile listing (inline book) so guests and visitors stay on the profile.
-  const openPortfolioEditor =
+  const shouldOpenPortfolioEditor =
     Boolean(selectedPortfolio?.isDraft) ||
     pendingEditorAction != null ||
     Boolean(startUpdateHoldings);
 
-  if (selectedPortfolio && openPortfolioEditor) {
+  if (selectedPortfolio && shouldOpenPortfolioEditor) {
     return (
       <PortfolioDetailView
         portfolio={selectedPortfolio}
