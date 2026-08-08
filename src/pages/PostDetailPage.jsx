@@ -4,6 +4,13 @@ import CommentComposer from '../components/CommentComposer';
 import { PostDetailSkeleton } from '../components/PageSkeletons';
 import { isDevMockMode } from '../lib/appMode';
 import { isNewsSocialPost, parseNewsSocialContent } from '../lib/newsPostBody';
+import {
+  absoluteNewsPostUrl,
+  buildNewsShareTitle,
+  truncatePreview,
+} from '../lib/shareNewsPost';
+import { resolveAssetLogoUrl, LOGO_VARIANT_DETAIL } from '../lib/assetLogo';
+import { setSeoMeta, SITE_ORIGIN, DEFAULT_IMAGE } from '../lib/seoMeta';
 import { useNewsCompanyNames } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 
@@ -92,6 +99,48 @@ export default function PostDetailPage({
     if (!symbol) return null;
     return companyNames.get(symbol.toUpperCase()) || symbol;
   }, [post, companyNames]);
+
+  useEffect(() => {
+    if (!post || !isNewsSocialPost(post)) return undefined;
+    const parts = parseNewsSocialContent(post);
+    const companyName = newsCompanyName || parts.symbol || 'PocketEdge News';
+    const title = buildNewsShareTitle({
+      companyName,
+      symbol: parts.symbol,
+      title: parts.title,
+    });
+    const description =
+      truncatePreview(parts.text || parts.title, 180) ||
+      'Market news on PocketEdge';
+    const logoPath = parts.symbol
+      ? resolveAssetLogoUrl({
+          assetType: parts.assetType,
+          assetKey: parts.symbol,
+          variant: LOGO_VARIANT_DETAIL,
+        })
+      : null;
+    const image = post.image
+      ? post.image.startsWith('http')
+        ? post.image
+        : `${SITE_ORIGIN}${post.image}`
+      : logoPath
+        ? logoPath.startsWith('http')
+          ? logoPath
+          : `${SITE_ORIGIN}${logoPath}`
+        : DEFAULT_IMAGE;
+
+    const abs = absoluteNewsPostUrl(post.id);
+    const path = abs.startsWith(SITE_ORIGIN)
+      ? abs.slice(SITE_ORIGIN.length) || `/post/${post.id}`
+      : `/post/${post.id}`;
+
+    return setSeoMeta({
+      title,
+      description,
+      path,
+      image,
+    });
+  }, [post, newsCompanyName]);
 
   if (loading && !post) {
     return <PostDetailSkeleton />;

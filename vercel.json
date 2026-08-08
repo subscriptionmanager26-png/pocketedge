@@ -354,6 +354,17 @@
       ],
       "destination": "/api/seo/commodity/:commodityId"
     },
+    {
+      "source": "/post/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(googlebot|bingbot|duckduckbot|yandex|baiduspider|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|applebot).*"
+        }
+      ],
+      "destination": "/api/seo/post/:id"
+    },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!api/|asset-logos/).*)", "destination": "/index.html" }
   ]
