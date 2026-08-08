@@ -185,7 +185,7 @@ export default function PostCard({
     stopBubble(event);
     setShareOpen(false);
     try {
-      const result = await shareNewsPost({ post, companyName });
+      const result = await shareNewsPost({ post });
       if (result === 'copied') setLinkCopied(true);
     } catch (err) {
       console.error('News share failed', err);

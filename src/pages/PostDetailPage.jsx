@@ -6,8 +6,8 @@ import { isDevMockMode } from '../lib/appMode';
 import { isNewsSocialPost, parseNewsSocialContent } from '../lib/newsPostBody';
 import {
   absoluteNewsPostUrl,
+  buildNewsOgDescription,
   buildNewsShareTitle,
-  truncatePreview,
 } from '../lib/shareNewsPost';
 import { resolveAssetLogoUrl, LOGO_VARIANT_DETAIL } from '../lib/assetLogo';
 import { setSeoMeta, SITE_ORIGIN, DEFAULT_IMAGE } from '../lib/seoMeta';
@@ -107,10 +107,9 @@ export default function PostDetailPage({
     const title = buildNewsShareTitle({
       companyName,
       symbol: parts.symbol,
-      title: parts.title,
     });
     const description =
-      truncatePreview(parts.text || parts.title, 180) ||
+      buildNewsOgDescription({ title: parts.title, text: parts.text }) ||
       'Market news on PocketEdge';
     const logoPath = parts.symbol
       ? resolveAssetLogoUrl({

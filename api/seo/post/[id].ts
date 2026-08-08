@@ -40,14 +40,15 @@ export default async function handler(
     parts.symbol ||
     'PocketEdge News';
 
-  const headline = parts.title || truncateSeoPreview(parts.text, 80) || 'Market news';
-  const titleHead = parts.symbol
+  // Unfurl: title = company + symbol; description = ≤140 chars of post text.
+  const title = parts.symbol
     ? `${companyName} (@${parts.symbol})`
     : companyName;
-  const title = `${titleHead} — ${headline}`;
   const description =
-    truncateSeoPreview(parts.text || parts.title, 180) ||
-    `${titleHead} on PocketEdge`;
+    truncateSeoPreview(
+      [parts.title, parts.text].filter(Boolean).join(' '),
+      140
+    ) || `${title} on PocketEdge`;
 
   const postImage = absoluteMediaUrl(
     origin,
@@ -58,6 +59,7 @@ export default async function handler(
     parts.symbol,
     parts.assetType
   );
+  // Prefer post image, else company logo (the "attached image" on the card).
   const image = postImage || logoImage || DEFAULT_IMAGE;
   const twitterCard = postImage ? 'summary_large_image' : 'summary';
 
@@ -68,8 +70,8 @@ export default async function handler(
     canonical,
     image,
     twitterCard,
-    h1: titleHead,
-    bodyText: [parts.title, parts.text].filter(Boolean).join('\n\n'),
+    h1: title,
+    bodyText: description,
   });
 
   return new Response(html, {
