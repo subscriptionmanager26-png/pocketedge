@@ -206,6 +206,7 @@ export default defineConfig(({ mode }) => {
             }
             if (id.includes('tesseract')) return 'ocr';
             if (id.includes('/xlsx/')) return 'spreadsheet';
+            if (id.includes('pdfjs-dist') || id.includes('/pdfjs/')) return 'pdf';
             if (id.includes('lucide-react')) return 'icons';
             if (id.includes('posthog')) return 'posthog';
             return 'vendor';
