@@ -157,9 +157,11 @@ export function buildNewsPostSeoHtml({
   description,
   canonical,
   image,
-  twitterCard = 'summary',
+  twitterCard = 'summary_large_image',
   h1,
   bodyText,
+  imageWidth = 1200,
+  imageHeight = 630,
 }: {
   title: string;
   description: string;
@@ -168,6 +170,8 @@ export function buildNewsPostSeoHtml({
   twitterCard?: 'summary' | 'summary_large_image';
   h1: string;
   bodyText?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }) {
   const preview = bodyText
     ? `<p>${escapeHtml(bodyText)}</p>`
@@ -187,6 +191,10 @@ export function buildNewsPostSeoHtml({
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${escapeHtml(canonical)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
+    <meta property="og:image:width" content="${escapeHtml(imageWidth)}" />
+    <meta property="og:image:height" content="${escapeHtml(imageHeight)}" />
+    <meta property="og:image:alt" content="${escapeHtml(title)}" />
     <meta name="twitter:card" content="${escapeHtml(twitterCard)}" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
