@@ -3,8 +3,8 @@ import { isPostHogEnabled } from './posthog';
 import posthog from 'posthog-js';
 
 const SITE_ORIGIN = 'https://www.pocketedge.in';
-/** OG description / preview length for unfurl cards. */
-export const NEWS_OG_PREVIEW_CHARS = 140;
+/** OG description length for unfurl cards (X truncates further on small cards). */
+export const NEWS_OG_PREVIEW_CHARS = 200;
 
 /**
  * Absolute URL for a news (or any) social post.

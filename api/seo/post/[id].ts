@@ -1,13 +1,10 @@
 import {
   buildNewsPostSeoHtml,
-  companyLogoAbsoluteUrl,
-  DEFAULT_IMAGE,
   fetchPublicSocialPost,
   parseNewsContentForSeo,
   resolveCompanyName,
   siteOrigin,
   truncateSeoPreview,
-  absoluteMediaUrl,
 } from '../../_lib/newsPostSeo.js';
 
 export const config = {
@@ -40,28 +37,16 @@ export default async function handler(
     parts.symbol ||
     'PocketEdge News';
 
-  // Unfurl: title = company + symbol; description = ≤140 chars of post text.
+  // Unfurl title = company + symbol; description = longer post excerpt for mobile cards.
   const title = parts.symbol
     ? `${companyName} (@${parts.symbol})`
     : companyName;
+  const fullText = [parts.title, parts.text].filter(Boolean).join(' ');
   const description =
-    truncateSeoPreview(
-      [parts.title, parts.text].filter(Boolean).join(' '),
-      140
-    ) || `${title} on PocketEdge`;
+    truncateSeoPreview(fullText, 200) || `${title} on PocketEdge`;
 
-  const postImage = absoluteMediaUrl(
-    origin,
-    row.image_url ?? row.image ?? null
-  );
-  const logoImage = companyLogoAbsoluteUrl(
-    origin,
-    parts.symbol,
-    parts.assetType
-  );
-  // Prefer post image, else company logo (the "attached image" on the card).
-  const image = postImage || logoImage || DEFAULT_IMAGE;
-  const twitterCard = postImage ? 'summary_large_image' : 'summary';
+  // Same card size as parent/site OG (1200×630 summary_large_image).
+  const image = `${origin}/api/og/news-post?id=${encodeURIComponent(id)}`;
 
   const canonical = `${origin}/post/${encodeURIComponent(id)}`;
   const html = buildNewsPostSeoHtml({
@@ -69,9 +54,11 @@ export default async function handler(
     description,
     canonical,
     image,
-    twitterCard,
+    twitterCard: 'summary_large_image',
+    imageWidth: 1200,
+    imageHeight: 630,
     h1: title,
-    bodyText: description,
+    bodyText: truncateSeoPreview(fullText, 400) || description,
   });
 
   return new Response(html, {

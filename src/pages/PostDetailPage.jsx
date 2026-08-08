@@ -9,8 +9,7 @@ import {
   buildNewsOgDescription,
   buildNewsShareTitle,
 } from '../lib/shareNewsPost';
-import { resolveAssetLogoUrl, LOGO_VARIANT_DETAIL } from '../lib/assetLogo';
-import { setSeoMeta, SITE_ORIGIN, DEFAULT_IMAGE } from '../lib/seoMeta';
+import { setSeoMeta, SITE_ORIGIN } from '../lib/seoMeta';
 import { useNewsCompanyNames } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 
@@ -111,22 +110,8 @@ export default function PostDetailPage({
     const description =
       buildNewsOgDescription({ title: parts.title, text: parts.text }) ||
       'Market news on PocketEdge';
-    const logoPath = parts.symbol
-      ? resolveAssetLogoUrl({
-          assetType: parts.assetType,
-          assetKey: parts.symbol,
-          variant: LOGO_VARIANT_DETAIL,
-        })
-      : null;
-    const image = post.image
-      ? post.image.startsWith('http')
-        ? post.image
-        : `${SITE_ORIGIN}${post.image}`
-      : logoPath
-        ? logoPath.startsWith('http')
-          ? logoPath
-          : `${SITE_ORIGIN}${logoPath}`
-        : DEFAULT_IMAGE;
+    // Match bot SEO: same 1200×630 OG endpoint as parent-link card size.
+    const image = `${SITE_ORIGIN}/api/og/news-post?id=${encodeURIComponent(post.id)}`;
 
     const abs = absoluteNewsPostUrl(post.id);
     const path = abs.startsWith(SITE_ORIGIN)
