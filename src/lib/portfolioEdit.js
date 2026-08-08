@@ -42,7 +42,7 @@ export function isWatchlistKind(kind) {
   return kind === 'watchlist';
 }
 
-/** Live holdings cost column: broker apps show either total invested or avg buy price. */
+/** @deprecated Cost entry removed — holdings are qty-only. Kept for unused call sites. */
 export const COST_MODES = {
   invested: 'invested',
   avg: 'avg',
@@ -52,12 +52,11 @@ export function formatCostInput(value) {
   if (value === '' || value == null) return '';
   const n = Number(value);
   if (!Number.isFinite(n)) return '';
-  // Keep enough precision for avg prices without trailing noise.
   const rounded = Math.round(n * 10000) / 10000;
   return String(rounded);
 }
 
-/** Live edit: invested ≤2 dp, qty (fund units) ≤6 dp. Blocks non-numeric / scroll-spin inputs. */
+/** Live edit: qty (fund units) ≤6 dp. Blocks non-numeric / scroll-spin inputs. */
 export const INVESTED_MAX_DECIMALS = 2;
 export const QTY_MAX_DECIMALS = 6;
 
@@ -96,20 +95,14 @@ export function investedFromAvgQty(avg, qty) {
   return formatCostInput(a * q);
 }
 
-/** Total rupees invested across live holdings (qty × avg, preferring explicit invested). */
-export function totalInvestedFromHoldings(holdings) {
-  return (holdings ?? []).reduce((sum, h) => {
-    const explicit = Number(h?.invested);
-    if (Number.isFinite(explicit) && explicit > 0) return sum + explicit;
-    const qty = Number(h?.qty) || 0;
-    const avg = Number(h?.avg) || 0;
-    return sum + qty * avg;
-  }, 0);
+/** @deprecated Cost basis removed — always 0. */
+export function totalInvestedFromHoldings() {
+  return 0;
 }
 
 /**
- * Compare portfolio holdings before vs after a save.
- * @returns {{ beforeCount, afterCount, beforeInvested, afterInvested, investedDelta, added, removed, changed }}
+ * Compare portfolio holdings before vs after a save (qty-focused).
+ * @returns {{ beforeCount, afterCount, beforeQty, afterQty, qtyDelta, added, removed, changed }}
  */
 export function summarizeHoldingsChange(beforeHoldings = [], afterHoldings = []) {
   const beforeMap = new Map();
@@ -117,13 +110,10 @@ export function summarizeHoldingsChange(beforeHoldings = [], afterHoldings = [])
     const ticker = String(h?.ticker ?? '').trim().toUpperCase();
     if (!ticker) continue;
     const qty = Number(h.qty) || 0;
-    const invested =
-      Number(h.invested) > 0 ? Number(h.invested) : qty * (Number(h.avg) || 0);
     beforeMap.set(ticker, {
       ticker,
       name: h.assetName || h.name || ticker,
       qty,
-      invested,
     });
   }
 
@@ -132,13 +122,10 @@ export function summarizeHoldingsChange(beforeHoldings = [], afterHoldings = [])
     const ticker = String(h?.ticker ?? '').trim().toUpperCase();
     if (!ticker) continue;
     const qty = Number(h.qty) || 0;
-    const invested =
-      Number(h.invested) > 0 ? Number(h.invested) : qty * (Number(h.avg) || 0);
     afterMap.set(ticker, {
       ticker,
       name: h.assetName || h.name || ticker,
       qty,
-      invested,
     });
   }
 
@@ -152,10 +139,7 @@ export function summarizeHoldingsChange(beforeHoldings = [], afterHoldings = [])
       added.push(after);
       continue;
     }
-    if (
-      Math.abs(before.qty - after.qty) > 1e-9 ||
-      Math.abs(before.invested - after.invested) > 0.5
-    ) {
+    if (Math.abs(before.qty - after.qty) > 1e-9) {
       changed.push({ ticker, name: after.name || before.name, before, after });
     }
   }
@@ -163,71 +147,43 @@ export function summarizeHoldingsChange(beforeHoldings = [], afterHoldings = [])
     if (!afterMap.has(ticker)) removed.push(before);
   }
 
-  const beforeInvested = totalInvestedFromHoldings(beforeHoldings);
-  const afterInvested = totalInvestedFromHoldings(afterHoldings);
+  const beforeQty = [...beforeMap.values()].reduce((s, h) => s + h.qty, 0);
+  const afterQty = [...afterMap.values()].reduce((s, h) => s + h.qty, 0);
 
   return {
     beforeCount: beforeMap.size,
     afterCount: afterMap.size,
-    beforeInvested,
-    afterInvested,
-    investedDelta: afterInvested - beforeInvested,
+    beforeQty,
+    afterQty,
+    qtyDelta: afterQty - beforeQty,
+    // Back-compat aliases (unused by new sheet)
+    beforeInvested: 0,
+    afterInvested: 0,
+    investedDelta: 0,
     added,
     removed,
     changed,
   };
 }
 
-/** Keep invested ↔ avg in sync when editing live holding rows. */
-export function patchLiveCostFields(row, patch, costMode = COST_MODES.invested) {
-  const next = { ...row, ...patch };
-
-  if (Object.prototype.hasOwnProperty.call(patch, 'avg')) {
-    next.avg = patch.avg;
-    if (next.qty !== '' && patch.avg !== '') {
-      const invested = investedFromAvgQty(patch.avg, next.qty);
-      if (invested !== '') next.invested = invested;
-    }
-    return next;
-  }
-
-  if (Object.prototype.hasOwnProperty.call(patch, 'invested')) {
-    next.invested = patch.invested;
-    if (next.qty !== '' && patch.invested !== '') {
-      const avg = avgFromInvestedQty(patch.invested, next.qty);
-      if (avg !== '') next.avg = avg;
-    }
-    return next;
-  }
-
+/** Patch live holding edit rows (qty-only; clears leftover cost fields). */
+export function patchLiveCostFields(row, patch) {
+  const next = { ...row, ...patch, invested: '', avg: '' };
   if (Object.prototype.hasOwnProperty.call(patch, 'qty')) {
     next.qty = patch.qty;
-    if (costMode === COST_MODES.avg) {
-      if (next.avg !== '' && patch.qty !== '') {
-        const invested = investedFromAvgQty(next.avg, patch.qty);
-        if (invested !== '') next.invested = invested;
-      }
-    } else if (next.invested !== '' && patch.qty !== '') {
-      const avg = avgFromInvestedQty(next.invested, patch.qty);
-      if (avg !== '') next.avg = avg;
-    }
-    return next;
   }
-
   return next;
 }
 
 export function withSyncedAvg(row) {
-  if (row.avg !== '' && row.avg != null) return row;
-  const avg = avgFromInvestedQty(row.invested, row.qty);
-  return avg === '' ? row : { ...row, avg };
+  return { ...row, avg: '', invested: '' };
 }
 
 function rowHasInput(row, isWatchlist) {
   if (isWatchlist) {
     return Boolean(row.ticker?.trim());
   }
-  return Boolean(row.ticker?.trim() || row.invested !== '' && row.invested != null || row.qty !== '' && row.qty != null);
+  return Boolean(row.ticker?.trim() || (row.qty !== '' && row.qty != null));
 }
 
 /** Resolve watchlist weights: keep explicit % when every row has one; else equal-weight. */
@@ -266,24 +222,20 @@ export function buildWatchlistHoldings(rows, assetsByKey = new Map()) {
   });
 }
 
+/** Persist live holdings as qty-only (avg always 0). Current value = qty × live price. */
 export function buildLiveHoldings(rows, assetsByKey = new Map()) {
   return rows.map((row) => {
     const ticker = row.ticker.trim();
     const asset = assetsByKey.get(ticker);
     const qty = Number(row.qty) || 0;
-    const invested = Number(row.invested) || 0;
-    const avg = qty > 0 ? invested / qty : 0;
-    // Unmapped broker positions are retained at their average cost, which
-    // deliberately starts them at zero profit/loss until a market mapping is
-    // available.
-    const price = asset?.price ?? avg;
+    const price = Number(asset?.price);
     return recalcHolding({
       ticker: asset?.key ?? ticker,
       assetName: asset?.name ?? row.name?.trim() ?? '',
       isin: asset?.isin ?? row.isin ?? null,
       qty,
-      avg,
-      price,
+      avg: 0,
+      price: Number.isFinite(price) && price > 0 ? price : 0,
     });
   });
 }
@@ -314,9 +266,7 @@ export function validatePortfolioDraft({ kind, name, rows }) {
     if (!ticker) rowErrors.ticker = true;
 
     if (!isWatchlist) {
-      const invested = Number(row.invested);
       const qty = Number(row.qty);
-      if (row.invested === '' || Number.isNaN(invested) || invested < 0) rowErrors.invested = true;
       if (row.qty === '' || Number.isNaN(qty) || qty <= 0) rowErrors.qty = true;
     }
 
@@ -332,7 +282,7 @@ export function validatePortfolioDraft({ kind, name, rows }) {
     if (fallbackRow) {
       errors.rows[fallbackRow.id] = {
         ticker: true,
-        ...(isWatchlist ? {} : { invested: true, qty: true }),
+        ...(isWatchlist ? {} : { qty: true }),
       };
     }
   } else {
@@ -367,19 +317,17 @@ export function formatPortfolioSaveValidationMessage(errors, { isWatchlist = fal
   if (rowErrorEntries.length === 0) {
     return isWatchlist
       ? 'Add at least one ticker before saving.'
-      : 'Add at least one holding with ticker, total invested, and quantity before saving.';
+      : 'Add at least one holding with ticker and quantity before saving.';
   }
 
   const issues = new Set();
   for (const [, rowErrors] of rowErrorEntries) {
     if (rowErrors?.ticker) issues.add('ticker');
-    if (rowErrors?.invested) issues.add('invested');
     if (rowErrors?.qty) issues.add('quantity');
   }
 
   const parts = [];
   if (issues.has('ticker')) parts.push('a valid ticker (duplicates are not allowed)');
-  if (issues.has('invested')) parts.push('total invested (≥ 0)');
   if (issues.has('quantity')) parts.push('quantity (> 0)');
 
   if (parts.length === 0) {

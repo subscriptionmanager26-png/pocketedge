@@ -139,7 +139,7 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
 
 export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByTicker = {} }) {
   const [metric, setMetric] = useState('today_pnl');
-  const [sortBy, setSortBy] = useState('invested_value');
+  const [sortBy, setSortBy] = useState('current_value');
   const [sortOrder, setSortOrder] = useState('desc');
   const [sortOpen, setSortOpen] = useState(false);
   const [assetFilter, setAssetFilter] = useState('all');
@@ -198,7 +198,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
   };
 
   const metricLabel = METRIC_OPTIONS.find((opt) => opt.id === metric)?.label ?? "Day's PnL";
-  const sortLabel = SORT_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? 'Invested Value';
+  const sortLabel = SORT_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? 'Current Value';
   const assetLabel = ASSET_FILTERS.find((opt) => opt.id === assetFilter)?.label ?? 'All';
 
   const sortedHoldings = [...holdings]
@@ -340,59 +340,25 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             const isFund =
               h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
             const isEtf = h.assetType === 'etf';
-            const qty = Number(h.qty);
-            const avg = Number(h.avg);
-            const invested =
-              h.invested != null
-                ? Number(h.invested)
-                : Number.isFinite(qty) && Number.isFinite(avg)
-                  ? qty * avg
-                  : null;
             const currentValue = h.value != null ? Number(h.value) : null;
             const todayPnl = h.todayPnl;
             const todayPnlPct = h.todayPnlPct ?? h.changePct ?? stock?.changePct;
-            const storedPnlPct = Number(h.pnlPct ?? h.pnl_pct ?? h.totalReturnPct);
-            const totalPnl =
-              invested != null &&
-              Number.isFinite(invested) &&
-              currentValue != null &&
-              Number.isFinite(currentValue)
-                ? currentValue - invested
-                : null;
-            const totalPnlPct =
-              totalPnl != null && invested > 0
-                ? (totalPnl / invested) * 100
-                : Number.isFinite(storedPnlPct)
-                  ? storedPnlPct
-                  : null;
-            const investedText =
-              invested != null && Number.isFinite(invested) && invested > 0
-                ? formatInr(invested, { compact: true })
-                : null;
             const label = holdingDisplayLabel(h);
 
-            // Absolute row (aligned with Invested) + secondary row (aligned with name).
             const metricValue =
               metric === 'current_value'
                 ? {
                     primary: currentValue,
-                    secondaryPct: totalPnlPct,
+                    secondaryPct: todayPnlPct,
                     primarySigned: false,
                     secondarySigned: true,
                   }
-                : metric === 'total_pnl'
-                  ? {
-                      primary: totalPnl,
-                      secondaryPct: totalPnlPct,
-                      primarySigned: true,
-                      secondarySigned: true,
-                    }
-                  : {
-                      primary: todayPnl,
-                      secondaryPct: todayPnlPct,
-                      primarySigned: true,
-                      secondarySigned: true,
-                    };
+                : {
+                    primary: todayPnl,
+                    secondaryPct: todayPnlPct,
+                    primarySigned: true,
+                    secondarySigned: true,
+                  };
 
             const primaryTone = metricValue.primarySigned ? metricValue.primary : null;
             const secondaryTone = metricValue.secondarySigned ? metricValue.secondaryPct : null;
@@ -470,7 +436,10 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                       className="flex h-5 min-w-0 items-center gap-1.5 sm:gap-2"
                     >
                       <p className="min-w-0 truncate text-[12px] font-semibold leading-5 tabular-nums text-pe-text-muted">
-                        Invested {investedText ?? '—'}
+                        Qty{' '}
+                        {Number.isFinite(Number(h.qty))
+                          ? Number(h.qty).toLocaleString('en-IN', { maximumFractionDigits: 4 })
+                          : '—'}
                       </p>
                       {form ? (
                         <span className="inline-flex max-h-5 shrink-0 items-center overflow-visible">
@@ -524,64 +493,33 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 
 const METRIC_OPTIONS = [
   { id: 'today_pnl', label: "Day's PnL" },
-  { id: 'total_pnl', label: 'Total PnL' },
   { id: 'current_value', label: 'Current Value' },
 ];
 
 const SORT_OPTIONS = [
   { id: 'name', label: 'Name' },
-  { id: 'invested_value', label: 'Invested Value' },
   { id: 'current_value', label: 'Current Value' },
-  { id: 'total_profit_abs', label: 'Total Profit in abs' },
-  { id: 'total_profit_pct', label: 'Total Profit in %' },
   { id: 'today_profit_abs', label: "Today's Profit in abs" },
   { id: 'today_profit_pct', label: "Today's Profit in %" },
 ];
 
 function getHoldingSortValue(holding, sortBy) {
   const stock = STOCKS[holding.ticker];
-  const qty = Number(holding.qty);
-  const avg = Number(holding.avg);
-  const invested =
-    holding.invested != null
-      ? Number(holding.invested)
-      : Number.isFinite(qty) && Number.isFinite(avg)
-        ? qty * avg
-        : null;
   const currentValue = holding.value != null ? Number(holding.value) : null;
   const todayAbs = Number(holding.todayPnl);
   const todayPct = Number(holding.todayPnlPct ?? holding.changePct ?? stock?.changePct);
-  const storedPnlPct = Number(holding.pnlPct ?? holding.pnl_pct ?? holding.totalReturnPct);
-  const totalAbs =
-    invested != null &&
-    Number.isFinite(invested) &&
-    currentValue != null &&
-    Number.isFinite(currentValue)
-      ? currentValue - invested
-      : null;
-  const totalPct =
-    totalAbs != null && invested > 0
-      ? (totalAbs / invested) * 100
-      : Number.isFinite(storedPnlPct)
-        ? storedPnlPct
-        : null;
 
   const safe = (n) => (n != null && Number.isFinite(Number(n)) ? Number(n) : Number.NEGATIVE_INFINITY);
 
   switch (sortBy) {
     case 'current_value':
       return safe(currentValue);
-    case 'total_profit_abs':
-      return safe(totalAbs);
-    case 'total_profit_pct':
-      return safe(totalPct);
     case 'today_profit_abs':
       return safe(todayAbs);
     case 'today_profit_pct':
       return safe(todayPct);
-    case 'invested_value':
     default:
-      return safe(invested);
+      return safe(currentValue);
   }
 }
 

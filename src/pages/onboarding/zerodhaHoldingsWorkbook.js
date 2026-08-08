@@ -48,7 +48,6 @@ function rowsFromSheet(xlsx, sheet, { type }) {
     const symbol = String(valueAt(row, headerMap, 'symbol') ?? '').trim();
     const isin = String(valueAt(row, headerMap, 'isin') ?? '').trim().toUpperCase();
     const quantity = parseNumber(valueAt(row, headerMap, 'quantityavailable'));
-    const averagePrice = parseNumber(valueAt(row, headerMap, 'averageprice'));
     if (!symbol || quantity == null || quantity <= 0) continue;
     if (type === FUND_SHEET && !/^[A-Z0-9]{12}$/.test(isin)) continue;
 
@@ -62,8 +61,8 @@ function rowsFromSheet(xlsx, sheet, { type }) {
       name,
       isin: isin || null,
       qty: quantity,
-      avg: averagePrice ?? 0,
-      invested: quantity * (averagePrice ?? 0),
+      avg: 0,
+      invested: 0,
     });
   }
   return parsed;

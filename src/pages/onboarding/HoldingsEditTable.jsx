@@ -1,84 +1,52 @@
-import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import PortfolioAssetSearchField from '../../components/PortfolioAssetSearchField';
-import CostModeToggle from '../../components/CostModeToggle';
-import {
-  COST_MODES,
-  fieldClass,
-  patchLiveCostFields,
-  withSyncedAvg,
-} from '../../lib/portfolioEdit';
+import { fieldClass, patchLiveCostFields } from '../../lib/portfolioEdit';
 
 const compactInputClass =
   'w-full min-w-0 rounded-md border border-pe-border-strong bg-pe-canvas px-2.5 py-2 text-base text-pe-text outline-none focus:border-pe-accent focus:ring-1 focus:ring-pe-accent md:text-[15px]';
 
-const rowGridClass =
-  'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
+const rowGridClass = 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2';
 
 export function emptyHoldingRow() {
   return { id: crypto.randomUUID(), ticker: '', name: '', invested: '', qty: '', avg: '' };
 }
 
-function formatInr(value) {
-  return `₹${Math.round(value).toLocaleString('en-IN')}`;
-}
-
-export function sumTotalInvested(rows) {
-  return (rows ?? []).reduce((sum, row) => {
-    const invested = Number(row.invested);
-    if (row.invested === '' || Number.isNaN(invested) || invested < 0) return sum;
-    return sum + invested;
-  }, 0);
+export function sumTotalInvested() {
+  return 0;
 }
 
 export function countFilledHoldings(rows) {
   return (rows ?? []).filter((row) => {
     const ticker = String(row.ticker ?? '').trim();
-    const invested = Number(row.invested);
     const qty = Number(row.qty);
-    return (
-      ticker &&
-      row.invested !== '' &&
-      !Number.isNaN(invested) &&
-      invested >= 0 &&
-      row.qty !== '' &&
-      !Number.isNaN(qty) &&
-      qty > 0
-    );
+    return ticker && row.qty !== '' && !Number.isNaN(qty) && qty > 0;
   }).length;
 }
 
-/** Validate edit rows → analysis holdings `{ ticker, qty, avg }`. */
+/** Validate edit rows → holdings `{ ticker, qty, avg: 0 }`. */
 export function validateHoldingsRows(rows) {
   const errors = {};
   const holdings = [];
 
   for (const row of rows) {
-    const synced = withSyncedAvg(row);
-    const ticker = String(synced.ticker).trim().toUpperCase();
-    const invested = Number(synced.invested);
-    const qty = Number(synced.qty);
-    const hasAny = Boolean(
-      ticker || synced.invested !== '' || synced.qty !== '' || synced.avg !== ''
-    );
+    const ticker = String(row.ticker ?? '').trim().toUpperCase();
+    const qty = Number(row.qty);
+    const hasAny = Boolean(ticker || row.qty !== '');
     if (!hasAny) continue;
 
     const rowErr = {};
     if (!ticker) rowErr.ticker = true;
-    if (synced.invested === '' || Number.isNaN(invested) || invested < 0) {
-      rowErr.invested = true;
-      rowErr.avg = true;
-    }
-    if (synced.qty === '' || Number.isNaN(qty) || qty <= 0) rowErr.qty = true;
+    if (row.qty === '' || Number.isNaN(qty) || qty <= 0) rowErr.qty = true;
 
     if (Object.keys(rowErr).length) {
-      errors[synced.id] = rowErr;
+      errors[row.id] = rowErr;
     } else {
       holdings.push({
         ticker,
         qty,
-        avg: qty > 0 ? invested / qty : 0,
-        name: synced.name,
+        avg: 0,
+        name: row.name,
+        invested: 0,
       });
     }
   }
@@ -86,13 +54,13 @@ export function validateHoldingsRows(rows) {
   if (holdings.length < 1) {
     const fallback = rows[0];
     if (fallback) {
-      errors[fallback.id] = { ticker: true, invested: true, avg: true, qty: true };
+      errors[fallback.id] = { ticker: true, qty: true };
     }
     return {
       ok: false,
       errors,
       holdings: [],
-      message: 'Add at least one holding with ticker, cost, and quantity.',
+      message: 'Add at least one holding with ticker and quantity.',
     };
   }
 
@@ -108,30 +76,16 @@ export function validateHoldingsRows(rows) {
   return { ok: true, errors: {}, holdings, message: '' };
 }
 
-/** Live portfolio edit table - matches Profile portfolio editor. */
+/** Live portfolio edit table - qty only (matches Profile portfolio editor). */
 export default function HoldingsEditTable({
   rows,
   fieldErrors = {},
   onUpdateRow,
   onRemoveRow,
   onAddRow,
-  hint = 'Search a stock, ETF, or fund, then enter cost and quantity.',
+  hint = 'Search a stock, ETF, or fund, then enter quantity.',
 }) {
-  const [costMode, setCostMode] = useState(COST_MODES.invested);
-  const totalInvested = sumTotalInvested(rows);
   const holdingCount = countFilledHoldings(rows);
-  const costLabel = costMode === COST_MODES.avg ? 'Avg price' : 'Total invested';
-  const costErrorKey = costMode === COST_MODES.avg ? 'avg' : 'invested';
-
-  const handleCostMode = (mode) => {
-    setCostMode(mode);
-    if (mode === COST_MODES.avg) {
-      rows.forEach((row) => {
-        const synced = withSyncedAvg(row);
-        if (synced.avg !== row.avg) onUpdateRow(row.id, { avg: synced.avg });
-      });
-    }
-  };
 
   const handlePatch = (id, patch) => {
     const row = rows.find((entry) => entry.id === id);
@@ -139,8 +93,7 @@ export default function HoldingsEditTable({
       onUpdateRow(id, patch);
       return;
     }
-    // Parent merges patch into the row - pass only changed cost-synced fields.
-    const next = patchLiveCostFields(row, patch, costMode);
+    const next = patchLiveCostFields(row, patch);
     const delta = {};
     for (const key of Object.keys(next)) {
       if (next[key] !== row[key]) delta[key] = next[key];
@@ -152,35 +105,29 @@ export default function HoldingsEditTable({
     <div>
       <div className="rounded-lg border border-pe-border bg-pe-surface px-4 py-3">
         <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-          Total invested
+          Holdings
         </p>
         <p className="mt-1 text-[28px] font-bold tabular-nums tracking-tight text-pe-text">
-          {formatInr(totalInvested)}
+          {holdingCount}
         </p>
         <p className="mt-1 text-[12px] text-pe-text-secondary">
           {holdingCount === 0
-            ? 'Add holdings below - match this with Total invested in your broker app.'
-            : `${holdingCount} holding${holdingCount === 1 ? '' : 's'} · check this against your broker app`}
+            ? 'Add holdings below — quantity only.'
+            : `${holdingCount} holding${holdingCount === 1 ? '' : 's'} · qty only (no buy price)`}
         </p>
       </div>
 
-      <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
-            Holdings
-          </p>
-          {hint ? <p className="mt-1 text-sm text-pe-text-secondary">{hint}</p> : null}
-        </div>
-        <CostModeToggle value={costMode} onChange={handleCostMode} />
+      <div className="mt-8">
+        <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-pe-text-muted">
+          Holdings
+        </p>
+        {hint ? <p className="mt-1 text-sm text-pe-text-secondary">{hint}</p> : null}
       </div>
 
       <div className="mt-4 space-y-2">
         <div className={`${rowGridClass} px-0.5`}>
           <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Ticker
-          </p>
-          <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-            {costLabel}
           </p>
           <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
             Qty
@@ -194,8 +141,6 @@ export default function HoldingsEditTable({
             .filter((entry) => entry.id !== row.id)
             .map((entry) => entry.ticker.trim())
             .filter(Boolean);
-          const costValue = costMode === COST_MODES.avg ? row.avg ?? '' : row.invested;
-          const costHasError = Boolean(rowErr[costErrorKey] || rowErr.invested || rowErr.avg);
 
           return (
             <div key={row.id} className="space-y-1">
@@ -212,33 +157,14 @@ export default function HoldingsEditTable({
                     handlePatch(row.id, {
                       ticker: asset.key,
                       name: asset.kind === 'fund' ? asset.name : '',
+                      isin: asset.isin ?? null,
                     })
                   }
                 />
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={costValue}
-                  onChange={(e) =>
-                    handlePatch(
-                      row.id,
-                      costMode === COST_MODES.avg
-                        ? { avg: e.target.value }
-                        : { invested: e.target.value }
-                    )
-                  }
-                  placeholder={costLabel}
-                  aria-label={costLabel}
-                  className={fieldClass(
-                    `${compactInputClass} text-right tabular-nums`,
-                    costHasError
-                  )}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
                   value={row.qty}
                   onChange={(e) => handlePatch(row.id, { qty: e.target.value })}
                   placeholder="Qty"

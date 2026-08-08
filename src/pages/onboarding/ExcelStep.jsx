@@ -145,23 +145,13 @@ export default function ExcelStep({ draft, onDraftChange, onBack, onSubmit }) {
                 ? fileNames[0]
                 : `${fileNames.length} Excel files`}
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Total invested
-                </p>
-                <p className="mt-1 text-[22px] font-bold tabular-nums tracking-tight text-pe-text">
-                  {formatInr(invested)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Holdings
-                </p>
-                <p className="mt-1 text-[22px] font-bold tabular-nums tracking-tight text-pe-text">
-                  {holdingCount}
-                </p>
-              </div>
+            <div className="mt-4">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                Holdings
+              </p>
+              <p className="mt-1 text-[22px] font-bold tabular-nums tracking-tight text-pe-text">
+                {holdingCount}
+              </p>
             </div>
           </div>
 

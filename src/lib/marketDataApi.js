@@ -206,6 +206,7 @@ export function marketAssetRowToItem(row) {
       industry,
       sector,
       broadSector,
+      isin,
       logoIconUrl,
       logoUrl,
       assetType: 'fund',

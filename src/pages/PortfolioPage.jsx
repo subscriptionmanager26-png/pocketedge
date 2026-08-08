@@ -543,21 +543,17 @@ export default function PortfolioPage({
             <div className="pointer-events-none select-none blur-[4px]" aria-hidden>
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4">
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-pe-text-muted">Invested Value</p>
-                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
-                    ₹10,00,000
-                  </p>
-                </div>
-                <div className="min-w-0 text-right">
                   <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
                   <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
                     ₹12,48,320
                   </p>
                 </div>
-              </div>
-              <div className="mt-3 flex items-stretch gap-2 sm:gap-3">
-                <PortfolioPnlCard label="Total PnL" amount={248320} pct={24.83} />
-                <PortfolioPnlCard label="1D PnL" amount={8420} pct={0.68} />
+                <div className="min-w-0 text-right">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">1D PnL</p>
+                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-positive sm:text-[24px]">
+                    +₹8,420
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -650,31 +646,31 @@ export default function PortfolioPage({
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[12px] font-semibold text-pe-text-muted">Invested Value</p>
+                    <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
                     <PortfolioKindMetaTags portfolio={activeList} />
                   </div>
-                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
-                    {formatInr(metrics.invested)}
-                  </p>
-                </div>
-                <div className="min-w-0 text-right">
-                  <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
                   <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
                     {formatInr(metrics.totalValue)}
                   </p>
                 </div>
-              </div>
-              <div className="mt-3 flex items-stretch gap-2 sm:gap-3">
-                <PortfolioPnlCard
-                  label="Total PnL"
-                  amount={metrics.totalPnl}
-                  pct={metrics.totalPnlPct}
-                />
-                <PortfolioPnlCard
-                  label="1D PnL"
-                  amount={metrics.todayPnl}
-                  pct={metrics.todayPnlPct}
-                />
+                <div className="min-w-0 text-right">
+                  <p className="text-[12px] font-semibold text-pe-text-muted">1D PnL</p>
+                  <p
+                    className={`mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums sm:text-[24px] ${
+                      Number(metrics.todayPnl) > 0
+                        ? 'text-pe-positive'
+                        : Number(metrics.todayPnl) < 0
+                          ? 'text-pe-negative'
+                          : 'text-pe-text'
+                    }`}
+                  >
+                    {Number(metrics.todayPnl) > 0 ? '+' : Number(metrics.todayPnl) < 0 ? '−' : ''}
+                    {formatInr(Math.abs(Number(metrics.todayPnl) || 0))}
+                    <span className="ml-1 text-[13px] font-semibold">
+                      ({Number(metrics.todayPnlPct || 0).toFixed(2)}%)
+                    </span>
+                  </p>
+                </div>
               </div>
               {(activeList?.kind ?? 'live') !== 'watchlist' && false && onUpdateHoldings ? (
                 <button
