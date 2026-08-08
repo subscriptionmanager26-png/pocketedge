@@ -1,10 +1,10 @@
 import { postPath } from './routes';
-import { isNewsSocialPost, parseNewsSocialContent } from './newsPostBody';
 import { isPostHogEnabled } from './posthog';
 import posthog from 'posthog-js';
 
 const SITE_ORIGIN = 'https://www.pocketedge.in';
-const PREVIEW_CHARS = 180;
+/** OG description / preview length for unfurl cards. */
+export const NEWS_OG_PREVIEW_CHARS = 140;
 
 /**
  * Absolute URL for a news (or any) social post.
@@ -31,7 +31,7 @@ export function absoluteNewsPostUrl(postId, origin) {
   return `${SITE_ORIGIN}${path}`;
 }
 
-function truncatePreview(text, max = PREVIEW_CHARS) {
+export function truncatePreview(text, max = NEWS_OG_PREVIEW_CHARS) {
   const flat = String(text ?? '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -43,45 +43,28 @@ function truncatePreview(text, max = PREVIEW_CHARS) {
   return `${cut.trim()}…`;
 }
 
-/**
- * Caption for system share (no logo). Omits empty parts.
- */
-export function buildNewsShareCaption({
-  companyName,
-  symbol,
-  title,
-  text,
-} = {}) {
-  const lines = [];
+/** OG / document title: company name + symbol only. */
+export function buildNewsShareTitle({ companyName, symbol } = {}) {
   const name = String(companyName ?? '').trim();
   const ticker = String(symbol ?? '')
     .trim()
     .toUpperCase();
-  const headline = String(title ?? '').trim();
-  const preview = truncatePreview(text);
-
-  if (name) lines.push(name);
-  if (ticker) lines.push(`@${ticker}`);
-  if (headline) {
-    if (lines.length) lines.push('');
-    lines.push(headline);
-  }
-  if (preview) {
-    if (lines.length) lines.push('');
-    lines.push(preview);
-  }
-  return lines.join('\n').trim();
+  if (name && ticker) return `${name} (@${ticker})`;
+  if (name) return name;
+  if (ticker) return `@${ticker}`;
+  return 'News on PocketEdge';
 }
 
-export function buildNewsShareTitle({ companyName, symbol, title } = {}) {
-  const name = String(companyName ?? '').trim();
-  const ticker = String(symbol ?? '')
-    .trim()
-    .toUpperCase();
-  const headline = String(title ?? '').trim();
-  const head = [name, ticker ? `(@${ticker})` : ''].filter(Boolean).join(' ');
-  if (head && headline) return `${head} — ${headline}`;
-  return head || headline || 'News on PocketEdge';
+/**
+ * Post body for OG description: title + text, capped at 140 chars.
+ */
+export function buildNewsOgDescription({ title, text } = {}) {
+  const combined = [String(title ?? '').trim(), String(text ?? '').trim()]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return truncatePreview(combined, NEWS_OG_PREVIEW_CHARS);
 }
 
 function track(event, props) {
@@ -101,43 +84,19 @@ export async function copyNewsPostLink(postId) {
 }
 
 /**
- * Native share with caption + URL; falls back to copying the link.
+ * Native share — URL only (no caption). Falls back to copying the link.
  * @returns {'shared'|'copied'|'cancelled'}
  */
-export async function shareNewsPost({ post, companyName } = {}) {
+export async function shareNewsPost({ post } = {}) {
   const postId = post?.id;
   if (!postId) throw new Error('Missing post id');
 
-  const parts = isNewsSocialPost(post)
-    ? parseNewsSocialContent(post)
-    : { symbol: null, title: '', text: String(post?.body ?? '') };
-
-  const displayName =
-    companyName ||
-    post?.companyName ||
-    parts.symbol ||
-    'PocketEdge News';
   const url = absoluteNewsPostUrl(postId);
-  const caption = buildNewsShareCaption({
-    companyName: displayName,
-    symbol: parts.symbol,
-    title: parts.title,
-    text: parts.text,
-  });
-  const title = buildNewsShareTitle({
-    companyName: displayName,
-    symbol: parts.symbol,
-    title: parts.title,
-  });
 
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
-      const payloads = [
-        { title, text: caption, url },
-        { text: caption, url },
-        { title, url },
-        { url },
-      ];
+      // URL only — platforms unfurl the OG card. Avoid title/text so message stays just the link.
+      const payloads = [{ url }, { text: url }];
       for (const payload of payloads) {
         try {
           if (navigator.canShare && !navigator.canShare(payload)) continue;
@@ -161,5 +120,3 @@ export async function shareNewsPost({ post, companyName } = {}) {
   track('news_post_shared', { post_id: String(postId), method: 'clipboard' });
   return 'copied';
 }
-
-export { truncatePreview };
