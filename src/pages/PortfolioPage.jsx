@@ -51,7 +51,7 @@ export default function PortfolioPage({
   onUpdateHoldings,
 }) {
   const [listId, setListId] = useState(null);
-  const [contentTab, setContentTab] = useState('performance');
+  const [contentTab, setContentTab] = useState('holdings');
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [watchlistTick, setWatchlistTick] = useState(0);
   const [portfolioTick, setPortfolioTick] = useState(0);
@@ -322,7 +322,7 @@ export default function PortfolioPage({
   }, [activeList, assetsByKey]);
 
   const displayMetrics = useMemo(() => {
-    if (!liveActiveList) return { metrics: null, holdingsRows: [] };
+    if (!liveActiveList) return { metrics: null, holdingsRows: [], isWatchlist: false };
     const metricsSource =
       liveActiveList.kind === 'portfolio' || liveActiveList.kind === 'watchlist'
         ? liveActiveList
@@ -333,17 +333,27 @@ export default function PortfolioPage({
           };
     const metrics = computePortfolioDisplayMetrics(metricsSource);
     const holdings = metrics.holdings ?? [];
+    const isWatchlist = Boolean(metrics.isWatchlist) || metricsSource.kind === 'watchlist';
     const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
     const holdingsRows = holdings
-      .map((h) => ({
-        ...h,
-        weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
-      }))
+      .map((h) => {
+        const declared = Number(h.weightPct ?? h.weight);
+        const weight = isWatchlist
+          ? Number.isFinite(declared) && declared > 0
+            ? declared
+            : holdings.length
+              ? 100 / holdings.length
+              : 0
+          : totalValue > 0
+            ? ((h.value ?? 0) / totalValue) * 100
+            : 0;
+        return { ...h, weight };
+      })
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
-    return { metrics, holdingsRows };
+    return { metrics, holdingsRows, isWatchlist };
   }, [liveActiveList]);
 
-  const { metrics, holdingsRows } = displayMetrics;
+  const { metrics, holdingsRows, isWatchlist: activeIsWatchlist } = displayMetrics;
 
   const formItems = useMemo(
     () =>
@@ -371,7 +381,7 @@ export default function PortfolioPage({
   const [postsLoading, setPostsLoading] = useState(false);
 
   useEffect(() => {
-    if (contentTab !== 'performance') return undefined;
+    if (contentTab !== 'holdings') return undefined;
     if (!formItems.length) {
       setFormByTicker({});
       return undefined;
@@ -620,7 +630,7 @@ export default function PortfolioPage({
           active={listId}
           onChange={(id) => {
             setListId(id);
-            setContentTab('performance');
+            setContentTab('holdings');
           }}
           trailing={
             !useBackend() ? (
@@ -643,45 +653,56 @@ export default function PortfolioPage({
         {metrics?.kind === 'portfolio' ? (
           <>
             <div>
-              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4">
+              {activeIsWatchlist ? (
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
+                    <p className="text-[12px] font-semibold text-pe-text-muted">1D change</p>
                     <PortfolioKindMetaTags portfolio={activeList} />
                   </div>
-                  <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
-                    {formatInr(metrics.totalValue)}
-                  </p>
-                </div>
-                <div className="min-w-0 text-right">
-                  <p className="text-[12px] font-semibold text-pe-text-muted">1D PnL</p>
                   <p
                     className={`mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums sm:text-[24px] ${
-                      Number(metrics.todayPnl) > 0
+                      Number(metrics.todayPnlPct) > 0
                         ? 'text-pe-positive'
-                        : Number(metrics.todayPnl) < 0
+                        : Number(metrics.todayPnlPct) < 0
                           ? 'text-pe-negative'
                           : 'text-pe-text'
                     }`}
                   >
-                    {Number(metrics.todayPnl) > 0 ? '+' : Number(metrics.todayPnl) < 0 ? '−' : ''}
-                    {formatInr(Math.abs(Number(metrics.todayPnl) || 0))}
-                    <span className="ml-1 text-[13px] font-semibold">
-                      ({Number(metrics.todayPnlPct || 0).toFixed(2)}%)
-                    </span>
+                    {Number(metrics.todayPnlPct) > 0 ? '+' : Number(metrics.todayPnlPct) < 0 ? '−' : ''}
+                    {Math.abs(Number(metrics.todayPnlPct) || 0).toFixed(2)}%
                   </p>
                 </div>
-              </div>
-              {(activeList?.kind ?? 'live') !== 'watchlist' && false && onUpdateHoldings ? (
-                <button
-                  type="button"
-                  onClick={() => onUpdateHoldings?.(activeList?.id ?? listId)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-pe-border bg-white py-2.5 text-sm font-semibold text-pe-text shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition hover:border-pe-accent hover:text-pe-accent sm:w-auto sm:px-4"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Update holdings
-                </button>
-              ) : null}
+              ) : (
+                <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[12px] font-semibold text-pe-text-muted">Current Value</p>
+                      <PortfolioKindMetaTags portfolio={activeList} />
+                    </div>
+                    <p className="mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums text-pe-text sm:text-[24px]">
+                      {formatInr(metrics.totalValue)}
+                    </p>
+                  </div>
+                  <div className="min-w-0 text-right">
+                    <p className="text-[12px] font-semibold text-pe-text-muted">1D PnL</p>
+                    <p
+                      className={`mt-1 truncate text-[20px] font-bold tracking-tight tabular-nums sm:text-[24px] ${
+                        Number(metrics.todayPnl) > 0
+                          ? 'text-pe-positive'
+                          : Number(metrics.todayPnl) < 0
+                            ? 'text-pe-negative'
+                            : 'text-pe-text'
+                      }`}
+                    >
+                      {Number(metrics.todayPnl) > 0 ? '+' : Number(metrics.todayPnl) < 0 ? '−' : ''}
+                      {formatInr(Math.abs(Number(metrics.todayPnl) || 0))}
+                      <span className="ml-1 text-[13px] font-semibold">
+                        ({Number(metrics.todayPnlPct || 0).toFixed(2)}%)
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         ) : null}
@@ -699,9 +720,10 @@ export default function PortfolioPage({
 
       <UnderlineTabs tabs={CONTENT_TABS} active={contentTab} onChange={setContentTab} />
 
-      {contentTab === 'performance' && (
+      {contentTab === 'holdings' && (
         <HoldingsSummary
           holdings={holdingsRows}
+          isWatchlist={activeIsWatchlist}
           onSelectStock={onSelectStock}
           onSelectFund={onSelectFund}
           formByTicker={formByTicker}
@@ -741,7 +763,7 @@ export default function PortfolioPage({
         onSave={(payload) => {
           const created = addWatchlist(payload);
           setListId(created.id);
-          setContentTab('performance');
+          setContentTab('holdings');
         }}
       />
 
@@ -766,7 +788,7 @@ export default function PortfolioPage({
 
 const FORM_METRIC_ORDER = ['out_of_form', 'unsure', 'in_form'];
 const CONTENT_TABS = [
-  { id: 'performance', label: 'Performance' },
+  { id: 'holdings', label: 'Holdings' },
   { id: 'news', label: 'News' },
   { id: 'corporate_actions', label: 'Corporate Actions' },
   { id: 'posts', label: 'Posts' },

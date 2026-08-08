@@ -19,6 +19,7 @@ import {
   CURRENT_USER,
   POSTS,
   copyPortfolioForUser,
+  computePortfolioDisplayMetrics,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -685,6 +686,11 @@ function InlinePortfolioBook({
   const social = getPortfolioEngagementSync(portfolio.id);
   const holdingCount =
     portfolio.holdings?.length || portfolio.tickers?.length || 0;
+  const dayChangePct = useMemo(() => {
+    if (!isWatchlist) return null;
+    const pct = Number(computePortfolioDisplayMetrics(portfolio).todayPnlPct);
+    return Number.isFinite(pct) ? pct : null;
+  }, [portfolio, isWatchlist]);
   const displayName = isWatchlist
     ? portfolio.name
     : canEdit
@@ -702,10 +708,22 @@ function InlinePortfolioBook({
         {isWatchlist ? (
           <div className="mt-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-              Total holdings
+              1D change
             </p>
-            <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
-              {holdingCount.toLocaleString('en-IN')}
+            <p
+              className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${
+                dayChangePct == null
+                  ? 'text-pe-text'
+                  : dayChangePct > 0
+                    ? 'text-pe-positive'
+                    : dayChangePct < 0
+                      ? 'text-pe-negative'
+                      : 'text-pe-text'
+              }`}
+            >
+              {dayChangePct == null
+                ? '—'
+                : `${dayChangePct > 0 ? '+' : dayChangePct < 0 ? '−' : ''}${Math.abs(dayChangePct).toFixed(2)}%`}
             </p>
           </div>
         ) : (
@@ -1005,6 +1023,12 @@ function PortfolioDetailView({
   const cancelEditsRef = useRef(() => {});
 
   const isWatchlist = isWatchlistKind(portfolioKind);
+
+  const watchlistDayChangePct = useMemo(() => {
+    if (!isWatchlist) return null;
+    const pct = Number(computePortfolioDisplayMetrics(portfolio).todayPnlPct);
+    return Number.isFinite(pct) ? pct : null;
+  }, [isWatchlist, portfolio]);
 
   useEffect(() => subscribePortfolioEngagement(() => setSocialTick((n) => n + 1)), []);
 
@@ -1579,12 +1603,22 @@ function PortfolioDetailView({
             {isWatchlist ? (
               <div className="mt-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                  Total holdings
+                  1D change
                 </p>
-                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
-                  {(portfolio.holdings?.length || portfolio.tickers?.length || 0).toLocaleString(
-                    'en-IN'
-                  )}
+                <p
+                  className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${
+                    watchlistDayChangePct == null
+                      ? 'text-pe-text'
+                      : watchlistDayChangePct > 0
+                        ? 'text-pe-positive'
+                        : watchlistDayChangePct < 0
+                          ? 'text-pe-negative'
+                          : 'text-pe-text'
+                  }`}
+                >
+                  {watchlistDayChangePct == null
+                    ? '—'
+                    : `${watchlistDayChangePct > 0 ? '+' : watchlistDayChangePct < 0 ? '−' : ''}${Math.abs(watchlistDayChangePct).toFixed(2)}%`}
                 </p>
               </div>
             ) : (
@@ -2095,6 +2129,10 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
         weight,
         assetType,
         logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
+        dayChangePct: (() => {
+          const fromHolding = Number(h.todayPnlPct ?? h.changePct ?? asset?.item?.changePct);
+          return Number.isFinite(fromHolding) ? fromHolding : null;
+        })(),
         ...extras,
       };
     };
@@ -2215,7 +2253,7 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
                   </p>
                 ) : null}
 
-                <div className="mt-2.5 grid grid-cols-1 gap-x-4 gap-y-1">
+                <div className={`mt-2.5 grid gap-x-4 gap-y-1 ${isWatchlist ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
                       Alloc.
@@ -2224,6 +2262,28 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
                       {Number.isFinite(row.weight) ? `${row.weight.toFixed(1)}%` : '—'}
                     </p>
                   </div>
+                  {isWatchlist ? (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
+                        1D change
+                      </p>
+                      <p
+                        className={`mt-0.5 text-sm font-semibold tabular-nums ${
+                          row.dayChangePct == null
+                            ? 'text-pe-text'
+                            : row.dayChangePct > 0
+                              ? 'text-pe-positive'
+                              : row.dayChangePct < 0
+                                ? 'text-pe-negative'
+                                : 'text-pe-text'
+                        }`}
+                      >
+                        {row.dayChangePct == null
+                          ? '—'
+                          : `${row.dayChangePct > 0 ? '+' : row.dayChangePct < 0 ? '−' : ''}${Math.abs(row.dayChangePct).toFixed(2)}%`}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

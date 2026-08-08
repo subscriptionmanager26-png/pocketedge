@@ -1413,7 +1413,7 @@ export function resolveWatchlistHoldings(portfolio) {
   }));
 }
 
-/** Metrics for Portfolio tab - live and watchlist share the same layout. */
+/** Metrics for Portfolio tab — live uses value; watchlists are weight + 1D % only. */
 export function computePortfolioDisplayMetrics(portfolio) {
   const isWatchlist = portfolio.kind === 'watchlist';
   const holdingsBase = isWatchlist
@@ -1423,7 +1423,7 @@ export function computePortfolioDisplayMetrics(portfolio) {
   const holdings = holdingsBase.map((h) => {
     // Funds: Day's PnL only after today's NAV is in (typically ~10:10 PM IST).
     const changePct = dayChangePctForPnl(h);
-    const todayPnl = (h.value ?? 0) * (changePct / 100);
+    const todayPnl = isWatchlist ? 0 : (h.value ?? 0) * (changePct / 100);
     return {
       ...h,
       changePct,
@@ -1432,27 +1432,60 @@ export function computePortfolioDisplayMetrics(portfolio) {
     };
   });
 
-  const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
+  const totalValue = isWatchlist
+    ? 0
+    : holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
   const invested = isWatchlist
-    ? portfolio.watchlistBaseInvestment ?? WATCHLIST_BASE_INVESTMENT
+    ? 0
     : holdings.reduce((sum, h) => sum + (h.qty ?? 0) * (h.avg ?? 0), 0);
   const totalPnl = totalValue - invested;
   const totalPnlPct = invested > 0 ? (totalPnl / invested) * 100 : 0;
-  const todayPnl = holdings.reduce((sum, h) => sum + (h.todayPnl ?? 0), 0);
-  const todayPnlPct = totalValue > 0 ? (todayPnl / totalValue) * 100 : 0;
+  const todayPnl = isWatchlist
+    ? 0
+    : holdings.reduce((sum, h) => sum + (h.todayPnl ?? 0), 0);
+
+  let todayPnlPct = 0;
+  if (isWatchlist) {
+    let weightSum = 0;
+    let weighted = 0;
+    for (const h of holdings) {
+      const w = Number(h.weightPct ?? h.weight);
+      const weight = Number.isFinite(w) && w > 0 ? w : 0;
+      const change = Number(h.todayPnlPct ?? h.changePct);
+      if (!Number.isFinite(change) || weight <= 0) continue;
+      weightSum += weight;
+      weighted += weight * change;
+    }
+    todayPnlPct = weightSum > 0 ? weighted / weightSum : 0;
+  } else {
+    todayPnlPct = totalValue > 0 ? (todayPnl / totalValue) * 100 : 0;
+  }
 
   const distribution = holdings
-    .map((h) => ({
-      ticker: h.ticker,
-      assetName: h.assetName ?? h.name ?? null,
-      assetType: h.assetType ?? null,
-      name: h.assetName ?? h.name ?? STOCKS[h.ticker]?.name ?? null,
-      weight: totalValue > 0 ? ((h.value ?? 0) / totalValue) * 100 : 0,
-    }))
+    .map((h) => {
+      const declared = Number(h.weightPct ?? h.weight);
+      const weight = isWatchlist
+        ? Number.isFinite(declared) && declared > 0
+          ? declared
+          : holdings.length
+            ? 100 / holdings.length
+            : 0
+        : totalValue > 0
+          ? ((h.value ?? 0) / totalValue) * 100
+          : 0;
+      return {
+        ticker: h.ticker,
+        assetName: h.assetName ?? h.name ?? null,
+        assetType: h.assetType ?? null,
+        name: h.assetName ?? h.name ?? STOCKS[h.ticker]?.name ?? null,
+        weight,
+      };
+    })
     .sort((a, b) => b.weight - a.weight);
 
   return {
     kind: 'portfolio',
+    isWatchlist,
     totalValue,
     invested,
     totalPnl,
