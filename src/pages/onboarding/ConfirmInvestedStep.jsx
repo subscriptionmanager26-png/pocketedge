@@ -4,34 +4,26 @@ import OnboardingShell, { primaryBtnClass } from './OnboardingShell';
 import HoldingsEditTable, {
   emptyHoldingRow,
   validateHoldingsRows,
+  countFilledHoldings,
 } from './HoldingsEditTable';
-
-function formatInr(value) {
-  return `₹${Math.round(value).toLocaleString('en-IN')}`;
-}
 
 function holdingsToEditRows(holdings) {
   const rows = (holdings ?? []).map((h) => {
     const qty = Number(h.qty) || 0;
-    const avg = Number(h.avg) || 0;
-    const invested = qty * avg;
     return {
       id: crypto.randomUUID(),
       ticker: h.ticker ?? '',
       name: h.name ?? '',
-      invested: invested ? String(invested) : '',
+      invested: '',
       qty: qty ? String(qty) : '',
-      avg: avg ? String(avg) : '',
+      avg: '',
+      isin: h.isin ?? null,
     };
   });
   return rows.length ? rows : [emptyHoldingRow()];
 }
 
-function investedFromHoldings(holdings) {
-  return (holdings ?? []).reduce((sum, h) => sum + (Number(h.qty) || 0) * (Number(h.avg) || 0), 0);
-}
-
-/** Confirm total invested; optional row edit if the figure looks off. */
+/** Confirm holdings list (qty only); optional row edit if something looks off. */
 export default function ConfirmInvestedStep({
   holdings,
   onConfirm,
@@ -43,14 +35,10 @@ export default function ConfirmInvestedStep({
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
 
-  const totalInvested = useMemo(() => {
-    if (editing) {
-      return rows.reduce((sum, row) => {
-        const invested = Number(row.invested);
-        return sum + (Number.isFinite(invested) && invested > 0 ? invested : 0);
-      }, 0);
-    }
-    return investedFromHoldings(holdings);
+  const holdingCount = useMemo(() => {
+    if (editing) return countFilledHoldings(rows);
+    return (holdings ?? []).filter((h) => String(h.ticker ?? '').trim() && Number(h.qty) > 0)
+      .length;
   }, [editing, rows, holdings]);
 
   const saveEdits = () => {
@@ -84,7 +72,7 @@ export default function ConfirmInvestedStep({
         }
       >
         <p className="text-2xl font-bold text-pe-text">Fix holdings</p>
-        <p className="mt-1 text-sm text-pe-text-secondary">Then we’ll re-check the total.</p>
+        <p className="mt-1 text-sm text-pe-text-secondary">Update tickers and quantities.</p>
         <div className="mt-6">
           <HoldingsEditTable
             rows={rows}
@@ -114,13 +102,13 @@ export default function ConfirmInvestedStep({
       }
     >
       <p className="text-center text-[13px] font-semibold uppercase tracking-[0.08em] text-pe-text-muted">
-        Total invested
+        Holdings found
       </p>
       <p className="mt-3 text-center text-[40px] font-bold tracking-tight tabular-nums text-pe-text md:text-[48px]">
-        {formatInr(totalInvested)}
+        {holdingCount}
       </p>
       <p className="mt-2 text-center text-[14px] text-pe-text-secondary">
-        Across {holdings.length} holding{holdings.length === 1 ? '' : 's'}
+        Quantity only — we&apos;ll price them with live market data.
       </p>
 
       <button

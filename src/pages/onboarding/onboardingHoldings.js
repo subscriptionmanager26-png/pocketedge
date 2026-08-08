@@ -121,24 +121,12 @@ function playgroundHoldingsToExtracted(parsed) {
 
     if (!Number.isFinite(qty) || qty <= 0) continue;
 
-    if (!Number.isFinite(invested) || invested < 0) {
-      if (!ticker) continue;
-      rows.push({
-        ticker,
-        name,
-        qty,
-        avg: Number.isFinite(avg) ? avg : 0,
-        invested: Number.isFinite(avg) ? qty * avg : 0,
-      });
-      continue;
-    }
-
     rows.push({
       ticker,
       name,
       qty,
-      avg: qty > 0 ? invested / qty : 0,
-      invested,
+      avg: 0,
+      invested: 0,
     });
   }
 
@@ -151,14 +139,10 @@ export function mergeHoldingsToEditRows(rows) {
   for (const row of rows) {
     const ticker = String(row.ticker ?? '').trim();
     const isin = String(row.isin ?? '').trim().toUpperCase();
+    const amfi = String(row.amfi ?? row.amfiCode ?? row.schemeCode ?? '').trim();
     const key = ticker.toUpperCase();
     const qty = Number(row.qty) || 0;
-    const invested = Number(row.invested);
-    const avg = Number(row.avg) || 0;
     if (!ticker || qty <= 0) continue;
-
-    const rowInvested =
-      Number.isFinite(invested) && invested >= 0 ? invested : qty * avg;
 
     const prior = byTicker.get(key);
     if (!prior) {
@@ -166,33 +150,29 @@ export function mergeHoldingsToEditRows(rows) {
         ticker,
         name: row.name ?? '',
         isin: /^[A-Z0-9]{12}$/.test(isin) ? isin : null,
+        amfi: /^\d{6,}$/.test(amfi) ? amfi : null,
         qty,
-        invested: rowInvested,
       });
       continue;
     }
 
-    const nextQty = prior.qty + qty;
-    const nextInvested = prior.invested + rowInvested;
     byTicker.set(key, {
       ...prior,
-      qty: nextQty,
-      invested: nextInvested,
+      qty: prior.qty + qty,
       name: prior.name || row.name || '',
       isin: prior.isin || (/^[A-Z0-9]{12}$/.test(isin) ? isin : null),
+      amfi: prior.amfi || (/^\d{6,}$/.test(amfi) ? amfi : null),
     });
   }
 
-  return [...byTicker.values()].map((row) => {
-    const avg = row.qty > 0 ? row.invested / row.qty : 0;
-    return {
-      id: crypto.randomUUID(),
-      ticker: row.ticker,
-      name: row.name,
-      isin: row.isin,
-      qty: String(row.qty),
-      invested: String(Math.round(row.invested * 100) / 100),
-      avg: String(Math.round(avg * 10000) / 10000),
-    };
-  });
+  return [...byTicker.values()].map((row) => ({
+    id: crypto.randomUUID(),
+    ticker: row.ticker,
+    name: row.name,
+    isin: row.isin,
+    amfi: row.amfi,
+    qty: String(row.qty),
+    invested: '',
+    avg: '',
+  }));
 }

@@ -19,8 +19,7 @@ import {
   CURRENT_USER,
   POSTS,
   copyPortfolioForUser,
-  getHoldingTotalReturnPct,
-  getPortfolioTotalReturnPct,
+  computePortfolioDisplayMetrics,
 } from '../data/mockData';
 import {
   discardLocalDraft,
@@ -43,13 +42,12 @@ import {
 } from '../lib/socialIdentity';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { isFollowing, toggleFollow, getFollowCounts, subscribeSocialGraph, hydrateFollowGraph } from '../lib/socialGraphStore';
-import { formatCount, formatPct, pnlClass } from '../lib/format';
+import { formatCount } from '../lib/format';
 import GuestSignInCta from '../components/GuestSignInCta';
 import UpdateHoldingsSheet from '../components/UpdateHoldingsSheet';
 import HoldingsSaveDiffSheet from '../components/HoldingsSaveDiffSheet';
 import AppMessageDialog from '../components/AppMessageDialog';
 import {
-  holdingFallbackName,
   holdingIsin,
   previewPortfolioImportMerge,
 } from '../lib/portfolioImportMerge';
@@ -71,8 +69,6 @@ import {
   togglePortfolioCopy,
 } from '../lib/portfolioEngagementApi';
 import {
-  COST_MODES,
-  INVESTED_MAX_DECIMALS,
   PORTFOLIO_NAME_MAX_LENGTH,
   QTY_MAX_DECIMALS,
   WATCHLIST_BASE_INVESTMENT,
@@ -688,12 +684,13 @@ function InlinePortfolioBook({
 }) {
   const isWatchlist = isWatchlistKind(portfolio.kind ?? 'live');
   const social = getPortfolioEngagementSync(portfolio.id);
-  const portfolioTotalReturn = useMemo(
-    () => (isWatchlist ? null : getPortfolioTotalReturnPct(portfolio)),
-    [isWatchlist, portfolio]
-  );
   const holdingCount =
     portfolio.holdings?.length || portfolio.tickers?.length || 0;
+  const dayChangePct = useMemo(() => {
+    if (!isWatchlist) return null;
+    const pct = Number(computePortfolioDisplayMetrics(portfolio).todayPnlPct);
+    return Number.isFinite(pct) ? pct : null;
+  }, [portfolio, isWatchlist]);
   const displayName = isWatchlist
     ? portfolio.name
     : canEdit
@@ -711,32 +708,32 @@ function InlinePortfolioBook({
         {isWatchlist ? (
           <div className="mt-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+              1D change
+            </p>
+            <p
+              className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${
+                dayChangePct == null
+                  ? 'text-pe-text'
+                  : dayChangePct > 0
+                    ? 'text-pe-positive'
+                    : dayChangePct < 0
+                      ? 'text-pe-negative'
+                      : 'text-pe-text'
+              }`}
+            >
+              {dayChangePct == null
+                ? '—'
+                : `${dayChangePct > 0 ? '+' : dayChangePct < 0 ? '−' : ''}${Math.abs(dayChangePct).toFixed(2)}%`}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
               Total holdings
             </p>
             <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
               {holdingCount.toLocaleString('en-IN')}
             </p>
-          </div>
-        ) : (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                Total holdings
-              </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
-                {holdingCount.toLocaleString('en-IN')}
-              </p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                Unrealised gains
-              </p>
-              <p
-                className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${pnlClass(portfolioTotalReturn)}`}
-              >
-                {formatPct(portfolioTotalReturn)}
-              </p>
-            </div>
           </div>
         )}
       </div>
@@ -1027,16 +1024,17 @@ function PortfolioDetailView({
 
   const isWatchlist = isWatchlistKind(portfolioKind);
 
+  const watchlistDayChangePct = useMemo(() => {
+    if (!isWatchlist) return null;
+    const pct = Number(computePortfolioDisplayMetrics(portfolio).todayPnlPct);
+    return Number.isFinite(pct) ? pct : null;
+  }, [isWatchlist, portfolio]);
+
   useEffect(() => subscribePortfolioEngagement(() => setSocialTick((n) => n + 1)), []);
 
   const social = useMemo(
     () => getPortfolioEngagementSync(portfolio.id),
     [portfolio.id, socialTick]
-  );
-
-  const portfolioTotalReturn = useMemo(
-    () => getPortfolioTotalReturnPct(portfolio),
-    [portfolio]
   );
 
   useEffect(() => {
@@ -1087,16 +1085,14 @@ function PortfolioDetailView({
       };
     }
     const qty = Number(h.qty) || 0;
-    const avg = Number(h.avg) || 0;
-    const invested = qty * avg;
     return {
       id: rowId,
       ticker: h.ticker,
       name: fundName,
       isin: holdingIsin(h.isin),
-      invested: invested ? String(invested) : '',
-      qty: String(h.qty ?? ''),
-      avg: avg ? String(avg) : '',
+      invested: '',
+      qty: qty ? String(h.qty ?? '') : '',
+      avg: '',
       weight: '',
     };
   };
@@ -1196,7 +1192,7 @@ function PortfolioDetailView({
       const unmappedText = unmappedCount
         ? ` ${unmappedCount} unmapped ${
             unmappedCount === 1 ? 'security was' : 'securities were'
-          } kept at their average cost.`
+          } kept for review.`
         : '';
       setImportNotice(
         `${sourceLabel} applied. Holdings not present in the import are highlighted in amber.${unmappedText}`
@@ -1206,20 +1202,89 @@ function PortfolioDetailView({
     }
   };
 
-  const applyUpdateSheetRows = (finalRows, meta) => {
-    setEditRows([...finalRows.filter((row) => String(row.ticker ?? '').trim()), makeBlankRow()]);
-    setFieldErrors((previous) => ({ ...previous, rows: {} }));
-    const removed = meta?.removedStaleCount ?? 0;
-    const unmappedCount = meta?.unmappedCount ?? 0;
-    const bits = [
-      `${meta?.sourceLabel ?? 'Import'} applied.`,
-      removed ? ` Removed ${removed} stale ${removed === 1 ? 'holding' : 'holdings'}.` : '',
-      unmappedCount
-        ? ` ${unmappedCount} unmapped ${unmappedCount === 1 ? 'security' : 'securities'} may need review.`
-        : '',
-      ' Save when you are done.',
+  const applyUpdateSheetRows = async (finalRows, meta) => {
+    const nextRows = [
+      ...finalRows.filter((row) => String(row.ticker ?? '').trim()),
+      makeBlankRow(),
     ];
-    setImportNotice(bits.join(''));
+    setEditRows(nextRows);
+    setFieldErrors((previous) => ({ ...previous, rows: {} }));
+    setImportNotice('');
+    await persistPortfolioRows(nextRows, {
+      sourceLabel: meta?.sourceLabel ?? 'Import',
+    });
+  };
+
+  const persistPortfolioRows = async (rows, { sourceLabel } = {}) => {
+    if (saving) throw new Error('Save already in progress.');
+
+    const validation = validatePortfolioDraft({
+      kind: portfolioKind,
+      name,
+      objective,
+      thesis,
+      rows,
+    });
+    setFieldErrors(validation.errors);
+    if (!validation.valid) {
+      const message = formatPortfolioSaveValidationMessage(validation.errors, { isWatchlist });
+      setSaveError({
+        title: "Can't save yet",
+        message,
+      });
+      throw new Error(message);
+    }
+
+    setSaving(true);
+    try {
+      const tickers = validation.completeRows.map((row) => row.ticker.trim());
+      const assetsByKey = isWatchlist
+        ? await resolvePortfolioAssets(tickers)
+        : new Map();
+
+      const holdings = isWatchlist
+        ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
+        : buildLiveHoldings(validation.completeRows, assetsByKey);
+
+      const liveName = livePortfolioDisplayName(getAppCurrentUser()?.name);
+      const beforeHoldings = editBaselineHoldingsRef.current ?? [];
+      const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
+        name: isWatchlist ? truncatePortfolioName(name.trim()) : liveName,
+        objective: '',
+        thesis: '',
+        kind: portfolioKind,
+        isDraft: false,
+        tickers: holdings.map((h) => h.ticker),
+        holdings,
+        ownerDisplayName: getAppCurrentUser()?.name,
+        ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
+      });
+      if (!isWatchlist) setName(liveName);
+      onPortfolioUpdated?.(savedPortfolio);
+      setEditing(false);
+      setEditRows([]);
+      setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1600);
+
+      if (!isWatchlist) {
+        setSaveDiff({
+          ...summarizeHoldingsChange(beforeHoldings, savedPortfolio?.holdings ?? holdings),
+          sourceLabel: sourceLabel || null,
+        });
+      } else {
+        onBack?.();
+      }
+    } catch (error) {
+      console.error('Failed to save portfolio', error);
+      setSaveError({
+        title: "Couldn't save",
+        message: error?.message ?? 'Could not save portfolio. Please try again.',
+      });
+      throw error;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const importExcelHoldings = async (file) => {
@@ -1310,73 +1375,10 @@ function PortfolioDetailView({
   }, [portfolio.id, startInEditMode]);
 
   const saveEdits = async () => {
-    if (saving) return;
-
-    const validation = validatePortfolioDraft({
-      kind: portfolioKind,
-      name,
-      objective,
-      thesis,
-      rows: editRows,
-    });
-    setFieldErrors(validation.errors);
-    if (!validation.valid) {
-      setSaveError({
-        title: "Can't save yet",
-        message: formatPortfolioSaveValidationMessage(validation.errors, { isWatchlist }),
-      });
-      return;
-    }
-
-    setSaving(true);
     try {
-      // Live portfolios: skip client market resolve — server enrich_portfolio_holdings
-      // already maps tickers/ISINs and fills prices. Watchlists need prices to derive qty.
-      const tickers = validation.completeRows.map((row) => row.ticker.trim());
-      const assetsByKey = isWatchlist
-        ? await resolvePortfolioAssets(tickers)
-        : new Map();
-
-      const holdings = isWatchlist
-        ? buildWatchlistHoldings(validation.completeRows, assetsByKey)
-        : buildLiveHoldings(validation.completeRows, assetsByKey);
-
-      const liveName = livePortfolioDisplayName(getAppCurrentUser()?.name);
-      const beforeHoldings = editBaselineHoldingsRef.current ?? [];
-      const savedPortfolio = await saveSocialPortfolio(userId, portfolio.id, {
-        name: isWatchlist ? truncatePortfolioName(name.trim()) : liveName,
-        objective: '',
-        thesis: '',
-        kind: portfolioKind,
-        isDraft: false,
-        tickers: holdings.map((h) => h.ticker),
-        holdings,
-        ownerDisplayName: getAppCurrentUser()?.name,
-        ...(isWatchlist ? { watchlistBaseInvestment: WATCHLIST_BASE_INVESTMENT } : {}),
-      });
-      if (!isWatchlist) setName(liveName);
-      onPortfolioUpdated?.(savedPortfolio);
-      setEditing(false);
-      setEditRows([]);
-      setFieldErrors({ name: false, objective: false, thesis: false, rows: {} });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1600);
-
-      if (!isWatchlist) {
-        setSaveDiff(
-          summarizeHoldingsChange(beforeHoldings, savedPortfolio?.holdings ?? holdings)
-        );
-      } else {
-        onBack?.();
-      }
-    } catch (error) {
-      console.error('Failed to save portfolio', error);
-      setSaveError({
-        title: "Couldn't save",
-        message: error?.message ?? 'Could not save portfolio. Please try again.',
-      });
-    } finally {
-      setSaving(false);
+      await persistPortfolioRows(editRows);
+    } catch {
+      /* persistPortfolioRows already surfaces saveError */
     }
   };
 
@@ -1511,7 +1513,7 @@ function PortfolioDetailView({
       prev.map((row) => {
         if (row.id !== rowId) return row;
         if (isWatchlist) return { ...row, ...patch };
-        return patchLiveCostFields(row, patch, COST_MODES.invested);
+        return patchLiveCostFields(row, patch);
       })
     );
 
@@ -1544,7 +1546,7 @@ function PortfolioDetailView({
 
   const rowGridClass = isWatchlist
     ? 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2'
-    : 'grid grid-cols-[minmax(0,1fr)_7.25rem_4.5rem_auto] items-start gap-2';
+    : 'grid grid-cols-[minmax(0,1fr)_5.5rem_auto] items-start gap-2';
 
   return (
     <div>
@@ -1601,6 +1603,27 @@ function PortfolioDetailView({
             {isWatchlist ? (
               <div className="mt-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                  1D change
+                </p>
+                <p
+                  className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${
+                    watchlistDayChangePct == null
+                      ? 'text-pe-text'
+                      : watchlistDayChangePct > 0
+                        ? 'text-pe-positive'
+                        : watchlistDayChangePct < 0
+                          ? 'text-pe-negative'
+                          : 'text-pe-text'
+                  }`}
+                >
+                  {watchlistDayChangePct == null
+                    ? '—'
+                    : `${watchlistDayChangePct > 0 ? '+' : watchlistDayChangePct < 0 ? '−' : ''}${Math.abs(watchlistDayChangePct).toFixed(2)}%`}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
                   Total holdings
                 </p>
                 <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
@@ -1608,29 +1631,6 @@ function PortfolioDetailView({
                     'en-IN'
                   )}
                 </p>
-              </div>
-            ) : (
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Total holdings
-                  </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-pe-text">
-                    {(portfolio.holdings?.length || portfolio.tickers?.length || 0).toLocaleString(
-                      'en-IN'
-                    )}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Unrealised gains
-                  </p>
-                  <p
-                    className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${pnlClass(portfolioTotalReturn)}`}
-                  >
-                    {formatPct(portfolioTotalReturn)}
-                  </p>
-                </div>
               </div>
             )}
           </div>
@@ -1690,7 +1690,7 @@ function PortfolioDetailView({
                 <div>
                   <p className="text-sm font-semibold text-pe-text">Import holdings</p>
                   <p className="mt-0.5 text-[12px] text-pe-text-muted">
-                    Excel (Zerodha) or Kite / Groww screenshots. PDF coming soon.
+                    Excel, screenshots, or CDSL / CAMS / KFin PDF statements.
                   </p>
                 </div>
                 <button
@@ -1739,14 +1739,9 @@ function PortfolioDetailView({
                 Ticker
               </p>
               {isWatchlist ? null : (
-                <>
-                  <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Total invested
-                  </p>
-                  <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Qty
-                  </p>
-                </>
+                <p className="text-right text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Qty
+                </p>
               )}
               <span className="h-4 w-9 shrink-0" aria-hidden="true" />
             </div>
@@ -1757,9 +1752,6 @@ function PortfolioDetailView({
                 .filter((entry) => entry.id !== row.id)
                 .map((entry) => entry.ticker.trim())
                 .filter(Boolean);
-              const costLabel = 'Total invested';
-              const costValue = row.invested;
-              const costHasError = Boolean(rowErr.invested || rowErr.avg);
 
               return (
                 <div key={row.id} className="space-y-1">
@@ -1782,50 +1774,29 @@ function PortfolioDetailView({
                         updateRow(row.id, {
                           ticker: asset.key,
                           name: asset.kind === 'fund' ? asset.name : asset.symbol ?? '',
+                          isin: asset.isin ?? null,
                         })
                       }
                     />
 
                     {isWatchlist ? null : (
-                      <>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          autoComplete="off"
-                          value={costValue}
-                          onChange={(e) =>
-                            updateRow(row.id, {
-                              invested: sanitizeDecimalInput(
-                                e.target.value,
-                                INVESTED_MAX_DECIMALS
-                              ),
-                            })
-                          }
-                          placeholder={costLabel}
-                          aria-label={costLabel}
-                          className={fieldClass(
-                            `${compactInputClass} text-right tabular-nums`,
-                            costHasError
-                          )}
-                        />
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          autoComplete="off"
-                          value={row.qty}
-                          onChange={(e) =>
-                            updateRow(row.id, {
-                              qty: sanitizeDecimalInput(e.target.value, QTY_MAX_DECIMALS),
-                            })
-                          }
-                          placeholder="Qty"
-                          aria-label="Quantity"
-                          className={fieldClass(
-                            `${compactInputClass} text-right tabular-nums`,
-                            rowErr.qty
-                          )}
-                        />
-                      </>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        value={row.qty}
+                        onChange={(e) =>
+                          updateRow(row.id, {
+                            qty: sanitizeDecimalInput(e.target.value, QTY_MAX_DECIMALS),
+                          })
+                        }
+                        placeholder="Qty"
+                        aria-label="Quantity"
+                        className={fieldClass(
+                          `${compactInputClass} text-right tabular-nums`,
+                          rowErr.qty
+                        )}
+                      />
                     )}
                     <button
                       type="button"
@@ -2158,6 +2129,10 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
         weight,
         assetType,
         logoIconUrl: h.logoIconUrl ?? h.logo_icon_url ?? asset?.logoIconUrl ?? null,
+        dayChangePct: (() => {
+          const fromHolding = Number(h.todayPnlPct ?? h.changePct ?? asset?.item?.changePct);
+          return Number.isFinite(fromHolding) ? fromHolding : null;
+        })(),
         ...extras,
       };
     };
@@ -2203,9 +2178,7 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
             : Number.isFinite(fromWeight) && fromWeight > 0
               ? fromWeight
               : 0;
-        return toListRow(h, weight, asset, {
-          itemReturn: getHoldingTotalReturnPct({ ...h, price }, asset),
-        });
+        return toListRow(h, weight, asset);
       });
     }
 
@@ -2214,16 +2187,7 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
     const equal = 100 / tickers.length;
     return tickers.map((ticker) => {
       const asset = assetsByKey[ticker];
-      return toListRow({ ticker }, equal, asset, {
-        ...(isWatchlist
-          ? {}
-          : {
-              itemReturn: getHoldingTotalReturnPct(
-                { ticker, changePct: asset?.item?.changePct },
-                asset
-              ),
-            }),
-      });
+      return toListRow({ ticker }, equal, asset);
     });
   }, [portfolio, assetsByKey, isWatchlist]);
 
@@ -2289,11 +2253,7 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
                   </p>
                 ) : null}
 
-                <div
-                  className={`mt-2.5 grid gap-x-4 gap-y-1 ${
-                    isWatchlist ? 'grid-cols-1' : 'grid-cols-2'
-                  }`}
-                >
+                <div className={`mt-2.5 grid gap-x-4 gap-y-1 ${isWatchlist ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
                       Alloc.
@@ -2302,18 +2262,28 @@ function PortfolioHoldingsList({ portfolio, onOpenStock }) {
                       {Number.isFinite(row.weight) ? `${row.weight.toFixed(1)}%` : '—'}
                     </p>
                   </div>
-                  {isWatchlist ? null : (
+                  {isWatchlist ? (
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-pe-text-muted">
-                        Unrealised
+                        1D change
                       </p>
                       <p
-                        className={`mt-0.5 text-sm font-bold tabular-nums ${pnlClass(row.itemReturn)}`}
+                        className={`mt-0.5 text-sm font-semibold tabular-nums ${
+                          row.dayChangePct == null
+                            ? 'text-pe-text'
+                            : row.dayChangePct > 0
+                              ? 'text-pe-positive'
+                              : row.dayChangePct < 0
+                                ? 'text-pe-negative'
+                                : 'text-pe-text'
+                        }`}
                       >
-                        {formatPct(row.itemReturn)}
+                        {row.dayChangePct == null
+                          ? '—'
+                          : `${row.dayChangePct > 0 ? '+' : row.dayChangePct < 0 ? '−' : ''}${Math.abs(row.dayChangePct).toFixed(2)}%`}
                       </p>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

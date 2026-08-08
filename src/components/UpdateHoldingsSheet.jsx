@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Camera,
@@ -9,12 +9,15 @@ import {
 } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { parseZerodhaHoldingsWorkbook } from '../pages/onboarding/zerodhaHoldingsWorkbook';
-import { parseZerodhaHoldingsScreenshots } from '../pages/onboarding/onboardingHoldings';
+import {
+  mergeHoldingsToEditRows,
+  parseZerodhaHoldingsScreenshots,
+} from '../pages/onboarding/onboardingHoldings';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import { previewPortfolioImportMerge } from '../lib/portfolioImportMerge';
 
 /**
- * Full-viewport sheet: pick Excel/screenshots (PDF soon) → review merge → confirm.
+ * Full-viewport sheet: pick Excel / screenshots / statement PDF → review merge → confirm.
  */
 export default function UpdateHoldingsSheet({
   open,
@@ -26,12 +29,20 @@ export default function UpdateHoldingsSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const excelRef = useRef(null);
   const shotRef = useRef(null);
-  const [phase, setPhase] = useState('pick'); // pick | reading | review
+  const pdfRef = useRef(null);
+  const pendingPdfRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const [phase, setPhase] = useState('pick'); // pick | reading | password | review
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(null);
   const [preview, setPreview] = useState(null);
   const [removeStaleIds, setRemoveStaleIds] = useState(() => new Set());
+  const [confirming, setConfirming] = useState(false);
 
+  onCloseRef.current = onClose;
+
+  // Reset only when the sheet newly opens — not when parent re-renders
+  // (inline onClose previously wiped review state when switching browser tabs).
   useEffect(() => {
     if (!open) return undefined;
     setPhase('pick');
@@ -39,17 +50,35 @@ export default function UpdateHoldingsSheet({
     setProgress(null);
     setPreview(null);
     setRemoveStaleIds(new Set());
+    setPdfPassword('');
+    setShowUnchanged(false);
+    setConfirming(false);
+    pendingPdfRef.current = null;
+    return undefined;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (event) => {
-      if (event.key === 'Escape') onClose?.();
+      if (event.key === 'Escape') onCloseRef.current?.();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  const reviewGroups = useMemo(() => {
+    const rows = preview?.reviewRows ?? [];
+    return {
+      updated: rows.filter((r) => r.matchStatus === 'updated'),
+      unchanged: rows.filter((r) => r.matchStatus === 'unchanged'),
+      brandNew: rows.filter((r) => r.matchStatus === 'new'),
+    };
+  }, [preview]);
 
   if (!open || typeof document === 'undefined') return null;
 
@@ -66,6 +95,7 @@ export default function UpdateHoldingsSheet({
     }
     setPreview({ ...result, sourceLabel });
     setRemoveStaleIds(new Set());
+    setShowUnchanged(false);
     setPhase('review');
   };
 
@@ -128,6 +158,42 @@ export default function UpdateHoldingsSheet({
     }
   };
 
+  const importPdf = async (file, password) => {
+    if (!file) return;
+    setError('');
+    setPhase('reading');
+    setProgress({
+      percent: 18,
+      label: 'Reading PDF statement…',
+      fileName: file.name || '',
+    });
+    try {
+      const { parseStatementPdfToHoldings } = await import(
+        '../lib/statementParsers/parseStatementHoldings'
+      );
+      const { rows, sourceLabel } = await parseStatementPdfToHoldings(file, { password });
+      const editRows = mergeHoldingsToEditRows(rows);
+      setProgress({ percent: 78, label: 'Matching holdings…', fileName: file.name || '' });
+      pendingPdfRef.current = null;
+      setPdfPassword('');
+      await runPreview(editRows, sourceLabel);
+    } catch (err) {
+      const name = err?.name;
+      if (name === 'PdfPasswordRequiredError' || name === 'PdfIncorrectPasswordError') {
+        pendingPdfRef.current = file;
+        setError(err.message);
+        setPhase('password');
+        return;
+      }
+      setError(err?.message ?? 'Could not read that statement PDF.');
+      setPhase('pick');
+      pendingPdfRef.current = null;
+    } finally {
+      setProgress(null);
+      if (pdfRef.current) pdfRef.current.value = '';
+    }
+  };
+
   const toggleStale = (id) => {
     setRemoveStaleIds((prev) => {
       const next = new Set(prev);
@@ -137,32 +203,43 @@ export default function UpdateHoldingsSheet({
     });
   };
 
-  const confirm = () => {
-    if (!preview) return;
+  const confirm = async () => {
+    if (!preview || confirming) return;
     const keepStale = preview.staleRows.filter((row) => !removeStaleIds.has(row.id));
     const withoutRemoved = preview.merged.filter(
       (row) => !row.missingFromImport || !removeStaleIds.has(row.id)
     );
-    // Stale kept rows stay flagged for amber review in the edit grid.
     const finalRows = withoutRemoved.map((row) =>
       row.missingFromImport && keepStale.some((s) => s.id === row.id)
         ? { ...row, missingFromImport: true }
         : { ...row, missingFromImport: false }
     );
-    onApply?.(finalRows, {
-      sourceLabel: preview.sourceLabel,
-      removedStaleCount: removeStaleIds.size,
-      unmappedCount: preview.unmappedCount,
-    });
-    onClose?.();
+    setConfirming(true);
+    setError('');
+    try {
+      await onApply?.(finalRows, {
+        sourceLabel: preview.sourceLabel,
+        removedStaleCount: removeStaleIds.size,
+        unmappedCount: preview.unmappedCount,
+      });
+      onCloseRef.current?.();
+    } catch (err) {
+      setError(err?.message ?? 'Could not save holdings. Try again.');
+      setConfirming(false);
+    }
   };
+
+  const { updated, unchanged, brandNew } = reviewGroups;
+  const staleCount = preview?.staleRows?.length ?? 0;
 
   return createPortal(
     <div
       className={`fixed inset-0 z-[80] flex justify-center bg-black/40 ${
         isDesktop ? 'items-center p-4' : 'items-end'
       }`}
-      onClick={onClose}
+      onClick={() => {
+        if (!confirming) onCloseRef.current?.();
+      }}
     >
       <div
         className={`flex w-full flex-col overflow-hidden border border-pe-border bg-pe-canvas shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] ${
@@ -184,8 +261,11 @@ export default function UpdateHoldingsSheet({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface"
+            onClick={() => {
+              if (!confirming) onCloseRef.current?.();
+            }}
+            disabled={confirming}
+            className="shrink-0 rounded-md p-1 text-pe-text-secondary hover:bg-pe-surface disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -196,8 +276,8 @@ export default function UpdateHoldingsSheet({
           {phase === 'pick' ? (
             <div className="space-y-3">
               <p className="text-sm leading-relaxed text-pe-text-secondary">
-                Bring Zerodha Excel or Kite / Groww screenshots into this book. Matching
-                holdings update; symbols missing from the file are reviewed next.
+                Bring Excel, screenshots, or CDSL / CAMS / KFin / MF Central PDFs. Matching
+                holdings update by quantity; symbols missing from the file are reviewed next.
               </p>
               {error ? <p className="text-sm text-pe-negative">{error}</p> : null}
 
@@ -215,11 +295,10 @@ export default function UpdateHoldingsSheet({
                 onClick={() => shotRef.current?.click()}
               />
               <SourceCard
-                icon={<FileText className="h-5 w-5 text-pe-text-muted" />}
+                icon={<FileText className="h-5 w-5 text-pe-accent" />}
                 title="PDF statement"
-                description="Broker PDF holdings import is coming soon. Use Excel or screenshots today."
-                badge="Coming soon"
-                disabled
+                description="CDSL demat CAS, CAMS/KFin CAS, or MF Central. Often locked with PAN."
+                onClick={() => pdfRef.current?.click()}
               />
 
               <input
@@ -237,6 +316,52 @@ export default function UpdateHoldingsSheet({
                 className="hidden"
                 onChange={(event) => void importShots(event.target.files)}
               />
+              <input
+                ref={pdfRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(event) => void importPdf(event.target.files?.[0])}
+              />
+            </div>
+          ) : null}
+
+          {phase === 'password' ? (
+            <div className="space-y-4">
+              <p className="text-sm text-pe-text-secondary">
+                This PDF is password-protected. Enter the password (often your PAN).
+              </p>
+              {error ? <p className="text-sm text-pe-negative">{error}</p> : null}
+              <input
+                type="password"
+                value={pdfPassword}
+                onChange={(e) => setPdfPassword(e.target.value)}
+                placeholder="PDF password"
+                className="w-full rounded-lg border border-pe-border-strong bg-pe-canvas px-3 py-2.5 text-base text-pe-text outline-none focus:border-pe-accent"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    pendingPdfRef.current = null;
+                    setPdfPassword('');
+                    setError('');
+                    setPhase('pick');
+                  }}
+                  className="flex-1 rounded-xl border border-pe-border px-3 py-2.5 text-sm font-semibold text-pe-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!pdfPassword.trim() || !pendingPdfRef.current}
+                  onClick={() => void importPdf(pendingPdfRef.current, pdfPassword.trim())}
+                  className="flex-1 rounded-xl bg-pe-accent px-3 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  Unlock PDF
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -260,41 +385,89 @@ export default function UpdateHoldingsSheet({
 
           {phase === 'review' && preview ? (
             <div className="space-y-5">
-              <p className="text-sm text-pe-text-secondary">
-                Review from {preview.sourceLabel}. Confirm to merge into your edit grid.
-              </p>
+              <div>
+                <p className="text-sm text-pe-text-secondary">
+                  Matched against your current book from{' '}
+                  <span className="font-semibold text-pe-text">{preview.sourceLabel}</span>.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <SummaryChip
+                    label="Qty changed"
+                    count={updated.length}
+                    tone="accent"
+                  />
+                  <SummaryChip label="Same qty" count={unchanged.length} tone="muted" />
+                  <SummaryChip label="New" count={brandNew.length} tone="positive" />
+                  <SummaryChip label="Not in file" count={staleCount} tone="amber" />
+                </div>
+              </div>
 
-              {preview.reviewRows.length ? (
-                <section>
-                  <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    From import ({preview.reviewRows.length})
-                  </p>
-                  <ul className="mt-2 divide-y divide-pe-border rounded-lg border border-pe-border">
-                    {preview.reviewRows.map((row) => (
-                      <li key={row.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
-                        <div className="min-w-0">
-                          <p className="truncate text-[14px] font-semibold text-pe-text">
-                            {holdingDisplayLabel(row) || row.ticker}
-                          </p>
-                          <p className="text-[12px] text-pe-text-muted">
-                            Qty {row.qty || '—'} · Invested {row.invested || '—'}
-                          </p>
-                        </div>
-                        <StatusPill status={row.matchStatus} />
-                      </li>
-                    ))}
-                  </ul>
-                </section>
+              {updated.length ? (
+                <ReviewSection
+                  title="Quantity changed"
+                  subtitle="Already in your portfolio — qty from the file differs."
+                  count={updated.length}
+                >
+                  {updated.map((row) => (
+                    <HoldingRow
+                      key={row.id}
+                      row={row}
+                      detail={`Qty ${formatQty(row.priorQty)} → ${formatQty(row.qty)}`}
+                      status="updated"
+                    />
+                  ))}
+                </ReviewSection>
+              ) : null}
+
+              {brandNew.length ? (
+                <ReviewSection
+                  title="New in this file"
+                  subtitle="Not in your current portfolio yet."
+                  count={brandNew.length}
+                >
+                  {brandNew.map((row) => (
+                    <HoldingRow
+                      key={row.id}
+                      row={row}
+                      detail={`Qty ${formatQty(row.qty)}`}
+                      status="new"
+                    />
+                  ))}
+                </ReviewSection>
+              ) : null}
+
+              {unchanged.length ? (
+                <ReviewSection
+                  title="Already up to date"
+                  subtitle="Same holding and quantity — no change on confirm."
+                  count={unchanged.length}
+                  collapsible
+                  expanded={showUnchanged || unchanged.length <= 4}
+                  onToggle={() => setShowUnchanged((v) => !v)}
+                >
+                  {unchanged.map((row) => (
+                    <HoldingRow
+                      key={row.id}
+                      row={row}
+                      detail={`Qty ${formatQty(row.qty)}`}
+                      status="unchanged"
+                    />
+                  ))}
+                </ReviewSection>
               ) : null}
 
               {preview.staleRows.length ? (
                 <section>
-                  <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-pe-text-muted">
-                    Not in this file ({preview.staleRows.length})
-                  </p>
-                  <p className="mt-1 text-[12px] text-pe-text-secondary">
-                    Keep them in My Portfolio, or remove selected ones from this update.
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[13px] font-semibold text-pe-text">
+                        Not in this file ({preview.staleRows.length})
+                      </p>
+                      <p className="mt-0.5 text-[12px] text-pe-text-secondary">
+                        Keep in My Portfolio, or mark to remove on confirm.
+                      </p>
+                    </div>
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -317,12 +490,17 @@ export default function UpdateHoldingsSheet({
                     {preview.staleRows.map((row) => {
                       const remove = removeStaleIds.has(row.id);
                       return (
-                        <li key={row.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
+                        <li
+                          key={row.id}
+                          className="flex items-center justify-between gap-2 px-3 py-2.5"
+                        >
                           <div className="min-w-0">
                             <p className="truncate text-[14px] font-semibold text-pe-text">
                               {holdingDisplayLabel(row) || row.ticker}
                             </p>
-                            <p className="text-[12px] text-amber-800">Symbol not found in file</p>
+                            <p className="text-[12px] text-amber-800">
+                              Qty {formatQty(row.qty)} · missing from file
+                            </p>
                           </div>
                           <button
                             type="button"
@@ -342,25 +520,21 @@ export default function UpdateHoldingsSheet({
                 </section>
               ) : null}
 
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreview(null);
-                    setPhase('pick');
-                  }}
-                  className="flex-1 rounded-lg border border-pe-border py-2.5 text-sm font-semibold text-pe-text-secondary hover:bg-pe-surface"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={confirm}
-                  className="flex-1 rounded-lg bg-pe-accent py-2.5 text-sm font-bold text-white hover:bg-pe-accent-pressed"
-                >
-                  Apply to portfolio
-                </button>
-              </div>
+              {error && phase === 'review' ? (
+                <p className="text-sm text-pe-negative">{error}</p>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => void confirm()}
+                disabled={confirming}
+                className="flex h-11 w-full items-center justify-center rounded-xl bg-pe-accent text-[14px] font-bold text-white hover:bg-pe-accent-pressed disabled:opacity-70"
+              >
+                {confirming ? 'Saving…' : 'Confirm merge'}
+              </button>
+              <p className="text-center text-[11px] text-pe-text-muted">
+                Saves to My Portfolio — no extra Save step
+              </p>
             </div>
           ) : null}
         </div>
@@ -370,45 +544,132 @@ export default function UpdateHoldingsSheet({
   );
 }
 
-function SourceCard({ icon, title, description, badge, onClick, disabled = false }) {
-  const Comp = disabled || !onClick ? 'div' : 'button';
+function formatQty(value) {
+  if (value == null || value === '') return '—';
+  const n = Number(String(value).replace(/,/g, ''));
+  if (!Number.isFinite(n)) return String(value);
+  return String(n);
+}
+
+function SummaryChip({ label, count, tone }) {
+  if (!count) {
+    return (
+      <span className="rounded-full border border-pe-border bg-pe-surface px-2.5 py-1 text-[11px] font-semibold text-pe-text-muted">
+        {label} 0
+      </span>
+    );
+  }
+  const toneClass =
+    tone === 'accent'
+      ? 'border-pe-accent/30 bg-pe-accent-wash text-pe-accent'
+      : tone === 'positive'
+        ? 'border-pe-positive/25 bg-pe-positive/10 text-pe-positive'
+        : tone === 'amber'
+          ? 'border-amber-300 bg-amber-50 text-amber-900'
+          : 'border-pe-border bg-white text-pe-text-secondary';
   return (
-    <Comp
-      type={Comp === 'button' ? 'button' : undefined}
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled || undefined}
-      className={`flex w-full items-start gap-3 rounded-xl border border-pe-border bg-white px-3.5 py-3.5 text-left ${
-        disabled
-          ? 'opacity-60'
-          : 'transition hover:border-pe-accent hover:bg-pe-accent-wash/40'
-      }`}
+    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${toneClass}`}>
+      {label} {count}
+    </span>
+  );
+}
+
+function ReviewSection({
+  title,
+  subtitle,
+  count,
+  children,
+  collapsible = false,
+  expanded = true,
+  onToggle,
+}) {
+  const show = !collapsible || expanded;
+  return (
+    <section>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-pe-text">
+            {title} ({count})
+          </p>
+          {subtitle ? (
+            <p className="mt-0.5 text-[12px] text-pe-text-secondary">{subtitle}</p>
+          ) : null}
+        </div>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="shrink-0 text-[12px] font-semibold text-pe-accent"
+          >
+            {show ? 'Hide' : 'Show'}
+          </button>
+        ) : null}
+      </div>
+      {show ? (
+        <ul className="mt-2 divide-y divide-pe-border rounded-lg border border-pe-border bg-white">
+          {children}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function HoldingRow({ row, detail, status }) {
+  return (
+    <li className="flex items-center justify-between gap-2 px-3 py-2.5">
+      <div className="min-w-0">
+        <p className="truncate text-[14px] font-semibold text-pe-text">
+          {holdingDisplayLabel(row) || row.ticker}
+        </p>
+        <p className="text-[12px] text-pe-text-muted">{detail}</p>
+      </div>
+      <StatusPill status={status} />
+    </li>
+  );
+}
+
+function SourceCard({ icon, title, description, badge, onClick, disabled = false }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex w-full items-start gap-3 rounded-xl border border-pe-border bg-white px-3.5 py-3.5 text-left transition hover:border-pe-accent disabled:cursor-not-allowed disabled:opacity-55"
     >
-      <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-pe-surface">
+      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pe-accent-wash">
         {icon}
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[15px] font-semibold text-pe-text">{title}</p>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-[14px] font-semibold text-pe-text">{title}</span>
           {badge ? (
-            <span className="rounded-md border border-pe-accent-border bg-pe-accent-wash px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-pe-accent">
+            <span className="rounded-full bg-pe-surface px-2 py-0.5 text-[11px] font-semibold text-pe-text-muted">
               {badge}
             </span>
           ) : null}
-        </div>
-        <p className="mt-0.5 text-sm text-pe-text-muted">{description}</p>
-      </div>
-    </Comp>
+        </span>
+        <span className="mt-0.5 block text-[12px] leading-relaxed text-pe-text-secondary">
+          {description}
+        </span>
+      </span>
+    </button>
   );
 }
 
 function StatusPill({ status }) {
   const label =
-    status === 'new' ? 'New' : status === 'updated' ? 'Updated' : 'Unchanged';
+    status === 'new'
+      ? 'New'
+      : status === 'updated'
+        ? 'Updated'
+        : status === 'unchanged'
+          ? 'Same'
+          : status;
   const className =
     status === 'new'
-      ? 'bg-pe-accent-wash text-pe-accent'
+      ? 'bg-pe-positive/10 text-pe-positive'
       : status === 'updated'
-        ? 'bg-black/[0.06] text-pe-text'
+        ? 'bg-pe-accent-wash text-pe-accent'
         : 'bg-pe-surface text-pe-text-muted';
   return (
     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${className}`}>

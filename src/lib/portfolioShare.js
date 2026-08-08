@@ -1,6 +1,4 @@
 import {
-  getHoldingTotalReturnPct,
-  getPortfolioTotalReturnPct,
   STOCKS,
 } from '../data/mockData';
 import { holdingDisplayLabel } from './portfolioAssetUniverse';
@@ -11,6 +9,17 @@ export const COMPOSE_SHARE_HOLDINGS = 5;
 
 export const SHARE_SORT_ALLOCATION = 'allocation';
 export const SHARE_SORT_PERFORMANCE = 'performance';
+
+function holdingDayChangePct(holding, asset) {
+  const raw = Number(
+    asset?.item?.changePct ??
+      holding?.changePct ??
+      holding?.todayPnlPct ??
+      asset?.changePct ??
+      STOCKS[holding?.ticker]?.changePct
+  );
+  return Number.isFinite(raw) ? raw : 0;
+}
 
 function holdingWeight(holding, totalValue, { preferDeclaredWeight = false } = {}) {
   const fromWeight = Number(holding?.weightPct ?? holding?.weight);
@@ -55,7 +64,7 @@ function mapHoldingRow(holding, asset, totalValue, preferDeclaredWeight = false)
     sector: holdingSectorKey(holding, asset),
     logoIconUrl,
     weight: Number(holdingWeight(holding, totalValue, { preferDeclaredWeight }).toFixed(1)),
-    totalReturnPct: getHoldingTotalReturnPct(holding, asset),
+    totalReturnPct: holdingDayChangePct(holding, asset),
   };
 }
 
@@ -86,7 +95,7 @@ function buildRows(portfolio, assetsByKey = {}) {
       sector: holdingSectorKey({ ticker }, asset),
       logoIconUrl: asset?.logoIconUrl ?? null,
       weight: Number(equal.toFixed(1)),
-      totalReturnPct: getHoldingTotalReturnPct({ ticker }, asset),
+      totalReturnPct: holdingDayChangePct({ ticker }, asset),
     };
   });
 }
@@ -121,7 +130,7 @@ export function buildPortfolioShareSnapshot(
     name: portfolio.name,
     thesis: portfolio.thesis ?? portfolio.objective ?? '',
     sort,
-    returnPct: Number(getPortfolioTotalReturnPct(portfolio)) || 0,
+    returnPct: 0,
     holdingsCount: rows.length,
     sectorsCount,
     topHoldings,

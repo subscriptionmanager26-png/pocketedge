@@ -137,15 +137,28 @@ export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
   );
 }
 
-export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByTicker = {} }) {
+export function HoldingsSummary({
+  holdings,
+  onSelectStock,
+  onSelectFund,
+  formByTicker = {},
+  isWatchlist = false,
+}) {
   const [metric, setMetric] = useState('today_pnl');
-  const [sortBy, setSortBy] = useState('invested_value');
+  const [sortBy, setSortBy] = useState(isWatchlist ? 'today_profit_pct' : 'current_value');
   const [sortOrder, setSortOrder] = useState('desc');
   const [sortOpen, setSortOpen] = useState(false);
   const [assetFilter, setAssetFilter] = useState('all');
   const sortButtonRef = useRef(null);
   const sortPanelRef = useRef(null);
   const [sortMenuPos, setSortMenuPos] = useState(null);
+
+  useEffect(() => {
+    if (isWatchlist) {
+      setMetric('today_pnl');
+      setSortBy((prev) => (prev === 'current_value' || prev === 'today_profit_abs' ? 'today_profit_pct' : prev));
+    }
+  }, [isWatchlist]);
 
   useLayoutEffect(() => {
     if (!sortOpen) {
@@ -183,10 +196,14 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 
   if (!holdings.length) return <Empty label="No positions in this list." />;
 
+  const metricOptions = isWatchlist ? WATCHLIST_METRIC_OPTIONS : METRIC_OPTIONS;
+  const sortOptions = isWatchlist ? WATCHLIST_SORT_OPTIONS : SORT_OPTIONS;
+
   const cycleMetric = () => {
+    if (isWatchlist) return;
     setMetric((prev) => {
-      const idx = METRIC_OPTIONS.findIndex((opt) => opt.id === prev);
-      return METRIC_OPTIONS[(idx + 1) % METRIC_OPTIONS.length].id;
+      const idx = metricOptions.findIndex((opt) => opt.id === prev);
+      return metricOptions[(idx + 1) % metricOptions.length].id;
     });
   };
 
@@ -197,8 +214,9 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
     });
   };
 
-  const metricLabel = METRIC_OPTIONS.find((opt) => opt.id === metric)?.label ?? "Day's PnL";
-  const sortLabel = SORT_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? 'Invested Value';
+  const metricLabel =
+    metricOptions.find((opt) => opt.id === metric)?.label ?? (isWatchlist ? '1D change' : "Day's PnL");
+  const sortLabel = sortOptions.find((opt) => opt.id === sortBy)?.label ?? (isWatchlist ? '1D change' : 'Current Value');
   const assetLabel = ASSET_FILTERS.find((opt) => opt.id === assetFilter)?.label ?? 'All';
 
   const sortedHoldings = [...holdings]
@@ -289,7 +307,7 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                         Desc
                       </button>
                     </div>
-                    {SORT_OPTIONS.map((opt) => (
+                    {sortOptions.map((opt) => (
                       <button
                         key={opt.id}
                         type="button"
@@ -314,18 +332,24 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
               : null}
           </div>
 
-          <button
-            type="button"
-            onClick={cycleMetric}
-            className={pillClass}
-            aria-label={`Metric column: ${metricLabel}. Click to change.`}
-            title="Tap to switch metric"
-          >
-            <span className="whitespace-nowrap">{metricLabel}</span>
-            <span aria-hidden="true" className="shrink-0 text-[12px] leading-none">
-              {'>'}
+          {isWatchlist ? (
+            <span className={pillClass} aria-label="Metric column: 1D change">
+              <span className="whitespace-nowrap">1D change</span>
             </span>
-          </button>
+          ) : (
+            <button
+              type="button"
+              onClick={cycleMetric}
+              className={pillClass}
+              aria-label={`Metric column: ${metricLabel}. Click to change.`}
+              title="Tap to switch metric"
+            >
+              <span className="whitespace-nowrap">{metricLabel}</span>
+              <span aria-hidden="true" className="shrink-0 text-[12px] leading-none">
+                {'>'}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -340,59 +364,34 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
             const isFund =
               h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
             const isEtf = h.assetType === 'etf';
-            const qty = Number(h.qty);
-            const avg = Number(h.avg);
-            const invested =
-              h.invested != null
-                ? Number(h.invested)
-                : Number.isFinite(qty) && Number.isFinite(avg)
-                  ? qty * avg
-                  : null;
             const currentValue = h.value != null ? Number(h.value) : null;
             const todayPnl = h.todayPnl;
             const todayPnlPct = h.todayPnlPct ?? h.changePct ?? stock?.changePct;
-            const storedPnlPct = Number(h.pnlPct ?? h.pnl_pct ?? h.totalReturnPct);
-            const totalPnl =
-              invested != null &&
-              Number.isFinite(invested) &&
-              currentValue != null &&
-              Number.isFinite(currentValue)
-                ? currentValue - invested
-                : null;
-            const totalPnlPct =
-              totalPnl != null && invested > 0
-                ? (totalPnl / invested) * 100
-                : Number.isFinite(storedPnlPct)
-                  ? storedPnlPct
-                  : null;
-            const investedText =
-              invested != null && Number.isFinite(invested) && invested > 0
-                ? formatInr(invested, { compact: true })
-                : null;
             const label = holdingDisplayLabel(h);
 
-            // Absolute row (aligned with Invested) + secondary row (aligned with name).
-            const metricValue =
-              metric === 'current_value'
+            const metricValue = isWatchlist
+              ? {
+                  primary: todayPnlPct,
+                  secondaryPct: null,
+                  primarySigned: true,
+                  secondarySigned: false,
+                  primaryIsPct: true,
+                }
+              : metric === 'current_value'
                 ? {
                     primary: currentValue,
-                    secondaryPct: totalPnlPct,
+                    secondaryPct: todayPnlPct,
                     primarySigned: false,
                     secondarySigned: true,
+                    primaryIsPct: false,
                   }
-                : metric === 'total_pnl'
-                  ? {
-                      primary: totalPnl,
-                      secondaryPct: totalPnlPct,
-                      primarySigned: true,
-                      secondarySigned: true,
-                    }
-                  : {
-                      primary: todayPnl,
-                      secondaryPct: todayPnlPct,
-                      primarySigned: true,
-                      secondarySigned: true,
-                    };
+                : {
+                    primary: todayPnl,
+                    secondaryPct: todayPnlPct,
+                    primarySigned: true,
+                    secondarySigned: true,
+                    primaryIsPct: false,
+                  };
 
             const primaryTone = metricValue.primarySigned ? metricValue.primary : null;
             const secondaryTone = metricValue.secondarySigned ? metricValue.secondaryPct : null;
@@ -407,12 +406,14 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
               metricValue.secondaryPct != null &&
               Number.isFinite(Number(metricValue.secondaryPct));
             const primaryMagnitude = hasPrimary
-              ? formatInr(
-                  metricValue.primarySigned
-                    ? Math.abs(Number(metricValue.primary))
-                    : Number(metricValue.primary),
-                  { compact: true }
-                )
+              ? metricValue.primaryIsPct
+                ? `${Math.abs(Number(metricValue.primary)).toFixed(2)}%`
+                : formatInr(
+                    metricValue.primarySigned
+                      ? Math.abs(Number(metricValue.primary))
+                      : Number(metricValue.primary),
+                    { compact: true }
+                  )
               : '—';
             const primarySign = metricValue.primarySigned
               ? primaryUp
@@ -470,7 +471,10 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
                       className="flex h-5 min-w-0 items-center gap-1.5 sm:gap-2"
                     >
                       <p className="min-w-0 truncate text-[12px] font-semibold leading-5 tabular-nums text-pe-text-muted">
-                        Invested {investedText ?? '—'}
+                        Qty{' '}
+                        {Number.isFinite(Number(h.qty))
+                          ? Number(h.qty).toLocaleString('en-IN', { maximumFractionDigits: 4 })
+                          : '—'}
                       </p>
                       {form ? (
                         <span className="inline-flex max-h-5 shrink-0 items-center overflow-visible">
@@ -524,64 +528,44 @@ export function HoldingsSummary({ holdings, onSelectStock, onSelectFund, formByT
 
 const METRIC_OPTIONS = [
   { id: 'today_pnl', label: "Day's PnL" },
-  { id: 'total_pnl', label: 'Total PnL' },
   { id: 'current_value', label: 'Current Value' },
 ];
 
+const WATCHLIST_METRIC_OPTIONS = [{ id: 'today_pnl', label: '1D change' }];
+
 const SORT_OPTIONS = [
   { id: 'name', label: 'Name' },
-  { id: 'invested_value', label: 'Invested Value' },
   { id: 'current_value', label: 'Current Value' },
-  { id: 'total_profit_abs', label: 'Total Profit in abs' },
-  { id: 'total_profit_pct', label: 'Total Profit in %' },
   { id: 'today_profit_abs', label: "Today's Profit in abs" },
   { id: 'today_profit_pct', label: "Today's Profit in %" },
 ];
 
+const WATCHLIST_SORT_OPTIONS = [
+  { id: 'name', label: 'Name' },
+  { id: 'today_profit_pct', label: '1D change' },
+  { id: 'weight', label: 'Alloc. %' },
+];
+
 function getHoldingSortValue(holding, sortBy) {
   const stock = STOCKS[holding.ticker];
-  const qty = Number(holding.qty);
-  const avg = Number(holding.avg);
-  const invested =
-    holding.invested != null
-      ? Number(holding.invested)
-      : Number.isFinite(qty) && Number.isFinite(avg)
-        ? qty * avg
-        : null;
   const currentValue = holding.value != null ? Number(holding.value) : null;
   const todayAbs = Number(holding.todayPnl);
   const todayPct = Number(holding.todayPnlPct ?? holding.changePct ?? stock?.changePct);
-  const storedPnlPct = Number(holding.pnlPct ?? holding.pnl_pct ?? holding.totalReturnPct);
-  const totalAbs =
-    invested != null &&
-    Number.isFinite(invested) &&
-    currentValue != null &&
-    Number.isFinite(currentValue)
-      ? currentValue - invested
-      : null;
-  const totalPct =
-    totalAbs != null && invested > 0
-      ? (totalAbs / invested) * 100
-      : Number.isFinite(storedPnlPct)
-        ? storedPnlPct
-        : null;
+  const weight = Number(holding.weight ?? holding.weightPct);
 
   const safe = (n) => (n != null && Number.isFinite(Number(n)) ? Number(n) : Number.NEGATIVE_INFINITY);
 
   switch (sortBy) {
     case 'current_value':
       return safe(currentValue);
-    case 'total_profit_abs':
-      return safe(totalAbs);
-    case 'total_profit_pct':
-      return safe(totalPct);
     case 'today_profit_abs':
       return safe(todayAbs);
     case 'today_profit_pct':
       return safe(todayPct);
-    case 'invested_value':
+    case 'weight':
+      return safe(weight);
     default:
-      return safe(invested);
+      return safe(currentValue);
   }
 }
 

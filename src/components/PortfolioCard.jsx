@@ -4,9 +4,9 @@ import {
   CURRENT_USER,
   copyPortfolioForUser,
   getHandleForUserId,
-  getPortfolioTotalReturnPct,
+  computePortfolioDisplayMetrics,
 } from '../data/mockData';
-import { formatCount, formatPct, pnlClass } from '../lib/format';
+import { formatCount } from '../lib/format';
 import { holdingDisplayLabel } from '../lib/portfolioAssetUniverse';
 import AssetLogo from './AssetLogo';
 import PortfolioShareSheet from './PortfolioShareSheet';
@@ -112,10 +112,12 @@ export default function PortfolioCard({
 
   const isWatchlist = portfolio.kind === 'watchlist';
   const count = holdingCount(portfolio);
-  const totalReturn = useMemo(
-    () => (isWatchlist ? null : getPortfolioTotalReturnPct(portfolio)),
-    [isWatchlist, portfolio]
-  );
+  const dayChangePct = useMemo(() => {
+    if (!isWatchlist) return null;
+    const metrics = computePortfolioDisplayMetrics(portfolio);
+    const pct = Number(metrics.todayPnlPct);
+    return Number.isFinite(pct) ? pct : null;
+  }, [portfolio, isWatchlist]);
   const topHoldings = useMemo(
     () =>
       getPositions(portfolio)
@@ -158,27 +160,40 @@ export default function PortfolioCard({
           <PortfolioKindMetaTags portfolio={portfolio} />
         </div>
 
-        <div className={`mt-4 grid gap-3 ${isWatchlist ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        <div className="mt-4 grid grid-cols-1 gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-              Total holdings
-            </p>
-            <p className="mt-1 text-xl font-bold tabular-nums tracking-tight text-pe-text">
-              {count.toLocaleString('en-IN')}
-            </p>
+            {isWatchlist ? (
+              <>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                  1D change
+                </p>
+                <p
+                  className={`mt-1 text-xl font-bold tabular-nums tracking-tight ${
+                    dayChangePct == null
+                      ? 'text-pe-text'
+                      : dayChangePct > 0
+                        ? 'text-pe-positive'
+                        : dayChangePct < 0
+                          ? 'text-pe-negative'
+                          : 'text-pe-text'
+                  }`}
+                >
+                  {dayChangePct == null
+                    ? '—'
+                    : `${dayChangePct > 0 ? '+' : dayChangePct < 0 ? '−' : ''}${Math.abs(dayChangePct).toFixed(2)}%`}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
+                  Total holdings
+                </p>
+                <p className="mt-1 text-xl font-bold tabular-nums tracking-tight text-pe-text">
+                  {count.toLocaleString('en-IN')}
+                </p>
+              </>
+            )}
           </div>
-          {isWatchlist ? null : (
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-muted">
-                Unrealised gains
-              </p>
-              <p
-                className={`mt-1 text-xl font-bold tabular-nums tracking-tight ${pnlClass(totalReturn)}`}
-              >
-                {formatPct(totalReturn)}
-              </p>
-            </div>
-          )}
         </div>
 
         {topHoldings.length > 0 ? (

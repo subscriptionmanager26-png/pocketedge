@@ -114,9 +114,10 @@ export default function OnboardingFlow({ userId, onComplete }) {
         id: crypto.randomUUID(),
         ticker: h.ticker,
         name: h.name ?? '',
-        invested: String(h.invested ?? h.qty * h.avg),
+        invested: '',
         qty: String(h.qty),
-        avg: String(h.avg ?? ''),
+        avg: '',
+        isin: h.isin ?? null,
       }));
 
       const assetsByKey = await resolvePortfolioAssets(editRows.map((r) => r.ticker));

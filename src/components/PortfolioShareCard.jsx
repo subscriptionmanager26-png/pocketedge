@@ -291,8 +291,8 @@ export default function PortfolioShareCard({
       />
 
       <ShareListSection
-        title="Top 5 Performing Stocks/Funds"
-        subtitle="By returns"
+        title="Top 5 Stocks/Funds by Day Move"
+        subtitle="By 1D change"
         iconTone="green"
         icon={<TrendIcon />}
         rows={performers}
