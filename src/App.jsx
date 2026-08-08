@@ -670,8 +670,9 @@ export default function App() {
   const closePost = useCallback(() => {
     backScroll();
     setSelectedPostId(null);
-    navigateBack(navigate, location, tabPath('feed'));
-  }, [backScroll, location, navigate]);
+    const returnTab = tab === 'news' ? 'news' : 'feed';
+    navigateBack(navigate, location, tabPath(returnTab));
+  }, [backScroll, location, navigate, tab]);
 
   const openFund = (fundId, seed = null) => {
     captureMarketReturnContext();
@@ -728,7 +729,8 @@ export default function App() {
     clearMarketSelection();
     resetScroll();
     setSelectedPostId(postId);
-    setTab('feed');
+    // Keep News selected when opening a story from the News tab.
+    setTab((prev) => (prev === 'news' ? 'news' : 'feed'));
     navigate(postPath(postId));
   };
 

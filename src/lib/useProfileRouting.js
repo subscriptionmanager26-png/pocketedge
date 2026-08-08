@@ -130,7 +130,8 @@ export function useProfileRouting({
           clearMarketSelection(setters);
           setProfilePortfolioId(null);
           setSelectedPostId(parsed.postId);
-          setTab('feed');
+          // Preserve News tab highlight when deep-linking / returning to a post from News.
+          setTab((prev) => (prev === 'news' ? 'news' : 'feed'));
           return;
         }
 
