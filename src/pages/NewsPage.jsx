@@ -6,15 +6,13 @@ import { isDevMockMode } from '../lib/appMode';
 import { isNewsSocialPost, parseNewsSocialContent } from '../lib/newsPostBody';
 import {
   NEWS_ALL_PORTFOLIOS_ID,
-  collectNewsTickers,
-  collectNewsTypes,
-  filterNewsPosts,
   tickersFromPortfolios,
 } from '../lib/newsFilters';
-import { lookupStockIndustries } from '../lib/marketDataApi';
+import { fetchDistinctStockIndustries } from '../lib/marketDataApi';
 import { rememberPerson, getAppCurrentUserId } from '../lib/socialIdentity';
 import {
   fetchNewsPosts,
+  fetchNewsPostTypes,
   fetchPublicNewsPosts,
   usePostBackend,
 } from '../lib/socialPostApi';
@@ -26,6 +24,8 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { skipAuthForDev } from '../lib/sessionStore';
 import { useNewsCompanyNames } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
+
+const NEWS_PAGE_LIMIT = 100;
 
 function seedMockNews() {
   return import('../data/feedDesignMock').then((mod) =>
@@ -76,7 +76,7 @@ function mapPortfoliosForFilter(list) {
 
 /**
  * News tab — PocketEdge AI market summaries without poster identity.
- * Hierarchy: Company Name → Title → Text → logo image. Like + share only.
+ * Filters refetch top 100 matching the active scope/custom dimension.
  */
 export default function NewsPage({
   posts: postsFromParent,
@@ -88,7 +88,7 @@ export default function NewsPage({
   const [fetchedPosts, setFetchedPosts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [portfolios, setPortfolios] = useState([]);
-  const [industryByTicker, setIndustryByTicker] = useState(() => new Map());
+  const [portfoliosReady, setPortfoliosReady] = useState(guestMode);
 
   /** @type {['global'|'portfolio'|'custom', Function]} */
   const [scope, setScope] = useState('global');
@@ -98,23 +98,152 @@ export default function NewsPage({
   const [companyLabels, setCompanyLabels] = useState({});
   const [types, setTypes] = useState([]);
   const [industries, setIndustries] = useState([]);
+  const [typeOptions, setTypeOptions] = useState([]);
+  const [industryOptions, setIndustryOptions] = useState([]);
 
   useEffect(() => {
+    if (guestMode) {
+      setPortfolios([]);
+      setPortfoliosReady(true);
+      setScope((s) => (s === 'portfolio' ? 'global' : s));
+      setSelectedPortfolioId(NEWS_ALL_PORTFOLIOS_ID);
+      return undefined;
+    }
+
     let cancelled = false;
-    setLoading(true);
+    setPortfoliosReady(false);
+    const ownerId = getAppCurrentUserId();
+    const cached = peekUserPortfolios(ownerId);
+    if (cached?.length) {
+      setPortfolios(mapPortfoliosForFilter(cached));
+      setPortfoliosReady(true);
+    }
+
+    fetchUserPortfolios(ownerId)
+      .then((list) => {
+        if (!cancelled) {
+          setPortfolios(mapPortfoliosForFilter(list));
+          setPortfoliosReady(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          if (!cached?.length) setPortfolios([]);
+          setPortfoliosReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [guestMode]);
+
+  useEffect(() => {
+    if (selectedPortfolioId === NEWS_ALL_PORTFOLIOS_ID) return;
+    if (!portfolios.some((p) => p.id === selectedPortfolioId)) {
+      setSelectedPortfolioId(NEWS_ALL_PORTFOLIOS_ID);
+    }
+  }, [portfolios, selectedPortfolioId]);
+
+  // Facets for Custom panel — independent of the filtered feed.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchNewsPostTypes().catch(() => []),
+      fetchDistinctStockIndustries().catch(() => []),
+    ]).then(([typeList, industryList]) => {
+      if (cancelled) return;
+      setTypeOptions(Array.isArray(typeList) ? typeList : []);
+      setIndustryOptions(Array.isArray(industryList) ? industryList : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [guestMode]);
+
+  const holdingsTickers = useMemo(() => {
+    if (selectedPortfolioId === NEWS_ALL_PORTFOLIOS_ID) {
+      return tickersFromPortfolios(portfolios);
+    }
+    const one = portfolios.find((p) => p.id === selectedPortfolioId);
+    return tickersFromPortfolios(one ? [one] : []);
+  }, [selectedPortfolioId, portfolios]);
+
+  const holdingsKey = useMemo(
+    () => [...holdingsTickers].sort().join(','),
+    [holdingsTickers]
+  );
+
+  const companiesKey = useMemo(
+    () =>
+      companies
+        .map((c) => String(c).trim().toUpperCase())
+        .filter(Boolean)
+        .sort()
+        .join(','),
+    [companies]
+  );
+  const typesKey = useMemo(
+    () =>
+      types
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+        .sort()
+        .join(','),
+    [types]
+  );
+  const industriesKey = useMemo(
+    () =>
+      industries
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+        .sort()
+        .join(','),
+    [industries]
+  );
+
+  // Server-side fetch: top 100 for the active filter.
+  useEffect(() => {
+    let cancelled = false;
 
     const useLive =
       guestMode
         ? isSupabaseConfigured() && !skipAuthForDev()
         : usePostBackend();
 
+    if (scope === 'portfolio' && !guestMode && !portfoliosReady) {
+      setLoading(true);
+      return undefined;
+    }
+
+    if (scope === 'portfolio' && !guestMode && holdingsTickers.size === 0) {
+      setFetchedPosts([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    const filterArgs = { limit: NEWS_PAGE_LIMIT, offset: 0 };
+    if (scope === 'portfolio') {
+      filterArgs.tickers = [...holdingsTickers];
+    } else if (scope === 'custom') {
+      if (customDim === 'company' && companies.length) {
+        filterArgs.tickers = companies.map((c) => String(c).toUpperCase());
+      } else if (customDim === 'type' && types.length) {
+        filterArgs.types = [...types];
+      } else if (customDim === 'industry' && industries.length) {
+        filterArgs.industries = [...industries];
+      }
+    }
+
+    setLoading(true);
+
     const load = !useLive
       ? isDevMockMode()
         ? seedMockNews()
         : Promise.resolve([])
       : guestMode
-        ? fetchPublicNewsPosts()
-        : fetchNewsPosts();
+        ? fetchPublicNewsPosts(filterArgs)
+        : fetchNewsPosts(filterArgs);
 
     load
       .then((next) => {
@@ -131,51 +260,20 @@ export default function NewsPage({
     return () => {
       cancelled = true;
     };
-  }, [guestMode]);
-
-  useEffect(() => {
-    if (guestMode) {
-      setPortfolios([]);
-      setScope((s) => (s === 'portfolio' ? 'global' : s));
-      setSelectedPortfolioId(NEWS_ALL_PORTFOLIOS_ID);
-      return undefined;
-    }
-
-    let cancelled = false;
-    const ownerId = getAppCurrentUserId();
-    const cached = peekUserPortfolios(ownerId);
-    if (cached?.length) {
-      setPortfolios(mapPortfoliosForFilter(cached));
-    }
-
-    fetchUserPortfolios(ownerId)
-      .then((list) => {
-        if (!cancelled) setPortfolios(mapPortfoliosForFilter(list));
-      })
-      .catch(() => {
-        if (!cancelled && !cached?.length) setPortfolios([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [guestMode]);
-
-  useEffect(() => {
-    if (selectedPortfolioId === NEWS_ALL_PORTFOLIOS_ID) return;
-    if (!portfolios.some((p) => p.id === selectedPortfolioId)) {
-      setSelectedPortfolioId(NEWS_ALL_PORTFOLIOS_ID);
-    }
-  }, [portfolios, selectedPortfolioId]);
-
-  const holdingsTickers = useMemo(() => {
-    if (scope !== 'portfolio') return new Set();
-    if (selectedPortfolioId === NEWS_ALL_PORTFOLIOS_ID) {
-      return tickersFromPortfolios(portfolios);
-    }
-    const one = portfolios.find((p) => p.id === selectedPortfolioId);
-    return tickersFromPortfolios(one ? [one] : []);
-  }, [scope, selectedPortfolioId, portfolios]);
+  }, [
+    guestMode,
+    scope,
+    customDim,
+    companiesKey,
+    typesKey,
+    industriesKey,
+    holdingsKey,
+    portfoliosReady,
+    holdingsTickers,
+    companies,
+    types,
+    industries,
+  ]);
 
   const posts = useMemo(() => {
     const base = fetchedPosts ?? [];
@@ -195,64 +293,8 @@ export default function NewsPage({
       .filter(isNewsSocialPost);
   }, [fetchedPosts, postsFromParent]);
 
-  useEffect(() => {
-    const tickers = [
-      ...collectNewsTickers(posts),
-      ...companies.map((c) => String(c).toUpperCase()),
-    ];
-    if (!tickers.length) {
-      setIndustryByTicker(new Map());
-      return undefined;
-    }
-    let cancelled = false;
-    lookupStockIndustries(tickers)
-      .then((map) => {
-        if (!cancelled) setIndustryByTicker(map);
-      })
-      .catch(() => {
-        if (!cancelled) setIndustryByTicker(new Map());
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [posts, companies]);
-
-  const typeOptions = useMemo(() => collectNewsTypes(posts), [posts]);
-  const industryOptions = useMemo(() => {
-    const set = new Set();
-    for (const industry of industryByTicker.values()) {
-      if (industry) set.add(industry);
-    }
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [industryByTicker]);
-
-  const filteredPosts = useMemo(() => {
-    const myHoldingsOnly = scope === 'portfolio';
-    const activeCustomDim = scope === 'custom' ? customDim : null;
-    return filterNewsPosts(
-      posts,
-      {
-        myHoldingsOnly,
-        customDim: activeCustomDim,
-        companies,
-        types,
-        industries,
-      },
-      { holdings: holdingsTickers, industryByTicker }
-    );
-  }, [
-    posts,
-    scope,
-    customDim,
-    companies,
-    types,
-    industries,
-    holdingsTickers,
-    industryByTicker,
-  ]);
-
-  const companyNames = useNewsCompanyNames(filteredPosts.length ? filteredPosts : posts);
-  const enrichmentTick = usePostEnrichment(filteredPosts.length ? filteredPosts : posts);
+  const companyNames = useNewsCompanyNames(posts);
+  const enrichmentTick = usePostEnrichment(posts);
   const showSkeleton = loading && !posts.length;
 
   const handleCompaniesChange = (keys, labels) => {
@@ -270,10 +312,7 @@ export default function NewsPage({
   };
 
   const handleScopeChange = (next) => {
-    if (next === scope) {
-      // Re-tapping Custom is handled in NewsFilters (open panel).
-      return;
-    }
+    if (next === scope) return;
     if (next !== 'custom') {
       setCompanies([]);
       setCompanyLabels({});
@@ -323,30 +362,32 @@ export default function NewsPage({
         industries={industries}
         industryOptions={industryOptions}
         onIndustriesChange={setIndustries}
-        resultCount={filteredPosts.length}
+        resultCount={posts.length}
       />
 
       {!posts.length ? (
-        <p className="px-4 py-16 text-center text-sm text-pe-text-secondary md:px-6">
-          {guestMode ? 'No news yet. Check back soon.' : 'No news posts yet.'}
-        </p>
-      ) : !filteredPosts.length ? (
-        <div className="px-4 py-16 text-center md:px-6">
-          <p className="text-sm text-pe-text-secondary">No news match these filters.</p>
-          <button
-            type="button"
-            onClick={() => {
-              if (scope === 'custom') clearCustomFromEmpty();
-              else handleScopeChange('global');
-            }}
-            className="mt-3 text-sm font-semibold text-pe-accent hover:underline"
-          >
-            Clear filters
-          </button>
-        </div>
+        scope === 'global' && !loading ? (
+          <p className="px-4 py-16 text-center text-sm text-pe-text-secondary md:px-6">
+            {guestMode ? 'No news yet. Check back soon.' : 'No news posts yet.'}
+          </p>
+        ) : (
+          <div className="px-4 py-16 text-center md:px-6">
+            <p className="text-sm text-pe-text-secondary">No news match these filters.</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (scope === 'custom') clearCustomFromEmpty();
+                else handleScopeChange('global');
+              }}
+              className="mt-3 text-sm font-semibold text-pe-accent hover:underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        )
       ) : (
         <div className="pt-1">
-          {filteredPosts.map((post) => {
+          {posts.map((post) => {
             const { symbol } = parseNewsSocialContent(post);
             const companyName = symbol
               ? companyNames.get(symbol.toUpperCase()) || symbol
