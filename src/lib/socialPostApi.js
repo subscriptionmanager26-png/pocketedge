@@ -234,22 +234,36 @@ export async function fetchPublicFeedPosts({ limit = 50, offset = 0 } = {}) {
 }
 
 /** Authenticated News tab — PocketEdge AI summaries only. */
-export async function fetchNewsPosts({ limit = 50, offset = 0 } = {}) {
-  const { data, error } = await supabase.rpc('list_news_posts', {
+export async function fetchNewsPosts({
+  limit = 100,
+  offset = 0,
+  tickers = null,
+  types = null,
+  industries = null,
+} = {}) {
+  const params = {
     p_limit: limit,
     p_offset: offset,
-  });
+  };
+  if (tickers?.length) params.p_tickers = tickers;
+  if (types?.length) params.p_types = types;
+  if (industries?.length) params.p_industries = industries;
+
+  const { data, error } = await supabase.rpc('list_news_posts', params);
   if (!error) {
     const posts = (data?.items ?? []).map((row) => mapPostRow(row));
     posts.forEach((post) => notePostLikeSynced(post.id, post.liked));
     return posts;
   }
-  // Fallback until list_news_posts is deployed: pull feed and keep AI news only.
+  const hasFilters = Boolean(tickers?.length || types?.length || industries?.length);
+  // Filtered queries require list_news_posts — do not silently fall back to global feed.
+  if (hasFilters) throw error;
+  // Unfiltered fallback until list_news_posts is deployed: pull feed and keep AI news only.
   const { data: feedData, error: feedError } = await supabase.rpc('list_feed_posts', {
     p_limit: Math.min(100, Math.max(limit + offset, limit)),
     p_offset: 0,
   });
-  if (feedError) throw error;
+  if (feedError) throw feedError;
   const posts = (feedData?.items ?? [])
     .map((row) => mapPostRow(row))
     .filter((post) => post.via?.source === 'mn_news_ai_summaries')
@@ -259,23 +273,48 @@ export async function fetchNewsPosts({ limit = 50, offset = 0 } = {}) {
 }
 
 /** Logged-out News tab. */
-export async function fetchPublicNewsPosts({ limit = 50, offset = 0 } = {}) {
-  const { data, error } = await supabase.rpc('list_public_news_posts', {
+export async function fetchPublicNewsPosts({
+  limit = 100,
+  offset = 0,
+  tickers = null,
+  types = null,
+  industries = null,
+} = {}) {
+  const params = {
     p_limit: limit,
     p_offset: offset,
-  });
+  };
+  if (tickers?.length) params.p_tickers = tickers;
+  if (types?.length) params.p_types = types;
+  if (industries?.length) params.p_industries = industries;
+
+  const { data, error } = await supabase.rpc('list_public_news_posts', params);
   if (!error) {
     return (data?.items ?? []).map((row) => mapPostRow(row));
   }
+  const hasFilters = Boolean(tickers?.length || types?.length || industries?.length);
+  if (hasFilters) throw error;
   const { data: feedData, error: feedError } = await supabase.rpc('list_public_feed_posts', {
     p_limit: Math.min(100, Math.max(limit + offset, limit)),
     p_offset: 0,
   });
-  if (feedError) throw error;
+  if (feedError) throw feedError;
   return (feedData?.items ?? [])
     .map((row) => mapPostRow(row))
     .filter((post) => post.via?.source === 'mn_news_ai_summaries')
     .slice(offset, offset + limit);
+}
+
+/** Distinct via.type values for News custom filter. */
+export async function fetchNewsPostTypes() {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await supabase.rpc('list_news_post_types');
+  if (error) {
+    console.warn('list_news_post_types failed', error);
+    return [];
+  }
+  if (Array.isArray(data)) return data.map(String).filter(Boolean);
+  return [];
 }
 
 /** Public post detail for guests (comments included). */
