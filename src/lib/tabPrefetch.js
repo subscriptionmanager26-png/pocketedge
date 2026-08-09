@@ -1,4 +1,5 @@
 import { getAppCurrentUserId } from './socialIdentity';
+import { NEWS_ALL_PORTFOLIOS_ID } from './newsFilters';
 
 const prefetchedChunks = new Set();
 
@@ -23,7 +24,24 @@ export function prefetchTab(tab, ownerId = getAppCurrentUserId()) {
     case 'news':
       prefetchChunk(() => import('../pages/NewsPage'), 'news');
       import('../lib/socialPostApi')
-        .then((m) => m.fetchNewsPosts?.({ limit: 30 }))
+        .then(async (m) => {
+          const items = await m.fetchNewsPosts?.({ limit: 30 });
+          if (!Array.isArray(items)) return;
+          const { newsFilterKey, writeCachedNews } = await import('../lib/newsCache');
+          writeCachedNews({
+            filterKey: newsFilterKey({ guestMode: false, scope: 'global' }),
+            items,
+            filterUi: {
+              scope: 'global',
+              selectedPortfolioId: NEWS_ALL_PORTFOLIOS_ID,
+              customDim: 'company',
+              companies: [],
+              companyLabels: {},
+              types: [],
+              industries: [],
+            },
+          });
+        })
         .catch(() => {});
       break;
     case 'ideas':

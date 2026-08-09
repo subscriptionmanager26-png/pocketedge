@@ -37,6 +37,7 @@ function shouldRestoreScroll(prevKey, nextKey, scrollAction) {
   if (scrollAction === 'back') return true;
   if (!prevKey || !nextKey) return false;
   if (nextKey === 'feed' && String(prevKey).startsWith('post:')) return true;
+  if (nextKey === 'news' && String(prevKey).startsWith('post:')) return true;
   if (
     (nextKey === 'markets' || nextKey === 'explore' || nextKey === 'ideas' || nextKey === 'news') &&
     /^(stock|etf|fund|index|commodity):/.test(String(prevKey))

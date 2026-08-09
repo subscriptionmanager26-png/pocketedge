@@ -45,13 +45,15 @@ import {
   createPost,
   fetchPost,
   fetchPublicFeedPosts,
-  fetchPublicNewsPosts,
-  fetchNewsPosts,
   fetchPublicPost,
   togglePostLike,
   usePostBackend,
 } from './lib/socialPostApi';
 import { clearCachedFeedPosts, readCachedFeedPosts, writeCachedFeedPosts } from './lib/feedCache';
+import {
+  clearCachedNews,
+  readLatestCachedNewsPosts,
+} from './lib/newsCache';
 import { clearCachedBootstrap, readCachedBootstrap } from './lib/bootstrapCache';
 import { peekCachedAuthSession } from './lib/peekAuthSession';
 import { markAuthReady, markTabPaint } from './lib/perfMarks';
@@ -146,8 +148,7 @@ export default function App() {
   const [composePortfolioShare, setComposePortfolioShare] = useState(null);
   const [posts, setPosts] = useState(initialBoot.posts);
   const [postsLoading, setPostsLoading] = useState(initialBoot.postsLoading);
-  const [newsPosts, setNewsPosts] = useState([]);
-  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsPosts, setNewsPosts] = useState(() => readLatestCachedNewsPosts() ?? []);
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [selectedTickerKind, setSelectedTickerKind] = useState('stock');
   const [selectedFundId, setSelectedFundId] = useState(null);
@@ -853,6 +854,7 @@ export default function App() {
     clearWatchlists();
     clearCachedBootstrap();
     clearCachedFeedPosts();
+    clearCachedNews();
     setSocialProfile(null);
     setSelfProfile(null);
     setProfileReady(false);
@@ -861,46 +863,11 @@ export default function App() {
     setTab('feed');
     setPosts([]);
     setNewsPosts([]);
-    setNewsLoading(false);
     setPostsLoading(false);
   };
 
   const inShell = authView === 'app' || authView === 'landing';
   const guestMode = authView === 'landing';
-
-  // News tab data (authenticated + guest).
-  useEffect(() => {
-    if (authView !== 'app' && authView !== 'landing') return undefined;
-    if (tab !== 'news') return undefined;
-
-    let cancelled = false;
-    setNewsLoading(true);
-
-    const load =
-      authView === 'landing'
-        ? isSupabaseConfigured() && !skipAuthForDev()
-          ? fetchPublicNewsPosts()
-          : Promise.resolve([])
-        : usePostBackend()
-          ? fetchNewsPosts()
-          : Promise.resolve([]);
-
-    load
-      .then((next) => {
-        if (!cancelled) setNewsPosts(next);
-      })
-      .catch((err) => {
-        console.error('fetchNewsPosts failed', err);
-        if (!cancelled) setNewsPosts([]);
-      })
-      .finally(() => {
-        if (!cancelled) setNewsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authView, tab]);
 
   // Guests: Activity and own Profile stay gated. Public profiles (incl. share links) stay open.
   useEffect(() => {
@@ -1225,35 +1192,42 @@ export default function App() {
           )
         )}
         {!hasAssetDetail && tab === 'news' && (
-          selectedPostId ? (
-            <RouteSuspense>
-              <PostDetailPage
-                postId={selectedPostId}
-                posts={newsPosts}
-                onBack={closePost}
-                onOpenProfile={openProfile}
-                onOpenStock={openStock}
-                onToggleLike={handleTogglePostLike}
-                fetchPost={
-                  guestMode
-                    ? fetchPublicPost
-                    : usePostBackend()
-                      ? fetchPost
-                      : null
-                }
-              />
-            </RouteSuspense>
-          ) : (
-            <RouteSuspense>
-              <NewsPage
-                posts={newsPosts}
-                guestMode={guestMode}
-                onOpenPost={openPost}
-                onOpenStock={openStock}
-                onToggleLike={handleTogglePostLike}
-              />
-            </RouteSuspense>
-          )
+          <>
+            <div
+              className={selectedPostId ? 'hidden' : undefined}
+              aria-hidden={selectedPostId ? true : undefined}
+            >
+              <RouteSuspense>
+                <NewsPage
+                  posts={newsPosts}
+                  guestMode={guestMode}
+                  onOpenPost={openPost}
+                  onOpenStock={openStock}
+                  onToggleLike={handleTogglePostLike}
+                  onNewsPostsChange={setNewsPosts}
+                />
+              </RouteSuspense>
+            </div>
+            {selectedPostId ? (
+              <RouteSuspense>
+                <PostDetailPage
+                  postId={selectedPostId}
+                  posts={newsPosts}
+                  onBack={closePost}
+                  onOpenProfile={openProfile}
+                  onOpenStock={openStock}
+                  onToggleLike={handleTogglePostLike}
+                  fetchPost={
+                    guestMode
+                      ? fetchPublicPost
+                      : usePostBackend()
+                        ? fetchPost
+                        : null
+                  }
+                />
+              </RouteSuspense>
+            ) : null}
+          </>
         )}
         {!hasAssetDetail && tab === 'ideas' && (
           <RouteSuspense>

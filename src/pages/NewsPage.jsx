@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PostCard from '../components/PostCard';
 import NewsFilters from '../components/NewsFilters';
 import { FeedSkeleton } from '../components/PageSkeletons';
@@ -8,6 +8,11 @@ import {
   NEWS_ALL_PORTFOLIOS_ID,
   tickersFromPortfolios,
 } from '../lib/newsFilters';
+import {
+  newsFilterKey,
+  readCachedNews,
+  writeCachedNews,
+} from '../lib/newsCache';
 import { fetchDistinctStockIndustries } from '../lib/marketDataApi';
 import { rememberPerson, getAppCurrentUserId } from '../lib/socialIdentity';
 import {
@@ -26,6 +31,15 @@ import { useNewsCompanyNames } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 
 const NEWS_PAGE_LIMIT = 100;
+
+function readInitialFilterUi(guestMode) {
+  const cached = readCachedNews();
+  const ui = cached?.filterUi;
+  if (!ui || typeof ui !== 'object') return null;
+  // Don't restore a guest-incompatible portfolio scope.
+  if (guestMode && ui.scope === 'portfolio') return { ...ui, scope: 'global' };
+  return ui;
+}
 
 function seedMockNews() {
   return import('../data/feedDesignMock').then((mod) =>
@@ -84,22 +98,38 @@ export default function NewsPage({
   onOpenPost,
   onOpenStock,
   onToggleLike,
+  onNewsPostsChange,
 }) {
+  const initialUi = useMemo(() => readInitialFilterUi(guestMode), [guestMode]);
   const [fetchedPosts, setFetchedPosts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [portfolios, setPortfolios] = useState([]);
   const [portfoliosReady, setPortfoliosReady] = useState(guestMode);
 
   /** @type {['global'|'portfolio'|'custom', Function]} */
-  const [scope, setScope] = useState('global');
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState(NEWS_ALL_PORTFOLIOS_ID);
-  const [customDim, setCustomDim] = useState('company');
-  const [companies, setCompanies] = useState([]);
-  const [companyLabels, setCompanyLabels] = useState({});
-  const [types, setTypes] = useState([]);
-  const [industries, setIndustries] = useState([]);
+  const [scope, setScope] = useState(() => initialUi?.scope ?? 'global');
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState(
+    () => initialUi?.selectedPortfolioId ?? NEWS_ALL_PORTFOLIOS_ID
+  );
+  const [customDim, setCustomDim] = useState(() => initialUi?.customDim ?? 'company');
+  const [companies, setCompanies] = useState(() =>
+    Array.isArray(initialUi?.companies) ? initialUi.companies : []
+  );
+  const [companyLabels, setCompanyLabels] = useState(() =>
+    initialUi?.companyLabels && typeof initialUi.companyLabels === 'object'
+      ? initialUi.companyLabels
+      : {}
+  );
+  const [types, setTypes] = useState(() =>
+    Array.isArray(initialUi?.types) ? initialUi.types : []
+  );
+  const [industries, setIndustries] = useState(() =>
+    Array.isArray(initialUi?.industries) ? initialUi.industries : []
+  );
   const [typeOptions, setTypeOptions] = useState([]);
   const [industryOptions, setIndustryOptions] = useState([]);
+  const onNewsPostsChangeRef = useRef(onNewsPostsChange);
+  onNewsPostsChangeRef.current = onNewsPostsChange;
 
   useEffect(() => {
     if (guestMode) {
@@ -202,7 +232,7 @@ export default function NewsPage({
     [industries]
   );
 
-  // Server-side fetch: top 100 for the active filter.
+  // Server-side fetch: top 100 for the active filter (skip when session cache is warm).
   useEffect(() => {
     let cancelled = false;
 
@@ -219,6 +249,7 @@ export default function NewsPage({
     if (scope === 'portfolio' && !guestMode && holdingsTickers.size === 0) {
       setFetchedPosts([]);
       setLoading(false);
+      onNewsPostsChangeRef.current?.([]);
       return undefined;
     }
 
@@ -235,7 +266,45 @@ export default function NewsPage({
       }
     }
 
-    setLoading(true);
+    const cacheKey = newsFilterKey({
+      guestMode,
+      scope,
+      customDim,
+      tickers: filterArgs.tickers,
+      types: filterArgs.types,
+      industries: filterArgs.industries,
+    });
+    const cached = readCachedNews(cacheKey);
+    if (cached?.items) {
+      setFetchedPosts(cached.items);
+      setLoading(false);
+      onNewsPostsChangeRef.current?.(cached.items);
+      return undefined;
+    }
+
+    // Paint immediately from any warm global bag while the network fetch runs.
+    let painted = fetchedPosts != null && Array.isArray(fetchedPosts);
+    if (!painted && scope === 'global') {
+      const latest = readCachedNews()?.items;
+      const seed =
+        (Array.isArray(latest) && latest.length ? latest : null) ??
+        (Array.isArray(postsFromParent) && postsFromParent.length ? postsFromParent : null);
+      if (seed) {
+        setFetchedPosts(seed);
+        painted = true;
+      }
+    }
+    setLoading(!painted);
+
+    const filterUi = {
+      scope,
+      selectedPortfolioId,
+      customDim,
+      companies,
+      companyLabels,
+      types,
+      industries,
+    };
 
     const load = !useLive
       ? isDevMockMode()
@@ -247,7 +316,11 @@ export default function NewsPage({
 
     load
       .then((next) => {
-        if (!cancelled) setFetchedPosts(Array.isArray(next) ? next : []);
+        if (cancelled) return;
+        const items = Array.isArray(next) ? next : [];
+        setFetchedPosts(items);
+        writeCachedNews({ filterKey: cacheKey, items, filterUi });
+        onNewsPostsChangeRef.current?.(items);
       })
       .catch((err) => {
         console.error('NewsPage load failed', err);
@@ -260,6 +333,7 @@ export default function NewsPage({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed from parent only on cold start
   }, [
     guestMode,
     scope,
@@ -273,6 +347,8 @@ export default function NewsPage({
     companies,
     types,
     industries,
+    selectedPortfolioId,
+    companyLabels,
   ]);
 
   const posts = useMemo(() => {
