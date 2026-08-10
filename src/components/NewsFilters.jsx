@@ -108,63 +108,69 @@ export default function NewsFilters({
   );
 
   return (
-    <div className="border-b border-pe-border bg-pe-canvas">
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2 md:px-6">
-        <div
-          className="inline-flex h-8 shrink-0 rounded-full bg-pe-surface p-0.5"
-          role="group"
-          aria-label="News scope"
-        >
-          <ScopeButton selected={scope === 'global'} onClick={goGlobal}>
-            Global
-          </ScopeButton>
-          {!guestMode ? (
-            <ScopeButton
-              selected={scope === 'portfolio'}
-              onClick={goPortfolio}
-              title="Only news for tickers in a portfolio"
+    <div className="min-w-0 max-w-full overflow-x-hidden border-b border-pe-border bg-pe-canvas">
+      <div className="flex min-w-0 max-w-full flex-col gap-2 px-4 py-2 md:px-6">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div
+              className="inline-flex h-8 max-w-none rounded-full bg-pe-surface p-0.5"
+              role="group"
+              aria-label="News scope"
             >
-              Portfolio
-            </ScopeButton>
-          ) : null}
-          <ScopeButton
-            ref={customBtnRef}
-            selected={scope === 'custom'}
-            onClick={goCustom}
-            title="Filter by ticker, type, or industry"
-          >
-            Custom
-            {scope === 'custom' && customCount > 0 ? (
-              <span className="ml-1 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-pe-accent px-1 py-0.5 text-[10px] font-bold leading-none text-white">
-                {customCount}
-              </span>
+              <ScopeButton selected={scope === 'global'} onClick={goGlobal}>
+                Global
+              </ScopeButton>
+              {!guestMode ? (
+                <ScopeButton
+                  selected={scope === 'portfolio'}
+                  onClick={goPortfolio}
+                  title="Only news for tickers in a portfolio"
+                >
+                  Portfolio
+                </ScopeButton>
+              ) : null}
+              <ScopeButton
+                ref={customBtnRef}
+                selected={scope === 'custom'}
+                onClick={goCustom}
+                title="Filter by ticker, type, or industry"
+              >
+                Custom
+                {scope === 'custom' && customCount > 0 ? (
+                  <span className="ml-1 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-pe-accent px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {customCount}
+                  </span>
+                ) : null}
+              </ScopeButton>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="hidden text-[12px] tabular-nums text-pe-text-muted sm:inline">
+              {resultCount} {resultCount === 1 ? 'story' : 'stories'}
+            </span>
+            {showClear ? (
+              <button
+                type="button"
+                onClick={clearCustom}
+                className="text-[12px] font-semibold text-pe-text-secondary hover:text-pe-accent"
+              >
+                Clear
+              </button>
             ) : null}
-          </ScopeButton>
+          </div>
         </div>
 
         {!guestMode && scope === 'portfolio' ? (
-          <PortfolioPicker
-            portfolios={portfolios}
-            selectedId={selectedPortfolioId}
-            label={selectedPortfolioLabel}
-            onChange={onSelectedPortfolioChange}
-          />
+          <div className="min-w-0">
+            <PortfolioPicker
+              portfolios={portfolios}
+              selectedId={selectedPortfolioId}
+              label={selectedPortfolioLabel}
+              onChange={onSelectedPortfolioChange}
+            />
+          </div>
         ) : null}
-
-        <div className="ml-auto flex items-center gap-2">
-          <span className="hidden text-[12px] tabular-nums text-pe-text-muted sm:inline">
-            {resultCount} {resultCount === 1 ? 'story' : 'stories'}
-          </span>
-          {showClear ? (
-            <button
-              type="button"
-              onClick={clearCustom}
-              className="text-[12px] font-semibold text-pe-text-secondary hover:text-pe-accent"
-            >
-              Clear
-            </button>
-          ) : null}
-        </div>
       </div>
 
       {panelOpen && scope === 'custom' && isDesktop ? (
@@ -194,7 +200,7 @@ const ScopeButton = forwardRef(function ScopeButton(
       onClick={onClick}
       title={title}
       aria-pressed={selected}
-      className={`inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold transition ${
+      className={`inline-flex h-7 shrink-0 items-center rounded-full px-2.5 text-[12px] font-semibold transition sm:px-3 ${
         selected
           ? 'bg-white text-pe-text shadow-sm'
           : 'text-pe-text-secondary hover:text-pe-text'
@@ -217,7 +223,11 @@ function PortfolioPicker({ portfolios, selectedId, label, onChange }) {
       const el = btnRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      setPos({ top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 180) });
+      setPos({
+        top: rect.bottom + 4,
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 180) - 12)),
+        width: Math.min(Math.max(rect.width, 180), window.innerWidth - 24),
+      });
     };
     sync();
     const onDown = (e) => {
@@ -247,9 +257,9 @@ function PortfolioPicker({ portfolios, selectedId, label, onChange }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="inline-flex h-8 max-w-[11rem] items-center gap-1 rounded-full border border-pe-border bg-white px-2.5 text-[12px] font-semibold text-pe-text"
+        className="inline-flex h-8 w-full max-w-full items-center gap-1 rounded-full border border-pe-border bg-white px-2.5 text-[12px] font-semibold text-pe-text sm:w-auto sm:max-w-[14rem]"
       >
-        <span className="truncate">{label}</span>
+        <span className="min-w-0 flex-1 truncate text-left sm:flex-none">{label}</span>
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-pe-text-muted" />
       </button>
       {open && pos && typeof document !== 'undefined'

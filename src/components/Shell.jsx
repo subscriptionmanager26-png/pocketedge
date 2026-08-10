@@ -432,7 +432,7 @@ export default function Shell({
   };
 
   return (
-    <div className="pe-feed-v1 min-h-dvh bg-white text-pe-text md:flex md:h-dvh md:overflow-hidden">
+    <div className="pe-feed-v1 min-h-dvh overflow-x-hidden bg-white text-pe-text md:flex md:h-dvh md:overflow-hidden">
       <aside className="hidden md:flex md:h-full md:w-[232px] md:shrink-0 md:flex-col md:overflow-y-auto md:overscroll-y-contain md:border-r md:border-pe-border md:p-2">
         <div className="flex h-16 items-start p-2">
           <button
@@ -481,7 +481,7 @@ export default function Shell({
 
       <div
         ref={scrollContainerRef}
-        className="flex min-h-dvh min-w-0 flex-1 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain"
+        className="flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-hidden md:min-h-0 md:overflow-y-auto md:overscroll-y-contain"
       >
         <div className="flex min-h-0 min-w-0 flex-1 md:px-5">
           <div

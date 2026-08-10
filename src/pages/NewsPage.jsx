@@ -419,7 +419,7 @@ export default function NewsPage({
   }
 
   return (
-    <div className="pb-8">
+    <div className="min-w-0 max-w-full overflow-x-hidden pb-8">
       <NewsFilters
         guestMode={guestMode}
         scope={scope}
