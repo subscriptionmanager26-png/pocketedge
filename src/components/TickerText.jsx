@@ -105,7 +105,7 @@ export default function TickerText({
   return (
     <div
       ref={containerRef}
-      className={`whitespace-pre-wrap text-left text-[15px] font-normal leading-[1.55] text-pe-ink ${className}`}
+      className={`break-words whitespace-pre-wrap text-left text-[15px] font-normal leading-[1.55] text-pe-ink [overflow-wrap:anywhere] ${className}`}
     >
       {lines.map(({ line, contentLineIndex: index }, i) => (
         <span key={i}>

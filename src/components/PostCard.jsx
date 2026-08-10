@@ -328,7 +328,7 @@ export default function PostCard({
             {isNewsLayout ? (
               <>
                 {newsParts?.title ? (
-                  <h3 className="text-[16px] font-semibold leading-snug tracking-tight text-pe-text md:text-[17px]">
+                  <h3 className="break-words text-[16px] font-semibold leading-snug tracking-tight text-pe-text [overflow-wrap:anywhere] md:text-[17px]">
                     {newsParts.title}
                   </h3>
                 ) : null}
