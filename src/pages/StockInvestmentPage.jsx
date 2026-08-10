@@ -209,6 +209,7 @@ export default function StockInvestmentPage({
         assetKey={ticker}
         mentionKeys={[ticker]}
         assetLabel={displayStock.name || symbolKey}
+        livePrice={displayStock.price ?? displayStock.ltp ?? null}
         guestMode={guestMode}
         showCorporateActions={!isEtf}
         holdersKind="stock"

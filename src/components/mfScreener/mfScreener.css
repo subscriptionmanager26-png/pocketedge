@@ -321,7 +321,7 @@
 }
 
 .mf-screener-filter-chip.is-active {
-  background: var(--fv-text, #171717);
+  background: var(--fv-accent, #ff6719);
   color: #ffffff;
 }
 

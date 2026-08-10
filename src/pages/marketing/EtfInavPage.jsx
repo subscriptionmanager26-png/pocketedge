@@ -305,7 +305,7 @@ export default function EtfInavPage() {
                     onClick={() => setCategoryId(opt.id)}
                     className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition duration-150 ${
                       active
-                        ? 'bg-[var(--fv-text)] text-white'
+                        ? 'bg-[var(--fv-accent)] text-white'
                         : 'bg-black/[0.04] text-[var(--fv-text-secondary)] hover:bg-black/[0.06]'
                     }`}
                   >
