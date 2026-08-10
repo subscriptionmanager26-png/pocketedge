@@ -38,7 +38,7 @@ function TypeChip({ active, label, onClick }) {
       onClick={onClick}
       className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition duration-150 ${
         active
-          ? 'bg-pe-text text-white'
+          ? 'bg-[var(--fv-accent,var(--pe-accent))] text-white'
           : 'bg-transparent text-pe-text-secondary hover:bg-black/[0.04] hover:text-pe-text'
       }`}
     >

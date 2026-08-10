@@ -432,7 +432,7 @@ export default function FeedRightRail({
                 }}
                 className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition duration-150 ${
                   marketTab === t.id
-                    ? 'bg-[var(--fv-text)] text-white'
+                    ? 'bg-[var(--fv-accent)] text-white'
                     : 'text-[var(--fv-text-secondary)] hover:bg-black/[0.04]'
                 }`}
               >

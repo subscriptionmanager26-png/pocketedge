@@ -7,6 +7,7 @@ import WatchlistModal from '../components/WatchlistModal';
 import {
   HoldingsSummary,
   NewsFeed,
+  AnalystRatingsFeed,
   PostsFeed,
   collectActivity,
   postsToActivityItems,
@@ -16,6 +17,7 @@ import { MY_PORTFOLIO, computePortfolioDisplayMetrics, getUserPortfolios } from 
 import { formatInr, formatPct, pnlClass } from '../lib/format';
 import { holdingDisplayLabel, assetsFromHoldings, holdingsNeedLogoResolve, enrichPortfolioHoldingsLogos } from '../lib/portfolioAssetUniverse';
 import { lookupMarketAssetsBatch } from '../lib/marketDataApi';
+import { fetchAnalystConsensusBatch } from '../lib/analystRatings';
 import {
   PORTFOLIO_POLL_INTERVAL_MS,
   shouldPollPortfolioRefresh,
@@ -354,6 +356,60 @@ export default function PortfolioPage({
   }, [liveActiveList]);
 
   const { metrics, holdingsRows, isWatchlist: activeIsWatchlist } = displayMetrics;
+
+  const [analystByTicker, setAnalystByTicker] = useState({});
+
+  const analystFetchKey = useMemo(
+    () =>
+      holdingsRows
+        .map((h) => {
+          const isFund =
+            h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
+          if (isFund || !h.ticker) return null;
+          const key = String(h.ticker).trim().toUpperCase();
+          const live = Number(h.price);
+          return `${key}:${Number.isFinite(live) && live > 0 ? live : ''}`;
+        })
+        .filter(Boolean)
+        .sort()
+        .join('|'),
+    [holdingsRows]
+  );
+
+  useEffect(() => {
+    if (!analystFetchKey) {
+      setAnalystByTicker({});
+      return undefined;
+    }
+    const stockKeys = [];
+    const livePriceByKey = {};
+    for (const part of analystFetchKey.split('|')) {
+      const [key, priceRaw] = part.split(':');
+      if (!key) continue;
+      stockKeys.push(key);
+      const live = Number(priceRaw);
+      if (Number.isFinite(live) && live > 0) livePriceByKey[key] = live;
+    }
+    if (!stockKeys.length) {
+      setAnalystByTicker({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchAnalystConsensusBatch(stockKeys, { livePriceByKey })
+      .then((map) => {
+        if (cancelled) return;
+        const next = {};
+        for (const [key, vm] of map) next[key] = vm;
+        setAnalystByTicker(next);
+      })
+      .catch(() => {
+        if (!cancelled) setAnalystByTicker({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [analystFetchKey]);
 
   const formItems = useMemo(
     () =>
@@ -736,6 +792,13 @@ export default function PortfolioPage({
           <NewsFeed items={activity.news} />
         )
       )}
+      {contentTab === 'analyst_ratings' && (
+        <AnalystRatingsFeed
+          holdings={holdingsRows}
+          analystByTicker={analystByTicker}
+          onSelectStock={onSelectStock}
+        />
+      )}
       {contentTab === 'corporate_actions' && (
         corpActionsLoading ? (
           <p className="px-6 py-14 text-center text-sm text-pe-text-secondary">
@@ -790,6 +853,7 @@ const FORM_METRIC_ORDER = ['out_of_form', 'unsure', 'in_form'];
 const CONTENT_TABS = [
   { id: 'holdings', label: 'Holdings' },
   { id: 'news', label: 'News' },
+  { id: 'analyst_ratings', label: 'Ratings' },
   { id: 'corporate_actions', label: 'Corporate Actions' },
   { id: 'posts', label: 'Posts' },
 ];

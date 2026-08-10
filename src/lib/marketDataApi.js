@@ -5,6 +5,12 @@ import { peekMarketPreviewCache, writeMarketPreviewCache } from './tabCache';
 import { seedMarketAssetCache } from './marketAssetSeed';
 
 export { seedMarketAssetCache } from './marketAssetSeed';
+export {
+  fetchAnalystConsensus,
+  fetchAnalystConsensusBatch,
+  mapAnalystConsensusRow,
+  deriveConsensusLabel,
+} from './analystRatings';
 
 const BASE = '/data/markets';
 const MARKET_SEARCH_TTL_MS = 30_000;

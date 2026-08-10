@@ -6,6 +6,7 @@ import {
   fetchMarketPreview,
   listSgbMarketQuotes,
 } from '../lib/marketDataApi';
+import { fetchAnalystConsensusBatch } from '../lib/analystRatings';
 import {
   IDEA_MARKET_TABS,
   ideaSecurityKey,
@@ -33,21 +34,32 @@ function SectionHeading({ icon: Icon, title, subtitle }) {
   );
 }
 
-function SecurityRail({ items, onOpen }) {
+function SecurityRail({ items, ratingsByTicker = {}, onOpen }) {
   if (!items.length) {
     return <p className="px-4 text-[12px] text-pe-text-secondary">Nothing here yet.</p>;
   }
   // Minimal scroll inset — large soft shadows inside overflow-x paint a grey pad.
   return (
     <div className="flex gap-3 overflow-x-auto bg-white px-4 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {items.map((item) => (
-        <div
-          key={ideaSecurityKey(item)}
-          className="relative z-0 h-[148px] w-[min(240px,78vw)] min-w-[240px] shrink-0"
-        >
-          <SecurityIdeaCard item={item} onOpen={onOpen} />
-        </div>
-      ))}
+      {items.map((item) => {
+        const key = String(item.symbol ?? item.assetKey ?? '')
+          .trim()
+          .toUpperCase();
+        const rating = key ? ratingsByTicker[key] ?? null : null;
+        const taller = Boolean(
+          rating?.consensusLabel && rating.consensusLabel !== 'Limited'
+        );
+        return (
+          <div
+            key={ideaSecurityKey(item)}
+            className={`relative z-0 w-[min(240px,78vw)] min-w-[240px] shrink-0 ${
+              taller ? 'h-[196px]' : 'h-[148px]'
+            }`}
+          >
+            <SecurityIdeaCard item={item} rating={rating} onOpen={onOpen} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -79,6 +91,7 @@ export default function IdeasPage({
   const [bonds, setBonds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [ratingsByTicker, setRatingsByTicker] = useState({});
 
   const handlers = useMemo(
     () => ({ onSelectStock, onSelectFund, onSelectCommodity, onSelectIndex }),
@@ -150,6 +163,42 @@ export default function IdeasPage({
     ];
   }, [byTab, bonds]);
 
+  useEffect(() => {
+    const keys = [];
+    const livePriceByKey = {};
+    for (const item of allSecurities) {
+      const type = item.assetType || item._ideaType;
+      if (type !== 'stock' && type !== 'etf') continue;
+      const key = String(item.symbol ?? item.assetKey ?? '')
+        .trim()
+        .toUpperCase();
+      if (!key) continue;
+      keys.push(key);
+      const price = Number(item.price);
+      if (Number.isFinite(price) && price > 0) livePriceByKey[key] = price;
+    }
+    const unique = [...new Set(keys)];
+    if (!unique.length) {
+      setRatingsByTicker({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchAnalystConsensusBatch(unique, { livePriceByKey })
+      .then((map) => {
+        if (cancelled) return;
+        const next = {};
+        for (const [key, vm] of map) next[key] = vm;
+        setRatingsByTicker(next);
+      })
+      .catch(() => {
+        if (!cancelled) setRatingsByTicker({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [allSecurities]);
+
   const trending = useMemo(() => rankTrendingSecurities(allSecurities, 10), [allSecurities]);
   const mostWatched = useMemo(
     () => rankMostWatchedSecurities(allSecurities, 10),
@@ -175,7 +224,11 @@ export default function IdeasPage({
                 subtitle="Securities with the biggest 1D moves"
               />
             </div>
-            <SecurityRail items={trending} onOpen={handleOpen} />
+            <SecurityRail
+              items={trending}
+              ratingsByTicker={ratingsByTicker}
+              onOpen={handleOpen}
+            />
           </section>
 
           <section className="border-t border-pe-border/60 pb-5 pt-5">
@@ -186,7 +239,11 @@ export default function IdeasPage({
                 subtitle="Names drawing the most attention today"
               />
             </div>
-            <SecurityRail items={mostWatched} onOpen={handleOpen} />
+            <SecurityRail
+              items={mostWatched}
+              ratingsByTicker={ratingsByTicker}
+              onOpen={handleOpen}
+            />
           </section>
 
           {(byTab.stocks ?? []).length ? (
@@ -196,6 +253,7 @@ export default function IdeasPage({
               </div>
               <SecurityRail
                 items={rankTrendingSecurities(byTab.stocks ?? [], 8)}
+                ratingsByTicker={ratingsByTicker}
                 onOpen={handleOpen}
               />
             </section>
@@ -208,6 +266,7 @@ export default function IdeasPage({
               </div>
               <SecurityRail
                 items={rankTrendingSecurities(byTab.etf ?? [], 8)}
+                ratingsByTicker={ratingsByTicker}
                 onOpen={handleOpen}
               />
             </section>

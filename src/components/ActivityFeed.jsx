@@ -24,6 +24,13 @@ const ASSET_FILTERS = [
   { id: 'fund', label: 'MFs' },
 ];
 
+const RATING_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'Buy', label: 'Buy' },
+  { id: 'Hold', label: 'Hold' },
+  { id: 'Sell', label: 'Sell' },
+];
+
 function holdingAssetKind(holding) {
   const ticker = String(holding?.ticker ?? '').trim();
   const type = String(holding?.assetType ?? '').toLowerCase();
@@ -93,6 +100,199 @@ export function postsToActivityItems(posts, tickers = []) {
 export function NewsFeed({ items }) {
   if (!items.length) return <Empty label="No news for this list yet." />;
   return <NewsList items={items} showTicker />;
+}
+
+/**
+ * Portfolio tab: compact analyst ratings for stock/ETF holdings with coverage.
+ * Rating (consensus) and upside vs live price are shown as separate fields —
+ * they can disagree (e.g. Buy with negative upside).
+ */
+export function AnalystRatingsFeed({
+  holdings = [],
+  analystByTicker = {},
+  onSelectStock,
+}) {
+  const [ratingFilter, setRatingFilter] = useState('all');
+
+  const allRows = holdings
+    .filter((h) => {
+      const ticker = String(h.ticker ?? '').trim();
+      if (!ticker) return false;
+      if (h.assetType === 'fund' || /^\d{6,}$/.test(ticker)) return false;
+      const key = ticker.toUpperCase();
+      const rating = analystByTicker[key] ?? analystByTicker[h.ticker];
+      return (
+        rating &&
+        rating.consensusLabel &&
+        rating.consensusLabel !== 'Limited'
+      );
+    })
+    .map((h) => {
+      const key = String(h.ticker ?? '')
+        .trim()
+        .toUpperCase();
+      return {
+        holding: h,
+        rating: analystByTicker[key] ?? analystByTicker[h.ticker],
+      };
+    })
+    .sort((a, b) => {
+      const order = { Buy: 0, Hold: 1, Sell: 2 };
+      const la = order[a.rating.consensusLabel] ?? 9;
+      const lb = order[b.rating.consensusLabel] ?? 9;
+      if (la !== lb) return la - lb;
+      const ua = Number(a.rating.upsidePct);
+      const ub = Number(b.rating.upsidePct);
+      const aOk = Number.isFinite(ua);
+      const bOk = Number.isFinite(ub);
+      if (aOk && bOk) return ub - ua;
+      if (aOk) return -1;
+      if (bOk) return 1;
+      return holdingDisplayLabel(a.holding).localeCompare(holdingDisplayLabel(b.holding));
+    });
+
+  const counts = { all: allRows.length, Buy: 0, Hold: 0, Sell: 0 };
+  for (const row of allRows) {
+    const label = row.rating.consensusLabel;
+    if (counts[label] != null) counts[label] += 1;
+  }
+
+  const rows =
+    ratingFilter === 'all'
+      ? allRows
+      : allRows.filter((row) => row.rating.consensusLabel === ratingFilter);
+
+  if (!allRows.length) {
+    return <Empty label="No analyst ratings for holdings in this list yet." />;
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 border-b border-pe-border px-4 py-2.5 sm:px-5">
+        {RATING_FILTERS.map((opt) => {
+          const active = ratingFilter === opt.id;
+          const count = counts[opt.id] ?? 0;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setRatingFilter(opt.id)}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold transition ${
+                active
+                  ? 'bg-[var(--fv-accent,var(--pe-accent))] text-white'
+                  : 'bg-pe-surface text-pe-text-secondary hover:text-pe-text'
+              }`}
+              aria-pressed={active}
+            >
+              <span>{opt.label}</span>
+              <span
+                className={`tabular-nums ${
+                  active ? 'text-white/80' : 'text-pe-text-muted'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {!rows.length ? (
+        <Empty label={`No ${ratingFilter.toLowerCase()} ratings in this list.`} />
+      ) : (
+        <div className="divide-y divide-pe-border">
+          {rows.map(({ holding: h, rating }) => {
+            const isEtf = h.assetType === 'etf';
+            const label = holdingDisplayLabel(h);
+            const consensus = rating.consensusLabel;
+            const consensusClass =
+              consensus === 'Buy'
+                ? 'text-pe-positive'
+                : consensus === 'Sell'
+                  ? 'text-pe-negative'
+                  : 'text-pe-text';
+            const consensusBadgeClass =
+              consensus === 'Buy'
+                ? 'bg-[rgba(26,137,23,0.1)] text-pe-positive'
+                : consensus === 'Sell'
+                  ? 'bg-[rgba(217,48,37,0.1)] text-pe-negative'
+                  : 'bg-pe-surface text-pe-text-secondary';
+            const upside = Number(rating.upsidePct);
+            const hasUpside = Number.isFinite(upside);
+            const upsideText = hasUpside
+              ? `${upside >= 0 ? '+' : ''}${upside.toFixed(1)}%`
+              : '—';
+
+            return (
+              <button
+                key={h.ticker}
+                type="button"
+                onClick={() =>
+                  onSelectStock?.(h.ticker, {
+                    kind: isEtf ? 'etf' : 'stock',
+                    assetType: h.assetType,
+                  })
+                }
+                className="flex w-full items-start gap-x-2.5 px-4 py-3.5 text-left transition hover:bg-black/[0.03] sm:gap-x-3.5 sm:px-5 sm:py-5"
+              >
+                <div className="flex h-10 w-8 shrink-0 items-center justify-center">
+                  <AssetLogo
+                    logoIconUrl={h.logoIconUrl}
+                    assetType={isEtf ? 'etf' : h.assetType ?? 'stock'}
+                    assetKey={h.ticker}
+                    name={label}
+                    size="sm"
+                    priority
+                    className="shrink-0"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="min-w-0 line-clamp-2 text-[15px] font-semibold leading-5 text-pe-text"
+                        title={label}
+                      >
+                        {label}
+                      </p>
+                      <p className="mt-0.5 text-[12px] font-semibold tabular-nums text-pe-text-muted">
+                        {formatTicker(h.ticker)}
+                      </p>
+                    </div>
+
+                    <div className="grid shrink-0 grid-cols-2 gap-x-4 text-right">
+                      <div className="min-w-[3.25rem]">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-pe-text-muted">
+                          Rating
+                        </p>
+                        <span
+                          className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[12px] font-semibold ${consensusBadgeClass} ${consensusClass}`}
+                        >
+                          {consensus}
+                        </span>
+                      </div>
+                      <div className="min-w-[3.75rem]">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-pe-text-muted">
+                          Upside
+                        </p>
+                        <p
+                          className={`mt-1 text-[15px] font-semibold leading-6 tabular-nums ${
+                            hasUpside ? pnlClass(upside) : 'text-pe-text-muted'
+                          }`}
+                        >
+                          {upsideText}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PostsFeed({ items, onOpenProfile, onOpenPost }) {
@@ -499,13 +699,15 @@ export function HoldingsSummary({
                   </div>
 
                   <div className="mt-0.5 flex items-start justify-between gap-2 sm:gap-3">
-                    <p
-                      data-holding-name
-                      className="min-w-0 line-clamp-2 text-[15px] font-semibold leading-5 text-pe-text"
-                      title={label}
-                    >
-                      {label}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        data-holding-name
+                        className="min-w-0 line-clamp-2 text-[15px] font-semibold leading-5 text-pe-text"
+                        title={label}
+                      >
+                        {label}
+                      </p>
+                    </div>
                     <p
                       className={`inline-flex h-5 shrink-0 items-center justify-end gap-0.5 whitespace-nowrap text-right text-[15px] font-semibold leading-5 tabular-nums ${
                         metricValue.primarySigned

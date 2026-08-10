@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import Avatar from './Avatar';
+import AnalystRatingsSection from './AnalystRatingsSection';
 import NewsList, { NewsSummarySheet } from './NewsList';
 import CorporateActionsList from './CorporateActionsList';
 import GuestSignInCta from './GuestSignInCta';
@@ -23,6 +24,7 @@ import {
   fetchStockNews,
   isStockNewsConfigured,
 } from '../lib/stockNewsApi';
+import { fetchAnalystConsensus } from '../lib/analystRatings';
 import { isDevMockMode } from '../lib/appMode';
 
 const NewsSummaryMarkdown = lazy(() => import('./NewsSummaryMarkdown'));
@@ -412,6 +414,7 @@ export default function AssetDetailSections({
   assetKey,
   mentionKeys,
   assetLabel,
+  livePrice = null,
   guestMode = false,
   showCorporateActions = false,
   mockDiscussions = null,
@@ -463,11 +466,38 @@ export default function AssetDetailSections({
   const [postEnrichTick, setPostEnrichTick] = useState(0);
   const [holderEnrichTick, setHolderEnrichTick] = useState(0);
   const [newsSheetItem, setNewsSheetItem] = useState(null);
+  const [analystRating, setAnalystRating] = useState(null);
+  const [analystLoading, setAnalystLoading] = useState(false);
 
   const keys = useMemo(() => {
     const list = mentionKeys?.length ? mentionKeys : [assetKey];
     return [...new Set(list.map((k) => String(k ?? '').trim()).filter(Boolean))];
   }, [mentionKeys, assetKey]);
+
+  const supportsAnalystRatings = kind === 'stock' || kind === 'etf';
+
+  useEffect(() => {
+    if (!supportsAnalystRatings || !assetKey) {
+      setAnalystRating(null);
+      setAnalystLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setAnalystLoading(true);
+    fetchAnalystConsensus(assetKey, { livePrice })
+      .then((vm) => {
+        if (!cancelled) setAnalystRating(vm);
+      })
+      .catch(() => {
+        if (!cancelled) setAnalystRating(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAnalystLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [assetKey, livePrice, supportsAnalystRatings]);
 
   useEffect(() => {
     if (!supportsInsights || guestMode) {
@@ -743,6 +773,11 @@ export default function AssetDetailSections({
   if (guestMode) {
     return (
       <div className="pb-6">
+        {supportsAnalystRatings ? (
+          <SectionBlock title="Analyst ratings">
+            <AnalystRatingsSection rating={analystRating} loading={analystLoading} />
+          </SectionBlock>
+        ) : null}
         <SectionBlock title="Insights">
           <GuestSignInCta
             variant="hero"
@@ -792,6 +827,12 @@ export default function AssetDetailSections({
           ) : (
             <EmptyRail message={`No insights yet for ${assetLabel || 'this security'}.`} />
           )}
+        </SectionBlock>
+      ) : null}
+
+      {supportsAnalystRatings ? (
+        <SectionBlock title="Analyst ratings">
+          <AnalystRatingsSection rating={analystRating} loading={analystLoading} />
         </SectionBlock>
       ) : null}
 
