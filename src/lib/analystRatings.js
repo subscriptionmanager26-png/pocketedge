@@ -159,7 +159,7 @@ export function deriveConsensusLabel(buy, hold, sell) {
   const h = Math.max(0, Number(hold) || 0);
   const s = Math.max(0, Number(sell) || 0);
   const n = b + h + s;
-  if (n < 3) return 'Limited';
+  if (n < 1) return 'Limited';
   if (b / n >= 0.6) return 'Buy';
   if (s / n >= 0.4) return 'Sell';
   return 'Hold';
@@ -194,9 +194,15 @@ export function mapAnalystConsensusRow(row, { livePrice = null } = {}) {
   const sell = Number(row.recommendation_sell ?? row.recommendationSell ?? 0) || 0;
   const analystCount =
     Number(row.analyst_count ?? row.analystCount) || buy + hold + sell;
-  const targetAvg = Number(row.target_price_avg ?? row.targetPriceAvg);
-  const targetHigh = Number(row.target_price_high ?? row.targetPriceHigh);
-  const targetLow = Number(row.target_price_low ?? row.targetPriceLow);
+  const targetAvgRaw = Number(row.target_price_avg ?? row.targetPriceAvg);
+  let targetHigh = Number(row.target_price_high ?? row.targetPriceHigh);
+  let targetLow = Number(row.target_price_low ?? row.targetPriceLow);
+  const targetAvg = Number.isFinite(targetAvgRaw) ? targetAvgRaw : null;
+  // One analyst ⇒ one target; Min/Avg/Max are the same estimate.
+  if (analystCount === 1 && targetAvg != null) {
+    targetHigh = targetAvg;
+    targetLow = targetAvg;
+  }
   const tvLast = Number(row.last_price ?? row.lastPrice);
   const priceForUpside =
     livePrice != null && Number.isFinite(Number(livePrice)) && Number(livePrice) > 0
@@ -218,7 +224,7 @@ export function mapAnalystConsensusRow(row, { livePrice = null } = {}) {
     hold,
     sell,
     analystCount,
-    targetAvg: Number.isFinite(targetAvg) ? targetAvg : null,
+    targetAvg,
     targetHigh: Number.isFinite(targetHigh) ? targetHigh : null,
     targetLow: Number.isFinite(targetLow) ? targetLow : null,
     lastPrice: Number.isFinite(tvLast) ? tvLast : null,
