@@ -119,6 +119,8 @@ export function AnalystRatingsFeed({
       const ticker = String(h.ticker ?? '').trim();
       if (!ticker) return false;
       if (h.assetType === 'fund' || /^\d{6,}$/.test(ticker)) return false;
+      if (/^(BSE|NSE):\d+$/i.test(ticker)) return false;
+      if (ticker.includes(':')) return false;
       const key = ticker.toUpperCase();
       const rating = analystByTicker[key] ?? analystByTicker[h.ticker];
       return (

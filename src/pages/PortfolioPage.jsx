@@ -359,40 +359,36 @@ export default function PortfolioPage({
 
   const [analystByTicker, setAnalystByTicker] = useState({});
 
-  const analystFetchKey = useMemo(
-    () =>
-      holdingsRows
-        .map((h) => {
-          const isFund =
-            h.assetType === 'fund' || /^\d{6,}$/.test(String(h.ticker ?? '').trim());
-          if (isFund || !h.ticker) return null;
-          const key = String(h.ticker).trim().toUpperCase();
-          const live = Number(h.price);
-          return `${key}:${Number.isFinite(live) && live > 0 ? live : ''}`;
-        })
-        .filter(Boolean)
-        .sort()
-        .join('|'),
-    [holdingsRows]
-  );
+  // Same live LTP already used for portfolio metrics (`h.price` after quote enrich).
+  const analystHoldingsSpec = useMemo(() => {
+    const byKey = new Map();
+    for (const h of holdingsRows) {
+      const raw = String(h.ticker ?? '').trim();
+      if (!raw) continue;
+      const isFund = h.assetType === 'fund' || /^\d{6,}$/.test(raw);
+      if (isFund) continue;
+      // Junk exchange-prefixed numeric keys are not analyst-covered equities.
+      if (/^(BSE|NSE):\d+$/i.test(raw)) continue;
+      const key = raw.toUpperCase();
+      if (key.includes(':')) continue;
+      const live = Number(h.price);
+      byKey.set(key, {
+        key,
+        live: Number.isFinite(live) && live > 0 ? live : null,
+      });
+    }
+    return [...byKey.values()].sort((a, b) => a.key.localeCompare(b.key));
+  }, [holdingsRows]);
 
   useEffect(() => {
-    if (!analystFetchKey) {
+    if (!analystHoldingsSpec.length) {
       setAnalystByTicker({});
       return undefined;
     }
-    const stockKeys = [];
+    const stockKeys = analystHoldingsSpec.map((row) => row.key);
     const livePriceByKey = {};
-    for (const part of analystFetchKey.split('|')) {
-      const [key, priceRaw] = part.split(':');
-      if (!key) continue;
-      stockKeys.push(key);
-      const live = Number(priceRaw);
-      if (Number.isFinite(live) && live > 0) livePriceByKey[key] = live;
-    }
-    if (!stockKeys.length) {
-      setAnalystByTicker({});
-      return undefined;
+    for (const row of analystHoldingsSpec) {
+      if (row.live != null) livePriceByKey[row.key] = row.live;
     }
 
     let cancelled = false;
@@ -409,7 +405,7 @@ export default function PortfolioPage({
     return () => {
       cancelled = true;
     };
-  }, [analystFetchKey]);
+  }, [analystHoldingsSpec]);
 
   const formItems = useMemo(
     () =>

@@ -182,6 +182,22 @@ export function computeUpsidePct(targetAvg, livePrice) {
   return ((target - live) / live) * 100;
 }
 
+function pickPriceForUpside(livePrice, tvLast) {
+  const live = Number(livePrice);
+  const tv = Number(tvLast);
+  const liveOk = Number.isFinite(live) && live > 0;
+  const tvOk = Number.isFinite(tv) && tv > 0;
+  if (liveOk && tvOk) {
+    const ratio = live / tv;
+    // Guard against holdings wiring bugs (e.g. BSE scrip codes leaking into price).
+    if (ratio > 20 || ratio < 1 / 20) return tv;
+    return live;
+  }
+  if (liveOk) return live;
+  if (tvOk) return tv;
+  return null;
+}
+
 /**
  * @param {object} row
  * @param {{ livePrice?: number|null }} [opts]
@@ -204,12 +220,7 @@ export function mapAnalystConsensusRow(row, { livePrice = null } = {}) {
     targetLow = targetAvg;
   }
   const tvLast = Number(row.last_price ?? row.lastPrice);
-  const priceForUpside =
-    livePrice != null && Number.isFinite(Number(livePrice)) && Number(livePrice) > 0
-      ? Number(livePrice)
-      : Number.isFinite(tvLast) && tvLast > 0
-        ? tvLast
-        : null;
+  const priceForUpside = pickPriceForUpside(livePrice, tvLast);
   const upsidePct = computeUpsidePct(targetAvg, priceForUpside);
   const tech = Number(row.recommend_technical ?? row.recommendTechnical);
   const label = deriveConsensusLabel(buy, hold, sell);
@@ -245,10 +256,7 @@ export function mapAnalystConsensusRow(row, { livePrice = null } = {}) {
 
 function applyLivePrice(vm, livePrice) {
   if (!vm) return null;
-  const live =
-    livePrice != null && Number.isFinite(Number(livePrice)) && Number(livePrice) > 0
-      ? Number(livePrice)
-      : vm.livePrice;
+  const live = pickPriceForUpside(livePrice, vm.lastPrice ?? vm.livePrice);
   const upsidePct = computeUpsidePct(vm.targetAvg, live);
   const label = vm.consensusLabel;
   return {
