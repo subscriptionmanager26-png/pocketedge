@@ -114,7 +114,9 @@ export default function AnalystRatingsSection({ rating, loading = false }) {
         <div className="mb-2.5">
           <p className="text-[13px] font-semibold text-pe-text">1Y price targets</p>
           <p className="mt-0.5 text-[12px] text-pe-text-secondary">
-            Analyst low, average, and high targets
+            {rating.analystCount === 1
+              ? 'Single analyst target (min, average, and max are the same)'
+              : 'Analyst low, average, and high targets'}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2">

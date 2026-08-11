@@ -6,7 +6,7 @@
  * Continues past failures (records sync_status = 'error' | 'missing').
  *
  * Usage:
- *   node --env-file=.env scripts/sync-tradingview-analysts.mjs
+ *   node --env-file=.env scripts/sync-tradingview-analysts.mjs --only-existing
  *   node scripts/sync-tradingview-analysts.mjs --keys-file=tmp/tickers.json --out=tmp/tv.json --skip-high-low
  *   node --env-file=.env scripts/sync-tradingview-analysts.mjs --limit=50
  */
@@ -48,12 +48,14 @@ function parseArgs(argv) {
     limit: null,
     skipHighLow: false,
     onlyMissing: false,
+    onlyExisting: false,
     keysFile: null,
     out: null,
   };
   for (const arg of argv) {
     if (arg === '--skip-high-low') out.skipHighLow = true;
     if (arg === '--only-missing') out.onlyMissing = true;
+    if (arg === '--only-existing') out.onlyExisting = true;
     if (arg.startsWith('--limit=')) out.limit = Number(arg.slice('--limit='.length));
     if (arg.startsWith('--keys-file=')) out.keysFile = arg.slice('--keys-file='.length);
     if (arg.startsWith('--out=')) out.out = arg.slice('--out='.length);
@@ -82,25 +84,74 @@ function normalizeTickerRows(keys) {
   const seen = new Set();
   const rows = [];
   for (const row of keys) {
-    const assetKey = String(row.asset_key || '')
+    let assetKey = String(row.asset_key || '')
       .trim()
       .toUpperCase();
     if (!assetKey || seen.has(assetKey)) continue;
     if (/\s/.test(assetKey)) continue;
+
+    let exchange = (row.exchange || 'NSE').toUpperCase() === 'BSE' ? 'BSE' : 'NSE';
+    // Some universe rows bake exchange into the key (e.g. BSE:526331).
+    if (assetKey.startsWith('BSE:')) {
+      exchange = 'BSE';
+      assetKey = assetKey.slice(4);
+    } else if (assetKey.startsWith('NSE:')) {
+      exchange = 'NSE';
+      assetKey = assetKey.slice(4);
+    }
+    if (!assetKey || seen.has(assetKey)) continue;
     seen.add(assetKey);
     rows.push({
       asset_key: assetKey,
       name: row.name || assetKey,
-      exchange: (row.exchange || 'NSE').toUpperCase() === 'BSE' ? 'BSE' : 'NSE',
+      exchange,
     });
   }
   return rows;
+}
+
+/** TradingView India symbols use `_` where our asset keys often use `-`. */
+function toTvSymbolParts(assetKey, exchange = 'NSE') {
+  const ex = String(exchange || 'NSE').toUpperCase() === 'BSE' ? 'BSE' : 'NSE';
+  let sym = String(assetKey || '')
+    .trim()
+    .toUpperCase();
+  if (sym.startsWith('BSE:')) sym = sym.slice(4);
+  if (sym.startsWith('NSE:')) sym = sym.slice(4);
+  const tvSymbol = sym.replace(/-/g, '_');
+  return {
+    exchange: ex,
+    tvSymbol,
+    tvTicker: `${ex}:${tvSymbol}`,
+  };
 }
 
 async function loadTickersFromFile(keysFile) {
   const raw = JSON.parse(await readFile(keysFile, 'utf8'));
   const list = Array.isArray(raw) ? raw : raw.tickers || raw.rows || [];
   return normalizeTickerRows(list);
+}
+
+async function fetchExistingTickers(supabase, { limit }) {
+  const keys = [];
+  let from = 0;
+  const page = 1000;
+  for (;;) {
+    const { data, error } = await supabase
+      .from('tradingview_analyst_consensus')
+      .select('asset_key, name, exchange')
+      .eq('sync_status', 'ok')
+      .order('asset_key', { ascending: true })
+      .range(from, from + page - 1);
+    if (error) throw error;
+    if (!data?.length) break;
+    keys.push(...data);
+    if (data.length < page) break;
+    from += page;
+  }
+  let rows = normalizeTickerRows(keys);
+  if (limit != null && Number.isFinite(limit)) rows = rows.slice(0, limit);
+  return rows;
 }
 
 async function fetchTickers(supabase, { limit, onlyMissing }) {
@@ -169,8 +220,8 @@ async function tvScan(tickers) {
   return res.json();
 }
 
-function mapScanRow(ticker, d) {
-  // ticker like NSE:RELIANCE
+function mapScanRow(ticker, d, assetKeyOverride = null) {
+  // ticker like NSE:RELIANCE or NSE:BAJAJ_AUTO
   const [exchange, symbol] = ticker.split(':');
   const buy = toInt(d?.[3]);
   const hold = toInt(d?.[4]);
@@ -183,17 +234,23 @@ function mapScanRow(ticker, d) {
     buy != null || hold != null || sell != null
       ? (buy || 0) + (hold || 0) + (sell || 0)
       : null;
+  const assetKey = String(assetKeyOverride || symbol || '')
+    .trim()
+    .toUpperCase();
+
+  // One analyst ⇒ one target; min/avg/max collapse to that estimate.
+  const singleTarget = analystCount === 1 && avg != null;
 
   return {
-    asset_key: symbol,
+    asset_key: assetKey,
     tv_symbol: ticker,
     exchange,
-    name: d?.[7] || d?.[0] || symbol,
+    name: d?.[7] || d?.[0] || assetKey,
     last_price: last,
     currency: 'INR',
     target_price_avg: avg,
-    target_price_high: null,
-    target_price_low: null,
+    target_price_high: singleTarget ? avg : null,
+    target_price_low: singleTarget ? avg : null,
     recommendation_buy: buy,
     recommendation_hold: hold,
     recommendation_sell: sell,
@@ -207,7 +264,8 @@ function mapScanRow(ticker, d) {
 }
 
 async function fetchHighLow(symbol, exchange = 'NSE') {
-  const url = `https://www.tradingview.com/symbols/${exchange}-${encodeURIComponent(symbol)}/forecast/`;
+  const { exchange: ex, tvSymbol } = toTvSymbolParts(symbol, exchange);
+  const url = `https://www.tradingview.com/symbols/${ex}-${encodeURIComponent(tvSymbol)}/forecast/`;
   const res = await fetch(url, {
     headers: {
       'User-Agent':
@@ -308,6 +366,9 @@ async function main() {
   if (args.keysFile) {
     console.log(`Loading tickers from ${args.keysFile}…`);
     tickers = await loadTickersFromFile(args.keysFile);
+  } else if (supabase && args.onlyExisting) {
+    console.log('Loading existing ok tickers from tradingview_analyst_consensus…');
+    tickers = await fetchExistingTickers(supabase, args);
   } else if (supabase) {
     console.log('Loading tickers from social_market_assets…');
     tickers = await fetchTickers(supabase, args);
@@ -320,7 +381,6 @@ async function main() {
   }
   console.log(`Tickers to process: ${tickers.length}`);
 
-  const byKey = new Map(tickers.map((t) => [t.asset_key, t]));
   const results = new Map();
   let scanned = 0;
   let scanErrors = 0;
@@ -328,17 +388,29 @@ async function main() {
   const batches = chunk(tickers, BATCH_SIZE);
   for (let bi = 0; bi < batches.length; bi += 1) {
     const batch = batches[bi];
-    const tvTickers = batch.map((t) => `${t.exchange}:${t.asset_key}`);
+    const tvMetaByTicker = new Map();
+    const tvTickers = [];
+    for (const t of batch) {
+      const meta = toTvSymbolParts(t.asset_key, t.exchange);
+      tvTickers.push(meta.tvTicker);
+      tvMetaByTicker.set(meta.tvTicker, t);
+      // Also allow matching by bare TV symbol if exchange differs in response.
+      tvMetaByTicker.set(meta.tvSymbol, t);
+    }
     try {
       const payload = await tvScan(tvTickers);
       const found = new Set();
       for (const row of payload.data || []) {
-        const mapped = mapScanRow(row.s, row.d);
+        const base =
+          tvMetaByTicker.get(row.s) ||
+          tvMetaByTicker.get(String(row.s || '').split(':')[1] || '');
+        const mapped = mapScanRow(row.s, row.d, base?.asset_key || null);
+        if (!mapped.asset_key) continue;
         found.add(mapped.asset_key);
-        const base = byKey.get(mapped.asset_key);
         if (base?.name && (!mapped.name || mapped.name === mapped.asset_key)) {
           mapped.name = base.name;
         }
+        if (base?.exchange) mapped.exchange = base.exchange;
         results.set(mapped.asset_key, mapped);
       }
       for (const t of batch) {
@@ -387,9 +459,17 @@ async function main() {
 
     await mapPool(needHL, HIGH_LOW_CONCURRENCY, async (row) => {
       try {
-        const { high, low } = await fetchHighLow(row.asset_key, row.exchange || 'NSE');
-        if (high != null || low != null) {
+        let high = null;
+        let low = null;
+        if (row.analyst_count === 1 && row.target_price_avg != null) {
+          high = row.target_price_avg;
+          low = row.target_price_avg;
           hlOk += 1;
+        } else {
+          ({ high, low } = await fetchHighLow(row.asset_key, row.exchange || 'NSE'));
+          if (high != null || low != null) hlOk += 1;
+        }
+        if (high != null || low != null) {
           const next = {
             ...row,
             target_price_high: high,

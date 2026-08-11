@@ -137,7 +137,7 @@ export default function NewsFilters({
               >
                 Custom
                 {scope === 'custom' && customCount > 0 ? (
-                  <span className="ml-1 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-pe-accent px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                  <span className="ml-1 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-white/25 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
                     {customCount}
                   </span>
                 ) : null}
@@ -202,7 +202,7 @@ const ScopeButton = forwardRef(function ScopeButton(
       aria-pressed={selected}
       className={`inline-flex h-7 shrink-0 items-center rounded-full px-2.5 text-[12px] font-semibold transition sm:px-3 ${
         selected
-          ? 'bg-white text-pe-text shadow-sm'
+          ? 'bg-[var(--fv-accent,var(--pe-accent))] text-white'
           : 'text-pe-text-secondary hover:text-pe-text'
       }`}
     >
@@ -345,7 +345,7 @@ function FilterPanelBody({
                 aria-pressed={customDim === dim.id}
                 className={`h-8 rounded-full px-3 text-[12px] font-semibold transition ${
                   customDim === dim.id
-                    ? 'bg-white text-pe-text shadow-sm'
+                    ? 'bg-[var(--fv-accent,var(--pe-accent))] text-white'
                     : 'text-pe-text-secondary hover:text-pe-text'
                 }`}
               >
