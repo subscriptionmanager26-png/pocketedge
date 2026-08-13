@@ -177,24 +177,41 @@ export default function PortfolioPage({
     if (!batch.size) return;
 
     setAssetsByKey((prev) => {
+      let changed = false;
       const next = { ...prev };
       for (const key of holdingKeys) {
         const item = batch.get(key) ?? batch.get(String(key).toUpperCase());
         if (!item) continue;
         const price = item.price ?? item.nav ?? item.ltp ?? null;
+        const prevRow = prev[key];
+        const name = item.name ?? prevRow?.name ?? '';
+        const kind = item.assetType ?? prevRow?.kind ?? 'stock';
+        const isin = item.isin ?? prevRow?.isin ?? null;
+        const logoIconUrl = item.logoIconUrl ?? prevRow?.logoIconUrl ?? null;
+        if (
+          prevRow &&
+          prevRow.price === price &&
+          prevRow.name === name &&
+          prevRow.kind === kind &&
+          prevRow.isin === isin &&
+          prevRow.logoIconUrl === logoIconUrl
+        ) {
+          continue;
+        }
+        changed = true;
         next[key] = {
           key,
           symbol: item.symbol ?? key,
-          name: item.name ?? prev[key]?.name ?? '',
-          kind: item.assetType ?? prev[key]?.kind ?? 'stock',
-          kindLabel: prev[key]?.kindLabel ?? 'Stock',
+          name,
+          kind,
+          kindLabel: prevRow?.kindLabel ?? 'Stock',
           price,
-          isin: item.isin ?? prev[key]?.isin ?? null,
-          logoIconUrl: item.logoIconUrl ?? prev[key]?.logoIconUrl ?? null,
+          isin,
+          logoIconUrl,
           item,
         };
       }
-      return next;
+      return changed ? next : prev;
     });
   }, [holdingKeys]);
 
@@ -379,15 +396,26 @@ export default function PortfolioPage({
     }
     return [...byKey.values()].sort((a, b) => a.key.localeCompare(b.key));
   }, [holdingsRows]);
+  const analystHoldingsKey = analystHoldingsSpec
+    .map((row) => `${row.key}\t${row.live ?? ''}`)
+    .join('\n');
 
   useEffect(() => {
-    if (!analystHoldingsSpec.length) {
+    if (!analystHoldingsKey) {
       setAnalystByTicker({});
       return undefined;
     }
-    const stockKeys = analystHoldingsSpec.map((row) => row.key);
+    const rows = analystHoldingsKey.split('\n').map((line) => {
+      const [key, liveRaw] = line.split('\t');
+      const live = Number(liveRaw);
+      return {
+        key,
+        live: Number.isFinite(live) && live > 0 ? live : null,
+      };
+    });
+    const stockKeys = rows.map((row) => row.key);
     const livePriceByKey = {};
-    for (const row of analystHoldingsSpec) {
+    for (const row of rows) {
       if (row.live != null) livePriceByKey[row.key] = row.live;
     }
 
@@ -405,7 +433,7 @@ export default function PortfolioPage({
     return () => {
       cancelled = true;
     };
-  }, [analystHoldingsSpec]);
+  }, [analystHoldingsKey]);
 
   const formItems = useMemo(
     () =>

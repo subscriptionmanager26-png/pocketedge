@@ -276,7 +276,9 @@ export function useProfileRouting({
     const samePath = location.pathname === targetUrl.pathname;
     const sameSearch = (location.search || '') === targetUrl.search;
     if (!(samePath && sameSearch)) {
-      navigate(`${targetUrl.pathname}${targetUrl.search}`);
+      // Reconcile in place. Pushing here duplicates /stock entries and makes
+      // in-app back (navigate(-1)) bounce when closeMarketDetail also updates state.
+      navigate(`${targetUrl.pathname}${targetUrl.search}`, { replace: true });
     }
   }, [
     authView,
