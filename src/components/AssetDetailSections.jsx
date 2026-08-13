@@ -469,12 +469,22 @@ export default function AssetDetailSections({
   const [analystRating, setAnalystRating] = useState(null);
   const [analystLoading, setAnalystLoading] = useState(false);
 
+  // Callers often pass mentionKeys={[ticker]} inline. Depend on content, not
+  // array identity, or posts/holders effects refetch every render and freeze the page.
+  const mentionKeySig = (Array.isArray(mentionKeys) ? mentionKeys : [])
+    .map((k) => String(k ?? '').trim())
+    .filter(Boolean)
+    .join('\0');
   const keys = useMemo(() => {
-    const list = mentionKeys?.length ? mentionKeys : [assetKey];
+    const list = mentionKeySig ? mentionKeySig.split('\0') : [assetKey];
     return [...new Set(list.map((k) => String(k ?? '').trim()).filter(Boolean))];
-  }, [mentionKeys, assetKey]);
+  }, [mentionKeySig, assetKey]);
 
   const supportsAnalystRatings = kind === 'stock' || kind === 'etf';
+  const livePriceKey = (() => {
+    const n = Number(livePrice);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  })();
 
   useEffect(() => {
     if (!supportsAnalystRatings || !assetKey) {
@@ -484,7 +494,7 @@ export default function AssetDetailSections({
     }
     let cancelled = false;
     setAnalystLoading(true);
-    fetchAnalystConsensus(assetKey, { livePrice })
+    fetchAnalystConsensus(assetKey, { livePrice: livePriceKey })
       .then((vm) => {
         if (!cancelled) setAnalystRating(vm);
       })
@@ -497,7 +507,7 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [assetKey, livePrice, supportsAnalystRatings]);
+  }, [assetKey, livePriceKey, supportsAnalystRatings]);
 
   useEffect(() => {
     if (!supportsInsights || guestMode) {
@@ -555,7 +565,7 @@ export default function AssetDetailSections({
     return () => {
       cancelled = true;
     };
-  }, [keys, mockDiscussions, guestMode]);
+  }, [mentionKeySig, assetKey, guestMode]);
 
   useEffect(() => {
     if (!supportsHolders || guestMode) {

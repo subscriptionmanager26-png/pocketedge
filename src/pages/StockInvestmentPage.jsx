@@ -67,6 +67,7 @@ export default function StockInvestmentPage({
   }, [marketStock, seedStock, ticker]);
   const displayStock = stock;
   const symbolKey = formatTicker(ticker);
+  const mentionKeys = useMemo(() => [ticker], [ticker]);
   const excerpt = briefExcerpt(brief);
   const seo = stockSeoMeta({
     name: displayStock.name || symbolKey,
@@ -207,7 +208,7 @@ export default function StockInvestmentPage({
       <AssetDetailSections
         kind={isEtf ? 'etf' : 'stock'}
         assetKey={ticker}
-        mentionKeys={[ticker]}
+        mentionKeys={mentionKeys}
         assetLabel={displayStock.name || symbolKey}
         livePrice={displayStock.price ?? displayStock.ltp ?? null}
         guestMode={guestMode}
