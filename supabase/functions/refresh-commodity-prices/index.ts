@@ -2,6 +2,10 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
 
 /**
  * MCX spot commodity prices into social_market_assets.
+ *
+ * NOTE: mcxindia.com returns 403 to Supabase edge egress. Production refresh
+ * runs on Vercel Node: /api/cron/refresh-commodities (pg_cron triggered).
+ * This function is kept for local/manual experiments only.
  */
 
 const MCX_SEED = 'https://www.mcxindia.com/market-data/spot-market-price';

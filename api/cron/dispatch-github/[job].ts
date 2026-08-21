@@ -13,7 +13,7 @@ export const config = {
 const JOB_TO_WORKFLOW: Record<string, string> = {
   equity: 'social-market-price-equity.yml',
   funds: 'social-market-price-funds.yml',
-  commodities: 'social-market-price-commodities.yml',
+  // commodities: pg_cron → /api/cron/refresh-commodities (Vercel Node); GH schedule is backup
   'asset-sync': 'social-market-asset-sync.yml',
   ibja: 'social-market-price-ibja.yml',
 };
