@@ -1,7 +1,7 @@
 name: Social market price refresh (commodities)
 
-# Backup only: primary clock is Supabase pg_cron → Vercel /api/cron/refresh-commodities
-# (MCX WAF blocks Supabase edge egress). Native schedule needs no GITHUB_DISPATCH_TOKEN.
+# MCX WAF blocks Supabase edge + Vercel serverless (403 Access Denied).
+# Native GH schedule needs no GITHUB_DISPATCH_TOKEN (unlike workflow_dispatch).
 
 on:
   schedule:
