@@ -1,8 +1,9 @@
 /**
- * MCX commodity spot refresh (Vercel Node).
+ * MCX commodity spot refresh (Vercel Node) — experimental.
  *
- * Why Vercel (not Supabase Edge): mcxindia.com WAF returns 403 to Supabase
- * egress. Node on Vercel can fetch spots; Supabase pg_cron triggers this route.
+ * MCX WAF currently returns 403 to Vercel serverless as well as Supabase edge.
+ * Production refresh uses GitHub Actions schedule
+ * (.github/workflows/social-market-price-commodities.yml).
  *
  * Auth: x-commodity-refresh-token == social_market_job_config.auth_token
  *       for job_name = refresh-commodity-prices
