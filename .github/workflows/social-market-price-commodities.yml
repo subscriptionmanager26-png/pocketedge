@@ -1,13 +1,11 @@
 name: Social market price refresh (commodities)
 
-# MCX WAF blocks Supabase edge + Vercel serverless (403 Access Denied).
-# Native GH schedule needs no GITHUB_DISPATCH_TOKEN (unlike workflow_dispatch).
+# Backup only. Primary: pg_cron → refresh-commodity-prices edge → CF Browser proxy.
+# MCX WAF blocks plain cloud egress; GH runners remain a no-PAT fallback.
 
 on:
   schedule:
-    # Hourly during MCX session (≈09:00–23:30 IST = 03:30–18:00 UTC)
     - cron: '0 4-18 * * 1-5'
-    # EOD ~00:15 IST
     - cron: '45 18 * * 1-5'
   workflow_dispatch:
 

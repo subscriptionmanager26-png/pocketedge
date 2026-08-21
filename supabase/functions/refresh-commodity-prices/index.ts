@@ -3,16 +3,16 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
 /**
  * MCX spot commodity prices into social_market_assets.
  *
- * NOTE: mcxindia.com returns 403 to Supabase edge egress. Production refresh
- * runs on Vercel Node: /api/cron/refresh-commodities (pg_cron triggered).
- * This function is kept for local/manual experiments only.
+ * Direct mcxindia.com fetch is blocked from Supabase edge (and plain CF Workers).
+ * Fetches via Cloudflare Browser Rendering proxy (workers/mcx-spot-proxy).
+ *
+ * Proxy auth token lives in social_market_job_config.job_name = 'mcx-cf-proxy'
+ * (optional env overrides: MCX_PROXY_URL, MCX_PROXY_TOKEN).
  */
 
-const MCX_SEED = 'https://www.mcxindia.com/market-data/spot-market-price';
-const MCX_API = 'https://www.mcxindia.com/GetSpotMarketPrice?culture=en';
-const USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const LOCK_NAME = 'refresh-commodity-prices';
+const PROXY_JOB_NAME = 'mcx-cf-proxy';
+const DEFAULT_PROXY_URL = 'https://mcx-spot-proxy.subscriptionmanager26.workers.dev';
 const BATCH_SIZE = 500;
 
 function dateInIst(now = new Date()): string {
@@ -49,33 +49,54 @@ function parseMcxDate(formatted: string | null, fallback: string): string {
   return dateInIst(new Date(parsed));
 }
 
-async function fetchMcxSpotPrices() {
-  const home = await fetch(MCX_SEED, {
-    headers: { 'User-Agent': USER_AGENT, Accept: 'text/html' },
-    redirect: 'follow',
-  });
-  if (!home.ok) throw new Error(`MCX seed failed: ${home.status}`);
-  const setCookie = home.headers.get('set-cookie') ?? '';
-  const cookie = setCookie.split(',').map((c) => c.split(';')[0].trim()).filter(Boolean).join('; ');
+async function fetchMcxSpotPrices(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+) {
+  const proxyUrl = (Deno.env.get('MCX_PROXY_URL') || DEFAULT_PROXY_URL).replace(/\/$/, '');
+  let proxyToken = Deno.env.get('MCX_PROXY_TOKEN') ?? '';
+  if (!proxyToken) {
+    const { data: proxyRow, error: proxyErr } = await client
+      .from('social_market_job_config')
+      .select('auth_token')
+      .eq('job_name', PROXY_JOB_NAME)
+      .maybeSingle();
+    if (proxyErr) throw new Error(`mcx proxy config: ${proxyErr.message}`);
+    proxyToken = String(proxyRow?.auth_token ?? '');
+  }
+  if (!proxyToken) {
+    throw new Error('Missing MCX proxy token (mcx-cf-proxy / MCX_PROXY_TOKEN)');
+  }
 
-  const res = await fetch(MCX_API, {
+  const res = await fetch(proxyUrl, {
+    method: 'GET',
     headers: {
-      'User-Agent': USER_AGENT,
+      Authorization: `Bearer ${proxyToken}`,
       Accept: 'application/json',
-      ...(cookie ? { Cookie: cookie } : {}),
-      Referer: MCX_SEED,
     },
   });
-  if (!res.ok) throw new Error(`MCX spot fetch failed: ${res.status}`);
-  const payload = await res.json();
-  const items = (payload?.Data?.Data ?? []).map((row: Record<string, unknown>) => ({
-    id: String(row.enSymbol ?? row.symbol ?? ''),
-    location: String(row.enlocation ?? row.location ?? 'NA'),
-    spotPrice: row.todaysSpotPrice != null ? Number(row.todaysSpotPrice) : null,
+  const text = await res.text();
+  let payload: {
+    ok?: boolean;
+    error?: string;
+    items?: Array<Record<string, unknown>>;
+  };
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error(`MCX proxy non-JSON (${res.status}): ${text.slice(0, 160)}`);
+  }
+  if (!res.ok || !payload?.ok) {
+    throw new Error(`MCX proxy failed: ${res.status} ${payload?.error ?? text.slice(0, 160)}`);
+  }
+
+  return (payload.items ?? []).map((row) => ({
+    id: String(row.id ?? ''),
+    location: String(row.location ?? 'NA'),
+    spotPrice: row.spotPrice != null ? Number(row.spotPrice) : null,
     change: row.change != null ? Number(row.change) : null,
-    date: row.FormattedDate != null ? String(row.FormattedDate) : null,
+    date: row.date != null ? String(row.date) : null,
   }));
-  return items;
 }
 
 type ExistingQuote = {
@@ -194,7 +215,7 @@ Deno.serve(async (req: Request) => {
   const lockOwner = crypto.randomUUID();
   const { data: lockAcquired, error: lockErr } = await client.rpc('acquire_social_market_job_lock', {
     p_job_name: LOCK_NAME,
-    p_ttl_seconds: 90,
+    p_ttl_seconds: 120,
     p_owner: lockOwner,
   });
   if (lockErr) {
@@ -210,7 +231,7 @@ Deno.serve(async (req: Request) => {
     const syncedAt = new Date().toISOString();
     const fallbackDate = dateInIst();
     const [items, existingByKey] = await Promise.all([
-      fetchMcxSpotPrices(),
+      fetchMcxSpotPrices(client),
       loadExistingCommodityQuotes(client),
     ]);
     const assetByKey = new Map<string, Record<string, unknown>>();
@@ -222,7 +243,6 @@ Deno.serve(async (req: Request) => {
       if (!symbol || item.spotPrice == null || !Number.isFinite(item.spotPrice)) continue;
       const assetKey = `${symbol}-${location}`.toUpperCase();
       const rowAsOf = parseMcxDate(item.date, fallbackDate);
-      // Prefer day-over-day vs prior session close; MCX tick `change` is often ~₹0.4.
       let { previousClose, changePct } = commodityDayChange({
         price: item.spotPrice,
         asOfDate: rowAsOf,
@@ -233,7 +253,9 @@ Deno.serve(async (req: Request) => {
         previousClose =
           change != null && Number.isFinite(item.spotPrice) ? item.spotPrice - change : null;
         changePct =
-          previousClose != null && previousClose !== 0 ? (change! / previousClose) * 100 : null;
+          previousClose != null && previousClose !== 0 && change != null
+            ? (change / previousClose) * 100
+            : null;
       }
 
       assetByKey.set(assetKey, {
@@ -274,6 +296,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         ok: true,
+        via: 'cf-browser-proxy',
         commodity_count: assetRows.length,
         assets_upserted: assetsUpserted,
         history_upserted: historyUpserted,
