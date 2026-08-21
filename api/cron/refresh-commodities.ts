@@ -35,6 +35,15 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+/** Node serverless on this project expects named Web handlers, not default+Response. */
+export async function POST(request: Request) {
+  return handleRefresh(request);
+}
+
+export async function GET(request: Request) {
+  return handleRefresh(request);
+}
+
 async function rpcBatch(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any,
@@ -80,11 +89,7 @@ async function loadExistingCommodityQuotes(
   return map;
 }
 
-export default async function handler(request: Request) {
-  if (request.method !== 'POST' && request.method !== 'GET') {
-    return json(405, { ok: false, error: 'Method not allowed' });
-  }
-
+async function handleRefresh(request: Request) {
   const { url, serviceRoleKey } = supabaseServerConfig();
   if (!url || !serviceRoleKey) {
     return json(500, { ok: false, error: 'Missing Supabase envs' });
