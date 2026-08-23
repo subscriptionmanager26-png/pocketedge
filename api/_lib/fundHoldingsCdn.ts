@@ -176,7 +176,11 @@ export async function loadAmfiCatalog(): Promise<Record<string, CatalogRow>> {
   const { base } = await resolveHoldingsBase();
   const catalogUrl = `${base}/catalog/amfi-lookup.json`;
 
-  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  // Vercel Edge / Workers expose caches.default; DOM CacheStorage typings omit it.
+  const cache =
+    typeof caches !== 'undefined'
+      ? ((caches as unknown as { default?: Cache }).default ?? null)
+      : null;
   const cacheKey = new Request(catalogUrl);
   if (cache) {
     const hit = await cache.match(cacheKey);

@@ -6,7 +6,7 @@ import {
   HOLDINGS_CORS,
   jsonResponse,
   loadHoldingsFilings,
-} from '../../_lib/fundHoldingsCdn.js';
+} from '../_lib/fundHoldingsCdn.js';
 
 /**
  * GET /api/v1/filings
