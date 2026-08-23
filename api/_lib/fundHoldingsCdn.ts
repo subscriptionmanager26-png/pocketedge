@@ -1,6 +1,6 @@
 /** Public fund holdings on GitHub raw, pinned by commit SHA (raw @main lags on large files). */
 
-export const HOLDINGS_REPO_OWNER = 'subscriptionmanager26-png';
+export const HOLDINGS_REPO_OWNER = 'kushagra-agarwal-a';
 export const HOLDINGS_REPO_NAME = 'fund-holdings-data';
 export const HOLDINGS_BRANCH = 'main';
 
