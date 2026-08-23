@@ -18,17 +18,20 @@ export default async function handler(request: Request) {
     {
       name: 'PocketEdge fund holdings API',
       version: 'v1',
-      source: 'GitHub fund-holdings-data (raw)',
+      source: 'GitHub fund-holdings-data (raw, commit-pinned)',
       endpoints: {
         holdings: `${origin}/api/v1/holdings/{amfi}`,
+        holdings_asof: `${origin}/api/v1/holdings/{amfi}?as_of=YYYY-MM-DD`,
+        filings: `${origin}/api/v1/filings`,
         catalog: `${origin}/api/v1/catalog`,
         portfolio: `${origin}/api/v1/portfolios/{portfolio_id}`,
         meta: `${origin}/api/v1/meta`,
       },
       notes: [
         'Sibling share-classes share one portfolio book (portfolio_id).',
-        'GET /api/v1/holdings/:amfi resolves catalog → portfolio and overlays scheme metadata.',
-        'Catalog and portfolio routes proxy the public CDN under pocketedge.in.',
+        'GET /api/v1/holdings/:amfi resolves catalog → portfolios/latest/{id}.json.',
+        'Pass ?as_of=YYYY-MM-DD (or YYYY-MM) for historical books under portfolios/asof/.',
+        'GET /api/v1/filings lists published as-of dates and cadences.',
       ],
     },
     200,

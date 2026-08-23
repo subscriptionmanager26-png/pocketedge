@@ -7,12 +7,16 @@ import {
   jsonResponse,
   loadAmfiCatalog,
   normalizeAmfi,
+  normalizeAsOf,
   HOLDINGS_CORS,
 } from '../../_lib/fundHoldingsCdn.js';
 
 /**
  * GET /api/v1/holdings/:amfi
- * Resolves AMFI share-class → shared portfolio book (GitHub/jsDelivr).
+ * GET /api/v1/holdings/:amfi?as_of=2026-07-15
+ *
+ * Resolves AMFI share-class → shared portfolio book (GitHub raw, commit-pinned).
+ * Omit as_of for latest; pass YYYY-MM-DD (or YYYY-MM → month-end) for history.
  */
 export default async function handler(
   request: Request,
@@ -33,6 +37,23 @@ export default async function handler(
     return jsonResponse({ error: 'Enter a valid AMFI scheme code' }, 400);
   }
 
+  const asOfRaw =
+    url.searchParams.get('as_of') ||
+    url.searchParams.get('asOf') ||
+    url.searchParams.get('date') ||
+    '';
+  const asOf = normalizeAsOf(asOfRaw);
+  if (asOfRaw && !asOf) {
+    return jsonResponse(
+      {
+        error: 'Invalid as_of',
+        detail: 'Use YYYY-MM-DD or YYYY-MM',
+        as_of: asOfRaw,
+      },
+      400,
+    );
+  }
+
   try {
     const catalog = await loadAmfiCatalog();
     const row = catalog[amfi];
@@ -48,6 +69,7 @@ export default async function handler(
         {
           error: 'No Data Found',
           amfi_code: amfi,
+          as_of: asOf || null,
           scheme: {
             name: row.name ?? null,
             amc_name: row.amc_name ?? null,
@@ -59,26 +81,35 @@ export default async function handler(
       );
     }
 
-    const portfolioUrl = await holdingsPortfolioUrl(portfolioId);
+    const availableAsOf = Array.isArray(row.available_as_of)
+      ? row.available_as_of.map(String)
+      : undefined;
+
+    const portfolioUrl = await holdingsPortfolioUrl(portfolioId, asOf || null);
     const portfolioRes = await fetch(portfolioUrl, {
       headers: { Accept: 'application/json' },
     });
     if (!portfolioRes.ok) {
       return jsonResponse(
         {
-          error: 'Could not load holdings',
+          error: asOf
+            ? 'No holdings for this as_of date'
+            : 'Could not load holdings',
           amfi_code: amfi,
           portfolio_id: portfolioId,
+          as_of: asOf || null,
+          available_as_of: availableAsOf,
         },
         portfolioRes.status === 404 ? 404 : 502,
+        { 'Cache-Control': 'public, max-age=60' },
       );
     }
 
     const portfolio = await portfolioRes.json();
     const body = {
       ...portfolio,
-      // Overlay the requesting share-class from the catalog.
       amfi_code: amfi,
+      as_of: asOf || portfolio?.meta?.as_of || portfolio?.as_of || null,
       scheme: {
         ...(portfolio?.scheme && typeof portfolio.scheme === 'object'
           ? portfolio.scheme
@@ -94,10 +125,12 @@ export default async function handler(
         category: row.category ?? portfolio?.scheme?.category ?? null,
       },
       portfolio_id: portfolioId,
+      available_as_of: availableAsOf,
       source: {
         catalog_amfi: amfi,
         portfolio_id: portfolioId,
         portfolio_url: portfolioUrl,
+        as_of: asOf || null,
       },
     };
 
@@ -110,6 +143,7 @@ export default async function handler(
       {
         error: 'Could not load holdings',
         amfi_code: amfi,
+        as_of: asOf || null,
         detail: err instanceof Error ? err.message : String(err),
       },
       502,

@@ -1,6 +1,6 @@
 /** Public fund holdings on GitHub raw, pinned by commit SHA (raw @main lags on large files). */
 
-export const HOLDINGS_REPO_OWNER = 'kushagra-agarwal-a';
+export const HOLDINGS_REPO_OWNER = 'subscriptionmanager26-png';
 export const HOLDINGS_REPO_NAME = 'fund-holdings-data';
 export const HOLDINGS_BRANCH = 'main';
 
@@ -9,6 +9,7 @@ export const HOLDINGS_CDN_BASE = `https://raw.githubusercontent.com/${HOLDINGS_R
 export const HOLDINGS_META_URL = `${HOLDINGS_CDN_BASE}/meta.json`;
 /** @deprecated Prefer resolveHoldingsBase() — branch tip may lag. */
 export const HOLDINGS_CATALOG_URL = `${HOLDINGS_CDN_BASE}/catalog/amfi-lookup.json`;
+export const HOLDINGS_FILINGS_URL = `${HOLDINGS_CDN_BASE}/catalog/filings.json`;
 
 export const HOLDINGS_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +38,18 @@ export function normalizeAmfi(raw: string) {
   return code;
 }
 
+/** Accept YYYY-MM-DD, or YYYY-MM → month-end. */
+export function normalizeAsOf(raw: string | null | undefined): string {
+  const s = String(raw || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}$/.test(s)) {
+    const [y, m] = s.split('-').map(Number);
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return `${s}-${String(last).padStart(2, '0')}`;
+  }
+  return '';
+}
+
 type CatalogRow = {
   amfi_code?: string;
   portfolio_id?: string | null;
@@ -50,6 +63,7 @@ type CatalogRow = {
   nav_date?: string | null;
   isin?: string | null;
   category?: string | null;
+  available_as_of?: string[];
   [key: string]: unknown;
 };
 
@@ -60,9 +74,18 @@ type HoldingsMeta = {
   [key: string]: unknown;
 };
 
+export type HoldingsFiling = {
+  as_of: string;
+  cadence?: string;
+  portfolio_count?: number;
+  [key: string]: unknown;
+};
+
 let pinMemory: { at: number; base: string; commit: string | null } | null =
   null;
 let catalogMemory: { at: number; data: Record<string, CatalogRow> } | null =
+  null;
+let filingsMemory: { at: number; data: { filings: HoldingsFiling[] } } | null =
   null;
 const PIN_TTL_MS = 5 * 60 * 1000;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
@@ -131,9 +154,17 @@ export async function resolveHoldingsBase(): Promise<{
   return { base, commit };
 }
 
-export async function holdingsPortfolioUrl(portfolioId: string) {
+export async function holdingsPortfolioUrl(
+  portfolioId: string,
+  asOf?: string | null,
+) {
   const { base } = await resolveHoldingsBase();
-  return `${base}/portfolios/latest/${encodeURIComponent(portfolioId)}.json`;
+  const id = encodeURIComponent(portfolioId);
+  const day = normalizeAsOf(asOf || '');
+  if (day) {
+    return `${base}/portfolios/asof/${day}/${id}.json`;
+  }
+  return `${base}/portfolios/latest/${id}.json`;
 }
 
 export async function loadAmfiCatalog(): Promise<Record<string, CatalogRow>> {
@@ -175,4 +206,32 @@ export async function loadAmfiCatalog(): Promise<Record<string, CatalogRow>> {
     await cache.put(cacheKey, toStore).catch(() => {});
   }
   return data;
+}
+
+export async function loadHoldingsFilings(): Promise<{
+  filings: HoldingsFiling[];
+  generated_at?: string;
+}> {
+  const now = Date.now();
+  if (filingsMemory && now - filingsMemory.at < CATALOG_TTL_MS) {
+    return filingsMemory.data;
+  }
+  const { base } = await resolveHoldingsBase();
+  const url = `${base}/catalog/filings.json`;
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+  });
+  if (!res.ok) {
+    throw new Error(`filings fetch failed: ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    filings?: HoldingsFiling[];
+    generated_at?: string;
+  };
+  const normalized = {
+    generated_at: data.generated_at,
+    filings: Array.isArray(data.filings) ? data.filings : [],
+  };
+  filingsMemory = { at: now, data: normalized };
+  return normalized;
 }
