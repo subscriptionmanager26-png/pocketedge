@@ -59,7 +59,8 @@ export default async function handler(
       );
     }
 
-    const portfolioRes = await fetch(holdingsPortfolioUrl(portfolioId), {
+    const portfolioUrl = await holdingsPortfolioUrl(portfolioId);
+    const portfolioRes = await fetch(portfolioUrl, {
       headers: { Accept: 'application/json' },
     });
     if (!portfolioRes.ok) {
@@ -96,7 +97,7 @@ export default async function handler(
       source: {
         catalog_amfi: amfi,
         portfolio_id: portfolioId,
-        portfolio_url: holdingsPortfolioUrl(portfolioId),
+        portfolio_url: portfolioUrl,
       },
     };
 
