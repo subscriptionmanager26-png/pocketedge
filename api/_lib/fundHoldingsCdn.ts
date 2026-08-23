@@ -1,7 +1,7 @@
-/** Public fund holdings store (GitHub → jsDelivr). Zero paid object store. */
+/** Public fund holdings store on GitHub (raw). Avoid jsDelivr @main lag after syncs. */
 
 export const HOLDINGS_CDN_BASE =
-  'https://cdn.jsdelivr.net/gh/kushagra-agarwal-a/fund-holdings-data@main';
+  'https://raw.githubusercontent.com/kushagra-agarwal-a/fund-holdings-data/main';
 
 export const HOLDINGS_CATALOG_URL = `${HOLDINGS_CDN_BASE}/catalog/amfi-lookup.json`;
 export const HOLDINGS_META_URL = `${HOLDINGS_CDN_BASE}/meta.json`;

@@ -18,7 +18,7 @@ export default async function handler(request: Request) {
     {
       name: 'PocketEdge fund holdings API',
       version: 'v1',
-      source: 'GitHub fund-holdings-data via jsDelivr',
+      source: 'GitHub fund-holdings-data (raw)',
       endpoints: {
         holdings: `${origin}/api/v1/holdings/{amfi}`,
         catalog: `${origin}/api/v1/catalog`,
