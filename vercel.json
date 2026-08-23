@@ -125,6 +125,19 @@
       ]
     },
     {
+      "source": "/api/v1/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
       "source": "/data/etf-inav/(.*)",
       "headers": [
         {
@@ -280,6 +293,18 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/v1/catalog",
+      "destination": "https://cdn.jsdelivr.net/gh/kushagra-agarwal-a/fund-holdings-data@main/catalog/amfi-lookup.json"
+    },
+    {
+      "source": "/api/v1/meta",
+      "destination": "https://cdn.jsdelivr.net/gh/kushagra-agarwal-a/fund-holdings-data@main/meta.json"
+    },
+    {
+      "source": "/api/v1/portfolios/:id",
+      "destination": "https://cdn.jsdelivr.net/gh/kushagra-agarwal-a/fund-holdings-data@main/portfolios/latest/:id.json"
+    },
     {
       "source": "/asset-logos/:path*",
       "destination": "https://zweqxjeuwwfrlpbuuayg.supabase.co/storage/v1/object/public/asset-logos/:path*"
