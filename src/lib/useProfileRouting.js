@@ -13,8 +13,18 @@ function clearMarketSelection(setters) {
 
 function isDeepLinkPath(pathname) {
   const kind = parseAppPath(pathname).kind;
-  return kind === 'profile' || kind === 'post' || kind === 'stock' || kind === 'etf'
-    || kind === 'fund' || kind === 'index' || kind === 'commodity';
+  return (
+    kind === 'profile' ||
+    kind === 'post' ||
+    kind === 'stock' ||
+    kind === 'etf' ||
+    kind === 'fund' ||
+    kind === 'index' ||
+    kind === 'commodity' ||
+    // Marketing pages (e.g. /etf-tracker) must survive cold boot — default tab
+    // is feed, and state→URL would otherwise clobber the address bar.
+    kind === 'marketing'
+  );
 }
 
 /**
@@ -103,6 +113,12 @@ export function useProfileRouting({
         if (parsed.redirectFrom) {
           navigate(tabPath('ideas'), { replace: true });
           finish();
+          return;
+        }
+
+        // Public marketing URLs are owned by the address bar, not shell tab state.
+        // Leave tab alone; App renders MarketingRoute from pathname.
+        if (parsed.kind === 'marketing') {
           return;
         }
 
@@ -255,6 +271,9 @@ export function useProfileRouting({
   useEffect(() => {
     if (!routingActive || !profileReady) return;
     if (applyingUrl.current || pendingUrlPath.current) return;
+    // Never overwrite /etf-tracker, /gold-tracker, /resources, etc. with /feed
+    // when profileReady flips true after cold-boot marketing hydration.
+    if (parseAppPath(location.pathname).kind === 'marketing') return;
 
     const target = pathFromAppState({
       tab,
