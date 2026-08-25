@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import PostCard from '../components/PostCard';
-import NewsFilters from '../components/NewsFilters';
+import UnderlineTabs from '../components/UnderlineTabs';
+import NewsCustomFilterDialog from '../components/news/NewsCustomFilterDialog';
+import { NewsStoryCard, newsPostToStory } from '../components/news/NewsStoryCards';
 import { FeedSkeleton } from '../components/PageSkeletons';
 import { isDevMockMode } from '../lib/appMode';
 import { isNewsSocialPost, parseNewsSocialContent } from '../lib/newsPostBody';
@@ -27,8 +28,9 @@ import {
 } from '../lib/socialPortfolioApi';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { skipAuthForDev } from '../lib/sessionStore';
-import { useNewsCompanyNames } from '../lib/useNewsCompanyNames';
+import { useNewsMarketAssets } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
+import { computePortfolioDisplayMetrics } from '../data/mockData';
 
 const NEWS_PAGE_LIMIT = 100;
 
@@ -88,6 +90,93 @@ function mapPortfoliosForFilter(list) {
   }));
 }
 
+function quoteForTicker(quotes, ticker) {
+  const key = String(ticker ?? '').trim().toUpperCase();
+  if (!key) return null;
+  return quotes.get(key) ?? null;
+}
+
+function withLiveQuotes(portfolio, quotes) {
+  return {
+    ...portfolio,
+    kind: portfolio.kind === 'watchlist' ? 'watchlist' : 'portfolio',
+    holdings: (portfolio.holdings ?? []).map((holding) => {
+      const quote = quoteForTicker(quotes, holding.ticker);
+      const livePrice = Number(quote?.price ?? quote?.nav ?? quote?.ltp);
+      return {
+        ...holding,
+        price:
+          Number.isFinite(livePrice) && livePrice > 0
+            ? livePrice
+            : holding.price,
+        changePct: quote?.changePct ?? holding.changePct ?? null,
+        logoIconUrl: holding.logoIconUrl ?? quote?.logoIconUrl ?? null,
+        assetType: holding.assetType ?? quote?.assetType ?? null,
+      };
+    }),
+  };
+}
+
+/** Allocation % and quote fields keyed by ticker, scoped to the For You portfolios. */
+function holdingMetricsByTicker(portfolios, quotes) {
+  const map = new Map();
+  const list = portfolios ?? [];
+  const live = list.filter((p) => p.kind !== 'watchlist');
+  const watch = list.filter((p) => p.kind === 'watchlist');
+
+  const put = (ticker, patch) => {
+    const key = String(ticker ?? '').trim().toUpperCase();
+    if (!key) return;
+    map.set(key, { ...(map.get(key) ?? {}), ...patch, ticker: key });
+  };
+
+  let totalLiveValue = 0;
+  const liveValueByTicker = new Map();
+  for (const portfolio of live) {
+    const metrics = computePortfolioDisplayMetrics(withLiveQuotes(portfolio, quotes));
+    totalLiveValue += Number(metrics.totalValue) || 0;
+    for (const holding of metrics.holdings ?? []) {
+      const ticker = String(holding.ticker ?? '').toUpperCase();
+      if (!ticker) continue;
+      const quote = quoteForTicker(quotes, ticker);
+      liveValueByTicker.set(ticker, (liveValueByTicker.get(ticker) || 0) + (Number(holding.value) || 0));
+      put(ticker, {
+        logoIconUrl: holding.logoIconUrl ?? quote?.logoIconUrl ?? null,
+        assetType: holding.assetType ?? quote?.assetType ?? null,
+        changePct: quote?.changePct ?? holding.changePct ?? null,
+      });
+    }
+  }
+  if (totalLiveValue > 0) {
+    for (const [ticker, value] of liveValueByTicker) {
+      put(ticker, { allocationPct: (value / totalLiveValue) * 100 });
+    }
+  } else if (live.length) {
+    const unique = [...liveValueByTicker.keys()];
+    const equal = unique.length ? 100 / unique.length : 0;
+    for (const ticker of unique) put(ticker, { allocationPct: equal });
+  }
+
+  for (const portfolio of watch) {
+    const metrics = computePortfolioDisplayMetrics(withLiveQuotes(portfolio, quotes));
+    for (const row of metrics.distribution ?? []) {
+      const ticker = String(row.ticker ?? '').toUpperCase();
+      if (!ticker) continue;
+      const existing = map.get(ticker);
+      if (existing?.allocationPct != null) continue;
+      const quote = quoteForTicker(quotes, ticker);
+      put(ticker, {
+        allocationPct: row.weight,
+        logoIconUrl: quote?.logoIconUrl ?? existing?.logoIconUrl ?? null,
+        assetType: row.assetType ?? quote?.assetType ?? existing?.assetType ?? null,
+        changePct: quote?.changePct ?? existing?.changePct ?? null,
+      });
+    }
+  }
+
+  return map;
+}
+
 /**
  * News tab — PocketEdge AI market summaries without poster identity.
  * Filters refetch top 100 matching the active scope/custom dimension.
@@ -128,6 +217,7 @@ export default function NewsPage({
   );
   const [typeOptions, setTypeOptions] = useState([]);
   const [industryOptions, setIndustryOptions] = useState([]);
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const onNewsPostsChangeRef = useRef(onNewsPostsChange);
   onNewsPostsChangeRef.current = onNewsPostsChange;
 
@@ -369,45 +459,96 @@ export default function NewsPage({
       .filter(isNewsSocialPost);
   }, [fetchedPosts, postsFromParent]);
 
-  const companyNames = useNewsCompanyNames(posts);
-  const enrichmentTick = usePostEnrichment(posts);
-  const showSkeleton = loading && !posts.length;
+  const scopedPortfolios = useMemo(() => {
+    if (selectedPortfolioId === NEWS_ALL_PORTFOLIOS_ID) return portfolios;
+    return portfolios.filter((p) => p.id === selectedPortfolioId);
+  }, [portfolios, selectedPortfolioId]);
 
-  const handleCompaniesChange = (keys, labels) => {
-    setCompanies(keys);
-    if (labels) setCompanyLabels(labels);
-    else {
-      setCompanyLabels((prev) => {
-        const next = {};
-        for (const k of keys) {
-          if (prev[k]) next[k] = prev[k];
-        }
-        return next;
-      });
-    }
+  const marketAssets = useNewsMarketAssets(posts, [...holdingsTickers]);
+  usePostEnrichment(posts);
+  const showSkeleton = loading && !posts.length;
+  const newsView =
+    scope === 'portfolio' ? 'foryou' : scope === 'custom' ? 'custom' : 'all';
+
+  const holdingMetrics = useMemo(
+    () => holdingMetricsByTicker(scopedPortfolios, marketAssets),
+    [scopedPortfolios, marketAssets]
+  );
+
+  const stories = useMemo(
+    () =>
+      posts.map((post) => {
+        const parsed = parseNewsSocialContent(post);
+        const symbol = parsed.symbol ? parsed.symbol.toUpperCase() : null;
+        const quote = symbol ? marketAssets.get(symbol) : null;
+        const holding = symbol ? holdingMetrics.get(symbol) : null;
+        const companyName = quote?.name || (symbol ? symbol : null);
+        const showMetrics = newsView === 'foryou' && Boolean(symbol);
+        return newsPostToStory(post, {
+          companyName,
+          allocationPct: holding?.allocationPct ?? null,
+          changePct: quote?.changePct ?? holding?.changePct ?? null,
+          logoIconUrl: quote?.logoIconUrl ?? holding?.logoIconUrl ?? null,
+          assetType: quote?.assetType || holding?.assetType || parsed.assetType,
+          showMetrics,
+        });
+      }),
+    [posts, marketAssets, holdingMetrics, newsView]
+  );
+
+  const hasCustomFilters =
+    (customDim === 'company' && companies.length > 0) ||
+    (customDim === 'type' && types.length > 0) ||
+    (customDim === 'industry' && industries.length > 0);
+  const customFilterCount =
+    customDim === 'company'
+      ? companies.length
+      : customDim === 'type'
+        ? types.length
+        : industries.length;
+  const visibleStories = scope === 'custom' && !hasCustomFilters ? [] : stories;
+
+  const clearCustomFilters = () => {
+    setCompanies([]);
+    setCompanyLabels({});
+    setTypes([]);
+    setIndustries([]);
+    setCustomDim('company');
   };
+
+  const applyCustomFilters = (draft) => {
+    setCustomDim(draft.customDim || 'company');
+    setCompanies(draft.companies ?? []);
+    setCompanyLabels(draft.companyLabels ?? {});
+    setTypes(draft.types ?? []);
+    setIndustries(draft.industries ?? []);
+  };
+
+  useEffect(() => {
+    if (scope === 'custom' && !hasCustomFilters) {
+      setFilterDialogOpen(true);
+    }
+  }, [scope, hasCustomFilters]);
 
   const handleScopeChange = (next) => {
     if (next === scope) return;
-    if (next !== 'custom') {
-      setCompanies([]);
-      setCompanyLabels({});
-      setTypes([]);
-      setIndustries([]);
-      setCustomDim('company');
-    }
     if (next !== 'portfolio') {
       setSelectedPortfolioId(NEWS_ALL_PORTFOLIOS_ID);
     }
     setScope(next);
   };
 
-  const clearCustomFromEmpty = () => {
-    setCompanies([]);
-    setCompanyLabels({});
-    setTypes([]);
-    setIndustries([]);
-    setScope('global');
+  const setNewsView = (next) => {
+    if (next === 'foryou') {
+      if (!guestMode && portfolios.length) handleScopeChange('portfolio');
+      else handleScopeChange('global');
+      return;
+    }
+    if (next === 'custom') {
+      handleScopeChange('custom');
+      return;
+    }
+    handleScopeChange('global');
   };
 
   if (showSkeleton) {
@@ -420,39 +561,78 @@ export default function NewsPage({
 
   return (
     <div className="min-w-0 max-w-full overflow-x-hidden pb-8">
-      <NewsFilters
-        guestMode={guestMode}
-        scope={scope}
-        onScopeChange={handleScopeChange}
-        portfolios={portfolios}
-        selectedPortfolioId={selectedPortfolioId}
-        onSelectedPortfolioChange={setSelectedPortfolioId}
-        customDim={customDim}
-        onCustomDimChange={setCustomDim}
-        companies={companies}
-        companyLabels={companyLabels}
-        onCompaniesChange={handleCompaniesChange}
-        types={types}
-        typeOptions={typeOptions}
-        onTypesChange={setTypes}
-        industries={industries}
-        industryOptions={industryOptions}
-        onIndustriesChange={setIndustries}
-        resultCount={posts.length}
+      <UnderlineTabs
+        tabs={[
+          { id: 'foryou', label: 'For You' },
+          { id: 'all', label: 'All News' },
+          {
+            id: 'custom',
+            label: hasCustomFilters ? `Custom (${customFilterCount})` : 'Custom',
+            accessory: (
+              <button
+                type="button"
+                onClick={() => setFilterDialogOpen(true)}
+                className="rounded px-1.5 py-0.5 text-[12px] font-semibold text-pe-accent hover:bg-pe-accent/10"
+              >
+                Edit
+              </button>
+            ),
+          },
+        ]}
+        active={newsView}
+        onChange={setNewsView}
       />
 
-      {!posts.length ? (
+      <NewsCustomFilterDialog
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        onApply={applyCustomFilters}
+        customDim={customDim}
+        companies={companies}
+        companyLabels={companyLabels}
+        types={types}
+        typeOptions={typeOptions}
+        industries={industries}
+        industryOptions={industryOptions}
+      />
+
+      <div className="px-4 md:px-6">
+        <div className="divide-y divide-pe-border">
+          {visibleStories.map((story) => (
+            <NewsStoryCard
+              key={story.id}
+              story={story}
+              onOpen={(id) => onOpenPost?.(id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {!visibleStories.length ? (
         scope === 'global' && !loading ? (
           <p className="px-4 py-16 text-center text-sm text-pe-text-secondary md:px-6">
             {guestMode ? 'No news yet. Check back soon.' : 'No news posts yet.'}
           </p>
+        ) : scope === 'custom' && !loading && !hasCustomFilters ? (
+          <div className="px-4 py-12 text-center md:px-6">
+            <p className="text-sm text-pe-text-secondary">
+              Choose filters to build your custom news feed.
+            </p>
+            <button
+              type="button"
+              onClick={() => setFilterDialogOpen(true)}
+              className="mt-3 text-sm font-semibold text-pe-accent hover:underline"
+            >
+              Choose filters
+            </button>
+          </div>
         ) : (
           <div className="px-4 py-16 text-center md:px-6">
             <p className="text-sm text-pe-text-secondary">No news match these filters.</p>
             <button
               type="button"
               onClick={() => {
-                if (scope === 'custom') clearCustomFromEmpty();
+                if (scope === 'custom') clearCustomFilters();
                 else handleScopeChange('global');
               }}
               className="mt-3 text-sm font-semibold text-pe-accent hover:underline"
@@ -461,28 +641,8 @@ export default function NewsPage({
             </button>
           </div>
         )
-      ) : (
-        <div className="pt-1">
-          {posts.map((post) => {
-            const { symbol } = parseNewsSocialContent(post);
-            const companyName = symbol
-              ? companyNames.get(symbol.toUpperCase()) || symbol
-              : null;
-            return (
-              <PostCard
-                key={post.id}
-                post={post}
-                variant="news"
-                companyName={companyName}
-                enrichmentTick={enrichmentTick}
-                onOpenPost={onOpenPost}
-                onOpenStock={onOpenStock}
-                onToggleLike={onToggleLike}
-              />
-            );
-          })}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
+
