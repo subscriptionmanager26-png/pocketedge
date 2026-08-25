@@ -27,6 +27,7 @@ import {
   fetchUserPortfolio,
   fetchUserPortfolios,
   fetchPublicPortfolioShare,
+  fetchPublicUserPortfolios,
   peekUserPortfolios,
   saveSocialPortfolio,
   isLocalDraftId,
@@ -245,11 +246,26 @@ export default function ProfilePage({
   }, [person?.id]);
 
   useEffect(() => {
-    if (!person?.id) return;
+    if (!person?.id) return undefined;
     if (guestMode) {
-      setPortfolios([]);
-      setPortfoliosLoading(false);
-      return undefined;
+      let cancelled = false;
+      setPortfoliosLoading(true);
+      fetchPublicUserPortfolios(person.id)
+        .then((rows) => {
+          if (!cancelled) {
+            setPortfolios(rows);
+            markTabDataReady('profile', 'network');
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setPortfolios([]);
+        })
+        .finally(() => {
+          if (!cancelled) setPortfoliosLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
     let cancelled = false;
     const cached = peekUserPortfolios(person.id);
