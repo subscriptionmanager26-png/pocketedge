@@ -24,6 +24,8 @@ export default async function handler(request: Request) {
       endpoints: {
         holdings: `${origin}/api/v1/holdings/{amfi}`,
         holdings_asof: `${origin}/api/v1/holdings/{amfi}?as_of=YYYY-MM-DD`,
+        holdings_by_isin: `${origin}/api/v1/holdings/by-isin/{isin}`,
+        holdings_by_isin_asof: `${origin}/api/v1/holdings/by-isin/{isin}?as_of=YYYY-MM-DD`,
         filings: `${origin}/api/v1/filings`,
         catalog: `${origin}/api/v1/catalog`,
         portfolio: `${origin}/api/v1/portfolios/{portfolio_id}`,
@@ -33,6 +35,7 @@ export default async function handler(request: Request) {
       notes: [
         'Sibling share-classes share one portfolio book (portfolio_id).',
         'GET /api/v1/holdings/:amfi resolves catalog → portfolios/latest/{id}.json.',
+        'GET /api/v1/holdings/by-isin/:isin is equivalent, keyed by scheme ISIN (INF…).',
         'Pass ?as_of=YYYY-MM-DD (or YYYY-MM) for historical books under portfolios/asof/.',
         'GET /api/v1/filings lists published as-of dates and cadences.',
       ],
