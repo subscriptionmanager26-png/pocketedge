@@ -88,11 +88,25 @@ const SgbTrackerPage = lazy(() => import('./pages/marketing/SgbTrackerPage'));
 const DisclosuresPage = lazy(() => import('./pages/marketing/DisclosuresPage'));
 const OpenFinPage = lazy(() => import('./pages/marketing/OpenFinPage'));
 
+function ExternalRedirect({ href }) {
+  useEffect(() => {
+    window.location.replace(href);
+  }, [href]);
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-white px-6">
+      <p className="text-sm text-[var(--fv-text-muted)]">Redirecting to OpenFin…</p>
+    </div>
+  );
+}
+
 function RouteSuspense({ children }) {
   return <Suspense fallback={<RouteFallbackSkeleton />}>{children}</Suspense>;
 }
 
-function MarketingRoute({ page, section, symbol }) {
+function MarketingRoute({ page, section, symbol, redirectTo }) {
+  if (page === 'openfin-redirect' && redirectTo) {
+    return <ExternalRedirect href={redirectTo} />;
+  }
   if (page === 'insights') return <InsightsPage />;
   if (page === 'business-model' && section === 'brief') return <CompanyBriefPage symbol={symbol} />;
   if (page === 'business-model' || page === 'learning') return <BusinessModelPage />;
@@ -1015,6 +1029,9 @@ export default function App() {
     const bootPath = parseAppPath(location.pathname);
     // Public marketing can paint without waiting on auth for guests.
     if (bootPath.kind === 'marketing') {
+      if (bootPath.redirectTo?.startsWith('http')) {
+        return <ExternalRedirect href={bootPath.redirectTo} />;
+      }
       if (bootPath.redirectTo) {
         return <Navigate to={bootPath.redirectTo} replace />;
       }
@@ -1041,6 +1058,9 @@ export default function App() {
 
   const parsedPath = parseAppPath(location.pathname);
   if (parsedPath.kind === 'marketing') {
+    if (parsedPath.redirectTo?.startsWith('http')) {
+      return <ExternalRedirect href={parsedPath.redirectTo} />;
+    }
     if (parsedPath.redirectTo) {
       return <Navigate to={parsedPath.redirectTo} replace />;
     }

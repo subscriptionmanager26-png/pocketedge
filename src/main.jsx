@@ -3,8 +3,12 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import '@fontsource-variable/inter';
 import App from './App';
+import OpenFinApp from './OpenFinApp';
+import { isOpenFinHost } from './lib/openfinHost';
 import './index.css';
 import { registerPerfPostHog } from './lib/perfMarks';
+
+const RootApp = isOpenFinHost() ? OpenFinApp : App;
 
 function deferAnalytics() {
   const run = async () => {
@@ -28,7 +32,7 @@ function deferAnalytics() {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <RootApp />
     </BrowserRouter>
   </React.StrictMode>
 );
@@ -36,7 +40,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 deferAnalytics();
 
 async function runCacheRecoveryOnce() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || isOpenFinHost()) return;
   const KEY = 'pe_sw_recovery_v2';
   if (window.localStorage?.getItem(KEY) === 'done') return;
 
@@ -66,7 +70,7 @@ async function runCacheRecoveryOnce() {
 
 void runCacheRecoveryOnce();
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && 'serviceWorker' in navigator && !isOpenFinHost()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       /* offline / unsupported */

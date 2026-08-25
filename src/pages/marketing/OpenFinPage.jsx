@@ -17,9 +17,14 @@ import MarketingShell from '../../components/MarketingShell';
 import ResourcesPageHeader from '../../components/ResourcesPageHeader';
 import UnderlineTabs from '../../components/UnderlineTabs';
 import {
+  isOpenFinHost,
+  openfinApiOrigin,
+  openfinPath,
+  wwwPath,
+} from '../../lib/openfinHost';
+import {
   businessModelPath,
   insightsPath,
-  openfinPath,
   resourcesPath,
 } from '../../lib/routes';
 import { useSeoMeta } from '../../hooks/useSeoMeta';
@@ -29,6 +34,14 @@ const TABS = [
   { id: 'api', label: 'API docs' },
   { id: 'roadmap', label: 'Roadmap' },
 ];
+
+const API_ORIGIN = openfinApiOrigin();
+
+function resolveProductHref(href) {
+  if (String(href).startsWith('http')) return href;
+  if (isOpenFinHost()) return wwwPath(href);
+  return href;
+}
 
 const PRODUCT_GROUPS = [
   {
@@ -41,6 +54,7 @@ const PRODUCT_GROUPS = [
         href: openfinPath('api'),
         status: 'Live',
         external: false,
+        openfinInternal: true,
       },
     ],
   },
@@ -101,9 +115,9 @@ const PRODUCT_GROUPS = [
         title: 'PocketEdge social',
         body: 'Follow investors, share theses, and track portfolios.',
         icon: Users,
-        href: '/feed',
+        href: wwwPath('/feed'),
         status: 'Live',
-        external: false,
+        external: true,
       },
       {
         title: 'Global tools',
@@ -123,48 +137,56 @@ const API_ENDPOINTS = [
     method: 'GET',
     path: '/api/v1',
     summary: 'API discovery — lists all endpoints and usage notes.',
+    example: `${API_ORIGIN}/api/v1`,
   },
   {
     id: 'holdings',
     method: 'GET',
     path: '/api/v1/holdings/{amfi}',
     summary: 'Holdings book for an AMFI scheme code. Optional ?as_of=YYYY-MM-DD.',
-    example: '/api/v1/holdings/120503?as_of=2026-07-31',
+    example: `${API_ORIGIN}/api/v1/holdings/120503?as_of=2026-07-31`,
   },
   {
     id: 'filings',
     method: 'GET',
     path: '/api/v1/filings',
     summary: 'Published as-of dates with portfolio counts per slice.',
+    example: `${API_ORIGIN}/api/v1/filings`,
   },
   {
     id: 'catalog',
     method: 'GET',
     path: '/api/v1/catalog',
     summary: 'AMFI lookup catalog — maps codes to portfolio_id and available as-of dates.',
+    example: `${API_ORIGIN}/api/v1/catalog`,
   },
   {
     id: 'portfolio',
     method: 'GET',
     path: '/api/v1/portfolios/{portfolio_id}',
     summary: 'Raw portfolio JSON from GitHub CDN (commit-pinned via meta).',
+    example: `${API_ORIGIN}/api/v1/portfolios/example-id`,
   },
   {
     id: 'stats',
     method: 'GET',
     path: '/api/v1/stats',
     summary: 'Public aggregate API usage (last 30 days) for the OpenFin dashboard.',
+    example: `${API_ORIGIN}/api/v1/stats`,
   },
   {
     id: 'meta',
     method: 'GET',
     path: '/api/v1/meta',
     summary: 'Dataset metadata — commit SHA, CDN templates, last sync.',
+    example: `${API_ORIGIN}/api/v1/meta`,
   },
 ];
 
 function ProductCard({ item }) {
   const Icon = item.icon;
+  const href = item.openfinInternal ? item.href : resolveProductHref(item.href);
+  const useAnchor = item.external || (isOpenFinHost() && !item.openfinInternal);
   const body = (
     <>
       <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--fv-accent)]/10 text-[var(--fv-accent)]">
@@ -186,16 +208,16 @@ function ProductCard({ item }) {
   const className =
     'fv-card flex flex-col rounded-[20px] p-5 shadow-[var(--fv-shadow)] transition duration-150 hover:shadow-[var(--fv-shadow-hover)]';
 
-  if (item.external) {
+  if (useAnchor) {
     return (
-      <a href={item.href} target="_blank" rel="noopener noreferrer" className={className}>
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
         {body}
       </a>
     );
   }
 
   return (
-    <Link to={item.href} className={className}>
+    <Link to={href} className={className}>
       {body}
     </Link>
   );
@@ -559,7 +581,7 @@ export default function OpenFinPage({ section = 'products' }) {
     title: tab === 'api' ? 'OpenFin API docs' : tab === 'roadmap' ? 'OpenFin roadmap' : 'OpenFin',
     description:
       'Directory of PocketEdge open products — fund holdings API, market tools, API documentation, and community roadmap.',
-    path: openfinPath(tab === 'products' ? null : tab),
+    path: openfinPath(tab === 'products' ? null : tab, { absolute: true }),
   });
 
   useEffect(() => {
@@ -581,7 +603,7 @@ export default function OpenFinPage({ section = 'products' }) {
   }, [tab]);
 
   return (
-    <MarketingShell wide>
+    <MarketingShell wide variant="openfin">
       <ResourcesPageHeader
         title="OpenFin"
         subtitle="Open products, data APIs, and the public roadmap for PocketEdge investing tools."

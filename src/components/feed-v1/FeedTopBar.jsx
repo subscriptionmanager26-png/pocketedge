@@ -37,6 +37,10 @@ export default function FeedTopBar({
   wide = false,
   /** Marketing / public pages — no Shell sidebar offset; show logo on desktop. */
   standalone = false,
+  /** Hide global search (OpenFin subdomain). */
+  hideSearch = false,
+  /** Hide activity bell and profile/sign-in menu (OpenFin subdomain). */
+  hideAccountActions = false,
   /** Mobile-only actions that replace the profile avatar (e.g. portfolio Edit/Save). */
   mobileActions = null,
   /** When true with mobileActions, omit the Activity bell to free space for Cancel/Save. */
@@ -219,17 +223,36 @@ export default function FeedTopBar({
               </button>
               {menuItems.length ? (
                 <div className="border-t border-[var(--fv-border)] py-1">
-                  {menuItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      role="menuitem"
-                      onClick={closeProfileMenu}
-                      className="flex w-full items-center px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                  {menuItems.map((item) => {
+                    const isExternal =
+                      item.external || /^https?:\/\//.test(String(item.href || ''));
+                    const className =
+                      'flex w-full items-center px-3 py-2.5 text-left text-sm font-medium text-[var(--fv-text)] transition hover:bg-black/[0.03]';
+                    if (isExternal) {
+                      return (
+                        <a
+                          key={item.href}
+                          href={item.href}
+                          role="menuitem"
+                          onClick={closeProfileMenu}
+                          className={className}
+                        >
+                          {item.label}
+                        </a>
+                      );
+                    }
+                    return (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        role="menuitem"
+                        onClick={closeProfileMenu}
+                        className={className}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -239,7 +262,15 @@ export default function FeedTopBar({
     );
   };
 
-  const logoButton = (
+  const logoButton = hideAccountActions ? (
+    <Link
+      to="/"
+      className="flex h-10 w-10 shrink-0 items-center justify-center md:h-11 md:w-11"
+      aria-label="OpenFin home"
+    >
+      <LogoMark />
+    </Link>
+  ) : (
     <button
       type="button"
       onClick={onGoHome}
@@ -327,14 +358,20 @@ export default function FeedTopBar({
       */}
       <div className={`flex items-center gap-2 ${standalone ? '' : 'md:hidden'}`}>
         {mobileLogoSlot}
-        {standalone ? (
-          <div className="flex min-w-0 flex-1 justify-center">
-            {renderSearchField('max-w-feed')}
-          </div>
-        ) : (
-          renderSearchField()
-        )}
-        {renderAccountActions(profileMenuRefMobile, { allowMobileActions: true })}
+        {!hideSearch ? (
+          standalone ? (
+            <div className="flex min-w-0 flex-1 justify-center">
+              {renderSearchField('max-w-feed')}
+            </div>
+          ) : (
+            renderSearchField()
+          )
+        ) : !hideAccountActions ? (
+          <div className="min-w-0 flex-1" aria-hidden="true" />
+        ) : null}
+        {!hideAccountActions
+          ? renderAccountActions(profileMenuRefMobile, { allowMobileActions: true })
+          : null}
       </div>
 
       {/*
