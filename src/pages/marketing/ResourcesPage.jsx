@@ -82,7 +82,11 @@ export default function ResourcesPage() {
       </div>
 
       <p className="fv-caption mt-8">
-        Looking for company explainers?{' '}
+        Open products and API docs on{' '}
+        <Link to="/openfin" className="font-semibold text-[var(--fv-accent)] hover:underline">
+          OpenFin
+        </Link>
+        . Looking for company explainers?{' '}
         <Link
           to="/business-model"
           className="font-semibold text-[var(--fv-accent)] hover:underline"

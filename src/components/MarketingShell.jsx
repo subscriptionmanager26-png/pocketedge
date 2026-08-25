@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import FeedTopBar from './feed-v1/FeedTopBar';
 import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
 import { getAppCurrentUser } from '../lib/socialIdentity';
-import { ideasPath, disclosuresPath, insightsPath, resourcesPath, tabPath } from '../lib/routes';
+import { ideasPath, disclosuresPath, insightsPath, openfinPath, resourcesPath, tabPath } from '../lib/routes';
 import { signInWithGoogle } from '../lib/supabase';
 
 const MENU_ITEMS = [
+  { label: 'OpenFin', href: openfinPath() },
   { label: 'Insights', href: insightsPath() },
   { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
   { label: 'SGB Tracker', href: resourcesPath('sgb') },

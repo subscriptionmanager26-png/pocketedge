@@ -3,6 +3,7 @@ export const config = {
 };
 
 import { HOLDINGS_CORS, jsonResponse } from '../_lib/fundHoldingsCdn.js';
+import { trackOpenFinApiRequest } from '../_lib/openfinApiUsage.js';
 
 /** GET /api/v1 — holdings API discovery. */
 export default async function handler(request: Request) {
@@ -14,6 +15,7 @@ export default async function handler(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
+  trackOpenFinApiRequest({ endpoint: 'discovery', method: 'GET', status: 200 });
   return jsonResponse(
     {
       name: 'PocketEdge fund holdings API',
@@ -26,6 +28,7 @@ export default async function handler(request: Request) {
         catalog: `${origin}/api/v1/catalog`,
         portfolio: `${origin}/api/v1/portfolios/{portfolio_id}`,
         meta: `${origin}/api/v1/meta`,
+        stats: `${origin}/api/v1/stats`,
       },
       notes: [
         'Sibling share-classes share one portfolio book (portfolio_id).',

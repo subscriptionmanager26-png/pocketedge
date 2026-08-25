@@ -7,6 +7,7 @@ import {
   jsonResponse,
   loadHoldingsFilings,
 } from '../_lib/fundHoldingsCdn.js';
+import { trackOpenFinApiRequest } from '../_lib/openfinApiUsage.js';
 
 /**
  * GET /api/v1/filings
@@ -22,6 +23,7 @@ export default async function handler(request: Request) {
 
   try {
     const data = await loadHoldingsFilings();
+    trackOpenFinApiRequest({ endpoint: 'filings', method: 'GET', status: 200 });
     return jsonResponse(
       {
         generated_at: data.generated_at ?? null,

@@ -71,6 +71,9 @@ function marketItems(payload) {
 // --- static ---
 const staticUrls = [
   ['/', 'daily', '1.0'],
+  ['/openfin', 'weekly', '0.85'],
+  ['/openfin/api', 'weekly', '0.8'],
+  ['/openfin/roadmap', 'weekly', '0.75'],
   ['/insights', 'daily', '0.9'],
   ['/business-model', 'weekly', '0.9'],
   ['/resources', 'weekly', '0.7'],

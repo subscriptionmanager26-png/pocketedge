@@ -10,6 +10,7 @@ import {
   normalizeAsOf,
   HOLDINGS_CORS,
 } from '../../_lib/fundHoldingsCdn.js';
+import { trackOpenFinApiRequest } from '../../_lib/openfinApiUsage.js';
 
 /**
  * GET /api/v1/holdings/:amfi
@@ -134,11 +135,23 @@ export default async function handler(
       },
     };
 
+    trackOpenFinApiRequest({
+      endpoint: 'holdings',
+      method: 'GET',
+      status: 200,
+      amfi,
+    });
     return jsonResponse(body, 200, {
       'Cache-Control':
         'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800',
     });
   } catch (err) {
+    trackOpenFinApiRequest({
+      endpoint: 'holdings',
+      method: 'GET',
+      status: 502,
+      amfi,
+    });
     return jsonResponse(
       {
         error: 'Could not load holdings',

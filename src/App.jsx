@@ -86,6 +86,7 @@ const MfScreenerPage = lazy(() => import('./pages/marketing/MfScreenerPage'));
 const EtfInavPage = lazy(() => import('./pages/marketing/EtfInavPage'));
 const SgbTrackerPage = lazy(() => import('./pages/marketing/SgbTrackerPage'));
 const DisclosuresPage = lazy(() => import('./pages/marketing/DisclosuresPage'));
+const OpenFinPage = lazy(() => import('./pages/marketing/OpenFinPage'));
 
 function RouteSuspense({ children }) {
   return <Suspense fallback={<RouteFallbackSkeleton />}>{children}</Suspense>;
@@ -100,6 +101,9 @@ function MarketingRoute({ page, section, symbol }) {
   if (page === 'resources' && section === 'sgb') return <SgbTrackerPage />;
   if (page === 'resources') return <ResourcesPage />;
   if (page === 'disclosures') return <DisclosuresPage section={section} />;
+  if (page === 'openfin') {
+    return <OpenFinPage section={section === 'products' ? 'products' : section} />;
+  }
   return <HomePage />;
 }
 

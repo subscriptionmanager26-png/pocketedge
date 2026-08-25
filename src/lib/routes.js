@@ -115,6 +115,16 @@ export function businessModelPath() {
   return '/business-model';
 }
 
+/** OpenFin hub — products, API docs, roadmap. */
+export function openfinPath(section) {
+  const key = String(section ?? '')
+    .trim()
+    .toLowerCase();
+  if (key === 'api') return '/openfin/api';
+  if (key === 'roadmap') return '/openfin/roadmap';
+  return '/openfin';
+}
+
 /** @deprecated use businessModelPath */
 export function learningPath() {
   return businessModelPath();
@@ -181,7 +191,8 @@ const KNOWN_TABS = new Set([
 ]);
 
 const RETIRED_TABS = new Set(['explore', 'markets', 'search']);
-const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures']);
+const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures', 'openfin']);
+const OPENFIN_SECTIONS = new Set(['api', 'roadmap']);
 const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
 export function parseAppPath(pathname) {
@@ -241,6 +252,16 @@ export function parseAppPath(pathname) {
       page: 'business-model',
       section: 'brief',
       symbol: decodeSegment(businessModelBriefMatch[1]).toUpperCase(),
+    };
+  }
+
+  const openfinMatch = pathname.match(/^\/openfin(?:\/(api|roadmap))?\/?$/);
+  if (openfinMatch) {
+    const section = openfinMatch[1] || 'products';
+    return {
+      kind: 'marketing',
+      page: 'openfin',
+      section: OPENFIN_SECTIONS.has(section) ? section : 'products',
     };
   }
 

@@ -1,0 +1,75 @@
+{
+  "updated_at": "2026-08-25",
+  "request_issue_url": "https://github.com/subscriptionmanager26-png/pocketedge/issues/new?labels=openfin&title=%5BOpenFin%5D+",
+  "columns": [
+    { "id": "requested", "title": "Requested" },
+    { "id": "planned", "title": "Planned" },
+    { "id": "in_progress", "title": "In progress" },
+    { "id": "shipped", "title": "Shipped" }
+  ],
+  "items": [
+    {
+      "id": "holdings-api-v1",
+      "title": "Fund holdings open API (v1)",
+      "summary": "AMFI holdings by code with as-of history on GitHub CDN.",
+      "status": "shipped",
+      "tags": ["api", "data"]
+    },
+    {
+      "id": "etf-inav",
+      "title": "ETF iNAV tracker",
+      "summary": "Live LTP vs NAV premium/discount for NSE ETFs.",
+      "status": "shipped",
+      "tags": ["tool"]
+    },
+    {
+      "id": "sgb-tracker",
+      "title": "SGB tracker",
+      "summary": "Sovereign Gold Bond series prices and maturity calendar.",
+      "status": "shipped",
+      "tags": ["tool"]
+    },
+    {
+      "id": "mf-screener",
+      "title": "MF screener",
+      "summary": "Screen equity Direct Growth funds by category and returns.",
+      "status": "shipped",
+      "tags": ["tool"]
+    },
+    {
+      "id": "holdings-bulk-export",
+      "title": "Bulk holdings export (CSV / Parquet)",
+      "summary": "Download full as-of slice for research workflows.",
+      "status": "requested",
+      "tags": ["api"]
+    },
+    {
+      "id": "webhook-filings",
+      "title": "Filings webhook on new as-of publish",
+      "summary": "Notify when a new fortnightly or month-end slice lands.",
+      "status": "requested",
+      "tags": ["api"]
+    },
+    {
+      "id": "debt-universe-filter",
+      "title": "Debt-only catalog filter in API",
+      "summary": "Query parameter on /catalog for AMFI debt category funds.",
+      "status": "planned",
+      "tags": ["api"]
+    },
+    {
+      "id": "openfin-dashboard",
+      "title": "OpenFin product directory",
+      "summary": "This page — products, API docs, and public roadmap.",
+      "status": "in_progress",
+      "tags": ["platform"]
+    },
+    {
+      "id": "aug-filings-automation",
+      "title": "Fully automated Aug month-end filings",
+      "summary": "Hands-off fetch → parse → CDN sync for month-end slices.",
+      "status": "in_progress",
+      "tags": ["data"]
+    }
+  ]
+}
