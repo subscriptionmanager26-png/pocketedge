@@ -822,6 +822,24 @@ function PortfolioSectionPanel({
   }
 
   if (!livePortfolio) {
+    if (guestMode) {
+      return (
+        <div className="pt-1 md:pt-2">
+          <GuestSignInCta
+            variant="hero"
+            title="See the full book"
+            description="Sign in to view holdings and weights on this shared portfolio."
+            action="unlock holdings"
+            showExploreHint={false}
+            benefits={[
+              'See every holding and weight',
+              'Follow the investor’s next moves',
+              'Share or copy this book',
+            ]}
+          />
+        </div>
+      );
+    }
     return (
       <div className="px-4 py-12 text-center md:px-6">
         <p className="text-lg font-semibold text-pe-text">
