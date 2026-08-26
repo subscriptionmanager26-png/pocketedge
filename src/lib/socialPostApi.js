@@ -235,7 +235,7 @@ export async function fetchPublicFeedPosts({ limit = 50, offset = 0 } = {}) {
 
 /** Authenticated News tab — PocketEdge AI summaries only. */
 export async function fetchNewsPosts({
-  limit = 100,
+  limit = 20,
   offset = 0,
   tickers = null,
   types = null,
@@ -274,7 +274,7 @@ export async function fetchNewsPosts({
 
 /** Logged-out News tab. */
 export async function fetchPublicNewsPosts({
-  limit = 100,
+  limit = 20,
   offset = 0,
   tickers = null,
   types = null,

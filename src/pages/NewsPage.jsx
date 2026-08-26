@@ -32,7 +32,7 @@ import { useNewsMarketAssets } from '../lib/useNewsCompanyNames';
 import { usePostEnrichment } from '../lib/usePostEnrichment';
 import { computePortfolioDisplayMetrics } from '../data/mockData';
 
-const NEWS_PAGE_LIMIT = 100;
+const NEWS_PAGE_LIMIT = 20;
 
 function readInitialFilterUi(guestMode) {
   const cached = readCachedNews();
@@ -192,11 +192,15 @@ export default function NewsPage({
   const initialUi = useMemo(() => readInitialFilterUi(guestMode), [guestMode]);
   const [fetchedPosts, setFetchedPosts] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [portfolios, setPortfolios] = useState([]);
   const [portfoliosReady, setPortfoliosReady] = useState(guestMode);
 
   /** @type {['global'|'portfolio'|'custom', Function]} */
-  const [scope, setScope] = useState(() => initialUi?.scope ?? 'global');
+  const [scope, setScope] = useState(
+    () => initialUi?.scope ?? (guestMode ? 'global' : 'portfolio')
+  );
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(
     () => initialUi?.selectedPortfolioId ?? NEWS_ALL_PORTFOLIOS_ID
   );
@@ -220,6 +224,11 @@ export default function NewsPage({
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const onNewsPostsChangeRef = useRef(onNewsPostsChange);
   onNewsPostsChangeRef.current = onNewsPostsChange;
+  const fetchGenRef = useRef(0);
+  const postsRef = useRef([]);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef(null);
+  const filterUiRef = useRef(null);
 
   useEffect(() => {
     if (guestMode) {
@@ -322,9 +331,10 @@ export default function NewsPage({
     [industries]
   );
 
-  // Server-side fetch: top 100 for the active filter (skip when session cache is warm).
+  // First page for the active filter (skip when session cache is warm).
   useEffect(() => {
     let cancelled = false;
+    const gen = ++fetchGenRef.current;
 
     const useLive =
       guestMode
@@ -338,6 +348,8 @@ export default function NewsPage({
 
     if (scope === 'portfolio' && !guestMode && holdingsTickers.size === 0) {
       setFetchedPosts([]);
+      postsRef.current = [];
+      setHasMore(false);
       setLoading(false);
       onNewsPostsChangeRef.current?.([]);
       return undefined;
@@ -364,9 +376,22 @@ export default function NewsPage({
       types: filterArgs.types,
       industries: filterArgs.industries,
     });
+    const filterUi = {
+      scope,
+      selectedPortfolioId,
+      customDim,
+      companies,
+      companyLabels,
+      types,
+      industries,
+    };
+    filterUiRef.current = { cacheKey, filterArgs, filterUi, useLive };
+
     const cached = readCachedNews(cacheKey);
     if (cached?.items) {
       setFetchedPosts(cached.items);
+      postsRef.current = cached.items;
+      setHasMore(cached.items.length >= NEWS_PAGE_LIMIT);
       setLoading(false);
       onNewsPostsChangeRef.current?.(cached.items);
       return undefined;
@@ -381,20 +406,12 @@ export default function NewsPage({
         (Array.isArray(postsFromParent) && postsFromParent.length ? postsFromParent : null);
       if (seed) {
         setFetchedPosts(seed);
+        postsRef.current = seed;
         painted = true;
       }
     }
     setLoading(!painted);
-
-    const filterUi = {
-      scope,
-      selectedPortfolioId,
-      customDim,
-      companies,
-      companyLabels,
-      types,
-      industries,
-    };
+    setHasMore(true);
 
     const load = !useLive
       ? isDevMockMode()
@@ -406,18 +423,24 @@ export default function NewsPage({
 
     load
       .then((next) => {
-        if (cancelled) return;
-        const items = Array.isArray(next) ? next : [];
+        if (cancelled || fetchGenRef.current !== gen) return;
+        const items = Array.isArray(next) ? next.slice(0, NEWS_PAGE_LIMIT) : [];
         setFetchedPosts(items);
+        postsRef.current = items;
+        setHasMore(items.length === NEWS_PAGE_LIMIT);
         writeCachedNews({ filterKey: cacheKey, items, filterUi });
         onNewsPostsChangeRef.current?.(items);
       })
       .catch((err) => {
         console.error('NewsPage load failed', err);
-        if (!cancelled) setFetchedPosts([]);
+        if (!cancelled && fetchGenRef.current === gen) {
+          setFetchedPosts([]);
+          postsRef.current = [];
+          setHasMore(false);
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && fetchGenRef.current === gen) setLoading(false);
       });
 
     return () => {
@@ -440,6 +463,70 @@ export default function NewsPage({
     selectedPortfolioId,
     companyLabels,
   ]);
+
+  useEffect(() => {
+    postsRef.current = fetchedPosts ?? [];
+  }, [fetchedPosts]);
+
+  const loadMoreNews = () => {
+    if (loading || loadingMoreRef.current || !hasMore) return;
+    const ctx = filterUiRef.current;
+    if (!ctx?.filterArgs) return;
+    const args = ctx.filterArgs;
+    if (
+      scope === 'custom' &&
+      !args.tickers?.length &&
+      !args.types?.length &&
+      !args.industries?.length
+    ) {
+      return;
+    }
+
+    const gen = fetchGenRef.current;
+    const existing = postsRef.current ?? [];
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    const filterArgs = {
+      ...ctx.filterArgs,
+      limit: NEWS_PAGE_LIMIT,
+      offset: existing.length,
+    };
+    const useLive = ctx.useLive;
+    const load = !useLive
+      ? Promise.resolve([])
+      : guestMode
+        ? fetchPublicNewsPosts(filterArgs)
+        : fetchNewsPosts(filterArgs);
+
+    load
+      .then((next) => {
+        if (fetchGenRef.current !== gen) return;
+        const page = Array.isArray(next) ? next : [];
+        const seen = new Set(existing.map((p) => p.id));
+        const appended = page.filter((p) => p?.id && !seen.has(p.id));
+        const items = [...existing, ...appended];
+        setFetchedPosts(items);
+        postsRef.current = items;
+        setHasMore(page.length === NEWS_PAGE_LIMIT);
+        writeCachedNews({
+          filterKey: ctx.cacheKey,
+          items,
+          filterUi: ctx.filterUi,
+        });
+        onNewsPostsChangeRef.current?.(items);
+      })
+      .catch((err) => {
+        console.error('NewsPage load more failed', err);
+        if (fetchGenRef.current === gen) setHasMore(false);
+      })
+      .finally(() => {
+        if (fetchGenRef.current === gen) {
+          loadingMoreRef.current = false;
+          setLoadingMore(false);
+        }
+      });
+  };
 
   const posts = useMemo(() => {
     const base = fetchedPosts ?? [];
@@ -508,6 +595,21 @@ export default function NewsPage({
         : industries.length;
   const visibleStories = scope === 'custom' && !hasCustomFilters ? [] : stories;
 
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || showSkeleton || !hasMore || loading || loadingMore) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMoreNews();
+      },
+      { root: null, rootMargin: '320px 0px', threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // loadMoreNews reads latest filters via refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loading, loadingMore, showSkeleton, visibleStories.length]);
+
   const clearCustomFilters = () => {
     setCompanies([]);
     setCompanyLabels({});
@@ -540,8 +642,7 @@ export default function NewsPage({
 
   const setNewsView = (next) => {
     if (next === 'foryou') {
-      if (!guestMode && portfolios.length) handleScopeChange('portfolio');
-      else handleScopeChange('global');
+      handleScopeChange('portfolio');
       return;
     }
     if (next === 'custom') {
@@ -550,14 +651,6 @@ export default function NewsPage({
     }
     handleScopeChange('global');
   };
-
-  if (showSkeleton) {
-    return (
-      <div className="pt-2">
-        <FeedSkeleton count={4} />
-      </div>
-    );
-  }
 
   return (
     <div className="min-w-0 max-w-full overflow-x-hidden pb-8">
@@ -596,19 +689,32 @@ export default function NewsPage({
         industryOptions={industryOptions}
       />
 
-      <div className="px-4 md:px-6">
-        <div className="divide-y divide-pe-border">
-          {visibleStories.map((story) => (
-            <NewsStoryCard
-              key={story.id}
-              story={story}
-              onOpen={(id) => onOpenPost?.(id)}
-            />
-          ))}
+      {showSkeleton ? (
+        <FeedSkeleton count={4} />
+      ) : (
+        <div className="px-4 md:px-6">
+          <div className="divide-y divide-pe-border">
+            {visibleStories.map((story) => (
+              <NewsStoryCard
+                key={story.id}
+                story={story}
+                onOpen={(id) => onOpenPost?.(id)}
+              />
+            ))}
+          </div>
+          {hasMore ? (
+            <div ref={sentinelRef} className="min-h-8" aria-busy={loadingMore}>
+              {loadingMore ? (
+                <p className="py-4 text-center text-sm text-pe-text-secondary">
+                  Loading more news…
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </div>
+      )}
 
-      {!visibleStories.length ? (
+      {!showSkeleton && !visibleStories.length ? (
         scope === 'global' && !loading ? (
           <p className="px-4 py-16 text-center text-sm text-pe-text-secondary md:px-6">
             {guestMode ? 'No news yet. Check back soon.' : 'No news posts yet.'}

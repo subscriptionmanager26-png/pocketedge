@@ -25,7 +25,7 @@ export function prefetchTab(tab, ownerId = getAppCurrentUserId()) {
       prefetchChunk(() => import('../pages/NewsPage'), 'news');
       import('../lib/socialPostApi')
         .then(async (m) => {
-          const items = await m.fetchNewsPosts?.({ limit: 30 });
+          const items = await m.fetchNewsPosts?.({ limit: 20 });
           if (!Array.isArray(items)) return;
           const { newsFilterKey, writeCachedNews } = await import('../lib/newsCache');
           writeCachedNews({
