@@ -196,7 +196,9 @@ export default function NewsPage({
   const [portfoliosReady, setPortfoliosReady] = useState(guestMode);
 
   /** @type {['global'|'portfolio'|'custom', Function]} */
-  const [scope, setScope] = useState(() => initialUi?.scope ?? 'global');
+  const [scope, setScope] = useState(
+    () => initialUi?.scope ?? (guestMode ? 'global' : 'portfolio')
+  );
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(
     () => initialUi?.selectedPortfolioId ?? NEWS_ALL_PORTFOLIOS_ID
   );
@@ -540,8 +542,7 @@ export default function NewsPage({
 
   const setNewsView = (next) => {
     if (next === 'foryou') {
-      if (!guestMode && portfolios.length) handleScopeChange('portfolio');
-      else handleScopeChange('global');
+      handleScopeChange('portfolio');
       return;
     }
     if (next === 'custom') {
@@ -550,14 +551,6 @@ export default function NewsPage({
     }
     handleScopeChange('global');
   };
-
-  if (showSkeleton) {
-    return (
-      <div className="pt-2">
-        <FeedSkeleton count={4} />
-      </div>
-    );
-  }
 
   return (
     <div className="min-w-0 max-w-full overflow-x-hidden pb-8">
@@ -596,19 +589,23 @@ export default function NewsPage({
         industryOptions={industryOptions}
       />
 
-      <div className="px-4 md:px-6">
-        <div className="divide-y divide-pe-border">
-          {visibleStories.map((story) => (
-            <NewsStoryCard
-              key={story.id}
-              story={story}
-              onOpen={(id) => onOpenPost?.(id)}
-            />
-          ))}
+      {showSkeleton ? (
+        <FeedSkeleton count={4} />
+      ) : (
+        <div className="px-4 md:px-6">
+          <div className="divide-y divide-pe-border">
+            {visibleStories.map((story) => (
+              <NewsStoryCard
+                key={story.id}
+                story={story}
+                onOpen={(id) => onOpenPost?.(id)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {!visibleStories.length ? (
+      {!showSkeleton && !visibleStories.length ? (
         scope === 'global' && !loading ? (
           <p className="px-4 py-16 text-center text-sm text-pe-text-secondary md:px-6">
             {guestMode ? 'No news yet. Check back soon.' : 'No news posts yet.'}
