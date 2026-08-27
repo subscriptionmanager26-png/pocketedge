@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
+import { resolveGitHubDispatchToken } from './githubAuth.ts';
 
 /**
  * Dispatch a GitHub Actions workflow_dispatch from Supabase Cron.
@@ -7,7 +8,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
  * Supabase edge egress; GH schedule remains a no-PAT backup only.
  *
  * Auth: x-dispatch-token == social_market_job_config.auth_token for job_name
- * Secrets: GITHUB_DISPATCH_TOKEN (Supabase edge secret only — never store PAT in DB)
+ * GitHub auth (pick one):
+ *   - GITHUB_APP_ID + GITHUB_APP_INSTALLATION_ID + GITHUB_APP_PRIVATE_KEY (preferred; no expiry)
+ *   - GITHUB_DISPATCH_TOKEN PAT fallback (rotate via npm run rotate:github-dispatch)
  */
 
 const JOB_TO_WORKFLOW: Record<string, string> = {
@@ -31,13 +34,6 @@ Deno.serve(async (req: Request) => {
   const client = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
-
-  const githubToken = Deno.env.get('GITHUB_DISPATCH_TOKEN') ?? '';
-  if (!githubToken) {
-    return new Response(JSON.stringify({ error: 'Missing GITHUB_DISPATCH_TOKEN secret' }), {
-      status: 500,
-    });
-  }
 
   const requestToken = req.headers.get('x-dispatch-token') ?? '';
   const { data: tokenRow, error: tokenErr } = await client
@@ -66,13 +62,21 @@ Deno.serve(async (req: Request) => {
   const repo = Deno.env.get('GITHUB_DISPATCH_REPO') ?? 'pocketedge';
   const ref = Deno.env.get('GITHUB_DISPATCH_REF') ?? 'main';
 
+  let githubAuth: { token: string; source: 'github-app' | 'pat' };
+  try {
+    githubAuth = await resolveGitHubDispatchToken();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
+  }
+
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`,
     {
       method: 'POST',
       headers: {
         Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${githubToken}`,
+        Authorization: `Bearer ${githubAuth.token}`,
         'X-GitHub-Api-Version': '2022-11-28',
         'Content-Type': 'application/json',
         'User-Agent': 'pocketedge-supabase-cron',
@@ -90,13 +94,14 @@ Deno.serve(async (req: Request) => {
         detail: text.slice(0, 500),
         job,
         workflow: workflowFile,
+        authSource: githubAuth.source,
       }),
       { status: 502 },
     );
   }
 
   return new Response(
-    JSON.stringify({ ok: true, job, workflow: workflowFile, ref }),
+    JSON.stringify({ ok: true, job, workflow: workflowFile, ref, authSource: githubAuth.source }),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
   );
 });

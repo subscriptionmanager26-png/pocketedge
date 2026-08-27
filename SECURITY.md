@@ -17,7 +17,8 @@ Anon and service_role JWTs from the same project often share the **same JWT head
 |------|----------------|
 | `SUPABASE_SERVICE_ROLE_KEY` | Vercel API routes, edge functions, GitHub Actions |
 | `CRON_SECRET` | Vercel cron → `/api/cron/*` |
-| `GITHUB_DISPATCH_TOKEN` | Vercel cron + Supabase edge `dispatch-github-workflow` |
+| `GITHUB_DISPATCH_TOKEN` | Vercel cron + Supabase edge `dispatch-github-workflow` (PAT fallback; rotate with `npm run rotate:github-dispatch`) |
+| `GITHUB_APP_*` | Supabase edge dispatch (preferred — private key does not expire) |
 | Edge job tokens (`x-*-refresh-token`, `x-dispatch-token`) | `pg_cron` → edge functions only |
 
 ## Auth session
