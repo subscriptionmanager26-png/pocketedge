@@ -5,6 +5,10 @@ const LIVE_URL = '/api/etf-live';
 export const ETF_INAV_POLL_MS = 60_000;
 /** If |LTP/AMC iNAV - 1| exceeds this, use NSE iNAV for display/premium. */
 export const AMC_PREMIUM_FALLBACK_PCT = 30;
+/** If AMC and NSE diverge by more than this, prefer the source closer to LTP. */
+export const AMC_NSE_DIVERGENCE_PCT = 5;
+/** NSE must beat AMC by this many premium-pp before we switch on divergence. */
+export const NSE_CLOSER_MARGIN_PCT = 2;
 
 async function fetchNseLtpOnly() {
   const res = await fetch(LIVE_URL, { cache: 'no-store' });
@@ -72,7 +76,9 @@ export function shouldPollEtfInav({ date = new Date(), visible = true } = {}) {
 }
 
 /**
- * Prefer AMC iNAV; if |premium vs AMC| > 30% and NSE iNAV exists, use NSE.
+ * Prefer AMC iNAV; fall back to NSE when:
+ * - |premium vs AMC| > 30%, or
+ * - AMC and NSE diverge (>5%) and NSE is meaningfully closer to LTP.
  * Always keep both amcInav and nseNav on the row for analysis.
  */
 export function resolveDisplayInav({ ltp, amcInav, nseNav }) {
@@ -82,13 +88,21 @@ export function resolveDisplayInav({ ltp, amcInav, nseNav }) {
 
   if (amc != null && ltpN != null && Number.isFinite(ltpN)) {
     const amcPremiumPct = (ltpN / amc - 1) * 100;
-    if (Math.abs(amcPremiumPct) > AMC_PREMIUM_FALLBACK_PCT && nse != null) {
-      return {
-        inav: nse,
-        inavSource: 'nse',
-        amcPremiumPct,
-        usedNseFallback: true,
-      };
+    if (nse != null) {
+      const nsePremiumPct = (ltpN / nse - 1) * 100;
+      const amcVsNsePct = Math.abs((amc / nse - 1) * 100);
+      const nseCloserBy = Math.abs(amcPremiumPct) - Math.abs(nsePremiumPct);
+      const hardFallback = Math.abs(amcPremiumPct) > AMC_PREMIUM_FALLBACK_PCT;
+      const divergenceFallback =
+        amcVsNsePct > AMC_NSE_DIVERGENCE_PCT && nseCloserBy > NSE_CLOSER_MARGIN_PCT;
+      if (hardFallback || divergenceFallback) {
+        return {
+          inav: nse,
+          inavSource: 'nse',
+          amcPremiumPct,
+          usedNseFallback: true,
+        };
+      }
     }
     return {
       inav: amc,
