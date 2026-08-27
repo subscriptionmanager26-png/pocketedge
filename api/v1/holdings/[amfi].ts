@@ -3,21 +3,18 @@ export const config = {
 };
 
 import {
-  holdingsPortfolioUrl,
+  HOLDINGS_CORS,
   jsonResponse,
   loadAmfiCatalog,
   normalizeAmfi,
   normalizeAsOf,
-  HOLDINGS_CORS,
 } from '../../_lib/fundHoldingsCdn.js';
 import { trackOpenFinApiRequest } from '../../_lib/openfinApiUsage.js';
+import { holdingsBookResponse, serveHoldingsBook } from '../../_lib/serveHoldingsBook.js';
 
 /**
  * GET /api/v1/holdings/:amfi
  * GET /api/v1/holdings/:amfi?as_of=2026-07-15
- *
- * Resolves AMFI share-class → shared portfolio book (GitHub raw, commit-pinned).
- * Omit as_of for latest; pass YYYY-MM-DD (or YYYY-MM → month-end) for history.
  */
 export default async function handler(
   request: Request,
@@ -64,87 +61,23 @@ export default async function handler(
       });
     }
 
-    const portfolioId = row.portfolio_id ? String(row.portfolio_id) : '';
-    if (!row.has_holdings || !portfolioId) {
-      return jsonResponse(
-        {
-          error: 'No Data Found',
-          amfi_code: amfi,
-          as_of: asOf || null,
-          scheme: {
-            name: row.name ?? null,
-            amc_name: row.amc_name ?? null,
-            parent_name: row.parent_name ?? null,
-          },
-        },
-        404,
-        { 'Cache-Control': 'public, max-age=300' },
-      );
+    const result = await serveHoldingsBook(amfi, row, asOf || null, { lookup: 'amfi' });
+    if (result.ok) {
+      trackOpenFinApiRequest({
+        endpoint: 'holdings',
+        method: 'GET',
+        status: 200,
+        amfi,
+      });
+    } else {
+      trackOpenFinApiRequest({
+        endpoint: 'holdings',
+        method: 'GET',
+        status: result.status,
+        amfi,
+      });
     }
-
-    const availableAsOf = Array.isArray(row.available_as_of)
-      ? row.available_as_of.map(String)
-      : undefined;
-
-    const portfolioUrl = await holdingsPortfolioUrl(portfolioId, asOf || null);
-    const portfolioRes = await fetch(portfolioUrl, {
-      headers: { Accept: 'application/json' },
-    });
-    if (!portfolioRes.ok) {
-      return jsonResponse(
-        {
-          error: asOf
-            ? 'No holdings for this as_of date'
-            : 'Could not load holdings',
-          amfi_code: amfi,
-          portfolio_id: portfolioId,
-          as_of: asOf || null,
-          available_as_of: availableAsOf,
-        },
-        portfolioRes.status === 404 ? 404 : 502,
-        { 'Cache-Control': 'public, max-age=60' },
-      );
-    }
-
-    const portfolio = await portfolioRes.json();
-    const body = {
-      ...portfolio,
-      amfi_code: amfi,
-      as_of: asOf || portfolio?.meta?.as_of || portfolio?.as_of || null,
-      scheme: {
-        ...(portfolio?.scheme && typeof portfolio.scheme === 'object'
-          ? portfolio.scheme
-          : {}),
-        amfi_code: amfi,
-        name: row.name ?? portfolio?.scheme?.name ?? null,
-        amc_name: row.amc_name ?? portfolio?.scheme?.amc_name ?? null,
-        parent_name: row.parent_name ?? portfolio?.scheme?.parent_name ?? null,
-        parent_amfi: row.parent_amfi ?? portfolio?.scheme?.parent_amfi ?? null,
-        nav: row.nav ?? portfolio?.scheme?.nav ?? null,
-        nav_date: row.nav_date ?? portfolio?.scheme?.nav_date ?? null,
-        isin: row.isin ?? portfolio?.scheme?.isin ?? null,
-        category: row.category ?? portfolio?.scheme?.category ?? null,
-      },
-      portfolio_id: portfolioId,
-      available_as_of: availableAsOf,
-      source: {
-        catalog_amfi: amfi,
-        portfolio_id: portfolioId,
-        portfolio_url: portfolioUrl,
-        as_of: asOf || null,
-      },
-    };
-
-    trackOpenFinApiRequest({
-      endpoint: 'holdings',
-      method: 'GET',
-      status: 200,
-      amfi,
-    });
-    return jsonResponse(body, 200, {
-      'Cache-Control':
-        'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800',
-    });
+    return holdingsBookResponse(result);
   } catch (err) {
     trackOpenFinApiRequest({
       endpoint: 'holdings',

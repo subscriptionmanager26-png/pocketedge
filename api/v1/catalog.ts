@@ -1,0 +1,42 @@
+export const config = {
+  runtime: 'edge',
+};
+
+import {
+  HOLDINGS_CORS,
+  jsonResponse,
+  loadAmfiCatalog,
+  publicCatalogLookup,
+} from '../_lib/fundHoldingsCdn.js';
+import { trackOpenFinApiRequest } from '../_lib/openfinApiUsage.js';
+
+/**
+ * GET /api/v1/catalog
+ * Public AMFI lookup — portfolio_id, availability, scheme identity (no pipeline paths).
+ */
+export default async function handler(request: Request) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: HOLDINGS_CORS });
+  }
+  if (request.method !== 'GET') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  try {
+    const catalog = await loadAmfiCatalog();
+    trackOpenFinApiRequest({ endpoint: 'catalog', method: 'GET', status: 200 });
+    return jsonResponse(publicCatalogLookup(catalog), 200, {
+      'Cache-Control':
+        'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+    });
+  } catch (err) {
+    trackOpenFinApiRequest({ endpoint: 'catalog', method: 'GET', status: 502 });
+    return jsonResponse(
+      {
+        error: 'Could not load catalog',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+      502,
+    );
+  }
+}

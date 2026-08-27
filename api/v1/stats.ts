@@ -3,7 +3,7 @@ export const config = {
 };
 
 import { HOLDINGS_CORS, jsonResponse } from '../_lib/fundHoldingsCdn.js';
-import { supabaseServerConfig } from '../_lib/supabaseServer.js';
+import { openfinSupabaseConfig } from '../_lib/openfinSupabaseServer.js';
 
 type UsageRow = {
   usage_date: string;
@@ -23,7 +23,7 @@ export default async function handler(request: Request) {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  const { url, anonKey } = supabaseServerConfig();
+  const { url, anonKey } = openfinSupabaseConfig();
   if (!url || !anonKey) {
     return jsonResponse(
       {
@@ -93,7 +93,7 @@ export default async function handler(request: Request) {
         by_endpoint,
         daily,
         note:
-          'Counts edge-handled routes (/api/v1, /holdings, /filings, /stats). CDN rewrites for /catalog, /meta, and /portfolios are not included yet.',
+          'Counts edge-handled routes (/api/v1, /catalog, /holdings, /filings, /stats). CDN rewrites for /meta and /portfolios are not included yet.',
         generated_at: new Date().toISOString(),
       },
       200,
