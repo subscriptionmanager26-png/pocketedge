@@ -1,5 +1,7 @@
 /** URL helpers — shareable paths for profiles, portfolios, and market assets. */
 
+import { OPENFIN_ORIGIN } from './openfinHost';
+
 export function normalizeUsername(username) {
   return String(username ?? '')
     .trim()
@@ -115,15 +117,8 @@ export function businessModelPath() {
   return '/business-model';
 }
 
-/** OpenFin hub — products, API docs, roadmap. */
-export function openfinPath(section) {
-  const key = String(section ?? '')
-    .trim()
-    .toLowerCase();
-  if (key === 'api') return '/openfin/api';
-  if (key === 'roadmap') return '/openfin/roadmap';
-  return '/openfin';
-}
+/** OpenFin hub — always link to openfin.pocketedge.in from the main app. */
+export { openfinPath, OPENFIN_ORIGIN, isOpenFinHost, wwwPath } from './openfinHost';
 
 /** @deprecated use businessModelPath */
 export function learningPath() {
@@ -191,8 +186,7 @@ const KNOWN_TABS = new Set([
 ]);
 
 const RETIRED_TABS = new Set(['explore', 'markets', 'search']);
-const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures', 'openfin']);
-const OPENFIN_SECTIONS = new Set(['api', 'roadmap']);
+const MARKETING_PAGES = new Set(['insights', 'learning', 'business-model', 'resources', 'disclosures']);
 const DISCLOSURE_SECTIONS = new Set(['privacy', 'terms', 'terms-of-service']);
 
 export function parseAppPath(pathname) {
@@ -255,13 +249,19 @@ export function parseAppPath(pathname) {
     };
   }
 
-  const openfinMatch = pathname.match(/^\/openfin(?:\/(api|roadmap))?\/?$/);
-  if (openfinMatch) {
-    const section = openfinMatch[1] || 'products';
+  const openfinLegacyMatch = pathname.match(/^\/openfin(?:\/(api|roadmap))?\/?$/);
+  if (openfinLegacyMatch) {
+    const section = openfinLegacyMatch[1] || 'products';
+    const dest =
+      section === 'api'
+        ? `${OPENFIN_ORIGIN}/docs`
+        : section === 'roadmap'
+          ? `${OPENFIN_ORIGIN}/roadmap`
+          : OPENFIN_ORIGIN;
     return {
       kind: 'marketing',
-      page: 'openfin',
-      section: OPENFIN_SECTIONS.has(section) ? section : 'products',
+      page: 'openfin-redirect',
+      redirectTo: dest,
     };
   }
 

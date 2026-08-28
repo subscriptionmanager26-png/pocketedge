@@ -1,6 +1,7 @@
 data/**
 scripts/**
 !scripts/generate-sitemaps.mjs
+!scripts/verify-openfin-build.mjs
 supabase/**
 *.log
 # Large/source CSVs only — screener fund list ships as JSON under public/data/screener/

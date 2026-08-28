@@ -41,17 +41,28 @@
     <link rel="preconnect" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://zweqxjeuwwfrlpbuuayg.supabase.co" />
     <script>
-      window.__PE_BOOT_PROMISE__ = fetch('/api/boot', { credentials: 'include' })
-        .then(function (r) {
-          return r.ok ? r.json() : null;
-        })
-        .then(function (d) {
-          window.__PE_BOOT__ = d;
-          return d;
-        })
-        .catch(function () {
-          return null;
-        });
+      (function () {
+        var host = window.location.hostname;
+        if (host === 'openfin.pocketedge.in') {
+          if (window.location.pathname === '/feed') {
+            window.location.replace('/');
+            return;
+          }
+          window.__PE_BOOT_PROMISE__ = Promise.resolve(null);
+          return;
+        }
+        window.__PE_BOOT_PROMISE__ = fetch('/api/boot', { credentials: 'include' })
+          .then(function (r) {
+            return r.ok ? r.json() : null;
+          })
+          .then(function (d) {
+            window.__PE_BOOT__ = d;
+            return d;
+          })
+          .catch(function () {
+            return null;
+          });
+      })();
     </script>
     <style>
       html,

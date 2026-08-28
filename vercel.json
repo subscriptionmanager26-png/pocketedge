@@ -238,6 +238,42 @@
       "permanent": true
     },
     {
+      "source": "/openfin",
+      "has": [{ "type": "host", "value": "www.pocketedge.in" }],
+      "destination": "https://openfin.pocketedge.in/",
+      "permanent": true
+    },
+    {
+      "source": "/openfin/api",
+      "has": [{ "type": "host", "value": "www.pocketedge.in" }],
+      "destination": "https://openfin.pocketedge.in/docs",
+      "permanent": true
+    },
+    {
+      "source": "/openfin/roadmap",
+      "has": [{ "type": "host", "value": "www.pocketedge.in" }],
+      "destination": "https://openfin.pocketedge.in/roadmap",
+      "permanent": true
+    },
+    {
+      "source": "/openfin",
+      "has": [{ "type": "host", "value": "pocketedge.in" }],
+      "destination": "https://openfin.pocketedge.in/",
+      "permanent": true
+    },
+    {
+      "source": "/openfin/api",
+      "has": [{ "type": "host", "value": "pocketedge.in" }],
+      "destination": "https://openfin.pocketedge.in/docs",
+      "permanent": true
+    },
+    {
+      "source": "/openfin/roadmap",
+      "has": [{ "type": "host", "value": "pocketedge.in" }],
+      "destination": "https://openfin.pocketedge.in/roadmap",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         { "type": "host", "value": "www.pocketedge.in" },

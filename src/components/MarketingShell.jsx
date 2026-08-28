@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import FeedTopBar from './feed-v1/FeedTopBar';
 import { useIsAuthenticated } from '../hooks/useIsAuthenticated';
 import { getAppCurrentUser } from '../lib/socialIdentity';
-import { ideasPath, disclosuresPath, insightsPath, openfinPath, resourcesPath, tabPath } from '../lib/routes';
+import { disclosuresPath, ideasPath, insightsPath, resourcesPath, tabPath } from '../lib/routes';
+import { openfinPath } from '../lib/openfinHost';
 import { signInWithGoogle } from '../lib/supabase';
 
 const MENU_ITEMS = [
-  { label: 'OpenFin', href: openfinPath() },
+  { label: 'OpenFin', href: openfinPath(null, { absolute: true }), external: true },
   { label: 'Insights', href: insightsPath() },
   { label: 'ETF iNAV tracker', href: resourcesPath('etf-inav') },
   { label: 'SGB Tracker', href: resourcesPath('sgb') },
@@ -18,7 +19,39 @@ const MENU_ITEMS = [
 /**
  * Public marketing pages chrome — same FeedTopBar as the app (no asset-class dropdowns).
  */
-export default function MarketingShell({ children, wide = false }) {
+export default function MarketingShell({ children, wide = false, variant = 'default' }) {
+  const navigate = useNavigate();
+  const isOpenFin = variant === 'openfin';
+
+  const goOpenFinHome = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
+  if (isOpenFin) {
+    return (
+      <div className="pe-feed-v1 flex min-h-dvh flex-col bg-white text-[var(--fv-text)]">
+        <FeedTopBar
+          standalone
+          wide={wide}
+          hideSearch
+          hideAccountActions
+          onGoHome={goOpenFinHome}
+        />
+        <main
+          className={`mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8 print:max-w-none print:px-0 print:py-0 ${
+            wide ? 'max-w-6xl' : 'max-w-3xl'
+          }`}
+        >
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  return <MarketingShellDefault wide={wide}>{children}</MarketingShellDefault>;
+}
+
+function MarketingShellDefault({ children, wide = false }) {
   const navigate = useNavigate();
   const isAuthenticated = useIsAuthenticated();
   const guestMode = !isAuthenticated;

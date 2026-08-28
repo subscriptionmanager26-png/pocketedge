@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemaps.mjs && vite build",
+    "build": "node scripts/verify-openfin-build.mjs && node scripts/generate-sitemaps.mjs && vite build",
     "build:analyze": "ANALYZE=1 vite build",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "preview": "vite preview",
