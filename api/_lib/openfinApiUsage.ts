@@ -1,4 +1,4 @@
-import { supabaseServerConfig } from './supabaseServer.js';
+import { openfinSupabaseConfig } from './openfinSupabaseServer.js';
 
 export type OpenFinApiTrackInput = {
   endpoint: string;
@@ -17,7 +17,7 @@ export function trackOpenFinApiRequest(input: OpenFinApiTrackInput): void {
 }
 
 async function incrementSupabaseUsage(endpoint: string): Promise<void> {
-  const { url, serviceRoleKey } = supabaseServerConfig();
+  const { url, serviceRoleKey } = openfinSupabaseConfig();
   if (!url || !serviceRoleKey) return;
 
   try {
