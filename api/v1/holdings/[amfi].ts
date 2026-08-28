@@ -8,6 +8,7 @@ import {
   loadAmfiCatalog,
   normalizeAmfi,
   normalizeAsOf,
+  resolveLatestAsOf,
   HOLDINGS_CORS,
 } from '../../_lib/fundHoldingsCdn.js';
 import { trackOpenFinApiRequest } from '../../_lib/openfinApiUsage.js';
@@ -86,7 +87,27 @@ export default async function handler(
       ? row.available_as_of.map(String)
       : undefined;
 
-    const portfolioUrl = await holdingsPortfolioUrl(portfolioId, asOf || null);
+    const effectiveAsOf = asOf || resolveLatestAsOf(row);
+    if (!effectiveAsOf) {
+      return jsonResponse(
+        {
+          error: 'No Data Found',
+          amfi_code: amfi,
+          as_of: null,
+          portfolio_id: portfolioId,
+          detail: 'Catalog has no latest_as_of or available_as_of for this scheme.',
+          scheme: {
+            name: row.name ?? null,
+            amc_name: row.amc_name ?? null,
+            parent_name: row.parent_name ?? null,
+          },
+        },
+        404,
+        { 'Cache-Control': 'public, max-age=300' },
+      );
+    }
+
+    const portfolioUrl = await holdingsPortfolioUrl(portfolioId, effectiveAsOf);
     const portfolioRes = await fetch(portfolioUrl, {
       headers: { Accept: 'application/json' },
     });
@@ -98,7 +119,8 @@ export default async function handler(
             : 'Could not load holdings',
           amfi_code: amfi,
           portfolio_id: portfolioId,
-          as_of: asOf || null,
+          as_of: effectiveAsOf,
+          requested_as_of: asOf || null,
           available_as_of: availableAsOf,
         },
         portfolioRes.status === 404 ? 404 : 502,
@@ -110,7 +132,7 @@ export default async function handler(
     const body = {
       ...portfolio,
       amfi_code: amfi,
-      as_of: asOf || portfolio?.meta?.as_of || portfolio?.as_of || null,
+      as_of: asOf || portfolio?.meta?.as_of || effectiveAsOf || null,
       scheme: {
         ...(portfolio?.scheme && typeof portfolio.scheme === 'object'
           ? portfolio.scheme
@@ -131,7 +153,8 @@ export default async function handler(
         catalog_amfi: amfi,
         portfolio_id: portfolioId,
         portfolio_url: portfolioUrl,
-        as_of: asOf || null,
+        as_of: effectiveAsOf,
+        requested_as_of: asOf || null,
       },
     };
 

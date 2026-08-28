@@ -54,6 +54,7 @@ type CatalogRow = {
   amfi_code?: string;
   portfolio_id?: string | null;
   portfolio_url?: string | null;
+  portfolio_key?: string | null;
   has_holdings?: boolean;
   name?: string;
   amc_name?: string;
@@ -64,6 +65,7 @@ type CatalogRow = {
   isin?: string | null;
   category?: string | null;
   available_as_of?: string[];
+  latest_as_of?: string | null;
   [key: string]: unknown;
 };
 
@@ -154,17 +156,30 @@ export async function resolveHoldingsBase(): Promise<{
   return { base, commit };
 }
 
+/** Newest as-of date for a catalog row (catalog-driven latest; no portfolios/latest/). */
+export function resolveLatestAsOf(row: CatalogRow | null | undefined): string {
+  if (!row || typeof row !== 'object') return '';
+  const explicit = normalizeAsOf(String(row.latest_as_of ?? ''));
+  if (explicit) return explicit;
+  const dates = Array.isArray(row.available_as_of)
+    ? row.available_as_of.map((d) => normalizeAsOf(String(d))).filter(Boolean)
+    : [];
+  if (!dates.length) return '';
+  dates.sort((a, b) => b.localeCompare(a));
+  return dates[0] ?? '';
+}
+
 export async function holdingsPortfolioUrl(
   portfolioId: string,
-  asOf?: string | null,
+  asOf: string,
 ) {
   const { base } = await resolveHoldingsBase();
   const id = encodeURIComponent(portfolioId);
-  const day = normalizeAsOf(asOf || '');
-  if (day) {
-    return `${base}/portfolios/asof/${day}/${id}.json`;
+  const day = normalizeAsOf(asOf);
+  if (!day) {
+    throw new Error('as_of required to resolve portfolio URL');
   }
-  return `${base}/portfolios/latest/${id}.json`;
+  return `${base}/portfolios/asof/${day}/${id}.json`;
 }
 
 export async function loadAmfiCatalog(): Promise<Record<string, CatalogRow>> {

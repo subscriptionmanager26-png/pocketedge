@@ -32,8 +32,8 @@ export default async function handler(request: Request) {
       },
       notes: [
         'Sibling share-classes share one portfolio book (portfolio_id).',
-        'GET /api/v1/holdings/:amfi resolves catalog → portfolios/latest/{id}.json.',
-        'Pass ?as_of=YYYY-MM-DD (or YYYY-MM) for historical books under portfolios/asof/.',
+        'GET /api/v1/holdings/:amfi resolves catalog.latest_as_of → portfolios/asof/{date}/{portfolio_id}.json.',
+        'Omit ?as_of to use the newest date from catalog (not portfolios/latest/).',
         'GET /api/v1/filings lists published as-of dates and cadences.',
       ],
     },
