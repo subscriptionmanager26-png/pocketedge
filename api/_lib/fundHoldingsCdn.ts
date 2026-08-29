@@ -1,6 +1,6 @@
 /** Public fund holdings on GitHub raw, pinned by commit SHA (raw @main lags on large files). */
 
-export const HOLDINGS_REPO_OWNER = 'kushagra-agarwal-a';
+export const HOLDINGS_REPO_OWNER = 'subscriptionmanager26-png';
 export const HOLDINGS_REPO_NAME = 'fund-holdings-data';
 export const HOLDINGS_BRANCH = 'main';
 
@@ -38,6 +38,15 @@ export function normalizeAmfi(raw: string) {
   return code;
 }
 
+/** Mutual fund scheme ISIN (INF + 9 chars). */
+export function normalizeFundIsin(raw: string) {
+  const isin = String(raw || '')
+    .trim()
+    .toUpperCase();
+  if (!/^INF[A-Z0-9]{9}$/.test(isin)) return '';
+  return isin;
+}
+
 /** Accept YYYY-MM-DD, or YYYY-MM → month-end. */
 export function normalizeAsOf(raw: string | null | undefined): string {
   const s = String(raw || '').trim();
@@ -69,6 +78,95 @@ type CatalogRow = {
   [key: string]: unknown;
 };
 
+/** Fields stripped from GET /api/v1/catalog (internal pipeline / large URLs). */
+const PUBLIC_CATALOG_OMIT = new Set([
+  'nav',
+  'nav_date',
+  'b2_key',
+  'source_file',
+  'local_path',
+  'portfolio_key',
+  'portfolio_url',
+  'portfolio_id',
+  'amc_id',
+  'has_holdings',
+]);
+
+export function publicCatalogLookup(
+  catalog: Record<string, CatalogRow>,
+): Record<string, Record<string, unknown>> {
+  const out: Record<string, Record<string, unknown>> = {};
+  for (const [code, row] of Object.entries(catalog)) {
+    const slim: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(row)) {
+      if (PUBLIC_CATALOG_OMIT.has(key)) continue;
+      slim[key] = value;
+    }
+    out[code] = slim;
+  }
+  return out;
+}
+
+const FUND_ISIN_RE = /^INF[A-Z0-9]{9}$/;
+const NUMERIC_NAV_RE = /^\d+(?:\.\d+)?$/;
+
+function isFundIsin(value: unknown): boolean {
+  return typeof value === 'string' && FUND_ISIN_RE.test(value.toUpperCase());
+}
+
+function isSchemeNav(value: unknown): boolean {
+  if (value == null || value === '') return false;
+  const s = String(value).replace(/,/g, '').trim();
+  if (isFundIsin(s)) return false;
+  return NUMERIC_NAV_RE.test(s);
+}
+
+function pickNav(...candidates: unknown[]): string | number | null {
+  for (const value of candidates) {
+    if (isSchemeNav(value)) return value as string | number;
+  }
+  return null;
+}
+
+function pickIsin(...candidates: unknown[]): string | null {
+  for (const value of candidates) {
+    if (isFundIsin(value)) return String(value).toUpperCase();
+  }
+  return null;
+}
+
+/** Merge scheme card from catalog + portfolio; never surface swapped NAV/ISIN columns. */
+export function mergeSchemeFromCatalog(
+  amfi: string,
+  row: CatalogRow,
+  portfolioScheme: Record<string, unknown> | null | undefined,
+) {
+  const fallback = portfolioScheme && typeof portfolioScheme === 'object' ? portfolioScheme : {};
+  return {
+    amfi_code: amfi,
+    name: row.name ?? fallback.name ?? null,
+    amc_name: row.amc_name ?? fallback.amc_name ?? null,
+    parent_name: row.parent_name ?? fallback.parent_name ?? null,
+    parent_amfi: row.parent_amfi ?? fallback.parent_amfi ?? null,
+    nav: pickNav(row.nav, fallback.nav),
+    nav_date: row.nav_date ?? fallback.nav_date ?? null,
+    isin: pickIsin(row.isin, row.nav, fallback.isin, fallback.nav),
+    category: row.category ?? fallback.category ?? null,
+  };
+}
+
+export async function holdingsPortfolioUrlForRow(
+  row: CatalogRow,
+  portfolioId: string,
+  asOf?: string | null,
+) {
+  const day = normalizeAsOf(asOf || '') || resolveLatestAsOf(row);
+  if (!day) {
+    throw new Error('Catalog has no latest_as_of or available_as_of for this scheme');
+  }
+  return holdingsPortfolioUrl(portfolioId, day);
+}
+
 type HoldingsMeta = {
   commit?: string;
   raw_base?: string;
@@ -87,6 +185,10 @@ let pinMemory: { at: number; base: string; commit: string | null } | null =
   null;
 let catalogMemory: { at: number; data: Record<string, CatalogRow> } | null =
   null;
+let isinIndexMemory: {
+  at: number;
+  data: Record<string, { amfi: string; row: CatalogRow }>;
+} | null = null;
 let filingsMemory: { at: number; data: { filings: HoldingsFiling[] } } | null =
   null;
 const PIN_TTL_MS = 5 * 60 * 1000;
@@ -225,6 +327,30 @@ export async function loadAmfiCatalog(): Promise<Record<string, CatalogRow>> {
     await cache.put(cacheKey, toStore).catch(() => {});
   }
   return data;
+}
+
+function buildIsinIndex(
+  catalog: Record<string, CatalogRow>,
+): Record<string, { amfi: string; row: CatalogRow }> {
+  const out: Record<string, { amfi: string; row: CatalogRow }> = {};
+  for (const [amfi, row] of Object.entries(catalog)) {
+    const isin = pickIsin(row.isin, row.nav);
+    if (isin && !out[isin]) out[isin] = { amfi, row };
+  }
+  return out;
+}
+
+export async function lookupCatalogByIsin(
+  isin: string,
+): Promise<{ amfi: string; row: CatalogRow } | null> {
+  const normalized = normalizeFundIsin(isin);
+  if (!normalized) return null;
+  const catalog = await loadAmfiCatalog();
+  const catalogAt = catalogMemory?.at ?? 0;
+  if (!isinIndexMemory || isinIndexMemory.at !== catalogAt) {
+    isinIndexMemory = { at: catalogAt, data: buildIsinIndex(catalog) };
+  }
+  return isinIndexMemory.data[normalized] ?? null;
 }
 
 export async function loadHoldingsFilings(): Promise<{

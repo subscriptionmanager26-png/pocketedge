@@ -23,6 +23,7 @@ export default async function handler(request: Request) {
       source: 'GitHub fund-holdings-data (raw, commit-pinned)',
       endpoints: {
         holdings: `${origin}/api/v1/holdings/{amfi}`,
+        holdings_by_isin: `${origin}/api/v1/holdings/by-isin/{isin}`,
         holdings_asof: `${origin}/api/v1/holdings/{amfi}?as_of=YYYY-MM-DD`,
         filings: `${origin}/api/v1/filings`,
         catalog: `${origin}/api/v1/catalog`,

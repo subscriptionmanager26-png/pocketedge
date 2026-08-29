@@ -5,20 +5,20 @@ export const config = {
 import {
   HOLDINGS_CORS,
   jsonResponse,
-  loadAmfiCatalog,
-  normalizeAmfi,
+  lookupCatalogByIsin,
   normalizeAsOf,
-} from '../../_lib/fundHoldingsCdn.js';
-import { trackOpenFinApiRequest } from '../../_lib/openfinApiUsage.js';
-import { holdingsBookResponse, serveHoldingsBook } from '../../_lib/serveHoldingsBook.js';
+  normalizeFundIsin,
+} from '../../../_lib/fundHoldingsCdn.js';
+import { trackOpenFinApiRequest } from '../../../_lib/openfinApiUsage.js';
+import { holdingsBookResponse, serveHoldingsBook } from '../../../_lib/serveHoldingsBook.js';
 
 /**
- * GET /api/v1/holdings/:amfi
- * GET /api/v1/holdings/:amfi?as_of=2026-07-15
+ * GET /api/v1/holdings/by-isin/:isin
+ * GET /api/v1/holdings/by-isin/:isin?as_of=2026-07-31
  */
 export default async function handler(
   request: Request,
-  context: { params?: { amfi?: string } },
+  context: { params?: { isin?: string } },
 ) {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: HOLDINGS_CORS });
@@ -28,11 +28,19 @@ export default async function handler(
   }
 
   const url = new URL(request.url);
-  const amfi = normalizeAmfi(
-    context?.params?.amfi || url.pathname.split('/').filter(Boolean).pop() || '',
-  );
-  if (!amfi) {
-    return jsonResponse({ error: 'Enter a valid AMFI scheme code' }, 400);
+  const rawIsin =
+    context?.params?.isin ||
+    url.pathname.split('/').filter(Boolean).pop() ||
+    '';
+  const isin = normalizeFundIsin(decodeURIComponent(rawIsin));
+  if (!isin) {
+    return jsonResponse(
+      {
+        error: 'Enter a valid mutual fund ISIN',
+        detail: 'Scheme ISIN must match INF + 9 alphanumeric characters',
+      },
+      400,
+    );
   }
 
   const asOfRaw =
@@ -53,33 +61,34 @@ export default async function handler(
   }
 
   try {
-    const catalog = await loadAmfiCatalog();
-    const row = catalog[amfi];
-    if (!row) {
-      return jsonResponse({ error: 'Unknown AMFI code', amfi_code: amfi }, 404, {
+    const hit = await lookupCatalogByIsin(isin);
+    if (!hit) {
+      return jsonResponse({ error: 'Unknown scheme ISIN', isin }, 404, {
         'Cache-Control': 'public, max-age=60',
       });
     }
 
-    const result = await serveHoldingsBook(amfi, row, asOf || null, { lookup: 'amfi' });
+    const result = await serveHoldingsBook(hit.amfi, hit.row, asOf || null, {
+      lookup: 'isin',
+      isin,
+    });
     trackOpenFinApiRequest({
-      endpoint: 'holdings',
+      endpoint: 'holdings-by-isin',
       method: 'GET',
       status: result.ok ? 200 : result.status,
-      amfi,
+      amfi: hit.amfi,
     });
     return holdingsBookResponse(result);
   } catch (err) {
     trackOpenFinApiRequest({
-      endpoint: 'holdings',
+      endpoint: 'holdings-by-isin',
       method: 'GET',
       status: 502,
-      amfi,
     });
     return jsonResponse(
       {
         error: 'Could not load holdings',
-        amfi_code: amfi,
+        isin,
         as_of: asOf || null,
         detail: err instanceof Error ? err.message : String(err),
       },
