@@ -331,11 +331,11 @@
   "rewrites": [
     {
       "source": "/api/v1/meta",
-      "destination": "https://raw.githubusercontent.com/subscriptionmanager26-png/fund-holdings-data/main/meta.json"
+      "destination": "https://raw.githubusercontent.com/kushagra-agarwal-a/fund-holdings-data/main/meta.json"
     },
     {
       "source": "/api/v1/portfolios/:id",
-      "destination": "https://raw.githubusercontent.com/subscriptionmanager26-png/fund-holdings-data/main/portfolios/latest/:id.json"
+      "destination": "https://raw.githubusercontent.com/kushagra-agarwal-a/fund-holdings-data/main/portfolios/latest/:id.json"
     },
     {
       "source": "/asset-logos/:path*",
