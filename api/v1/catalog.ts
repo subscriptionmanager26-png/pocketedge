@@ -27,7 +27,7 @@ export default async function handler(request: Request) {
     trackOpenFinApiRequest({ endpoint: 'catalog', method: 'GET', status: 200 });
     return jsonResponse(publicCatalogLookup(catalog), 200, {
       'Cache-Control':
-        'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+        'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
     });
   } catch (err) {
     trackOpenFinApiRequest({ endpoint: 'catalog', method: 'GET', status: 502 });

@@ -92,11 +92,12 @@ export function holdingsBookResponse(result: HoldingsBookResult) {
   const extra =
     result.status === 200
       ? {
+          // Keep CDN TTL short — holdings data updates via pinned commits, not URL.
           'Cache-Control':
-            'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+            'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
         }
       : result.status === 404
-        ? { 'Cache-Control': 'public, max-age=300' }
-        : { 'Cache-Control': 'public, max-age=60' };
+        ? { 'Cache-Control': 'public, max-age=60, s-maxage=120' }
+        : { 'Cache-Control': 'public, max-age=30' };
   return jsonResponse(result.body, result.status, extra);
 }
