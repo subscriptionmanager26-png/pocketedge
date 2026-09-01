@@ -239,15 +239,16 @@ export async function resolveHoldingsBase(): Promise<{
     return { base: pinMemory.base, commit: pinMemory.commit };
   }
 
+  // Prefer meta.json commit: the pipeline pins catalog + portfolios together on push.
   let commit: string | null = null;
   try {
-    commit = await resolveTipCommit();
+    commit = await resolveMetaCommit();
   } catch {
     commit = null;
   }
   if (!commit) {
     try {
-      commit = await resolveMetaCommit();
+      commit = await resolveTipCommit();
     } catch {
       commit = null;
     }
