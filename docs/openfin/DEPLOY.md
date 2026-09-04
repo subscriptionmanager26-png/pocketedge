@@ -4,6 +4,8 @@ OpenFin is the public open-data product surface for PocketEdge: product director
 
 **Canonical URL:** https://openfin.pocketedge.in
 
+**Data source (CDN):** [`kushagra-agarwal-a/fund-holdings-data`](https://github.com/kushagra-agarwal-a/fund-holdings-data) only. No holdings mirror on `subscriptionmanager26-png`.
+
 OpenFin is **independent** from the PocketEdge social app (`www.pocketedge.in`). They share this Git repo and build, but deploy from **separate Vercel projects** so social production deploys cannot overwrite the OpenFin subdomain.
 
 ## Vercel projects
