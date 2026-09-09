@@ -28,7 +28,7 @@ const DOCS = [
 const LEGAL = {
   privacy: {
     title: 'Privacy policy',
-    updated: 'July 2026',
+    updated: 'September 2026',
     sections: [
       {
         heading: 'What we collect',
@@ -39,12 +39,16 @@ const LEGAL = {
         body: 'To operate the service, personalize your experience, improve product quality, prevent abuse, and communicate important account updates. We do not sell your personal information.',
       },
       {
+        heading: 'Promotional emails',
+        body: 'By creating an account or otherwise using PocketEdge, you agree to receive promotional emails from us, including newsletters, product updates, and other marketing messages. Transactional messages about your account may still be sent even if you unsubscribe from promotional mail.',
+      },
+      {
         heading: 'Sharing',
         body: 'We use trusted processors (for example authentication, hosting, and analytics) solely to deliver PocketEdge. Content you choose to publish may be visible to other users or visitors as designed by the product.',
       },
       {
         heading: 'Your choices',
-        body: 'You may request access, correction, or deletion of account data subject to legal and operational requirements. Contact us through in-app support or the email listed on pocketedge.in.',
+        body: 'You may request access, correction, or deletion of account data subject to legal and operational requirements. You can opt out of promotional emails using the unsubscribe link in those messages. Contact us through in-app support or the email listed on pocketedge.in.',
       },
     ],
   },
