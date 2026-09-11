@@ -27,6 +27,7 @@ import {
   fetchUserPortfolio,
   fetchUserPortfolios,
   fetchPublicPortfolioShare,
+  fetchPublicUserPortfolios,
   peekUserPortfolios,
   saveSocialPortfolio,
   isLocalDraftId,
@@ -245,11 +246,26 @@ export default function ProfilePage({
   }, [person?.id]);
 
   useEffect(() => {
-    if (!person?.id) return;
+    if (!person?.id) return undefined;
     if (guestMode) {
-      setPortfolios([]);
-      setPortfoliosLoading(false);
-      return undefined;
+      let cancelled = false;
+      setPortfoliosLoading(true);
+      fetchPublicUserPortfolios(person.id)
+        .then((rows) => {
+          if (!cancelled) {
+            setPortfolios(rows);
+            markTabDataReady('profile', 'network');
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setPortfolios([]);
+        })
+        .finally(() => {
+          if (!cancelled) setPortfoliosLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
     let cancelled = false;
     const cached = peekUserPortfolios(person.id);
@@ -806,6 +822,24 @@ function PortfolioSectionPanel({
   }
 
   if (!livePortfolio) {
+    if (guestMode) {
+      return (
+        <div className="pt-1 md:pt-2">
+          <GuestSignInCta
+            variant="hero"
+            title="See the full book"
+            description="Sign in to view holdings and weights on this shared portfolio."
+            action="unlock holdings"
+            showExploreHint={false}
+            benefits={[
+              'See every holding and weight',
+              'Follow the investor’s next moves',
+              'Share or copy this book',
+            ]}
+          />
+        </div>
+      );
+    }
     return (
       <div className="px-4 py-12 text-center md:px-6">
         <p className="text-lg font-semibold text-pe-text">
