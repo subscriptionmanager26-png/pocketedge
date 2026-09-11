@@ -32,6 +32,8 @@ jobs:
         run: npm run fetch:amfi-equity-direct-growth
 
       - name: Fetch Upvaly screener snapshot
+        env:
+          UPVALY_API_KEY: ${{ secrets.UPVALY_API_KEY }}
         run: npm run fetch:mf-screener-snapshot
 
       - name: Commit snapshot

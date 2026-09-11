@@ -4,6 +4,11 @@
  *   npm run fetch:amfi-equity-direct-growth
  *
  * Output: public/data/screener/amfi-equity-direct-growth.json
+ *
+ * NAVAll columns (as of 2026-09):
+ *   Scheme Code;ISIN…;ISIN…;Scheme Name;Plan;Option;Net Asset Value;Date
+ * Older dumps omitted Plan/Option and embedded them in Scheme Name — both shapes
+ * are supported.
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -19,6 +24,7 @@ const CATEGORY_RE =
   /^(Open Ended Schemes|Closed Ended Schemes|Interval Scheme|Solution Oriented Scheme|Other Schemes)\((.+)\)\s*$/i;
 const SCHEME_ROW_RE = /^(\d+);/;
 const AMC_RE = /mutual fund\s*$/i;
+const EQUITY_CATEGORY_RE = /^Equity Schemes?$/i;
 
 function parseCategoryLine(line) {
   const m = line.match(CATEGORY_RE);
@@ -42,11 +48,15 @@ function pickIsin(colGrowthOrPayout, colReinvest) {
   return '';
 }
 
-function derivePlan(name) {
+function derivePlan(name, planCol) {
+  if (/\bdirect\b/i.test(planCol)) return 'Direct';
+  if (/\bregular\b/i.test(planCol)) return 'Regular';
   return /\bdirect\b/i.test(name) ? 'Direct' : 'Regular';
 }
 
-function derivePayout(name) {
+function derivePayout(name, optionCol) {
+  if (/\bgrowth\b/i.test(optionCol)) return 'Growth';
+  if (optionCol && !/\bgrowth\b/i.test(optionCol)) return 'IDCW';
   return /\bgrowth\b/i.test(name) ? 'Growth' : 'IDCW';
 }
 
@@ -70,10 +80,15 @@ function parseNavAll(text) {
 
     if (SCHEME_ROW_RE.test(line)) {
       const parts = line.split(';');
-      if (parts.length < 4) continue;
+      // Legacy: code;isin;isin;name;nav;date  (≥6)
+      // Current: code;isin;isin;name;plan;option;nav;date  (≥8)
+      if (parts.length < 6) continue;
       const amfiCode = parts[0].trim();
       const isin = pickIsin(parts[1], parts[2]);
       const name = parts[3].trim();
+      const hasPlanOptionCols = parts.length >= 8;
+      const planCol = hasPlanOptionCols ? parts[4].trim() : '';
+      const optionCol = hasPlanOptionCols ? parts[5].trim() : '';
       if (!amfiCode || !name) continue;
       rows.push({
         amfiCode,
@@ -82,8 +97,8 @@ function parseNavAll(text) {
         category,
         subCategory,
         amc,
-        plan: derivePlan(name),
-        payout: derivePayout(name),
+        plan: derivePlan(name, planCol),
+        payout: derivePayout(name, optionCol),
       });
       continue;
     }
@@ -105,7 +120,10 @@ async function main() {
   const text = await res.text();
   const allRows = parseNavAll(text);
   const rows = allRows
-    .filter((r) => r.category === 'Equity Scheme' && r.plan === 'Direct' && r.payout === 'Growth')
+    .filter(
+      (r) =>
+        EQUITY_CATEGORY_RE.test(r.category) && r.plan === 'Direct' && r.payout === 'Growth',
+    )
     .sort((a, b) => a.amfiCode.localeCompare(b.amfiCode));
 
   mkdirSync(path.dirname(outPath), { recursive: true });

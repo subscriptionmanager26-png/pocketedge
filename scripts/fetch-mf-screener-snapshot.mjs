@@ -2,9 +2,11 @@
  * Fetch Upvaly scheme data for equity Direct Growth funds and write a compact
  * screener snapshot under public/data/screener/.
  *
- *   npm run fetch:mf-screener-snapshot
+ *   UPVALY_API_KEY=… npm run fetch:mf-screener-snapshot
  *
  * API: https://finapi.upvaly.com/api/mf/scheme-code/{amfiCode}
+ * Auth: X-API-Key (unauthenticated responses are a thin NAV stub without
+ *       AUM / returns / holdings — insufficient for the screener).
  * Rate limit: ~120 req/min — 550ms delay between calls (~5–6 min for ~580 funds).
  */
 
@@ -13,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const UPVALY_SCHEME_URL = 'https://finapi.upvaly.com/api/mf/scheme-code';
+const UPVALY_API_KEY = String(process.env.UPVALY_API_KEY ?? '').trim();
 const DELAY_MS = 550;
 const MAX_RETRIES = 3;
 const RATE_LIMIT_WAIT_MS = 65_000;
@@ -66,13 +69,29 @@ function compactScheme(data) {
   };
 }
 
+function isFullSchemePayload(data) {
+  // Free/unauthenticated stub only has NAV + identity fields.
+  // Screener needs metrics that arrive only with a valid X-API-Key.
+  return Boolean(
+    data?.schemeCode &&
+      (data.aum != null ||
+        data.cagr != null ||
+        data.riskMetrics != null ||
+        data.ranks != null ||
+        (Array.isArray(data.holdings) && data.holdings.length > 0)),
+  );
+}
+
 async function fetchScheme(amfiCode, attempt = 0) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(`${UPVALY_SCHEME_URL}/${encodeURIComponent(amfiCode)}`, {
       signal: ctrl.signal,
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'X-API-Key': UPVALY_API_KEY,
+      },
     });
     if (res.status === 429 && attempt < MAX_RETRIES) {
       console.warn(`[fetch-mf-screener] rate limited on ${amfiCode}, waiting…`);
@@ -83,6 +102,14 @@ async function fetchScheme(amfiCode, attempt = 0) {
     const body = await res.json();
     if (body?.status !== 'success' || !body?.data?.schemeCode) {
       return { ok: false, status: res.status, message: body?.message };
+    }
+    if (!isFullSchemePayload(body.data)) {
+      return {
+        ok: false,
+        status: res.status,
+        message:
+          'stub payload without screener metrics — check UPVALY_API_KEY / X-API-Key access',
+      };
     }
     return { ok: true, data: body.data };
   } catch (err) {
@@ -97,6 +124,12 @@ async function fetchScheme(amfiCode, attempt = 0) {
 }
 
 async function main() {
+  if (!UPVALY_API_KEY) {
+    throw new Error(
+      'Missing UPVALY_API_KEY — set it to the FinAPI / Upvaly key (sent as X-API-Key)',
+    );
+  }
+
   if (!existsSync(schemesPath)) {
     throw new Error(`Missing ${schemesPath} — equity Direct Growth scheme list required`);
   }
