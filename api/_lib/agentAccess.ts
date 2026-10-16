@@ -21,7 +21,12 @@ export async function userHasAgentAccess(
   const field = accessField();
   const supabase = adminClient();
   if (supabase) {
-    const { data, error } = await supabase.from('profiles').select(field).eq('id', userId).maybeSingle();
+    // Pocketedge stores public profile + entitlements on social_profiles (not auth metadata).
+    const { data, error } = await supabase
+      .from('social_profiles')
+      .select(field)
+      .eq('user_id', userId)
+      .maybeSingle();
     if (!error && data && typeof data === 'object' && field in data) {
       return Boolean((data as Record<string, unknown>)[field]);
     }
