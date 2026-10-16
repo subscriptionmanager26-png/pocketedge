@@ -77,6 +77,7 @@ const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const IdeasPage = lazy(() => import('./pages/IdeasPage'));
+const AgentPage = lazy(() => import('./pages/AgentPage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const InsightsPage = lazy(() => import('./pages/marketing/InsightsPage'));
 const BusinessModelPage = lazy(() => import('./pages/marketing/BusinessModelPage'));
@@ -628,6 +629,7 @@ export default function App() {
   const MARKET_RETURN_LABELS = {
     feed: 'Feed',
     ideas: 'Ideas',
+    ai: 'AI',
     activity: 'Activity',
     portfolio: 'Portfolio',
     profile: 'Profile',
@@ -1261,6 +1263,11 @@ export default function App() {
               onSelectIndex={openIndex}
               onSelectCommodity={openCommodity}
             />
+          </RouteSuspense>
+        )}
+        {!hasAssetDetail && tab === 'ai' && (
+          <RouteSuspense>
+            <AgentPage guestMode={guestMode} />
           </RouteSuspense>
         )}
         {!hasAssetDetail && tab === 'activity' && (

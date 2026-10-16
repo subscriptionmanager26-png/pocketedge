@@ -6,6 +6,7 @@ import {
   Lightbulb,
   Newspaper,
   Pencil,
+  Sparkles,
   Wallet,
 } from 'lucide-react';
 import LogoMark from './LogoMark';
@@ -68,6 +69,7 @@ const DESKTOP_TABS = [
   // Explore kept in routing/code but hidden from shell UI — Ideas covers discovery for now.
   // { id: 'explore', label: 'Explore', icon: Search },
   { id: 'ideas', label: 'Ideas', icon: Lightbulb },
+  { id: 'ai', label: 'AI', icon: Sparkles },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
 ];
 

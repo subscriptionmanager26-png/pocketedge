@@ -72,6 +72,10 @@ export function ideasPath() {
   return '/ideas';
 }
 
+export function aiPath() {
+  return '/ai';
+}
+
 export const MARKET_SECTIONS = new Set([
   'stocks',
   'mutual_funds',
@@ -177,6 +181,7 @@ const KNOWN_TABS = new Set([
   'news',
   'explore',
   'ideas',
+  'ai',
   'activity',
   'portfolio',
   'markets',
@@ -322,7 +327,11 @@ export function parseAppPath(pathname) {
     };
   }
 
-  // Legacy theme URLs (/ideas/ai, etc.) collapse to the Ideas hub.
+  if (pathname.match(/^\/(?:ai|ideas\/ai)\/?$/)) {
+    return { kind: 'tab', tab: 'ai' };
+  }
+
+  // Legacy theme URLs (/ideas/xyz) collapse to the Ideas hub.
   if (pathname.match(/^\/ideas\/[^/]+\/?$/)) {
     return { kind: 'tab', tab: 'ideas' };
   }
@@ -388,6 +397,9 @@ export function pathFromAppState({
   }
   if (tab === 'ideas') {
     return ideasPath();
+  }
+  if (tab === 'ai') {
+    return aiPath();
   }
   return tabPath(tab);
 }
