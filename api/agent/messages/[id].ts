@@ -3,7 +3,8 @@ export const config = {
 };
 
 import { userHasAgentAccess } from '../../_lib/agentAccess.js';
-import { pocketedgeUserFromRequest } from '../../_lib/agentAuth.js';
+import { accessTokenFromRequest, pocketedgeUserFromRequest } from '../../_lib/agentAuth.js';
+import { supabaseServerConfig } from '../../_lib/supabaseServer.js';
 import { paFetch, personalAgentsConfigured } from '../../_lib/personalAgents.js';
 
 export default async function handler(
@@ -20,7 +21,9 @@ export default async function handler(
   if (!user) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
   }
-  if (!(await userHasAgentAccess(user.id, user.metadata))) {
+  const cfg = supabaseServerConfig();
+  const token = cfg.ref ? accessTokenFromRequest(request, cfg.ref) : null;
+  if (!(await userHasAgentAccess(user.id, user.metadata, token ?? undefined))) {
     return new Response(JSON.stringify({ error: 'agent_not_enabled' }), { status: 403 });
   }
 

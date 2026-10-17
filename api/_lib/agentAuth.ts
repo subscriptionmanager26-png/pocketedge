@@ -7,7 +7,7 @@ export type PocketedgeUser = {
   metadata?: Record<string, unknown>;
 };
 
-function accessTokenFromRequest(request: Request, ref: string): string | null {
+export function accessTokenFromRequest(request: Request, ref: string): string | null {
   const header = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
   if (header) return header;
   return readAccessTokenFromRequest(request, ref);

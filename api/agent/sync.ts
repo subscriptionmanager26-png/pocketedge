@@ -2,8 +2,9 @@ export const config = {
   runtime: 'edge',
 };
 
-import { userHasAgentAccess } from '../_lib/agentAccess.js';
-import { pocketedgeUserFromRequest } from '../_lib/agentAuth.js';
+import { agentAccessDefinitelyDisabled, userHasAgentAccess } from '../_lib/agentAccess.js';
+import { accessTokenFromRequest, pocketedgeUserFromRequest } from '../_lib/agentAuth.js';
+import { supabaseServerConfig } from '../_lib/supabaseServer.js';
 import { personalAgentsConfigured, syncAgentUser } from '../_lib/personalAgents.js';
 
 export default async function handler(request: Request) {
@@ -18,12 +19,15 @@ export default async function handler(request: Request) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
   }
 
-  const allowed = await userHasAgentAccess(user.id, user.metadata);
-  const result = await syncAgentUser(
-    user.id,
-    { name: user.name, email: user.email },
-    allowed,
-  );
+  const cfg = supabaseServerConfig();
+  const token = cfg.ref ? accessTokenFromRequest(request, cfg.ref) : null;
+  const allowed = await userHasAgentAccess(user.id, user.metadata, token ?? undefined);
+  let result = { ok: true, status: 200 };
+  if (allowed) {
+    result = await syncAgentUser(user.id, { name: user.name, email: user.email }, true);
+  } else if (await agentAccessDefinitelyDisabled(user.id)) {
+    result = await syncAgentUser(user.id, { name: user.name, email: user.email }, false);
+  }
   if (!result.ok && result.status !== 404) {
     return new Response(JSON.stringify({ error: 'sync_failed', status: result.status }), { status: 502 });
   }
