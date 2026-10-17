@@ -356,6 +356,25 @@ export function discardLocalDraft(ownerId, portfolioId) {
 }
 
 /**
+ * Redacted portfolio list for a public profile (guest-safe).
+ * @returns {Promise<object[]>}
+ */
+export async function fetchPublicUserPortfolios(ownerId) {
+  if (!ownerId) return [];
+
+  if (!useBackend()) {
+    return (getUserPortfolios(ownerId) ?? []).filter((p) => !p.isDraft && !p.isArchived);
+  }
+
+  const { data, error } = await supabase.rpc('list_public_user_portfolios', {
+    p_owner_id: ownerId,
+  });
+  if (error) throw error;
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map(mapRpcRow).filter(Boolean);
+}
+
+/**
  * Anonymous/share view of a published portfolio (summary only for guests).
  * Holdings are stripped client-side so the SPA can gate them behind sign-in.
  * @returns {Promise<{ portfolio: object, ownerId: string|null, ownerHandle: string|null, ownerName: string|null }|null>}
