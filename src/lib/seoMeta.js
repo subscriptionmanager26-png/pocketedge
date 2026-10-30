@@ -2,7 +2,7 @@
 
 const SITE_ORIGIN = 'https://www.pocketedge.in';
 const DEFAULT_IMAGE = `${SITE_ORIGIN}/og-image.jpg?v=20260723`;
-const DEFAULT_TITLE = 'PocketEdge — See what real investors own and say';
+const DEFAULT_TITLE = 'Manage money like a pro';
 const DEFAULT_DESCRIPTION =
   'Browse Indian stocks, mutual funds, and ETFs. Read company business models and portfolio insights before you invest.';
 
@@ -58,7 +58,8 @@ export function setSeoMeta({
 } = {}) {
   const urlPath = path.startsWith('/') ? path : `/${path}`;
   const canonical = `${SITE_ORIGIN}${urlPath === '/' ? '/' : urlPath}`;
-  const fullTitle = title.includes('PocketEdge') ? title : `${title} · PocketEdge`;
+  const fullTitle =
+    title === DEFAULT_TITLE || title.includes('PocketEdge') ? title : `${title} · PocketEdge`;
 
   document.title = fullTitle;
   setNamedMeta('description', description);

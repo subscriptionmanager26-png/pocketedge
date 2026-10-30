@@ -181,7 +181,7 @@ function CtaBlock({ compact = false, loading, error, onGetStarted, isAuthenticat
 
 export default function HomePage() {
   useSeoMeta({
-    title: 'PocketEdge — See what real investors own and say',
+    title: 'Manage money like a pro',
     description:
       'Browse Indian stocks, mutual funds, and ETFs. Read company business models and portfolio insights before you invest.',
     path: '/',
